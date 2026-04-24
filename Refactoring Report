@@ -1,0 +1,190 @@
+Refactoring Report — BKN Pharmacy Chrome Extension v2.1
+Generated: 2026-04-24  
+Codebase: `rx_menu_all.zip`  
+Extension: BKN Hospital Pharmacy Department — Chrome Extension (Manifest v3)
+---
+Executive Summary
+The extension is a well-functioning MV3 Chrome extension for BKN Hospital pharmacy operations. It covers IV labeling, auxiliary sticker printing, IPD queue management, drug delivery automation, and report generation. The codebase is largely clean and well-commented, but several structural and maintainability issues merit attention before the project scales further.
+Total source: ~7,500 lines across 6 JS files, 4 HTML pages, 3 CSS files.
+---
+1. Architecture Overview
+```
+manifest.json
+├── background.js         — MV3 Service Worker (message bus, fetch proxy, Drive upload)
+├── content_script.js     — Injected into all pages (MRD table, Drug Delivery, Dispense WB)
+├── popup.html / popup.js — Extension popup (tabs, IPD queue, report generation)
+├── iv_sticker.html / iv_sticker.js   — IV label printing system (HAD, PFS, ATB, Cytotoxic)
+├── aux_sticker.html / aux_sticker.js — Auxiliary sticker system (Premix, Mixing labels)
+└── welcome.html / welcome.js         — Onboarding page shown on install
+```
+Communication flows:
+```
+popup.js ──→ background.js (extFetch, sendToDrugDelivery)
+           ──→ content_script.js (getMrdRows, getDataBySelector)
+content_script.js ──→ background.js (drugDeliveryResult, drugDeliveryReady)
+background.js ──→ content_script.js in drugTab (fillAndSubmit)
+```
+---
+2. Issues by Priority
+🔴 HIGH — Security & Correctness
+2.1 Hardcoded Google Apps Script URL in background.js (Line 113)
+```js
+// background.js:113 — CURRENT
+const url = 'https://script.google.com/macros/s/AKfycbwk0PsLdtR7a37iEzMLS15YBUlw25UPp92IQYRy2sYRRU-3LFb17HSvBZsIjA_tGTvyYQ/exec';
+```
+Issue: The full public deployment URL for the Med Rec Google Apps Script is hardcoded. If the script is redeployed, the URL changes silently and the feature breaks. Rotating or revoking the URL requires a code change and re-publish.  
+Recommendation: Move to `manifest.json` or a config module `config.js`, or fetch from `chrome.storage` on first run.
+2.2 Hardcoded Google Drive Folder ID (background.js Line 152)
+```js
+parents: ['14U3kFKdaA0tFkyFqMt1sDRByuIerOMbk']
+```
+Issue: Drive folder ID is embedded directly. If the folder changes or is used in multiple environments, it requires a code edit.  
+Recommendation: Add to a shared `CONFIG` constant object or `chrome.storage`.
+2.3 Internal IP Hardcoded in Multiple Places
+```js
+// manifest.json
+"http://10.134.10.91/*"
+// background.js
+const DRUGDELIVERY_URL_PART = '10.134.10.91:8809/drugdelivery/web/ipfill';
+// content_script.js
+if (location.hostname === '10.134.10.91')
+```
+Issue: The internal hospital IP appears in 3 separate files. A network change requires updating all three independently and risks inconsistency.  
+Recommendation: Define a single shared constant (or config object) imported/referenced across all files.
+---
+🟠 MEDIUM — Maintainability & Code Quality
+2.4 Embedded Drug/Staff Data in iv_sticker.js (~100 lines of inline JSON)
+```js
+const DEFAULT_DRUGS = [ /* 35+ drug objects hardcoded */ ];
+const DEFAULT_STAFF = [ /* 38 staff objects hardcoded */ ];
+```
+Issue: Drug formulary and staff roster change regularly. Embedding them as JavaScript literals means every update requires a code edit. The data is also duplicated in spirit across `iv_sticker.js` and `aux_sticker.js` (separate `PREMIX_DB`, `MIXING_DB` arrays).  
+Recommendation:
+Move drug/staff data to `drugs.json`, `staff.json`, `premix_db.json`, `mixing_db.json` in `web_accessible_resources`.
+Load at startup with `fetch(chrome.runtime.getURL('drugs.json'))`.
+This allows data updates without code changes and enables future admin UI to edit the source files.
+2.5 Premix Database Embedded in aux_sticker.js (~39 entries, Mixing ~15 entries)
+Same issue as above. These two static datasets span ~100 lines and are pharmacy-specific reference data that will change over time.
+2.6 No Shared Utility Module
+The following helpers are duplicated or near-duplicated across files:
+Utility	Defined in
+`sleep(ms)`	`content_script.js` and `iv_sticker.js` (implicitly via `setTimeout`)
+`showToast()`	`iv_sticker.js` and `aux_sticker.js` (separate implementations)
+`openPrintWindow()`	`iv_sticker.js` and `aux_sticker.js`
+Date formatting	`iv_sticker.js` and `aux_sticker.js` (separate `formatDate()` variants)
+Recommendation: Extract a shared `utils.js` with common helpers. Load via `web_accessible_resources` or restructure as a module bundle.
+2.7 popup.js is Oversized (1,522 lines, 6 distinct feature areas)
+`popup.js` handles tab navigation, IPD queue, IV sticker triggering, aux sticker triggering, RT_COMMON_257 report, RT_COMMON_917 report, and stock picking. This violates the single-responsibility principle and makes the file difficult to debug.  
+Recommendation: Split into:
+`popup-tabs.js` — tab nav
+`popup-ipd.js` — IPD queue
+`popup-reports.js` — report generation
+`popup-init.js` — entry point that imports the above
+2.8 Legacy `jspdf.min.js` Alongside `jspdf.umd.min.js`
+```
+cdnjs/jspdf.min.js       (307 KB)
+cdnjs/jspdf.umd.min.js   (419 KB)
+```
+Issue: Two versions of jsPDF are bundled (older `.min.js` + newer `.umd.min.js`). Both are included in `web_accessible_resources`. The older one appears to be a leftover from a previous implementation.  
+Recommendation: Confirm which version is actively used (search for `jspdf.min.js` references vs `jspdf.umd.min.js`). Remove the unused one. Combined they add 726 KB to extension size.
+2.9 Inline Styles Used Extensively in content_script.js
+```js
+Object.assign(btn.style, {
+  marginLeft: '6px',
+  padding: '2px 10px',
+  // 10+ more properties...
+});
+```
+Issue: Button styles for injected UI elements are set entirely via `Object.assign(style, ...)`. This is hard to maintain and cannot be overridden by CSS.  
+Recommendation: Add injected styles to a content script CSS file (declared in `manifest.json` via `css` key under `content_scripts`) and use `classList` instead.
+---
+🟡 LOW — Code Cleanliness
+2.10 Commented-Out Selector in content_script.js (Line 25)
+```js
+const MRD_TABLE_SEL = 'md-card-content md-table-container';
+  // 'body > div.full-height.ng-scope.layout-row > div > md-content > ...'
+```
+The old verbose selector is left in a comment. It adds noise without value.  
+Recommendation: Remove dead commented selectors; use git history for reference.
+2.11 `getDataByTag` / `getDataByTagTable` Handler Returns Empty Array in background.js
+```js
+if (msg.action === 'getDataByTag') {
+  sendResponse({ data: [] });
+  return false;
+}
+```
+This is a no-op stub that always returns empty — it appears to be a legacy handler from when DOM queries were routed through the background worker.  
+Recommendation: Remove from `background.js`. The live implementation is in `content_script.js`.
+2.12 `welcome.js` is Nearly Empty (6 lines)
+```js
+// welcome.js — entire file
+document.addEventListener('DOMContentLoaded', () => {});
+```
+The welcome page logic is entirely in `welcome.html` inline scripts. MV3 best practice is to move all logic into the `.js` file.  
+Recommendation: Move `welcome.html` inline scripts to `welcome.js`.
+2.13 `Thumbs.db` in `/images/`
+A Windows thumbnail cache file (`images/Thumbs.db`, 20 KB) is included in the extension bundle and listed under `web_accessible_resources`.  
+Recommendation: Delete from project and add to `.gitignore`.
+---
+3. Refactoring Roadmap
+Priority	Task	Effort	Impact
+🔴 HIGH	Extract shared config (URLs, IPs, folder IDs) to `config.js`	1–2 hrs	Security + maintainability
+🔴 HIGH	Remove hardcoded Google Apps Script URL or parameterise	30 min	Security
+🟠 MEDIUM	Externalise drug/staff/premix data to JSON files	2–3 hrs	Data maintainability
+🟠 MEDIUM	Remove duplicate `jspdf.min.js`	15 min	Extension size −307 KB
+🟠 MEDIUM	Split `popup.js` into feature modules	3–4 hrs	Code organization
+🟠 MEDIUM	Create shared `utils.js` (toast, print window, date format)	1–2 hrs	DRY principle
+🟠 MEDIUM	Move content script button styles to CSS file	1 hr	Maintainability
+🟡 LOW	Remove dead `getDataByTag` stub from background.js	5 min	Cleanliness
+🟡 LOW	Move welcome page inline scripts to `welcome.js`	30 min	MV3 compliance
+🟡 LOW	Remove `Thumbs.db` from images + add to `.gitignore`	5 min	Bundle hygiene
+🟡 LOW	Remove old commented selector from content_script.js	5 min	Cleanliness
+---
+4. Strengths (What's Working Well)
+MV3 compliance: Extension correctly uses service worker, avoids `eval`, uses `scripting` API properly.
+Message passing: The single consolidated `onMessage` listener in `background.js` is clean and well-structured.
+Error handling in Drug Delivery flow: Timeout logic, page-not-found, and result detection are thoughtfully implemented.
+SPA navigation support: `MutationObserver` + debounced injection correctly handles the Angular SPA on arcusair.
+Print system: IV and Aux sticker print windows are self-contained HTML+CSS, properly isolated from the extension page styles.
+Code comments: All files have clear section headers and inline comments explaining intent.
+`'use strict'`: Applied consistently across all JS files.
+---
+5. Suggested File Structure After Refactoring
+```
+rx_menu/
+├── manifest.json
+├── config.js                  ← NEW: shared URLs, IPs, folder IDs
+├── background.js
+├── content_script.js
+├── content_script.css         ← NEW: styles for injected buttons
+├── utils.js                   ← NEW: shared helpers (toast, print, date)
+├── popup.html
+├── popup-init.js              ← renamed from popup.js (entry point only)
+├── popup-tabs.js              ← NEW: tab navigation
+├── popup-ipd.js               ← NEW: IPD queue logic
+├── popup-reports.js           ← NEW: RT_COMMON_257, RT_COMMON_917, stock picking
+├── iv_sticker.html
+├── iv_sticker.js
+├── iv_sticker.css
+├── aux_sticker.html
+├── aux_sticker.js
+├── aux_sticker.css
+├── welcome.html
+├── welcome.js
+├── styles.css
+├── data/                      ← NEW: externalised reference data
+│   ├── drugs.json
+│   ├── staff.json
+│   ├── premix_db.json
+│   └── mixing_db.json
+├── images/
+│   ├── icon16.png
+│   ├── icon48.png
+│   ├── icon128.png
+│   ├── footer.jpg
+│   └── footter_maprang.jpg    ← (consider renaming: typo "footter")
+└── cdnjs/
+    └── jspdf.umd.min.js       ← (remove jspdf.min.js duplicate)
+```
+---
+Report generated by code analysis of rx_menu_all.zip — BKN Pharmacy Extension v2.1
