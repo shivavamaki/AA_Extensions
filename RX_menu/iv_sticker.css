@@ -1,0 +1,506 @@
+/* ═══════════════════════════════════════════════════════
+   IV Sticker System — iv_sticker.css
+   Scoped with ivs- prefix to avoid conflicts with
+   the extension's existing styles.css
+   ═══════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+/* ── CSS VARIABLES ──────────────────────────────────────── */
+:root {
+  --ivs-bg:           #f5f0eb;
+  --ivs-surface:      #fdfaf7;
+  --ivs-surface2:     #f0ebe4;
+  --ivs-surface3:     #e8e1d8;
+  --ivs-border:       #ddd5c8;
+  --ivs-border2:      #c8bfb3;
+  --ivs-text:         #3d342c;
+  --ivs-text2:        #6b5e52;
+  --ivs-muted:        #9c8f84;
+
+  --ivs-accent:       #7aaa8a;
+  --ivs-accent-dark:  #5a8a6a;
+  --ivs-accent-light: #e8f4ec;
+  --ivs-accent-text:  #2d5c3e;
+
+  --ivs-had-bg:     #fde8e8;  --ivs-had-border: #f5c4c4;  --ivs-had-text: #9b2020;
+  --ivs-pfs-bg:     #ece8fd;  --ivs-pfs-border: #c9c0f7;  --ivs-pfs-text: #4a2d9b;
+  --ivs-atb-bg:     #e8f4ec;  --ivs-atb-border: #b8ddc4;  --ivs-atb-text: #2d5c3e;
+  --ivs-cyto-bg:    #fdf0e0;  --ivs-cyto-border:#f5d8a0;  --ivs-cyto-text:#7a4a10;
+  --ivs-eye-bg:     #e0f0fd;  --ivs-eye-border: #a0ccf5;  --ivs-eye-text: #10457a;
+  --ivs-ok-bg:      #e4f5ee;  --ivs-ok-border:  #a8ddc0;  --ivs-ok-text:  #1e5c3a;
+
+  --ivs-danger:       #e05050;
+  --ivs-danger-light: #fde8e8;
+  --ivs-success:      #4a9e6a;
+
+  --ivs-rad:    8px;
+  --ivs-rad-lg: 14px;
+  --ivs-rad-xl: 20px;
+  --ivs-shadow: 0 2px 12px rgba(100,80,60,.10);
+  --ivs-shadow-md: 0 4px 24px rgba(100,80,60,.14);
+}
+
+/* ── PAGE RESET (scoped to iv_sticker body) ─────────────── */
+body {
+  font-family: 'Sarabun', sans-serif;
+  background: var(--ivs-bg);
+  color: var(--ivs-text);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.6;
+  width: auto;
+  padding: 0;
+  margin: 0;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.shell { display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+  width: 228px;
+  flex-shrink: 0;
+  background: var(--ivs-surface);
+  border-right: 1px solid var(--ivs-border);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  padding: 22px 20px 18px;
+  border-bottom: 1px solid var(--ivs-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sidebar-logo-icon {
+  width: 36px; height: 36px;
+  background: var(--ivs-accent-light);
+  border: 1.5px solid var(--ivs-accent);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ivs-accent-dark);
+  flex-shrink: 0;
+}
+.sidebar-logo-icon svg { width: 18px; height: 18px; }
+.sidebar-logo-text { line-height: 1.2; }
+.sidebar-logo-title { font-size: 13px; font-weight: 700; color: var(--ivs-text); }
+.sidebar-logo-sub   { font-size: 10px; color: var(--ivs-muted); margin-top: 1px; }
+
+.sidebar-section {
+  font-size: 10px;
+  letter-spacing: .13em;
+  font-weight: 700;
+  color: var(--ivs-muted);
+  text-transform: uppercase;
+  padding: 16px 20px 5px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  cursor: pointer;
+  color: var(--ivs-text2);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background .13s, color .13s;
+  user-select: none;
+  border-left: 3px solid transparent;
+  margin: 1px 0;
+}
+.nav-item:hover { background: var(--ivs-surface2); color: var(--ivs-text); }
+.nav-item.active {
+  background: var(--ivs-accent-light);
+  color: var(--ivs-accent-text);
+  border-left-color: var(--ivs-accent);
+  font-weight: 600;
+}
+.nav-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 20px;
+  border-top: 1px solid var(--ivs-border);
+  font-size: 11px;
+  color: var(--ivs-muted);
+  line-height: 1.5;
+}
+
+/* Main area */
+.main { flex: 1; overflow-x: hidden; display: flex; flex-direction: column; }
+
+.topbar {
+  height: 54px;
+  background: var(--ivs-surface);
+  border-bottom: 1px solid var(--ivs-border);
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: var(--ivs-shadow);
+}
+.topbar-title { font-size: 15px; font-weight: 700; color: var(--ivs-text); }
+.topbar-sub   { font-size: 12px; color: var(--ivs-muted); }
+.topbar-spacer { flex: 1; }
+
+/* Pages */
+.ivs-page { display: none; padding: 28px; animation: ivsPageIn .18s ease; }
+.ivs-page.active { display: block; }
+@keyframes ivsPageIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.page-header { margin-bottom: 22px; }
+.page-header h2 { font-size: 20px; font-weight: 700; color: var(--ivs-text); }
+.page-header p  { font-size: 13px; color: var(--ivs-muted); margin-top: 3px; }
+
+/* ── CARD ─────────────────────────────────────────────── */
+.ivs-card {
+  background: var(--ivs-surface);
+  border: 1px solid var(--ivs-border);
+  border-radius: var(--ivs-rad-lg);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--ivs-shadow);
+}
+.ivs-card-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ivs-muted);
+  text-transform: uppercase;
+  letter-spacing: .10em;
+  margin-bottom: 16px;
+}
+
+/* ── GRID / LAYOUT HELPERS ──────────────────────────────── */
+.ivs-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.ivs-col   { display: flex; flex-direction: column; }
+.ivs-row   { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.ivs-row .ivs-field { flex: 1; min-width: 110px; }
+
+.ivs-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ── FORM FIELDS ────────────────────────────────────────── */
+.ivs-field { margin-bottom: 12px; }
+.ivs-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ivs-muted);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.ivs-field input,
+.ivs-field select,
+.ivs-field textarea {
+  width: 100%;
+  background: var(--ivs-surface2);
+  border: 1.5px solid var(--ivs-border);
+  border-radius: var(--ivs-rad);
+  color: var(--ivs-text);
+  padding: 8px 12px;
+  font-family: 'Sarabun', sans-serif;
+  font-size: 13px;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  -webkit-appearance: none;
+}
+.ivs-field input:focus,
+.ivs-field select:focus,
+.ivs-field textarea:focus {
+  border-color: var(--ivs-accent);
+  box-shadow: 0 0 0 3px rgba(122,170,138,.18);
+}
+.ivs-field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239c8f84' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px;
+  cursor: pointer;
+}
+.ivs-field textarea { resize: vertical; min-height: 64px; line-height: 1.5; }
+
+.ivs-filter-select {
+  background: var(--ivs-surface2);
+  border: 1.5px solid var(--ivs-border);
+  border-radius: var(--ivs-rad);
+  color: var(--ivs-text);
+  padding: 8px 32px 8px 12px;
+  font-family: 'Sarabun', sans-serif;
+  font-size: 13px;
+  outline: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239c8f84' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+
+/* ── BUTTONS ────────────────────────────────────────────── */
+.ivs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 20px;
+  border-radius: var(--ivs-rad);
+  border: none;
+  cursor: pointer;
+  font-family: 'Sarabun', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  transition: filter .13s, transform .08s, box-shadow .13s;
+  white-space: nowrap;
+}
+.ivs-btn:hover  { filter: brightness(.94); }
+.ivs-btn:active { transform: scale(.97); }
+.ivs-btn svg    { width: 14px; height: 14px; flex-shrink: 0; }
+
+.ivs-btn-primary   { background: var(--ivs-accent); color: #fff; box-shadow: 0 2px 8px rgba(90,138,106,.30); }
+.ivs-btn-secondary { background: var(--ivs-surface2); color: var(--ivs-text2); border: 1.5px solid var(--ivs-border2); }
+.ivs-btn-outline   { background: transparent; color: var(--ivs-text2); border: 1.5px solid var(--ivs-border2); }
+.ivs-btn-danger    { background: var(--ivs-danger-light); color: var(--ivs-danger); border: 1.5px solid #f5c4c4; }
+.ivs-btn-sm  { padding: 5px 13px; font-size: 12px; }
+.ivs-btn-xs  { padding: 3px 9px;  font-size: 11px; }
+
+.ivs-btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ── BADGES ─────────────────────────────────────────────── */
+.ivs-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  border: 1px solid;
+}
+.badge-had  { background: var(--ivs-had-bg);  border-color: var(--ivs-had-border);  color: var(--ivs-had-text); }
+.badge-pfs  { background: var(--ivs-pfs-bg);  border-color: var(--ivs-pfs-border);  color: var(--ivs-pfs-text); }
+.badge-atb  { background: var(--ivs-atb-bg);  border-color: var(--ivs-atb-border);  color: var(--ivs-atb-text); }
+.badge-cyto { background: var(--ivs-cyto-bg); border-color: var(--ivs-cyto-border); color: var(--ivs-cyto-text);}
+.badge-eye  { background: var(--ivs-eye-bg);  border-color: var(--ivs-eye-border);  color: var(--ivs-eye-text); }
+.badge-ok   { background: var(--ivs-ok-bg);   border-color: var(--ivs-ok-border);   color: var(--ivs-ok-text);  }
+
+/* ── TABLE ──────────────────────────────────────────────── */
+.ivs-tbl-wrap { overflow-x: auto; }
+.ivs-tbl-wrap table { width: 100%; border-collapse: collapse; }
+.ivs-tbl-wrap th {
+  padding: 10px 14px;
+  background: var(--ivs-surface2);
+  border-bottom: 2px solid var(--ivs-border2);
+  text-align: left;
+  color: var(--ivs-muted);
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  white-space: nowrap;
+}
+.ivs-tbl-wrap td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--ivs-border);
+  color: var(--ivs-text);
+  vertical-align: middle;
+}
+.ivs-tbl-wrap tr:last-child td { border-bottom: none; }
+.ivs-tbl-wrap tbody tr:hover td { background: var(--ivs-surface2); }
+
+/* ── PREVIEW BOX ────────────────────────────────────────── */
+.ivs-preview-box {
+  background: var(--ivs-surface2);
+  border: 1.5px dashed var(--ivs-border2);
+  border-radius: var(--ivs-rad-lg);
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 160px;
+  margin-top: 4px;
+}
+.ivs-empty-state {
+  text-align: center;
+  color: var(--ivs-muted);
+  font-size: 13px;
+  padding: 24px;
+  align-self: center;
+}
+
+/* ── INFO STRIP ─────────────────────────────────────────── */
+.ivs-info-strip {
+  background: var(--ivs-accent-light);
+  border: 1px solid var(--ivs-atb-border);
+  border-radius: var(--ivs-rad);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--ivs-accent-text);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ivs-info-strip svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* ── MONO TAG ───────────────────────────────────────────── */
+.ivs-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  background: var(--ivs-surface2);
+  border: 1px solid var(--ivs-border);
+  border-radius: 5px;
+  padding: 1px 7px;
+  color: var(--ivs-text2);
+}
+
+/* ── REQUIRED MARK ──────────────────────────────────────── */
+.req { color: var(--ivs-danger); }
+
+/* ── MODAL ──────────────────────────────────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(80,60,40,.35);
+  backdrop-filter: blur(3px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--ivs-surface);
+  border: 1px solid var(--ivs-border);
+  border-radius: var(--ivs-rad-xl);
+  padding: 28px;
+  width: 500px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--ivs-shadow-md);
+  animation: ivsPopIn .18s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes ivsPopIn { from { opacity:0; transform:scale(.94); } to { opacity:1; transform:none; } }
+.modal-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--ivs-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── TOAST ──────────────────────────────────────────────── */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--ivs-surface);
+  border: 1.5px solid var(--ivs-border2);
+  border-radius: var(--ivs-rad);
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  box-shadow: var(--ivs-shadow-md);
+  animation: ivsSlideUp .2s ease;
+  pointer-events: auto;
+  max-width: 320px;
+}
+.toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.toast.success .toast-dot { background: var(--ivs-success); }
+.toast.error   .toast-dot { background: var(--ivs-danger); }
+.toast.success { border-color: #b8ddc4; }
+.toast.error   { border-color: #f5c4c4; }
+@keyframes ivsSlideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+/* ══════════════════════════════════════════════════════
+   LABEL STYLES (used in preview & print)
+   ══════════════════════════════════════════════════════ */
+
+
+/* IPD Label — 8×3.5 cm physical sticker */
+.label-ipd {
+  font-family: 'Sarabun', sans-serif;
+  background: #fff; color: #000;
+  border: none;
+  padding: 5px 8px;
+  width: 8cm; height: 3.5cm;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.label-ipd .had-banner { background: #c00; color: #fff; text-align: center; font-size: 8px; font-weight: 800; letter-spacing: .12em; padding: 2px 0; margin: -5px -8px 4px; border-radius: 3px 3px 0 0; flex-shrink: 0; }
+.label-ipd .top-row    { display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; margin-bottom: 2px; flex-shrink: 0; }
+.label-ipd .drug-name  { font-size: 11px; font-weight: 700; margin-bottom: 2px; line-height: 1.2; }
+.label-ipd .info-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 1px 6px; font-size: 8px; margin-bottom: 2px; flex-shrink: 0; }
+.label-ipd .info-row   { display: flex; gap: 3px; }
+.label-ipd .info-key   { color: #555; white-space: nowrap; }
+.label-ipd .info-val   { font-weight: 600; }
+.label-ipd .label-dates{ display: flex; gap: 8px; font-size: 8px; border-top: 1px solid #ccc; padding-top: 2px; margin-top: 2px; flex-shrink: 0; }
+.label-ipd .label-sig  { font-size: 8px; color: #555; display: flex; justify-content: space-between; flex-wrap: wrap; margin-top: 1px; flex-shrink: 0; }
+.label-ipd .label-note { font-size: 7.5px; margin-top: 1px; border-top: 1px solid #eee; padding-top: 1px; color: #333; flex-shrink: 0; }
+.label-ipd .label-storage { font-size: 7px; color: #888; text-align: right; flex-shrink: 0; }
+
+/* PFS Small Label */
+.label-pfs-wrap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; width: 100%; }
+.label-pfs {
+  font-family: 'Sarabun', sans-serif;
+  background: #fff; color: #000;
+  border: 1px dashed #aaa; border-radius: 4px; padding: 6px 8px;
+}
+.label-pfs .pfs-drug { font-size: 11px; font-weight: 700; line-height: 1.2; }
+.label-pfs .pfs-conc { font-size: 10px; margin-top: 1px; }
+.label-pfs .pfs-exp  { font-size: 9px; margin-top: 3px; color: #222; }
+.label-pfs .pfs-prep { font-size: 9px; color: #333; }
+.label-pfs .pfs-lot  { font-size: 9px; color: #666; }
+
+/* Succinyl 4-up */
+.label-succ-wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm; width: 100%; }
+.label-succ {
+  font-family: 'Sarabun', sans-serif;
+  background: #fff; color: #000;
+  border: 1px dashed #aaa; border-radius: 4px; padding: 6px 8px;
+}
+.label-succ .succ-drug { font-size: 11px; font-weight: 700; }
+.label-succ .succ-conc { font-size: 9px; }
+.label-succ .succ-exp  { font-size: 9px; margin-top: 3px; }
+.label-succ .succ-prep { font-size: 9px; color: #444; }
+
+/* ── PRINT ───────────────────────────────────────────────── */
+/* Print rendering happens in a dedicated popup window (see printLabel in iv_sticker.js).
+   The #print-area element is kept for legacy compatibility but not used for output. */
+.print-area { display: none; }
+
+/* ── SCROLLBAR ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--ivs-border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ivs-muted); }
