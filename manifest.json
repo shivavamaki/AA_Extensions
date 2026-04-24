@@ -1,0 +1,68 @@
+{
+  "manifest_version": 3,
+  "name": "BKN Pharmacy",
+  "version": "2.1",
+  "description": "BKN Hospital Pharmacy Department — Quick links, clinical tools, and knowledge hub.",
+
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "contextMenus",
+    "scripting"
+  ],
+
+  "host_permissions": [
+    "https://script.google.com/*",
+    "https://arcusair.bdms.co.th/*",
+    "https://bdmsgroup-my.sharepoint.com/*",
+    "http://10.134.10.91/*"
+  ],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16":  "images/icon16.png",
+      "48":  "images/icon48.png",
+      "128": "images/icon128.png"
+    }
+  },
+
+  "icons": {
+    "16":  "images/icon16.png",
+    "48":  "images/icon48.png",
+    "128": "images/icon128.png"
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "cdnjs/jspdf.umd.min.js",
+        "cdnjs/jspdf.min.js",
+        "images/*",
+        "iv_sticker.html",
+        "iv_sticker.js",
+        "iv_sticker.css",
+        "aux_sticker.html",
+        "aux_sticker.js",
+        "aux_sticker.css",
+        "welcome.html",
+        "welcome.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+
+  "content_scripts": [
+
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content_script.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

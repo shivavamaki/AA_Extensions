@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auxiliary Sticker — Pharmacy BKN</title>
+  <link rel="stylesheet" href="aux_sticker.css">
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ══════════════════════ SIDEBAR ══════════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+          <rect x="9" y="3" width="6" height="4" rx="1"/>
+          <path d="M9 12h6M9 16h4"/>
+        </svg>
+      </div>
+      <div class="sidebar-logo-text">
+        <div class="sidebar-logo-title">Aux Sticker</div>
+        <div class="sidebar-logo-sub">Pharmacy BKN</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">Sticker Type</div>
+
+    <div class="nav-item active" data-page="premix">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
+      </svg>Prepack Sticker
+    </div>
+    <div class="nav-item" data-page="mixing">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10 2h4l1 3H9l1-3z"/>
+        <path d="M9 5v14a2 2 0 002 2h2a2 2 0 002-2V5"/>
+        <circle cx="12" cy="13" r="2"/>
+      </svg>Mixing Label
+    </div>
+
+    <div class="sidebar-section" style="margin-top:auto;padding-top:12px;border-top:1px solid var(--ax-border)">Print</div>
+    <div class="sidebar-footer">🧪 Auxiliary Sticker<br>v1.0 · BKN</div>
+  </aside>
+
+  <!-- ══════════════════════ MAIN ══════════════════════════ -->
+  <div class="main">
+
+    <div class="topbar">
+      <span class="topbar-title" id="topbar-title">Prepack Sticker</span>
+      <span class="topbar-sub" id="topbar-sub">10×5 cm / 6 ดวงต่อแผ่น (3×2) · บล็อกละ 3×1.5 cm</span>
+      <div class="topbar-spacer"></div>
+      <button class="ax-btn ax-btn-outline ax-btn-sm no-print" id="btn-clear-form">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+        </svg>ล้างฟอร์ม
+      </button>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         PAGE: PREMIX STICKER
+    ════════════════════════════════════════ -->
+    <div class="ax-page active" id="page-premix">
+      <div class="page-header">
+        <h2>Prepack Sticker</h2>
+        <p>สติ๊กเกอร์ยาแบ่งบรรจุ — 6 ดวงต่อแผ่น (3×2 บล็อก, บล็อกละ 3×1.5 cm) บนกระดาษ 10×5 cm</p>
+      </div>
+
+      <div class="ax-grid2">
+        <!-- LEFT: Form -->
+        <div class="ax-col">
+
+          <div class="ax-card">
+            <div class="ax-card-title">เลือกยา</div>
+            <div class="ax-field">
+              <label>ชื่อยา</label>
+              <select id="pm-drug">
+                <option value="">— เลือกยา —</option>
+              </select>
+            </div>
+            <div class="ax-row">
+              <div class="ax-field">
+                <label>วันที่แบ่งบรรจุ</label>
+                <input id="pm-mfg-date" type="date">
+              </div>
+              <div class="ax-field">
+                <label>วันหมดอายุ (คำนวณอัตโนมัติ)</label>
+                <input id="pm-exp-date" type="text" placeholder="คำนวณจากอายุยา" readonly>
+              </div>
+            </div>
+            <div class="ax-field">
+              <label>หมายเหตุเพิ่มเติม (ถ้ามี)</label>
+              <input id="pm-note" type="text" placeholder="เว้นว่าง = ไม่แสดง">
+            </div>
+          </div>
+
+          <div class="ax-card" id="pm-info-card" style="display:none">
+            <div class="ax-card-title">ข้อมูลยาที่เลือก</div>
+            <div class="ax-info-grid" id="pm-info-content"></div>
+          </div>
+
+          <div class="ax-card">
+            <div class="ax-card-title">ตั้งค่าการพิมพ์</div>
+            <div class="ax-row">
+              <div class="ax-field">
+                <label>จำนวนแผ่น (sheets)</label>
+                <input id="pm-sheets" type="number" value="1" min="1" max="20">
+              </div>
+            </div>
+            <div style="font-size:12px;color:var(--ax-muted);margin-top:6px">แต่ละแผ่น = 6 ดวง (3 คอลัมน์ × 2 แถว)</div>
+          </div>
+
+          <div class="ax-btn-group">
+            <button class="ax-btn ax-btn-primary" id="pm-btn-preview">สร้าง Preview</button>
+            <button class="ax-btn ax-btn-secondary" id="pm-btn-print">🖨 พิมพ์ Sticker</button>
+          </div>
+        </div>
+
+        <!-- RIGHT: Preview -->
+        <div class="ax-col">
+          <div class="ax-card">
+            <div class="ax-card-title">Preview (1 sticker)</div>
+            <div class="ax-preview-box" id="preview-pm">
+              <div class="ax-empty-state">เลือกยาแล้วกด "สร้าง Preview"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         PAGE: MIXING LABEL
+    ════════════════════════════════════════ -->
+    <div class="ax-page" id="page-mixing">
+      <div class="page-header">
+        <h2>Mixing Label</h2>
+        <p>สติ๊กเกอร์วิธีผสมยา dry syrup / suspension — ขนาด 10×5 cm</p>
+      </div>
+
+      <div class="ax-grid2">
+        <!-- LEFT: Form -->
+        <div class="ax-col">
+
+          <div class="ax-card">
+            <div class="ax-card-title">เลือกยา</div>
+            <div class="ax-field">
+              <label>ชื่อยา (dry syrup / suspension)</label>
+              <select id="mx-drug">
+                <option value="">— เลือกยา —</option>
+              </select>
+            </div>
+            <div class="ax-field" style="margin-top:8px">
+              <label>ภาษาที่แสดง</label>
+              <div class="ax-radio-group">
+                <label class="ax-radio"><input type="radio" name="mx-lang" value="th" checked> ภาษาไทย</label>
+                <label class="ax-radio"><input type="radio" name="mx-lang" value="en"> English</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="ax-card" id="mx-content-card" style="display:none">
+            <div class="ax-card-title">ข้อมูลวิธีผสม</div>
+            <div id="mx-content-preview" class="ax-mixing-content"></div>
+          </div>
+
+          <div class="ax-card">
+            <div class="ax-card-title">ตั้งค่าการพิมพ์</div>
+            <div class="ax-row">
+              <div class="ax-field">
+                <label>จำนวนสำเนา (copies)</label>
+                <input id="mx-copies" type="number" value="1" min="1" max="20">
+              </div>
+            </div>
+          </div>
+
+          <div class="ax-btn-group">
+            <button class="ax-btn ax-btn-primary" id="mx-btn-preview">สร้าง Preview</button>
+            <button class="ax-btn ax-btn-secondary" id="mx-btn-print">🖨 พิมพ์ Sticker</button>
+          </div>
+        </div>
+
+        <!-- RIGHT: Preview -->
+        <div class="ax-col">
+          <div class="ax-card">
+            <div class="ax-card-title">Preview (1 sticker)</div>
+            <div class="ax-preview-box" id="preview-mx">
+              <div class="ax-empty-state">เลือกยาแล้วกด "สร้าง Preview"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- Toast container -->
+<div class="toast-container" id="toasts"></div>
+
+<script src="aux_sticker.js"></script>
+</body>
+</html>
