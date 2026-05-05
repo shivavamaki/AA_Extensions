@@ -117,6 +117,7 @@
   <div class="tabs">
     <button class="tab-btn active" data-tab="dispense">⚙️ Auto Dispense</button>
     <button class="tab-btn" data-tab="scraper">🗂 Scraper</button>
+    <button class="tab-btn" data-tab="ipfill">💉 IP Fill</button>
   </div>
 
   <div id="tab-dispense" class="panel active">
@@ -128,6 +129,17 @@
     </div>
     <div id="dispenseStatus" class="status">Open the Arcus dispense workbench page — the automation panel will appear automatically.</div>
     <p class="note">IP Fill now has its own page side panel and is no longer in this popup.</p>
+  </div>
+
+  <div id="tab-ipfill" class="panel">
+    <h3>IP Fill Tools</h3>
+    <p class="desc">Open the IP Fill page and show the floating page panel. Panel supports drag, minimize, manual Ward pause, and retry logic.</p>
+    <div class="btn-group">
+      <button id="openIpFill" class="btn-blue">🔗 Open IP Fill</button>
+      <button id="closeIpFillPanel" class="btn-red">✕ Close IP Fill Tool</button>
+    </div>
+    <div id="ipfillStatus" class="status">Open IP Fill page — the IP Fill panel will appear automatically.</div>
+    <p class="note">Use this if the panel was closed and you want to reopen it from popup.</p>
   </div>
 
   <div id="tab-scraper" class="panel">

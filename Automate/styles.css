@@ -543,3 +543,121 @@
   margin-top: 3px;
   text-align: right;
 }
+/* v3.8 compact automation panel */
+#arcus-auto-panel.arcus-compact-panel {
+  width: 300px;
+  font-size: 11px;
+}
+
+#arcus-auto-panel .arcus-panel-header.compact {
+  padding: 8px 10px;
+}
+
+#arcus-auto-panel .compact-body {
+  padding: 9px 10px 10px;
+  max-height: calc(84vh - 48px);
+}
+
+#arcus-auto-panel .compact-field {
+  margin-bottom: 7px;
+}
+
+#arcus-auto-panel .arcus-check-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+  background: #f8fbff;
+  border: 1px solid #e3f2fd;
+  border-radius: 8px;
+  padding: 7px 8px;
+}
+
+#arcus-auto-panel .arcus-check-grid label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: #37474f;
+  cursor: pointer;
+  user-select: none;
+}
+
+#arcus-auto-panel .arcus-check-grid input {
+  cursor: pointer;
+}
+
+#arcus-auto-panel .compact-check {
+  margin-bottom: 7px;
+}
+
+#arcus-auto-panel .compact-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.72fr;
+  gap: 5px;
+  margin-bottom: 7px;
+}
+
+#arcus-auto-panel .compact-buttons .btn {
+  padding: 7px 4px;
+  font-size: 11px;
+}
+
+#arcus-auto-panel .arcus-step-card {
+  background: #e8f0fe;
+  border: 1px solid #bbdefb;
+  border-radius: 8px;
+  padding: 7px 9px;
+  margin-bottom: 7px;
+}
+
+#arcus-auto-panel .arcus-step-label {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  color: #5c6bc0;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+#arcus-auto-panel .arcus-step-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0d47a1;
+  margin-top: 2px;
+}
+
+#arcus-auto-panel .arcus-step-detail {
+  font-size: 10.5px;
+  color: #455a64;
+  margin-top: 3px;
+  line-height: 1.35;
+  max-height: 44px;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+#arcus-auto-panel .compact-status {
+  min-height: 30px;
+  font-size: 10.5px;
+  padding: 6px 8px;
+  margin-bottom: 7px;
+  max-height: 76px;
+  overflow: hidden;
+}
+
+#arcus-auto-panel .compact-summary {
+  margin-bottom: 7px;
+}
+
+#arcus-auto-panel .compact-summary .metric {
+  padding: 5px 3px;
+}
+
+#arcus-auto-panel .compact-summary .metric .value {
+  font-size: 16px;
+}
+
+#arcus-auto-log,
+#arcus-scrape-preview,
+#arcus-btn-clear-log {
+  display: none !important;
+}

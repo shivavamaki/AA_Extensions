@@ -114,7 +114,6 @@
     childList: true,
     subtree: true,
   });
-  window.addEventListener("unload", () => observer.disconnect(), { once: true });
 
   window.addEventListener("hashchange", () => {
     setTimeout(() => {

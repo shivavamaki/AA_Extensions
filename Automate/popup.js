@@ -3,12 +3,15 @@ const SCRAPER_STOP_KEY = "arcusScraperStop";
 const ARCUS_WORKBENCH_URL =
   "https://arcusair.bdms.co.th/#!/pharmacy/dispenseworkbench/pharmacy/dispense";
 
+const ARCUS_IPFILL_URL =
+  "https://arcusair.bdms.co.th/#!/pharmacy/dispenseworkbench/pharmacy/ipfill";
+
 document.querySelectorAll(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     btn.classList.add("active");
-    document.getElementById(`tab-${btn.dataset.tab}`)?.classList.add("active");
+    document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
   });
 });
 
@@ -100,6 +103,63 @@ function removeArcusToolPanel() {
 
 function showArcusToolPanel() {
   window.dispatchEvent(new CustomEvent("arcus-toolkit:show-panel"));
+  return { ok: true };
+}
+
+
+
+document.getElementById("openIpFill")?.addEventListener("click", async () => {
+  const [existing] = await chrome.tabs.query({
+    url: "https://arcusair.bdms.co.th/*",
+    currentWindow: true,
+  });
+
+  if (existing) {
+    await chrome.tabs.update(existing.id, {
+      active: true,
+      url: ARCUS_IPFILL_URL,
+    });
+    try {
+      await executeInTab(existing.id, showArcusIpFillPanel);
+    } catch (_) {}
+  } else {
+    await chrome.tabs.create({ url: ARCUS_IPFILL_URL });
+  }
+
+  window.close();
+});
+
+document.getElementById("closeIpFillPanel")?.addEventListener("click", async () => {
+  const tab = await getActiveArcusTab();
+  if (!tab) {
+    setStatus("ipfillStatus", "No active Arcus tab found.", "error");
+    return;
+  }
+
+  if (!tab.url?.includes("arcusair.bdms.co.th")) {
+    setStatus("ipfillStatus", "Active tab is not Arcus Air.", "error");
+    return;
+  }
+
+  try {
+    const result = await executeInTab(tab.id, removeArcusIpFillPanel);
+    if (result?.ok) {
+      setStatus("ipfillStatus", "Arcus IP Fill Tool closed.", "done");
+    } else {
+      setStatus("ipfillStatus", result?.reason || "IP Fill panel not found.", "error");
+    }
+  } catch (error) {
+    setStatus("ipfillStatus", `Close failed: ${error?.message || "unknown error"}`, "error");
+  }
+});
+
+function removeArcusIpFillPanel() {
+  window.dispatchEvent(new CustomEvent("arcus-toolkit:remove-ipfill-panel"));
+  return { ok: true };
+}
+
+function showArcusIpFillPanel() {
+  window.dispatchEvent(new CustomEvent("arcus-toolkit:show-ipfill-panel"));
   return { ok: true };
 }
 
