@@ -25,6 +25,7 @@
         "content/panel.js",
         "content/automation.js",
         "content/scraper.js",
+        "content/scraper_panel.js",
         "content/boot.js",
         "content/ipfill_panel.js"
       ],

@@ -123,6 +123,7 @@
   const state = {
     isRunning: false,
     stopRequested: false,
+    scraperStopRequested: false,
     stats: { processed: 0, success: 0, fail: 0 },
     logItems: [],
     settings: {
@@ -139,6 +140,7 @@
       data: [],
       reason: "",
       progressText: "",
+      pdpa: true,
     },
   };
 

@@ -302,7 +302,8 @@ function triggerSharedScraper() {
 }
 
 function requestSharedStop() {
-  window.dispatchEvent(new CustomEvent("arcus-toolkit:stop"));
+  // Stop scraper only — automation has its own stop button in the page panel
+  window.dispatchEvent(new CustomEvent("arcus-toolkit:stop-scraper"));
   return { ok: true };
 }
 
