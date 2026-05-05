@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BKN Report Print</title>
+  <link rel="stylesheet" href="report_print.css">
+</head>
+<body>
+  <aside class="print-control" id="printControl">
+    <div class="control-title">
+      <div>
+        <strong id="controlReportName">Report Print</strong>
+        <span id="controlSubText">A4 portrait · HTML print mode</span>
+      </div>
+      <span class="status-pill" id="controlStatus">Ready</span>
+    </div>
+
+    <div class="control-grid">
+      <button type="button" class="primary" id="btnPrint">Print / Save PDF</button>
+      <button type="button" id="btnToggleCompact">Compact: ON</button>
+      <button type="button" id="btnReloadData">Reload data</button>
+      <button type="button" id="btnCloseControl">Hide panel</button>
+    </div>
+
+    <div class="control-row" id="expControlRow" hidden>
+      <label class="control-select" id="groupControl">
+        <span class="control-label-text">Group EXP by</span>
+        <select id="groupMode">
+          <option value="storebin">StoreBin</option>
+          <option value="category">Category</option>
+        </select>
+      </label>
+
+      <label class="control-select" id="storeBinControl">
+        <span class="control-label-text">StoreBin selector</span>
+        <select id="storeBinFilter">
+          <option value="">All StoreBin</option>
+        </select>
+      </label>
+
+      <label class="control-select" id="expBreakControl">
+        <span class="control-label-text">Print page break</span>
+        <select id="expPageBreakMode">
+          <option value="group">Break by group</option>
+          <option value="continue">Continue printing</option>
+        </select>
+      </label>
+    </div>
+
+    <label class="control-range">
+      Font size
+      <input type="range" id="fontScale" min="85" max="115" value="100" step="5">
+      <span id="fontScaleText">100%</span>
+    </label>
+
+    <div class="control-help">
+      Use <b>Print / Save PDF</b> then select destination <b>Save as PDF</b>. This page uses real browser text for sharper output.
+    </div>
+  </aside>
+
+  <main class="page-wrap" id="reportRoot">
+    <section class="empty-state">
+      <h1>Loading report…</h1>
+      <p>If this page remains blank, return to popup and generate the report again.</p>
+    </section>
+  </main>
+
+  <script src="report_print.js"></script>
+</body>
+</html>

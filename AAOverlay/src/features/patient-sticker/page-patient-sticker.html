@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>Patient Sticker</title>
+
+  <style>
+    @font-face {
+      font-family: 'Sarabun';
+      src: url('../../assets/fonts/Sarabun-Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Sarabun', sans-serif;
+    }
+
+    /* ── Controls bar ────────────────────────── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .print-btn {
+      padding: 6px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      background: #1976d2;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+    }
+
+    .copy-btn {
+      padding: 6px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      background: #43a047;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+    }
+
+    select {
+      padding: 6px;
+      font-size: 14px;
+    }
+
+    /* ── Sticker area ────────────────────────── */
+    #sticker-container {
+      padding: 10px;
+    }
+
+    /* ── Toast ───────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #323232;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+      z-index: 9999;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── Print ───────────────────────────────── */
+    @media print {
+      @page { margin: 0; }
+
+      body              { margin: 0; }
+      .controls         { display: none !important; }
+      #sticker-container{ padding: 0; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="controls">
+    <button class="print-btn" id="printBtn">🖨 Print</button>
+    <button class="copy-btn"  id="copyBtn" >📋 Copy</button>
+
+    <label>
+      Sticker Size:
+      <select id="sizeSelector">
+        <option value="10x5" >OPD Sticker (10×5 cm)</option>
+        <option value="8x3.5">IPD Sticker (8×3.5 cm)</option>
+      </select>
+    </label>
+  </div>
+
+  <div id="sticker-container"></div>
+
+  <div id="toast">Copied to clipboard</div>
+
+  <!-- Core shared modules -->
+  <script src="../../core/messages.js"></script>
+  <script src="../../core/utils.js"></script>
+  <script src="../../core/dom.js"></script>
+
+  <!-- Barcode library -->
+  <script src="../../vendor/jsbarcode.min.js"></script>
+
+  <!-- Feature page script -->
+  <script src="page-patient-sticker.js"></script>
+
+</body>
+</html>

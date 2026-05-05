@@ -1,0 +1,84 @@
+{
+  "manifest_version": 3,
+  "name": "Discharge Process Checklist",
+  "version": "2.3.14",
+  "permissions": [
+    "tabs",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://arcusair.bdms.co.th/*",
+    "https://translate.googleapis.com/*"
+  ],
+  "background": {
+    "service_worker": "src/background/index.js"
+  },
+  "action": {
+    "default_popup": "src/pages/popup/index.html",
+    "default_title": "Checklist Controls"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://arcusair.bdms.co.th/*"
+      ],
+      "js": [
+        "src/core/messages.js",
+        "src/core/utils.js",
+        "src/core/dom.js",
+        "src/core/storage.js",
+        "src/features/home-med/parser-home-med.js",
+        "src/features/home-med/content-home-med.js",
+        "src/features/med-sticker/parser-order-table.js",
+        "src/features/med-sticker/content-med-sticker.js",
+        "src/features/patient-sticker/parser-patient.js",
+        "src/features/patient-sticker/content-patient-sticker.js",
+        "src/features/med-sticker/content-pomlist.js"
+      ],
+      "css": [
+        "src/styles/overlay.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/core/messages.js",
+        "src/core/utils.js",
+        "src/core/dom.js",
+        "src/core/storage.js",
+        "src/features/home-med/page-home-med.html",
+        "src/features/home-med/page-home-med.js",
+        "src/features/med-sticker/page-med-sticker.html",
+        "src/features/med-sticker/page-med-sticker.js",
+        "src/features/patient-sticker/page-patient-sticker.html",
+        "src/features/patient-sticker/page-patient-sticker.js",
+        "src/features/patient-sticker/page-patient-address.html",
+        "src/features/patient-sticker/page-patient-address.js",
+        "src/shared/translate-core.js",
+        "src/shared/medical-glossary.js",
+        "src/vendor/jsbarcode.min.js",
+        "src/assets/fonts/THSarabunNew.ttf",
+        "src/assets/fonts/THSarabunNew-Bold.ttf",
+        "src/assets/fonts/THSarabunNew-BoldItalic.ttf",
+        "src/assets/fonts/THSarabunNew-Italic.ttf",
+        "src/assets/fonts/Sarabun-Regular.ttf",
+        "src/features/patient-sticker/page-med-reconcile.html",
+        "src/features/patient-sticker/page-med-reconcile.js",
+        "src/features/patient-sticker/page-allergy-card.html",
+        "src/features/patient-sticker/page-allergy-card.js",
+        "src/features/patient-sticker/page-unreceivable.html",
+        "src/features/patient-sticker/page-unreceivable.js",
+        "src/features/patient-sticker/bkh-logo.png",
+        "src/assets/bkn_med_database/medication_by_code.json",
+        "src/assets/bkn_med_database/images/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "version_name": "2026.05.04 - add home-med A4 page format print controls"
+}

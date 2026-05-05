@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Arcus Toolkit",
+  "version": "3.4.0",
+  "description": "Auto Dispense, shared Workbench Scraper, and IP Fill automation for Arcus Air.",
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "host_permissions": ["https://arcusair.bdms.co.th/*"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://arcusair.bdms.co.th/*"],
+      "js": [
+        "content/shared.js",
+        "content/panel.js",
+        "content/automation.js",
+        "content/scraper.js",
+        "content/boot.js",
+        "content/ipfill_panel.js"
+      ],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

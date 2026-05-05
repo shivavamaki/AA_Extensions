@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Unreceivable Medicine</title>
+  <style>
+    @font-face {
+      font-family: 'Sarabun';
+      src: url('../../assets/fonts/Sarabun-Regular.ttf') format('truetype');
+      font-weight: normal;
+    }
+    @font-face {
+      font-family: 'Sarabun';
+      src: url('../../assets/fonts/THSarabunNew-Bold.ttf') format('truetype');
+      font-weight: bold;
+    }
+
+    :root {
+      --ff:  Arial, 'Sarabun', sans-serif;
+      --fs:  11pt;
+      --fsm: 10pt;
+      --fss: 9pt;
+      --fsh: 13pt;
+      --fsl: 14pt;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--ff); font-size: var(--fs);
+      background: #eef2f7;
+      display: flex; flex-direction: column;
+      height: 100vh; overflow: hidden;
+    }
+
+    /* ── Toolbar ──────────────────────────────────────────── */
+    .toolbar {
+      background: #6387c5; color: #fff;
+      padding: 7px 16px;
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+    .toolbar .ttl { font-size: 13px; font-weight: 700; flex: 1; }
+    .toolbar button {
+      padding: 5px 16px; font-size: 12px; cursor: pointer;
+      border: none; border-radius: 5px; font-family: inherit;
+      background: #fff; color: #6387c5; font-weight: bold;
+    }
+
+    /* ── Layout ───────────────────────────────────────────── */
+    .body-wrap { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Left panel ───────────────────────────────────────── */
+    .input-panel {
+      width: 230px; flex-shrink: 0;
+      background: #dce6f5; border-right: 1px solid #b8c8e8;
+      padding: 10px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 7px;
+    }
+    .sec-hd {
+      font-size: 9px; font-weight: bold; text-transform: uppercase;
+      letter-spacing: .06em; color: #6387c5;
+      border-bottom: 1px solid #b8c8e8; padding-bottom: 3px; margin-top: 2px;
+    }
+    .ir { display: flex; flex-direction: column; gap: 2px; }
+    .ir label { font-size: 10px; color: #5a6e8a; }
+    .ir input, .ir select, .ir textarea {
+      font-family: var(--ff); font-size: 12px;
+      padding: 4px 7px; border: 1px solid #b8c8e8;
+      border-radius: 4px; background: #fff; color: #2c3e60; width: 100%;
+    }
+    .ir textarea { height: 56px; resize: vertical; }
+    .ro { background: #eef2f7 !important; color: #8a9abc !important; cursor:default; }
+    .dv { display: flex; flex-direction: column; gap: 2px; }
+    .dv label { font-size: 10px; color: #5a6e8a; }
+    .dv .dval {
+      font-size: 12px; font-weight: bold; color: #2c3e60;
+      padding: 4px 7px; background: #eef2f7;
+      border: 1px solid #b8c8e8; border-radius: 4px; min-height: 28px;
+    }
+
+    /* ── Preview ──────────────────────────────────────────── */
+    .preview-wrap {
+      flex: 1; overflow: auto; padding: 16px;
+      display: flex; justify-content: center; align-items: flex-start;
+    }
+
+    /* ── Single A5 page: 148mm × 210mm ───────────────────── */
+    #a5-page {
+      width: 148mm;
+      height: 210mm;
+      background: #fff;
+      box-shadow: 0 2px 12px rgba(80,100,160,.2);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    /* ── TOP 75%: patient copy ────────────────────────────── */
+    #copy-patient {
+      flex: 3;                /* 75% */
+      padding: 4mm 9mm 10mm; /* extra 10mm = 1cm bottom margin */
+      display: flex;
+      flex-direction: column;
+      font-family: var(--ff);
+      font-size: var(--fs);
+      line-height: 1.45;
+      color: #111;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* ── DIVIDER ──────────────────────────────────────────── */
+    .divider {
+      border: none;
+      border-top: 1px dashed #888;
+      margin: 0;
+      flex-shrink: 0;
+    }
+
+    /* ── BOTTOM 25%: pharmacy summary ─────────────────────── */
+    #copy-pharmacy {
+      flex: 1;                /* 25% */
+      padding: 2mm 9mm 2mm;
+      display: flex;
+      flex-direction: column;
+      font-family: var(--ff);
+      font-size: var(--fsm);
+      line-height: 1.35;
+      color: #111;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* ── for-label ────────────────────────────────────────── */
+    .f-for {
+      font-family: var(--ff); font-size: var(--fsm);
+      text-align: right; text-decoration: underline;
+      margin-bottom: 1.5mm; flex-shrink: 0;
+    }
+    #copy-pharmacy .f-for { margin-bottom: 1mm; }
+
+    /* ── logo + title ─────────────────────────────────────── */
+    .f-head {
+      display: flex; align-items: center;
+      gap: 4mm; margin-bottom: 2mm; flex-shrink: 0;
+    }
+    .f-logo img { height: 11mm; width: auto; display: block; }
+    .f-title-block { flex: 1; text-align: center; line-height: 1.25; }
+    .f-title { font-family: var(--ff); font-size: var(--fsl); font-weight: bold; }
+    .f-sub   { font-family: var(--ff); font-size: var(--fsh); }
+
+    /* ── desc ─────────────────────────────────────────────── */
+    .f-desc {
+      font-family: var(--ff); font-size: var(--fs);
+      font-weight: bold; margin-bottom: 2mm; line-height: 1.35; flex-shrink: 0;
+    }
+    .f-desc-en {
+      font-family: var(--ff); font-size: var(--fss);
+      font-weight: normal; font-style: italic;
+    }
+
+    /* ── summary table ────────────────────────────────────── */
+    .sum-table {
+      width: 100%; border-collapse: collapse;
+      margin-bottom: 1.5mm; flex-shrink: 0;
+    }
+    .sum-table th {
+      font-family: var(--ff); font-size: var(--fs);
+      background: #f0f0f0; font-weight: bold;
+      border: 1px solid #999; padding: 1mm 2mm; text-align: center;
+    }
+    .sum-table td {
+      font-family: var(--ff); font-size: var(--fs);
+      border: 1px solid #999; padding: 1mm 2mm; vertical-align: middle;
+    }
+    .sum-table td.num  { text-align: right; font-weight: bold; }
+    .sum-table td.name { font-weight: bold; }
+
+    /* pharmacy copy uses smaller table */
+    #copy-pharmacy .sum-table th,
+    #copy-pharmacy .sum-table td {
+      font-size: var(--fsm) !important;
+      padding: 0.5mm 1.5mm !important;
+    }
+
+    /* ── delivery ─────────────────────────────────────────── */
+    .f-delivery {
+      font-family: var(--ff); font-size: var(--fs);
+      display: flex; gap: 3mm; align-items: baseline;
+      margin-bottom: 1.5mm; flex-shrink: 0;
+    }
+    #copy-pharmacy .f-delivery { font-size: var(--fsm) !important; margin-bottom: 1mm; }
+
+    /* ── patient section ──────────────────────────────────── */
+    .f-pt-hd {
+      font-family: var(--ff); font-size: var(--fs);
+      font-weight: bold; border-bottom: 1px solid #333;
+      margin: 1.5mm 0 1mm; padding-bottom: 0.5mm; flex-shrink: 0;
+    }
+    .f-pt-row {
+      font-family: var(--ff); font-size: var(--fs);
+      display: grid;
+      grid-template-columns: 20mm 1fr 9mm 36mm;
+      gap: 0 2mm; align-items: baseline;
+      margin-bottom: 1mm; flex-shrink: 0;
+    }
+    .f-pt-row .lbl { white-space: nowrap; }
+    .f-pt-row .val { font-weight: bold; }
+    .f-pt-row .val.light { font-weight: normal; }
+
+    /* pharmacy patient row: one-line compact */
+    .ph-pt-row {
+      font-family: var(--ff); font-size: var(--fsm);
+      display: flex; flex-wrap: wrap; gap: 0 3mm;
+      align-items: baseline; flex-shrink: 0;
+    }
+    .ph-pt-row .seg { white-space: nowrap; }
+    .ph-pt-row .val { font-weight: bold; }
+
+    /* ── apology ──────────────────────────────────────────── */
+    .f-apo {
+      font-family: var(--ff); font-size: var(--fs);
+      font-weight: bold; margin: 1.5mm 0 0.5mm; line-height: 1.35; flex-shrink: 0;
+    }
+    .f-apo-en {
+      font-family: var(--ff); font-size: var(--fss);
+      font-style: italic; line-height: 1.35; margin-bottom: 1.5mm; flex-shrink: 0;
+    }
+
+    /* ── signature ────────────────────────────────────────── */
+    .f-sig { margin-top: auto; display: flex; justify-content: flex-end; flex-shrink: 0; }
+    .f-sig table { font-family: var(--ff); font-size: var(--fs); }
+    .f-sig table td { padding: 0.3mm 3mm 0.3mm 0; vertical-align: baseline; }
+    .f-sig .sv { font-weight: bold; min-width: 38mm; }
+    #copy-pharmacy .f-sig table { font-size: var(--fsm) !important; }
+
+    /* ── Print ────────────────────────────────────────────── */
+    @media print {
+      @page { size: A5 portrait; margin: 0; }
+      html, body {
+        margin: 0 !important; padding: 0 !important;
+        background: #fff; display: block;
+        height: auto; overflow: visible;
+      }
+      .toolbar, .input-panel { display: none !important; }
+      .body-wrap  { display: block; overflow: visible; }
+      .preview-wrap { padding: 0 !important; overflow: visible; display: block; }
+      #a5-page {
+        width: 148mm !important;
+        height: 210mm !important;
+        box-shadow: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="ttl">📋 รายการยาที่ค้างจ่าย (Unreceivable Medicine)</span>
+  <button id="btnPrint">🖨 Print</button>
+</div>
+
+<div class="body-wrap">
+
+  <!-- Left panel -->
+  <div class="input-panel">
+    <div class="sec-hd">🏥 ผู้ป่วย</div>
+    <div class="ir"><label>ชื่อผู้ป่วย</label><input id="inName" class="ro" readonly/></div>
+    <div class="ir"><label>HN</label><input id="inHN" class="ro" readonly/></div>
+    <div class="ir"><label>ที่อยู่</label><textarea id="inAddress"></textarea></div>
+    <div class="ir"><label>เบอร์โทร (TEL)</label><input id="inTel"/></div>
+
+    <div class="sec-hd">💊 ยา</div>
+    <div class="ir"><label>ชื่อยา</label><select id="inMedName"></select></div>
+    <div class="ir"><label>หน่วย (Unit)</label><input id="inUnit" placeholder="Tablet / Capsule"/></div>
+    <div class="dv"><label>แพทย์สั่ง (Prescribe)</label><div class="dval" id="dispPrescribed">—</div></div>
+    <div class="ir"><label>จ่ายแล้ว (Dispensed)</label><input id="inDispensed" placeholder="0" type="number" min="0"/></div>
+    <div class="dv"><label>ค้างจ่าย = P − D</label><div class="dval" id="dispNotDispensed">—</div></div>
+    <div class="ir">
+      <label>การรับยา (Delivery)</label>
+      <select id="inDelivery">
+        <option value="ส่งไปรษณีย์">ส่งไปรษณีย์</option>
+        <option value="รับที่ห้องยา">รับที่ห้องยา</option>
+        <option value="ติดต่อกลับ">ติดต่อกลับ</option>
+      </select>
+    </div>
+
+    <div class="sec-hd">✍️ เภสัชกร</div>
+    <div class="ir"><label>เภสัชกร</label><input id="inPharm" class="ro" readonly/></div>
+    <div class="ir"><label>วันที่</label><input id="inDate"/></div>
+  </div>
+
+  <!-- Single A5 page -->
+  <div class="preview-wrap">
+    <div id="a5-page">
+      <div id="copy-patient"></div>
+      <hr class="divider"/>
+      <div id="copy-pharmacy"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="../../core/messages.js"></script>
+<script src="../../core/utils.js"></script>
+<script src="../../core/dom.js"></script>
+<script src="page-unreceivable.js"></script>
+</body>
+</html>

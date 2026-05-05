@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 340px;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 12px;
+      background: #fff;
+      color: #222;
+    }
+
+    .header {
+      background: #1565c0;
+      color: #fff;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 8px 2px;
+      border: none;
+      background: none;
+      font-size: 11px;
+      font-weight: 600;
+      color: #888;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .tab-btn.active { color: #1565c0; border-bottom-color: #1565c0; }
+    .tab-btn:hover:not(.active) { color: #444; }
+
+    .panel { display: none; padding: 12px; }
+    .panel.active { display: block; }
+
+    h3 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .desc {
+      font-size: 11px;
+      color: #666;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      flex: 1;
+      padding: 8px 0;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    button:hover { opacity: 0.85; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-green  { background: #2e7d32; color: #fff; }
+    .btn-red    { background: #c62828; color: #fff; }
+    .btn-blue   { background: #1565c0; color: #fff; }
+
+    .status {
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 7px 9px;
+      min-height: 32px;
+      line-height: 1.5;
+      color: #555;
+      font-size: 11px;
+      white-space: pre-line;
+      margin-bottom: 10px;
+    }
+
+    .status.running { border-color: #2e7d32; color: #2e7d32; }
+    .status.paused  { border-color: #e65100; color: #e65100; }
+    .status.done    { border-color: #1565c0; color: #1565c0; }
+    .status.error   { border-color: #b71c1c; color: #b71c1c; }
+
+    .note {
+      font-size: 10px;
+      color: #888;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">🔧 Arcus Toolkit</div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="dispense">⚙️ Auto Dispense</button>
+    <button class="tab-btn" data-tab="scraper">🗂 Scraper</button>
+  </div>
+
+  <div id="tab-dispense" class="panel active">
+    <h3>Auto Dispense</h3>
+    <p class="desc">Open the Arcus dispense workbench. The floating page panel supports drag, minimize, row type filter, and manual override wait.</p>
+    <div class="btn-group">
+      <button id="openWorkbench" class="btn-blue">🔗 Open Workbench</button>
+      <button id="closeWorkbenchPanel" class="btn-red">✕ Close Tool</button>
+    </div>
+    <div id="dispenseStatus" class="status">Open the Arcus dispense workbench page — the automation panel will appear automatically.</div>
+    <p class="note">IP Fill now has its own page side panel and is no longer in this popup.</p>
+  </div>
+
+  <div id="tab-scraper" class="panel">
+    <h3>Table Scraper</h3>
+    <p class="desc">Uses the same row engine and order-type filter as Auto Dispense.</p>
+    <div class="btn-group">
+      <button id="runScraper" class="btn-green">▶ Start</button>
+      <button id="stopScraper" class="btn-red" disabled>■ Stop</button>
+    </div>
+    <div id="scraperStatus" class="status">Waiting…</div>
+    <p class="note">Start from popup. The page panel no longer shows the Table Scraper button.</p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
