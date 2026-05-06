@@ -65,7 +65,7 @@ function initTabs() {
 // ──────────────────────────────────────────────────────────────────────────────
 // IPD Queue — RT_COMMON_288 (Current Patient in Ward)
 // ──────────────────────────────────────────────────────────────────────────────
-const IPD_QUEUE_URL = 'https://aa-report.bdms.co.th/jasperserver/flow.html?_flowId=viewReportFlow&output=xls&reportUnit=%2FBDMS%2FOther%2FRT_COMMON_288&userTimezone=Asia%2Fbangkok&decorate=no&selectedorganisationuid=5b20f438d1202e29ce16f710&loginuid=5bb325cb3e4efabebd8ea549&logindepartmentuid=5b857e32136d276403482bca&organisationuid=5b20f438d1202e29ce16f710&userLocale=th&fromamount=&toamount=null&isduplicate=false&pp=u%3D5bb325cb3e4efabebd8ea549%26r%3D5b83f09c3238d86bf0d583c7%26o%3D569794170946a3d0d588efe6';
+const IPD_QUEUE_URL = 'https://aa-report.bdms.co.th/jasperserver/flow.html?_flowId=viewReportFlow&output=xls&reportUnit=%2FBDMS%2FOther%2FRT_COMMON_288&userTimezone=Asia/bangkok&decorate=no&selectedorganisationuid=5b20f438d1202e29ce16f710&loginuid=5bb325cb3e4efabebd8ea549&logindepartmentuid=5b857e32136d276403482bca&organisationuid=5b20f438d1202e29ce16f710&userLocale=th&fromamount=null&toamount=null&isduplicate=false&pp=u=5bb325cb3e4efabebd8ea549&r=5b83f09c3238d86bf0d583c7&o=569794170946a3d0d588efe6';
 
 function initIpdQueue() {
   chrome.runtime.onMessage.addListener((msg) => {
