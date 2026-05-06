@@ -34,6 +34,15 @@
     .local-tool-btn{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 6px 8px;background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid));border:1px solid var(--orange);border-radius:var(--radius-md);color:var(--orange);font-family:inherit;font-size:11px;font-weight:600;text-align:center;cursor:pointer;transition:border-color var(--transition),box-shadow var(--transition),transform var(--transition),background var(--transition);line-height:1.3;letter-spacing:.2px;width:100%;}
     .local-tool-btn:hover{background:linear-gradient(135deg,var(--orange-dim),var(--orange));color:var(--white);border-color:var(--orange-dim);box-shadow:0 2px 10px rgba(244,129,58,.30);transform:translateY(-2px);}
     .local-tool-btn .link-card-icon{font-size:20px;line-height:1;}
+
+    /* ── Workspace collapsible sections ── */
+    .ws-section{margin-bottom:4px;}
+    .ws-section-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:5px 2px;background:none;border:none;border-bottom:1px solid var(--border-soft);cursor:pointer;font-family:inherit;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text-soft);margin-bottom:8px;transition:color var(--transition),border-color var(--transition);}
+    .ws-section-toggle:hover{color:var(--blue-dim);border-color:var(--blue);}
+    .ws-section-toggle[aria-expanded="true"] .ws-chevron{transform:rotate(0deg);}
+    .ws-section-toggle[aria-expanded="false"] .ws-chevron{transform:rotate(-90deg);}
+    .ws-chevron{font-size:11px;transition:transform .2s ease;display:inline-block;}
+    .ws-section-body[hidden]{display:none!important;}
   </style>
 </head>
 <body>
@@ -73,120 +82,153 @@
          ══════════════════════════════════════════════════════ -->
     <section class="tab-panel active" id="tab-workspace">
 
-      <div class="section-label">Ward &amp; OPD</div>
-      <div class="link-grid">
-        <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/pharmacy_khonkaen_bdms_co_th/IQDrGKzUriohQKt7gcQp_a27AZLTkgmN2wEPI0DZJ39lDoo?e=13DZds" class="link-card" target="_blank">
-          <span class="link-card-icon">🏥</span>
-          <span class="link-card-text">IPD ส่งเวร</span>
-        </a>
-        <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/pharmacy_khonkaen_bdms_co_th/IQDpjKghcH2_Qal-MWG2750ZAbZF32kG30KwubCToTYjA74?e=izYvHI" class="link-card" target="_blank">
-          <span class="link-card-icon">🏨</span>
-          <span class="link-card-text">OPD ส่งเวร</span>
-        </a>
-        <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/pharmacy_khonkaen_bdms_co_th/IQBhY73Nu_X7Q7bBCPIrjnARAZjmoP501qZPp837q7X557Y?e=29Fwrr" class="link-card" target="_blank">
-          <span class="link-card-icon">📋</span>
-          <span class="link-card-text">กระดาน HM</span>
-        </a>
-        <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/pharmacy_khonkaen_bdms_co_th/IQCH8A3BwxiLQYGc9cCCJbN5AbrC44NFWjYn_ziBiv-ATNI?e=ZdIaro" class="link-card" target="_blank">
-          <span class="link-card-icon">💉</span>
-          <span class="link-card-text">กระดาน IV</span>
-        </a>
-        <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/pharmacy_khonkaen_bdms_co_th/IQAqJ7WHGZtlTpiPRS8VDvQDAStUYhF3T6dR2fTzSZcSWgc?e=qjU9YP" class="link-card" target="_blank">
-          <span class="link-card-icon">💉</span>
-          <span class="link-card-text">Vaccine Schedule</span>
-        </a>
-        <a href="https://script.google.com/macros/s/AKfycbzo91dKjsiJ2hxeIqvQbs3R9-7U_t2-1SYeajZ9EFgJETceo58Lmlc9PT6iTMLSxzvE/exec" class="link-card" target="_blank">
-          <span class="link-card-icon">📲</span>
-          <span class="link-card-text">QR Dispensing</span>
-        </a>
-        <a href="file:///D:/pharmacy/pharmacy-data-app.html" class="link-card" target="_blank">
-          <span class="link-card-icon">📈</span>
-          <span class="link-card-text">KPI STAT IPD/OPD</span>
-        </a>
-        <button class="iv-sticker-btn" id="openIvSticker">
-          <span class="link-card-icon">💊</span>
-          <span>All IV Sticker</span>
+      <!-- Ward & OPD -->
+      <div class="ws-section">
+        <button class="ws-section-toggle" aria-expanded="true" aria-controls="ws-ward">
+          <span>Ward &amp; OPD</span>
+          <span class="ws-chevron">▾</span>
         </button>
-        <button class="iv-sticker-btn" id="openAuxSticker">
-          <span class="link-card-icon">🧪</span>
-          <span>Aux Sticker</span>
-        </button>
+        <div class="ws-section-body" id="ws-ward">
+          <div class="link-grid">
+            <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/pharmacy_khonkaen_bdms_co_th/IQDrGKzUriohQKt7gcQp_a27AZLTkgmN2wEPI0DZJ39lDoo?e=13DZds" class="link-card" target="_blank">
+              <span class="link-card-icon">🏥</span>
+              <span class="link-card-text">IPD ส่งเวร</span>
+            </a>
+            <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/pharmacy_khonkaen_bdms_co_th/IQDpjKghcH2_Qal-MWG2750ZAbZF32kG30KwubCToTYjA74?e=izYvHI" class="link-card" target="_blank">
+              <span class="link-card-icon">🏨</span>
+              <span class="link-card-text">OPD ส่งเวร</span>
+            </a>
+            <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/pharmacy_khonkaen_bdms_co_th/IQBhY73Nu_X7Q7bBCPIrjnARAZjmoP501qZPp837q7X557Y?e=29Fwrr" class="link-card" target="_blank">
+              <span class="link-card-icon">📋</span>
+              <span class="link-card-text">กระดาน HM</span>
+            </a>
+            <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/pharmacy_khonkaen_bdms_co_th/IQCH8A3BwxiLQYGc9cCCJbN5AbrC44NFWjYn_ziBiv-ATNI?e=ZdIaro" class="link-card" target="_blank">
+              <span class="link-card-icon">💉</span>
+              <span class="link-card-text">กระดาน IV</span>
+            </a>
+            <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/pharmacy_khonkaen_bdms_co_th/IQAqJ7WHGZtlTpiPRS8VDvQDAStUYhF3T6dR2fTzSZcSWgc?e=qjU9YP" class="link-card" target="_blank">
+              <span class="link-card-icon">💉</span>
+              <span class="link-card-text">Vaccine Schedule</span>
+            </a>
+            <a href="https://script.google.com/macros/s/AKfycbzo91dKjsiJ2hxeIqvQbs3R9-7U_t2-1SYeajZ9EFgJETceo58Lmlc9PT6iTMLSxzvE/exec" class="link-card" target="_blank">
+              <span class="link-card-icon">📲</span>
+              <span class="link-card-text">QR Dispensing</span>
+            </a>
+            <a href="file:///D:/pharmacy/pharmacy-data-app.html" class="link-card" target="_blank">
+              <span class="link-card-icon">📈</span>
+              <span class="link-card-text">KPI STAT IPD/OPD</span>
+            </a>
+            <button class="iv-sticker-btn" id="openIvSticker">
+              <span class="link-card-icon">💊</span>
+              <span>All IV Sticker</span>
+            </button>
+            <button class="iv-sticker-btn" id="openAuxSticker">
+              <span class="link-card-icon">🧪</span>
+              <span>Aux Sticker</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div class="section-label" style="margin-top:12px">Clinical Tools</div>
-      <div class="link-grid">
-        <a href="http://10.134.10.20/uptodate/goto_UptoDate.php/" class="link-card accent-teal" target="_blank">
-          <span class="link-card-icon">📖</span>
-          <span class="link-card-text">UpToDate</span>
-        </a>
-        <button class="local-tool-btn" id="openFormularyApp">
-          <span class="link-card-icon">🧪</span>
-          <span>Formulary</span>
+      <!-- Clinical Tools -->
+      <div class="ws-section">
+        <button class="ws-section-toggle" aria-expanded="true" aria-controls="ws-clinical">
+          <span>Clinical Tools</span>
+          <span class="ws-chevron">▾</span>
         </button>
-        <a href="https://docs.google.com/spreadsheets/d/1YEr-iLddfhFNSsvnvWcpdWnOSY90ResyFw2RVsK668Y/edit?usp=drive_link" class="link-card accent-teal" target="_blank">
-          <span class="link-card-icon">✅</span>
-          <span class="link-card-text">ยาเข้า/ออก บัญชีรพ.</span>
-        </a>
-        <a href="https://docs.google.com/spreadsheets/d/1NZPqaSKx_a5e4Vq8gj8SR9OuewQaU8RzWUSFR_wTNj0/edit#usp=drive_link" class="link-card accent-teal" target="_blank">
-          <span class="link-card-icon">📅</span>
-          <span class="link-card-text">Stock EXP Checker</span>
-        </a>
-        <a href="https://script.google.com/macros/s/AKfycbzKy7VJHra7ardsI7cHeqNzLdGERUg_O_-UabGb1z5XNLKV6h-ZQnnusGLu896rdSPb/exec" class="link-card accent-teal" target="_blank">
-          <span class="link-card-icon">💊</span>
-          <span class="link-card-text">Drugs Iden Exam</span>
-        </a>
-        <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/pharmacy_khonkaen_bdms_co_th/IQCFqYcvhQ0mTrNc6C4hecY9AURrKQRydT6i-kogjRYmfU8" class="link-card accent-teal" target="_blank">
-          <span class="link-card-icon">🧰</span>
-          <span class="link-card-text">Drug Shortages List</span>
-        </a>
-        <a href="https://docs.google.com/spreadsheets/d/1GB5c8n_OhUoRPP-CvYl1zO19gdeLsGVrf528HvCKlYA/edit?gid=1802945811#gid=1802945811" class="link-card accent-teal" target="_blank">
-          <span class="link-card-icon">⚠️</span>
-          <span class="link-card-text">MedError Stock</span>
-        </a>
+        <div class="ws-section-body" id="ws-clinical">
+          <div class="link-grid">
+            <a href="http://10.134.10.20/uptodate/goto_UptoDate.php/" class="link-card accent-teal" target="_blank">
+              <span class="link-card-icon">📖</span>
+              <span class="link-card-text">UpToDate</span>
+            </a>
+            <a href="https://docs.google.com/spreadsheets/d/1YEr-iLddfhFNSsvnvWcpdWnOSY90ResyFw2RVsK668Y/edit?usp=drive_link" class="link-card accent-teal" target="_blank">
+              <span class="link-card-icon">✅</span>
+              <span class="link-card-text">ยาเข้า/ออก บัญชีรพ.</span>
+            </a>
+            <a href="https://docs.google.com/spreadsheets/d/1NZPqaSKx_a5e4Vq8gj8SR9OuewQaU8RzWUSFR_wTNj0/edit#usp=drive_link" class="link-card accent-teal" target="_blank">
+              <span class="link-card-icon">📅</span>
+              <span class="link-card-text">Stock EXP Checker</span>
+            </a>
+            <a href="https://script.google.com/macros/s/AKfycbzKy7VJHra7ardsI7cHeqNzLdGERUg_O_-UabGb1z5XNLKV6h-ZQnnusGLu896rdSPb/exec" class="link-card accent-teal" target="_blank">
+              <span class="link-card-icon">💊</span>
+              <span class="link-card-text">Drugs Iden Exam</span>
+            </a>
+            <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/pharmacy_khonkaen_bdms_co_th/IQCFqYcvhQ0mTrNc6C4hecY9AURrKQRydT6i-kogjRYmfU8" class="link-card accent-teal" target="_blank">
+              <span class="link-card-icon">🧰</span>
+              <span class="link-card-text">Drug Shortages List</span>
+            </a>
+            <a href="https://docs.google.com/spreadsheets/d/1GB5c8n_OhUoRPP-CvYl1zO19gdeLsGVrf528HvCKlYA/edit?gid=1802945811#gid=1802945811" class="link-card accent-teal" target="_blank">
+              <span class="link-card-icon">⚠️</span>
+              <span class="link-card-text">MedError Stock</span>
+            </a>
+          </div>
+          <!-- Formulary — duplicated from Formulary tab -->
+          <div class="formula-launcher" style="margin-top:10px;">
+            <div class="formula-launcher-icon">🧪</div>
+            <div class="formula-launcher-info">
+              <div class="formula-launcher-title">BKN Formulary App</div>
+              <div class="formula-launcher-sub">คำนวณส่วนผสม · พิมพ์ Working Formula</div>
+            </div>
+            <button id="btnOpenFormularyWS" class="btn-open-formulary">Open →</button>
+          </div>
+          <div class="section-label" style="margin-top:10px;">เลือกสูตรยา — คลิกเพื่อเปิดรายงาน</div>
+          <div id="formulaListWorkspace" class="formula-list">
+            <div class="formula-empty">กำลังโหลด…</div>
+          </div>
+        </div>
       </div>
 
-      <div class="section-label" style="margin-top:12px">Dashboards &amp; Systems</div>
-      <div class="link-grid">
-        <a href="http://10.131.10.61:8048/pq_bkn_hms/default3.aspx?site=BKN&floor=1&cuser=2&counter=5" class="link-card accent-purple" target="_blank">
-          <span class="link-card-icon">🔢</span>
-          <span class="link-card-text">Q System — F1</span>
-        </a>
-        <a href="http://10.131.10.61:8048/pq_bkn_hms/default3.aspx?site=BKN&floor=2&cuser=2&counter=3" class="link-card accent-purple" target="_blank">
-          <span class="link-card-icon">🔢</span>
-          <span class="link-card-text">Q System — F2</span>
-        </a>
-        <a href="https://lookerstudio.google.com/s/tFyNq6esS50" class="link-card accent-purple" target="_blank">
-          <span class="link-card-icon">📊</span>
-          <span class="link-card-text">Dashboard Workload</span>
-        </a>
-        <a href="https://lookerstudio.google.com/reporting/3a4532f9-c2e5-4d8a-915c-d3cf5a6fd045/page/KC8lD" class="link-card accent-purple" target="_blank">
-          <span class="link-card-icon">📊</span>
-          <span class="link-card-text">Dashboard HM Queue</span>
-        </a>
-        <a href="https://script.google.com/macros/s/AKfycbyB0GaqSGlWDi4EOYkN9MXaEuqd8fsnmJTJ3mqsgUKgNMMt0zuIVOmMT9aZJ9XIHaLaUw/exec" class="link-card accent-purple" target="_blank">
-          <span class="link-card-icon">📝</span>
-          <span class="link-card-text">Bedee Report</span>
-        </a>
-        <a href="https://occurrence.bdms.co.th/?bu=BKN" class="link-card accent-purple" target="_blank">
-          <span class="link-card-icon">✍</span>
-          <span class="link-card-text">Occurrence Report</span>
-        </a>
-        <a href="https://glsitsm.service-now.com/esc?id=ec_home" class="link-card accent-purple" target="_blank">
-          <span class="link-card-icon">🖥</span>
-          <span class="link-card-text">SAP</span>
-        </a>
-        <a href="http://10.90.10.34/AntiAging/" class="link-card accent-purple" target="_blank">
-          <span class="link-card-icon">🌿</span>
-          <span class="link-card-text">BDMS Wellness</span>
-        </a>
-        <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/bkn_itsupport_bdms_co_th/IQALdus-xZ0WS4HVRWmEH-gVAeYQq4wyZrzbrumRbvvYzv8?e=3P3J7I" class="link-card accent-purple" target="_blank">
-          <span class="link-card-icon">☎️</span>
-          <span class="link-card-text">Telephone Full Time</span>
-        </a>
-        <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/bkn_itsupport_bdms_co_th/IQC3v3UHMXR7QL8XHnm_Wft7ARp3Lao69QURH2pVOuGhWhE?e=vVe1fS" class="link-card accent-purple" target="_blank">
-          <span class="link-card-icon">📞</span>
-          <span class="link-card-text">Telephone Part Time</span>
-        </a>
+      <!-- Dashboards & Systems -->
+      <div class="ws-section">
+        <button class="ws-section-toggle" aria-expanded="false" aria-controls="ws-dash">
+          <span>Dashboards &amp; Systems</span>
+          <span class="ws-chevron">▾</span>
+        </button>
+        <div class="ws-section-body" id="ws-dash" hidden>
+          <div class="link-grid">
+            <a href="http://10.131.10.61:8048/pq_bkn_hms/default3.aspx?site=BKN&floor=1&cuser=2&counter=5" class="link-card accent-purple" target="_blank">
+              <span class="link-card-icon">🔢</span>
+              <span class="link-card-text">Q System — F1</span>
+            </a>
+            <a href="http://10.131.10.61:8048/pq_bkn_hms/default3.aspx?site=BKN&floor=2&cuser=2&counter=3" class="link-card accent-purple" target="_blank">
+              <span class="link-card-icon">🔢</span>
+              <span class="link-card-text">Q System — F2</span>
+            </a>
+            <a href="https://lookerstudio.google.com/s/tFyNq6esS50" class="link-card accent-purple" target="_blank">
+              <span class="link-card-icon">📊</span>
+              <span class="link-card-text">Dashboard Workload</span>
+            </a>
+            <a href="https://lookerstudio.google.com/reporting/3a4532f9-c2e5-4d8a-915c-d3cf5a6fd045/page/KC8lD" class="link-card accent-purple" target="_blank">
+              <span class="link-card-icon">📊</span>
+              <span class="link-card-text">Dashboard HM Queue</span>
+            </a>
+            <a href="https://script.google.com/macros/s/AKfycbyB0GaqSGlWDi4EOYkN9MXaEuqd8fsnmJTJ3mqsgUKgNMMt0zuIVOmMT9aZJ9XIHaLaUw/exec" class="link-card accent-purple" target="_blank">
+              <span class="link-card-icon">📝</span>
+              <span class="link-card-text">Bedee Report</span>
+            </a>
+            <a href="https://occurrence.bdms.co.th/?bu=BKN" class="link-card accent-purple" target="_blank">
+              <span class="link-card-icon">✍</span>
+              <span class="link-card-text">Occurrence Report</span>
+            </a>
+            <a href="https://glsitsm.service-now.com/esc?id=ec_home" class="link-card accent-purple" target="_blank">
+              <span class="link-card-icon">🖥</span>
+              <span class="link-card-text">SAP</span>
+            </a>
+            <a href="http://10.90.10.34/AntiAging/" class="link-card accent-purple" target="_blank">
+              <span class="link-card-icon">🌿</span>
+              <span class="link-card-text">BDMS Wellness</span>
+            </a>
+            <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/bkn_itsupport_bdms_co_th/IQALdus-xZ0WS4HVRWmEH-gVAeYQq4wyZrzbrumRbvvYzv8?e=3P3J7I" class="link-card accent-purple" target="_blank">
+              <span class="link-card-icon">☎️</span>
+              <span class="link-card-text">Telephone Full Time</span>
+            </a>
+            <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/bkn_itsupport_bdms_co_th/IQC3v3UHMXR7QL8XHnm_Wft7ARp3Lao69QURH2pVOuGhWhE?e=vVe1fS" class="link-card accent-purple" target="_blank">
+              <span class="link-card-icon">📞</span>
+              <span class="link-card-text">Telephone Part Time</span>
+            </a>
+          </div>
+        </div>
       </div>
 
     </section>

@@ -33,8 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initStockPickingReport();
   initExpReport();
   initAdrReport();
-  initFormularyWorkspaceBtn();
   initFormularyTab();
+  initWorkspaceSections();
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -2818,20 +2818,17 @@ async function buildExp174Pdf(JsPDF) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Formulary — workspace shortcut button + dedicated tab
+// Formulary — dedicated tab + workspace inline duplicate
 // ──────────────────────────────────────────────────────────────────────────────
 function formularyUrl(id) {
   const base = chrome.runtime.getURL('formulary/index.html');
   return id ? `${base}?id=${encodeURIComponent(id)}` : base;
 }
 
-function initFormularyWorkspaceBtn() {
-  document.getElementById('openFormularyApp')
-    ?.addEventListener('click', () => chrome.tabs.create({ url: formularyUrl() }));
-}
-
 function initFormularyTab() {
   document.getElementById('btnOpenFormulary')
+    ?.addEventListener('click', () => chrome.tabs.create({ url: formularyUrl() }));
+  document.getElementById('btnOpenFormularyWS')
     ?.addEventListener('click', () => chrome.tabs.create({ url: formularyUrl() }));
   loadFormulaList();
 }
@@ -2842,9 +2839,27 @@ function escHtmlFormulary(v) {
   );
 }
 
+function populateFormulaContainer(container, formulas) {
+  container.innerHTML = formulas.map(f => `
+    <div class="formula-card" data-id="${escHtmlFormulary(f.id)}">
+      <span class="formula-card-icon">🧪</span>
+      <span class="formula-card-name">${escHtmlFormulary(f.name || f.id)}</span>
+      <span class="formula-card-shelf">${escHtmlFormulary(f.shelfLifeText || (f.shelfLifeDays ? f.shelfLifeDays + ' วัน' : ''))}</span>
+    </div>
+  `).join('');
+  container.querySelectorAll('.formula-card').forEach(card => {
+    card.addEventListener('click', () =>
+      chrome.tabs.create({ url: formularyUrl(card.dataset.id) })
+    );
+  });
+}
+
 async function loadFormulaList() {
-  const container = document.getElementById('formulaList');
-  if (!container) return;
+  const containers = [
+    document.getElementById('formulaList'),
+    document.getElementById('formulaListWorkspace'),
+  ].filter(Boolean);
+  if (!containers.length) return;
 
   try {
     let formulas = null;
@@ -2858,24 +2873,32 @@ async function loadFormulaList() {
     }
 
     if (!Array.isArray(formulas) || !formulas.length) {
-      container.innerHTML = '<div class="formula-empty">ไม่พบข้อมูล formulary</div>';
+      containers.forEach(c => { c.innerHTML = '<div class="formula-empty">ไม่พบข้อมูล formulary</div>'; });
       return;
     }
 
-    container.innerHTML = formulas.map(f => `
-      <div class="formula-card" data-id="${escHtmlFormulary(f.id)}">
-        <span class="formula-card-icon">🧪</span>
-        <span class="formula-card-name">${escHtmlFormulary(f.name || f.id)}</span>
-        <span class="formula-card-shelf">${escHtmlFormulary(f.shelfLifeText || (f.shelfLifeDays ? f.shelfLifeDays + ' วัน' : ''))}</span>
-      </div>
-    `).join('');
-
-    container.querySelectorAll('.formula-card').forEach(card => {
-      card.addEventListener('click', () =>
-        chrome.tabs.create({ url: formularyUrl(card.dataset.id) })
-      );
-    });
+    containers.forEach(c => populateFormulaContainer(c, formulas));
   } catch (e) {
-    container.innerHTML = '<div class="formula-empty">กด Open เพื่อเปิด Formulary App</div>';
+    containers.forEach(c => { c.innerHTML = '<div class="formula-empty">กด Open เพื่อเปิด Formulary App</div>'; });
   }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Workspace collapsible sections
+// ──────────────────────────────────────────────────────────────────────────────
+function initWorkspaceSections() {
+  document.querySelectorAll('.ws-section-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const bodyId = btn.getAttribute('aria-controls');
+      const body = document.getElementById(bodyId);
+      if (!body) return;
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', String(!expanded));
+      if (expanded) {
+        body.hidden = true;
+      } else {
+        body.hidden = false;
+      }
+    });
+  });
 }
