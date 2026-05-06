@@ -33,6 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initStockPickingReport();
   initExpReport();
   initAdrReport();
+  initFormularyWorkspaceBtn();
+  initFormularyTab();
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -2813,4 +2815,67 @@ async function buildExp174Pdf(JsPDF) {
   const safeFloor = String(floor.label).replace(/\s+/g, '_');
   doc.save(`EXP_Checker_${safeFloor}_${dateLabel || Date.now()}.pdf`);
   exp174Status('✅ EXP A4 PDF created with Thai-compatible canvas font.', 'ok');
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Formulary — workspace shortcut button + dedicated tab
+// ──────────────────────────────────────────────────────────────────────────────
+function formularyUrl(id) {
+  const base = chrome.runtime.getURL('formulary/index.html');
+  return id ? `${base}?id=${encodeURIComponent(id)}` : base;
+}
+
+function initFormularyWorkspaceBtn() {
+  document.getElementById('openFormularyApp')
+    ?.addEventListener('click', () => chrome.tabs.create({ url: formularyUrl() }));
+}
+
+function initFormularyTab() {
+  document.getElementById('btnOpenFormulary')
+    ?.addEventListener('click', () => chrome.tabs.create({ url: formularyUrl() }));
+  loadFormulaList();
+}
+
+function escHtmlFormulary(v) {
+  return String(v ?? '').replace(/[&<>'"]/g, s =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[s])
+  );
+}
+
+async function loadFormulaList() {
+  const container = document.getElementById('formulaList');
+  if (!container) return;
+
+  try {
+    let formulas = null;
+
+    const saved = localStorage.getItem('bkn_formula_webapp.formulas.v4');
+    if (saved) formulas = JSON.parse(saved);
+
+    if (!Array.isArray(formulas)) {
+      const res = await fetch(chrome.runtime.getURL('formulary/data/formulas.json'));
+      formulas = await res.json();
+    }
+
+    if (!Array.isArray(formulas) || !formulas.length) {
+      container.innerHTML = '<div class="formula-empty">ไม่พบข้อมูล formulary</div>';
+      return;
+    }
+
+    container.innerHTML = formulas.map(f => `
+      <div class="formula-card" data-id="${escHtmlFormulary(f.id)}">
+        <span class="formula-card-icon">🧪</span>
+        <span class="formula-card-name">${escHtmlFormulary(f.name || f.id)}</span>
+        <span class="formula-card-shelf">${escHtmlFormulary(f.shelfLifeText || (f.shelfLifeDays ? f.shelfLifeDays + ' วัน' : ''))}</span>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.formula-card').forEach(card => {
+      card.addEventListener('click', () =>
+        chrome.tabs.create({ url: formularyUrl(card.dataset.id) })
+      );
+    });
+  } catch (e) {
+    container.innerHTML = '<div class="formula-empty">กด Open เพื่อเปิด Formulary App</div>';
+  }
 }

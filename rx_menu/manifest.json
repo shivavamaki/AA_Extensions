@@ -51,7 +51,12 @@
         "pdf.js",
         "report_print.html",
         "report_print.js",
-        "report_print.css"
+        "report_print.css",
+        "formulary/index.html",
+        "formulary/app.js",
+        "formulary/styles.css",
+        "formulary/data/formulas.json",
+        "formulary/data/default_formulas.js"
       ],
       "matches": [
         "<all_urls>"

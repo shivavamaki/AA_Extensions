@@ -3,18 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>BKN Pharmacy Formula Web App</title>
+  <title>BKN Pharmacy Formulary</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Extension branding override */
+    .brand h1 { font-size: 17px; }
+    .brand p  { font-size: 12px; color: #94a3b8; }
+    .logo-placeholder {
+      width: 52px; height: 42px; border-radius: 10px;
+      background: linear-gradient(135deg,#2a4a7f,#3a5f9f);
+      border: none; display: grid; place-items: center;
+      font-size: 20px; color: white;
+    }
+  </style>
 </head>
 <body>
   <aside class="sidebar no-print">
     <div class="brand">
-      <div class="logo-placeholder">
-        <span>LOGO</span>
-      </div>
+      <div class="logo-placeholder">⚕</div>
       <div>
         <h1>BKN Pharmacy</h1>
-        <p>Formula Web App</p>
+        <p>Formulary App</p>
       </div>
     </div>
     <nav class="nav-tabs" aria-label="Main navigation">
@@ -85,7 +94,7 @@
             <h3>Instruction</h3>
             <button id="addMethodBtn" class="secondary small">+ Add instruction</button>
           </div>
-          <div class="hint">Use tokens such as {totalText}, {ing0.amountText}, {ing1.amountText}. Editing here affects local data until you export JSON.</div>
+          <div class="hint">Use tokens such as {totalText}, {ing0.amountText}, {ing1.amountText}.</div>
           <div id="methodBody" class="method-list"></div>
         </div>
 

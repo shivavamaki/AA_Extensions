@@ -7,10 +7,33 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <style>
+    /* ── Report card overrides ── */
     .rpt-report-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;}
     .rpt-report-body[hidden]{display:none !important;}
     .rpt-section-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
     .rpt-toggle-btn{min-width:110px;}
+
+    /* ── Formulary tab ── */
+    .formula-launcher{display:flex;align-items:center;gap:12px;padding:14px 16px;background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid));border:1px solid var(--orange);border-radius:var(--radius-lg);margin-bottom:12px;}
+    .formula-launcher-icon{font-size:26px;flex-shrink:0;}
+    .formula-launcher-info{flex:1;min-width:0;}
+    .formula-launcher-title{color:var(--white);font-weight:600;font-size:13px;}
+    .formula-launcher-sub{color:rgba(255,255,255,.55);font-size:11px;margin-top:2px;}
+    .btn-open-formulary{padding:7px 16px;background:var(--orange);color:var(--white);border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background var(--transition),transform .1s;}
+    .btn-open-formulary:hover{background:var(--orange-dim);transform:translateY(-1px);}
+
+    .formula-list{display:flex;flex-direction:column;gap:6px;}
+    .formula-card{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--white);border:1px solid var(--border-soft);border-radius:var(--radius-md);cursor:pointer;transition:border-color var(--transition),box-shadow var(--transition),background var(--transition);}
+    .formula-card:hover{border-color:var(--blue);background:var(--blue-pastel);box-shadow:var(--shadow-sm);}
+    .formula-card-icon{font-size:15px;flex-shrink:0;}
+    .formula-card-name{flex:1;font-size:12px;font-weight:600;color:var(--text-main);}
+    .formula-card-shelf{font-size:10px;color:var(--text-soft);white-space:nowrap;}
+    .formula-empty{padding:20px;text-align:center;color:var(--text-soft);font-size:12px;}
+
+    /* ── Workspace: local-tool button (inline with link-grid) ── */
+    .local-tool-btn{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 6px 8px;background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid));border:1px solid var(--orange);border-radius:var(--radius-md);color:var(--orange);font-family:inherit;font-size:11px;font-weight:600;text-align:center;cursor:pointer;transition:border-color var(--transition),box-shadow var(--transition),transform var(--transition),background var(--transition);line-height:1.3;letter-spacing:.2px;width:100%;}
+    .local-tool-btn:hover{background:linear-gradient(135deg,var(--orange-dim),var(--orange));color:var(--white);border-color:var(--orange-dim);box-shadow:0 2px 10px rgba(244,129,58,.30);transform:translateY(-2px);}
+    .local-tool-btn .link-card-icon{font-size:20px;line-height:1;}
   </style>
 </head>
 <body>
@@ -29,11 +52,8 @@
   </header>
 
   <nav class="tab-bar" id="tabBar">
-    <button class="tab-btn active" data-tab="tab-pharmacist">
-      <span class="tab-icon">👨‍⚕️</span><span class="tab-label">Pharmacist</span>
-    </button>
-    <button class="tab-btn" data-tab="tab-assistant">
-      <span class="tab-icon">🗂</span><span class="tab-label">Assistant</span>
+    <button class="tab-btn active" data-tab="tab-workspace">
+      <span class="tab-icon">🏠</span><span class="tab-label">Workspace</span>
     </button>
     <button class="tab-btn" data-tab="tab-ipdqueue">
       <span class="tab-icon">🚑</span><span class="tab-label">IPD Queue</span>
@@ -41,12 +61,19 @@
     <button class="tab-btn" data-tab="tab-report">
       <span class="tab-icon">📊</span><span class="tab-label">Report</span>
     </button>
+    <button class="tab-btn" data-tab="tab-formulary">
+      <span class="tab-icon">🧪</span><span class="tab-label">Formulary</span>
+    </button>
   </nav>
 
   <main class="tab-content">
 
-    <section class="tab-panel active" id="tab-pharmacist">
-      <div class="section-label">Pharmacist Workspace</div>
+    <!-- ══════════════════════════════════════════════════════
+         WORKSPACE TAB — Pharmacist + Assistant merged
+         ══════════════════════════════════════════════════════ -->
+    <section class="tab-panel active" id="tab-workspace">
+
+      <div class="section-label">Ward &amp; OPD</div>
       <div class="link-grid">
         <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/pharmacy_khonkaen_bdms_co_th/IQDrGKzUriohQKt7gcQp_a27AZLTkgmN2wEPI0DZJ39lDoo?e=13DZds" class="link-card" target="_blank">
           <span class="link-card-icon">🏥</span>
@@ -72,17 +99,17 @@
           <span class="link-card-icon">📲</span>
           <span class="link-card-text">QR Dispensing</span>
         </a>
-        <a href="https://script.google.com/macros/s/AKfycbzKy7VJHra7ardsI7cHeqNzLdGERUg_O_-UabGb1z5XNLKV6h-ZQnnusGLu896rdSPb/exec" class="link-card" target="_blank">
-          <span class="link-card-icon">💊</span>
-          <span class="link-card-text">Drugs Iden Exam</span>
-        </a>
-        <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/pharmacy_khonkaen_bdms_co_th/IQCFqYcvhQ0mTrNc6C4hecY9AURrKQRydT6i-kogjRYmfU8" class="link-card" target="_blank">
-          <span class="link-card-icon">🧰</span>
-          <span class="link-card-text">Drug Shortages List</span>
+        <a href="file:///D:/pharmacy/pharmacy-data-app.html" class="link-card" target="_blank">
+          <span class="link-card-icon">📈</span>
+          <span class="link-card-text">KPI STAT IPD/OPD</span>
         </a>
         <button class="iv-sticker-btn" id="openIvSticker">
-          <span style="font-size:20px;line-height:1">💊</span>
+          <span class="link-card-icon">💊</span>
           <span>All IV Sticker</span>
+        </button>
+        <button class="iv-sticker-btn" id="openAuxSticker">
+          <span class="link-card-icon">🧪</span>
+          <span>Aux Sticker</span>
         </button>
       </div>
 
@@ -92,10 +119,10 @@
           <span class="link-card-icon">📖</span>
           <span class="link-card-text">UpToDate</span>
         </a>
-        <a href="https://script.google.com/macros/s/AKfycbx-ovd2yw2DNJUIl8UGAoHtY_mC_ZxzKo1sDJiJ7774XFwQ3VbVj9K2ijjoG8B0P3wd/exec" class="link-card accent-teal" target="_blank">
-          <span class="link-card-icon">📗</span>
-          <span class="link-card-text">Formulary</span>
-        </a>
+        <button class="local-tool-btn" id="openFormularyApp">
+          <span class="link-card-icon">🧪</span>
+          <span>Formulary</span>
+        </button>
         <a href="https://docs.google.com/spreadsheets/d/1YEr-iLddfhFNSsvnvWcpdWnOSY90ResyFw2RVsK668Y/edit?usp=drive_link" class="link-card accent-teal" target="_blank">
           <span class="link-card-icon">✅</span>
           <span class="link-card-text">ยาเข้า/ออก บัญชีรพ.</span>
@@ -104,17 +131,21 @@
           <span class="link-card-icon">📅</span>
           <span class="link-card-text">Stock EXP Checker</span>
         </a>
-        <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/bkn_itsupport_bdms_co_th/IQALdus-xZ0WS4HVRWmEH-gVAeYQq4wyZrzbrumRbvvYzv8?e=3P3J7I" class="link-card accent-teal" target="_blank">
-          <span class="link-card-icon">☎️</span>
-          <span class="link-card-text">Telephone Full Time</span>
+        <a href="https://script.google.com/macros/s/AKfycbzKy7VJHra7ardsI7cHeqNzLdGERUg_O_-UabGb1z5XNLKV6h-ZQnnusGLu896rdSPb/exec" class="link-card accent-teal" target="_blank">
+          <span class="link-card-icon">💊</span>
+          <span class="link-card-text">Drugs Iden Exam</span>
         </a>
-        <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/bkn_itsupport_bdms_co_th/IQC3v3UHMXR7QL8XHnm_Wft7ARp3Lao69QURH2pVOuGhWhE?e=vVe1fS" class="link-card accent-teal" target="_blank">
-          <span class="link-card-icon">📞</span>
-          <span class="link-card-text">Telephone Part Time</span>
+        <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/pharmacy_khonkaen_bdms_co_th/IQCFqYcvhQ0mTrNc6C4hecY9AURrKQRydT6i-kogjRYmfU8" class="link-card accent-teal" target="_blank">
+          <span class="link-card-icon">🧰</span>
+          <span class="link-card-text">Drug Shortages List</span>
+        </a>
+        <a href="https://docs.google.com/spreadsheets/d/1GB5c8n_OhUoRPP-CvYl1zO19gdeLsGVrf528HvCKlYA/edit?gid=1802945811#gid=1802945811" class="link-card accent-teal" target="_blank">
+          <span class="link-card-icon">⚠️</span>
+          <span class="link-card-text">MedError Stock</span>
         </a>
       </div>
 
-      <div class="section-label" style="margin-top:12px">Queue & Dashboards</div>
+      <div class="section-label" style="margin-top:12px">Dashboards &amp; Systems</div>
       <div class="link-grid">
         <a href="http://10.131.10.61:8048/pq_bkn_hms/default3.aspx?site=BKN&floor=1&cuser=2&counter=5" class="link-card accent-purple" target="_blank">
           <span class="link-card-icon">🔢</span>
@@ -132,14 +163,6 @@
           <span class="link-card-icon">📊</span>
           <span class="link-card-text">Dashboard HM Queue</span>
         </a>
-        <a href="https://glsitsm.service-now.com/esc?id=ec_home" class="link-card accent-purple" target="_blank">
-          <span class="link-card-icon">🖥</span>
-          <span class="link-card-text">SAP</span>
-        </a>
-        <a href="http://10.90.10.34/AntiAging/" class="link-card accent-purple" target="_blank">
-          <span class="link-card-icon">🌿</span>
-          <span class="link-card-text">BDMS Wellness</span>
-        </a>
         <a href="https://script.google.com/macros/s/AKfycbyB0GaqSGlWDi4EOYkN9MXaEuqd8fsnmJTJ3mqsgUKgNMMt0zuIVOmMT9aZJ9XIHaLaUw/exec" class="link-card accent-purple" target="_blank">
           <span class="link-card-icon">📝</span>
           <span class="link-card-text">Bedee Report</span>
@@ -148,32 +171,29 @@
           <span class="link-card-icon">✍</span>
           <span class="link-card-text">Occurrence Report</span>
         </a>
+        <a href="https://glsitsm.service-now.com/esc?id=ec_home" class="link-card accent-purple" target="_blank">
+          <span class="link-card-icon">🖥</span>
+          <span class="link-card-text">SAP</span>
+        </a>
+        <a href="http://10.90.10.34/AntiAging/" class="link-card accent-purple" target="_blank">
+          <span class="link-card-icon">🌿</span>
+          <span class="link-card-text">BDMS Wellness</span>
+        </a>
+        <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/bkn_itsupport_bdms_co_th/IQALdus-xZ0WS4HVRWmEH-gVAeYQq4wyZrzbrumRbvvYzv8?e=3P3J7I" class="link-card accent-purple" target="_blank">
+          <span class="link-card-icon">☎️</span>
+          <span class="link-card-text">Telephone Full Time</span>
+        </a>
+        <a href="https://bdmsgroup-my.sharepoint.com/:x:/g/personal/bkn_itsupport_bdms_co_th/IQC3v3UHMXR7QL8XHnm_Wft7ARp3Lao69QURH2pVOuGhWhE?e=vVe1fS" class="link-card accent-purple" target="_blank">
+          <span class="link-card-icon">📞</span>
+          <span class="link-card-text">Telephone Part Time</span>
+        </a>
       </div>
 
-      <div class="future-placeholder" style="margin-top:12px">
-        <span class="future-icon">🔍</span>
-        <span class="future-text">Knowledge Hub &amp; FAQ — coming soon</span>
-      </div>
     </section>
 
-    <section class="tab-panel" id="tab-assistant">
-      <div class="section-label">Assistant Workspace</div>
-      <div class="link-grid">
-        <a href="file:///D:/pharmacy/pharmacy-data-app.html" class="link-card" target="_blank">
-          <span class="link-card-icon">📈</span>
-          <span class="link-card-text">KPI STAT IPD/OPD</span>
-        </a>
-        <a href="https://docs.google.com/spreadsheets/d/1GB5c8n_OhUoRPP-CvYl1zO19gdeLsGVrf528HvCKlYA/edit?gid=1802945811#gid=1802945811" class="link-card" target="_blank">
-          <span class="link-card-icon">⚠️</span>
-          <span class="link-card-text">MedError Stock</span>
-        </a>
-        <button class="iv-sticker-btn" id="openAuxSticker">
-          <span style="font-size:20px;line-height:1">🧪</span>
-          <span>Aux Sticker</span>
-        </button>
-      </div>
-    </section>
-
+    <!-- ══════════════════════════════════════════════════════
+         IPD QUEUE TAB
+         ══════════════════════════════════════════════════════ -->
     <section class="tab-panel" id="tab-ipdqueue">
       <div class="queue-toolbar">
         <div class="queue-info">
@@ -213,8 +233,12 @@
       </div>
     </section>
 
+    <!-- ══════════════════════════════════════════════════════
+         REPORT TAB
+         ══════════════════════════════════════════════════════ -->
     <section class="tab-panel" id="tab-report">
-      <!-- Pending IP Fill Report section -->
+
+      <!-- Pending IP Fill Report -->
       <div class="rpt-report-card">
         <div class="rpt-section-header">
           <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
@@ -226,7 +250,6 @@
           </div>
           <button class="rpt-btn rpt-btn-primary rpt-toggle-btn" type="button" data-toggle-target="rpt257-body" aria-expanded="false">Show details</button>
         </div>
-
         <div id="rpt257-body" class="report-detail-box is-hidden">
           <div class="rpt-date-row">
             <div class="rpt-date-field">
@@ -239,44 +262,35 @@
               <input type="date" id="rpt-to" class="rpt-date-input">
             </div>
           </div>
-
           <div class="rpt-btn-row">
             <button class="rpt-btn rpt-btn-primary" id="rpt-btn-genurl">🔗 Generate URL</button>
             <button class="rpt-btn rpt-btn-teal" id="rpt-btn-dlxls" style="display:none">⬇ Open / Download XLS</button>
           </div>
-
           <div id="rpt-url-wrap" style="display:none">
             <div class="rpt-url-label">Generated report URL — click to open:</div>
             <div id="rpt-url-box" class="rpt-url-box" title="Click to open in new tab"></div>
           </div>
-
           <div class="rpt-divider"></div>
-
           <div class="rpt-file-row">
             <label class="rpt-label" style="white-space:nowrap;margin-right:8px">📂 Load XLS file</label>
             <input type="file" id="rpt-file-input" accept=".xls,.xlsx" class="rpt-file-input">
           </div>
-
           <div id="rpt-status" class="rpt-status"></div>
-
           <div class="rpt-btn-row" id="rpt-pdf-btns" style="display:none">
             <button class="rpt-btn rpt-btn-orange" id="rpt-btn-pdf1">📄 PDF Summary</button>
             <button class="rpt-btn rpt-btn-purple" id="rpt-btn-pdf2">📄 PDF Detail</button>
           </div>
-
           <div id="rpt-preview" style="display:none">
             <div class="rpt-preview-header">
               <span>Preview — Summary</span>
               <span id="rpt-preview-count" class="queue-badge">0</span>
             </div>
-            <div class="rpt-tbl-wrap">
-              <div id="rpt-tbl-inner"></div>
-            </div>
+            <div class="rpt-tbl-wrap"><div id="rpt-tbl-inner"></div></div>
           </div>
         </div>
       </div>
 
-      <!-- Stock Picking List Report section -->
+      <!-- Stock Picking List Report -->
       <div style="height:12px"></div>
       <div class="rpt-report-card">
         <div class="rpt-section-header">
@@ -289,7 +303,6 @@
           </div>
           <button class="rpt-btn rpt-btn-primary rpt-toggle-btn" type="button" data-toggle-target="stk917-body" aria-expanded="false">Show details</button>
         </div>
-
         <div id="stk917-body" class="report-detail-box is-hidden">
           <div class="rpt-date-row">
             <div class="rpt-date-field">
@@ -302,44 +315,34 @@
               <input type="date" id="stk917-to" class="rpt-date-input">
             </div>
           </div>
-
           <div class="rpt-btn-row">
             <button class="rpt-btn rpt-btn-primary" id="stk917-btn-genurl">🔗 Generate URL</button>
             <button class="rpt-btn rpt-btn-teal" id="stk917-btn-dlxls" style="display:none">⬇ Open / Download XLS</button>
           </div>
-
           <div id="stk917-url-wrap" style="display:none">
             <div class="rpt-url-label">Generated report URL — click to open:</div>
             <div id="stk917-url-box" class="rpt-url-box" title="Click to open in new tab"></div>
           </div>
-
           <div class="rpt-divider"></div>
-
           <div class="rpt-file-row">
             <label class="rpt-label" style="white-space:nowrap;margin-right:8px">📂 Load XLS file</label>
             <input type="file" id="stk917-file-input" accept=".xls,.xlsx" class="rpt-file-input">
           </div>
-
           <div id="stk917-status" class="rpt-status"></div>
-
           <div class="rpt-btn-row" id="stk917-pdf-btns" style="display:none">
             <button class="rpt-btn rpt-btn-orange" id="stk917-btn-pdf">📄 Sticker PDF</button>
           </div>
-
           <div id="stk917-preview" style="display:none">
             <div class="rpt-preview-header">
               <span>Preview — Stock Picking</span>
               <span id="stk917-preview-count" class="queue-badge">0</span>
             </div>
-            <div class="rpt-tbl-wrap">
-              <div id="stk917-tbl-inner"></div>
-            </div>
+            <div class="rpt-tbl-wrap"><div id="stk917-tbl-inner"></div></div>
           </div>
         </div>
       </div>
 
-      <!-- EXP report section -->
-
+      <!-- EXP Report -->
       <div style="height:12px"></div>
       <div class="rpt-report-card">
         <div class="rpt-section-header">
@@ -352,7 +355,6 @@
           </div>
           <button class="rpt-btn rpt-btn-primary rpt-toggle-btn" type="button" data-toggle-target="exp174-body" aria-expanded="false">Show details</button>
         </div>
-
         <div id="exp174-body" class="report-detail-box is-hidden">
           <div class="rpt-date-row">
             <div class="rpt-date-field">
@@ -368,31 +370,24 @@
               </select>
             </div>
           </div>
-
           <div class="rpt-note" style="margin:8px 0 10px;color:#4a6284;font-size:12px;">EXP grouping/filtering is now controlled on the print page (StoreBin / Category).</div>
           <div class="rpt-btn-row">
             <button class="rpt-btn rpt-btn-primary" id="exp174-btn-genurl">🔗 Generate URL</button>
             <button class="rpt-btn rpt-btn-teal" id="exp174-btn-dlxls" style="display:none">⬇ Open / Download XLS</button>
           </div>
-
           <div id="exp174-url-wrap" style="display:none">
             <div class="rpt-url-label">Generated report URL — click to open:</div>
             <div id="exp174-url-box" class="rpt-url-box" title="Click to open in new tab"></div>
           </div>
-
           <div class="rpt-divider"></div>
-
           <div class="rpt-file-row">
             <label class="rpt-label" style="white-space:nowrap;margin-right:8px">📂 Load EXP XLS file</label>
             <input type="file" id="exp174-file-input" accept=".xls,.xlsx" class="rpt-file-input">
           </div>
-
           <div id="exp174-status" class="rpt-status"></div>
-
           <div class="rpt-btn-row" id="exp174-pdf-btns" style="display:none">
             <button class="rpt-btn rpt-btn-orange" id="exp174-btn-pdf">📄 PDF A4 Checklist</button>
           </div>
-
           <div id="exp174-preview" style="display:none">
             <div class="rpt-preview-header">
               <span>Preview — EXP Checklist</span>
@@ -403,9 +398,7 @@
         </div>
       </div>
 
-
-      <!-- ADR report section -->
-
+      <!-- ADR Report -->
       <div style="height:12px"></div>
       <div class="rpt-report-card">
         <div class="rpt-section-header">
@@ -418,7 +411,6 @@
           </div>
           <button class="rpt-btn rpt-btn-primary rpt-toggle-btn" type="button" data-toggle-target="adr256-body" aria-expanded="false">Show details</button>
         </div>
-
         <div id="adr256-body" class="report-detail-box is-hidden">
           <div class="rpt-date-row">
             <div class="rpt-date-field">
@@ -430,32 +422,24 @@
               <input type="date" id="adr256-to" class="rpt-date-input">
             </div>
           </div>
-
-          <div class="rpt-note" style="margin:8px 0 10px;color:#4a6284;font-size:12px;">Default range: first day of current month → today. Output is split by Observe in visit = Y / N on the print page.</div>
-
+          <div class="rpt-note" style="margin:8px 0 10px;color:#4a6284;font-size:12px;">Default range: first day of current month → today.</div>
           <div class="rpt-btn-row">
             <button class="rpt-btn rpt-btn-primary" id="adr256-btn-genurl">🔗 Generate URL</button>
             <button class="rpt-btn rpt-btn-teal" id="adr256-btn-dlxls" style="display:none">⬇ Open / Download XLS</button>
           </div>
-
           <div id="adr256-url-wrap" style="display:none">
             <div class="rpt-url-label">Generated report URL — click to open:</div>
             <div id="adr256-url-box" class="rpt-url-box" title="Click to open in new tab"></div>
           </div>
-
           <div class="rpt-divider"></div>
-
           <div class="rpt-file-row">
             <label class="rpt-label" style="white-space:nowrap;margin-right:8px">📂 Load ADR XLS file</label>
             <input type="file" id="adr256-file-input" accept=".xls,.xlsx" class="rpt-file-input">
           </div>
-
           <div id="adr256-status" class="rpt-status"></div>
-
           <div class="rpt-btn-row" id="adr256-pdf-btns" style="display:none">
             <button class="rpt-btn rpt-btn-orange" id="adr256-btn-pdf">📄 Open Print Report</button>
           </div>
-
           <div id="adr256-preview" style="display:none">
             <div class="rpt-preview-header">
               <span>Preview — ADR Report</span>
@@ -467,6 +451,28 @@
       </div>
 
     </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         FORMULARY TAB
+         ══════════════════════════════════════════════════════ -->
+    <section class="tab-panel" id="tab-formulary">
+
+      <div class="formula-launcher">
+        <div class="formula-launcher-icon">🧪</div>
+        <div class="formula-launcher-info">
+          <div class="formula-launcher-title">BKN Formulary App</div>
+          <div class="formula-launcher-sub">คำนวณส่วนผสม · พิมพ์ Working Formula</div>
+        </div>
+        <button id="btnOpenFormulary" class="btn-open-formulary">Open →</button>
+      </div>
+
+      <div class="section-label">เลือกสูตรยา — คลิกเพื่อเปิดรายงาน</div>
+      <div id="formulaList" class="formula-list">
+        <div class="formula-empty">กำลังโหลด…</div>
+      </div>
+
+    </section>
+
   </main>
 
   <script src="popup.js"></script>

@@ -271,11 +271,13 @@ function bindEvents(){
 }
 async function init(){
   await loadFormulas();
-  refreshSelectors(formulas[0]?.id);
-  const f = getFormula(formulas[0]?.id);
+  const urlId = new URLSearchParams(location.search).get('id');
+  const startId = (urlId && formulas.find(f => f.id === urlId)) ? urlId : formulas[0]?.id;
+  refreshSelectors(startId);
+  const f = getFormula(startId);
   $('quantity').value = f?.defaultQty || 100;
   bindEvents();
-  renderEditor(f?.id);
+  renderEditor(startId);
   renderReport();
 }
 document.addEventListener('DOMContentLoaded', init);
