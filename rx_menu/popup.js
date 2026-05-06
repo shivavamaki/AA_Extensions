@@ -63,23 +63,50 @@ function initTabs() {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// IPD Queue
+// IPD Queue — RT_COMMON_288 (Current Patient in Ward)
 // ──────────────────────────────────────────────────────────────────────────────
-const ARCUSAIR_HOST = 'arcusair.bdms.co.th';
-const MRD_ROUTE_HINTS = ['#!/mrd/reopenvisit', '/mrd/reopenvisit'];
-
-function isMrdTab(tab) {
-  const url = String(tab?.url || '');
-  return url.includes(ARCUSAIR_HOST) && MRD_ROUTE_HINTS.some(hint => url.includes(hint));
-}
+const IPD_QUEUE_URL = 'https://aa-report.bdms.co.th/jasperserver/flow.html?_flowId=viewReportFlow&output=xls&reportUnit=%2FBDMS%2FOther%2FRT_COMMON_288&userTimezone=Asia%2Fbangkok&decorate=no&selectedorganisationuid=5b20f438d1202e29ce16f710&loginuid=5bb325cb3e4efabebd8ea549&logindepartmentuid=5b857e32136d276403482bca&organisationuid=5b20f438d1202e29ce16f710&userLocale=th&fromamount=&toamount=null&isduplicate=false&pp=u%3D5bb325cb3e4efabebd8ea549%26r%3D5b83f09c3238d86bf0d583c7%26o%3D569794170946a3d0d588efe6';
 
 function initIpdQueue() {
-  document.getElementById('btnRefreshQueue')
-    ?.addEventListener('click', loadQueueData);
-
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.action === 'drugDeliveryResult') {
       handleDeliveryResult(msg.visitId, msg.ok, msg.errorText);
+    }
+  });
+
+  // Generate URL button
+  const btnGen = document.getElementById('btnQueueGenUrl');
+  const btnOpen = document.getElementById('btnQueueOpenXls');
+  const urlWrap = document.getElementById('queueUrlWrap');
+  const urlBox  = document.getElementById('queueUrlBox');
+
+  btnGen?.addEventListener('click', () => {
+    urlBox.textContent = IPD_QUEUE_URL;
+    urlWrap.style.display = 'block';
+    btnOpen.style.display = '';
+    urlBox.onclick = () => chrome.tabs.create({ url: IPD_QUEUE_URL });
+  });
+
+  btnOpen?.addEventListener('click', () => chrome.tabs.create({ url: IPD_QUEUE_URL }));
+
+  // File input
+  document.getElementById('queueFileInput')?.addEventListener('change', async function (ev) {
+    const file = (ev?.target?.files && ev.target.files[0]) || (this?.files && this.files[0]);
+    if (!file) return;
+    const statusEl = document.getElementById('queueStatus');
+    setStatus(statusEl, '⏳ Reading file…', 'loading');
+    try {
+      const sheets = await readXlsFile(file);
+      const rows = parseIPDQueueXls(sheets);
+      const sentData = await chrome.storage.local.get(STORAGE_KEY_SENT);
+      const sent = new Set(sentData[STORAGE_KEY_SENT] || []);
+      await chrome.storage.local.set({ [STORAGE_KEY_ROWS]: rows });
+      const tbody  = document.getElementById('queueTableBody');
+      const countEl = document.getElementById('queueCount');
+      renderQueueTable(rows, tbody, countEl, sent);
+      setStatus(statusEl, `✓ ${rows.length} คน จาก ${file.name}`, 'ok');
+    } catch (e) {
+      setStatus(document.getElementById('queueStatus'), `✗ ${e.message}`, 'err');
     }
   });
 
@@ -90,76 +117,54 @@ async function restoreQueueState() {
   const data = await chrome.storage.local.get([STORAGE_KEY_ROWS, STORAGE_KEY_SENT]);
   const rows = data[STORAGE_KEY_ROWS];
   const sent = new Set(data[STORAGE_KEY_SENT] || []);
-
   if (rows && rows.length > 0) {
-    const tbody = document.getElementById('queueTableBody');
+    const tbody   = document.getElementById('queueTableBody');
     const countEl = document.getElementById('queueCount');
     const statusEl = document.getElementById('queueStatus');
     renderQueueTable(rows, tbody, countEl, sent);
-    setStatus(
-      statusEl,
-      `✓ ${rows.length} patient${rows.length !== 1 ? 's' : ''} (restored — click ↻ to reload)`,
-      'ok'
-    );
+    setStatus(statusEl, `✓ ${rows.length} คน (restored — load new XLS to update)`, 'ok');
   }
 }
 
-async function loadQueueData() {
-  const refreshBtn = document.getElementById('btnRefreshQueue');
-  const statusEl = document.getElementById('queueStatus');
-  const countEl = document.getElementById('queueCount');
-  const tbody = document.getElementById('queueTableBody');
+function parseIPDQueueXls(sheets) {
+  const rows = [];
+  if (!sheets || !sheets.length) return rows;
+  const raw = sheets[0].rows;
+  let currentWard = '';
 
-  refreshBtn.disabled = true;
-  setStatus(statusEl, '⏳ Loading — scrolling table to fetch all rows…', 'loading');
-  countEl.textContent = '…';
+  for (const r of raw) {
+    const c0 = String(r[0] ?? '').trim();
+    const c2 = String(r[2] ?? '').trim();   // EN
+    const c5 = String(r[5] ?? '').trim();   // Name
 
-  try {
-    const tabs = await chrome.tabs.query({});
-    const mrdTab = tabs.find(isMrdTab);
+    if (!c0 || c0 === 'Current Patient in Ward' || c0 === 'No.') continue;
+    if (c5.startsWith('จำนวน') || c0.startsWith('Print')) continue;
 
-    if (!mrdTab) {
-      setStatus(
-        statusEl,
-        '⚠ No MRD tab found. Open arcusair → MRD Reopen Visit page first.',
-        'err'
-      );
-      countEl.textContent = '—';
-      return;
+    // Ward header: non-numeric col0, empty EN col
+    if (isNaN(parseFloat(c0)) && !c2) {
+      currentWard = c0;
+      continue;
     }
 
-    const resp = await msgTab(mrdTab.id, { action: 'getMrdRows' });
+    // Summary / stats page rows (LOCATION, TOTAL etc.)
+    if (c0 === 'LOCATION' || c0 === 'GRAND TOTAL' || c0 === 'Cardiac Care Unit' && c5 === '') continue;
 
-    if (!resp || !Array.isArray(resp.rows)) {
-      setStatus(
-        statusEl,
-        '✗ Could not read MRD table. Make sure the tab is on the MRD Reopen Visit page.',
-        'err'
-      );
-      countEl.textContent = '—';
-      return;
+    // Data row
+    const no = parseFloat(c0);
+    if (!isNaN(no) && c2.startsWith('I')) {
+      rows.push({
+        wardBed:   currentWard,
+        name:      c5 || '—',
+        visitId:   c2,
+        hn:        String(r[3] ?? '').trim(),
+        room:      String(r[9] ?? '').trim(),
+        age:       r[14] !== undefined && r[14] !== '' ? String(Math.floor(parseFloat(String(r[14])))) : '',
+        doctor:    String(r[16] ?? '').trim(),
+        diagnosis: String(r[21] ?? '').trim(),
+      });
     }
-
-    const sentData = await chrome.storage.local.get(STORAGE_KEY_SENT);
-    const sent = new Set(sentData[STORAGE_KEY_SENT] || []);
-
-    await chrome.storage.local.set({ [STORAGE_KEY_ROWS]: resp.rows });
-
-    renderQueueTable(resp.rows, tbody, countEl, sent);
-    setStatus(
-      statusEl,
-      resp.rows.length > 0
-        ? `✓ ${resp.rows.length} active patient${resp.rows.length !== 1 ? 's' : ''} (End Date empty)`
-        : '✓ No active patients found.',
-      'ok'
-    );
-  } catch (e) {
-    console.error('[IPD Queue]', e);
-    setStatus(statusEl, `✗ Error: ${e.message}`, 'err');
-    countEl.textContent = '—';
-  } finally {
-    refreshBtn.disabled = false;
   }
+  return rows;
 }
 
 function wardGroup(wardBed) {
@@ -223,7 +228,7 @@ function renderQueueTable(rows, tbody, countEl, sentSet = new Set()) {
     groupTr.appendChild(groupTd);
     tbody.appendChild(groupTr);
 
-    patients.forEach(({ name, visitId }) => {
+    patients.forEach(({ name, visitId, room }) => {
       const tr = document.createElement('tr');
       tr.dataset.visitId = visitId;
 
@@ -237,7 +242,7 @@ function renderQueueTable(rows, tbody, countEl, sentSet = new Set()) {
 
       const tdVisit = document.createElement('td');
       tdVisit.className = 'cell-visit';
-      tdVisit.textContent = visitId || '—';
+      tdVisit.innerHTML = `<span class="cell-visit-en">${escHtml(visitId || '—')}</span>${room ? `<span class="cell-visit-room">${escHtml(room)}</span>` : ''}`;
 
       const tdAction = document.createElement('td');
       tdAction.className = 'cell-action';

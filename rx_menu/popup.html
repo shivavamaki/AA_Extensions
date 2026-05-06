@@ -11,7 +11,12 @@
     .rpt-report-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;}
     .rpt-report-body[hidden]{display:none !important;}
     .rpt-section-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-    .rpt-toggle-btn{min-width:110px;}
+    .rpt-toggle-btn{min-width:90px;}
+    /* 2-column report grid */
+    .rpt-cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .rpt-cards-grid .rpt-btn{min-width:80px;font-size:11px;padding:6px 8px;}
+    .rpt-cards-grid .rpt-date-field{min-width:90px;}
+    .rpt-cards-grid .rpt-date-input{font-size:11px;padding:4px 6px;}
 
     /* ── Formulary tab ── */
     .formula-launcher{display:flex;align-items:center;gap:12px;padding:14px 16px;background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid));border:1px solid var(--orange);border-radius:var(--radius-lg);margin-bottom:12px;}
@@ -181,19 +186,10 @@
               <span class="link-card-text">MedError Stock</span>
             </a>
           </div>
-          <!-- Formulary — duplicated from Formulary tab -->
-          <div class="formula-launcher" style="margin-top:10px;">
-            <div class="formula-launcher-icon">🧪</div>
-            <div class="formula-launcher-info">
-              <div class="formula-launcher-title">BKN Formulary App</div>
-              <div class="formula-launcher-sub">คำนวณส่วนผสม · พิมพ์ Working Formula</div>
-            </div>
-            <button id="btnOpenFormularyWS" class="btn-open-formulary">Open →</button>
-          </div>
-          <div class="section-label" style="margin-top:10px;">เลือกสูตรยา — คลิกเพื่อเปิดรายงาน</div>
-          <div id="formulaListWorkspace" class="formula-list">
-            <div class="formula-empty">กำลังโหลด…</div>
-          </div>
+          <button class="local-tool-btn" id="btnOpenFormularyWS" style="margin-top:6px">
+            <span class="link-card-icon">🧪</span>
+            <span>Formulary App</span>
+          </button>
         </div>
       </div>
 
@@ -257,15 +253,24 @@
     <section class="tab-panel" id="tab-ipdqueue">
       <div class="queue-toolbar">
         <div class="queue-info">
-          <span class="section-label" style="margin:0">IPD Drug Delivery Queue</span>
+          <span class="section-label" style="margin:0">Current Patient in Ward</span>
           <span class="queue-badge" id="queueCount">—</span>
         </div>
-        <a href="http://10.134.10.91:8809/drugdelivery/web/ipfill" target="_blank" rel="noopener noreferrer" style="font-size: 20px; text-decoration: none;">
-          🚀
-        </a>
-        <button class="btn-refresh" id="btnRefreshQueue" title="Reload from arcusair tab">
-          ↻ Refresh
-        </button>
+        <a href="http://10.134.10.91:8809/drugdelivery/web/ipfill" target="_blank" rel="noopener noreferrer" style="font-size:20px;text-decoration:none;" title="Drug Delivery System">🚀</a>
+      </div>
+
+      <div class="rpt-btn-row" style="margin-bottom:8px">
+        <button class="rpt-btn rpt-btn-primary" id="btnQueueGenUrl">🔗 Generate URL</button>
+        <button class="rpt-btn rpt-btn-teal" id="btnQueueOpenXls" style="display:none">⬇ Open / Download XLS</button>
+      </div>
+      <div id="queueUrlWrap" style="display:none;margin-bottom:6px">
+        <div class="rpt-url-label">Report URL — click to open in new tab:</div>
+        <div id="queueUrlBox" class="rpt-url-box" title="Click to open in new tab"></div>
+      </div>
+      <div class="rpt-divider"></div>
+      <div class="rpt-file-row">
+        <label class="rpt-label" style="white-space:nowrap;margin-right:8px">📂 Load XLS file</label>
+        <input type="file" id="queueFileInput" accept=".xls,.xlsx" class="rpt-file-input">
       </div>
 
       <div id="queueStatus" class="queue-status"></div>
@@ -280,13 +285,13 @@
           <thead>
             <tr>
               <th>Name</th>
-              <th>Visit ID</th>
+              <th>EN / Room</th>
               <th style="text-align:right">Action</th>
             </tr>
           </thead>
           <tbody id="queueTableBody">
             <tr class="queue-empty-row">
-              <td colspan="3">Click ↻ Refresh to load data from arcusair tab</td>
+              <td colspan="3">คลิก 🔗 Generate URL แล้ว Download XLS และ Load file</td>
             </tr>
           </tbody>
         </table>
@@ -297,6 +302,7 @@
          REPORT TAB
          ══════════════════════════════════════════════════════ -->
     <section class="tab-panel" id="tab-report">
+      <div class="rpt-cards-grid">
 
       <!-- Pending IP Fill Report -->
       <div class="rpt-report-card">
@@ -351,7 +357,6 @@
       </div>
 
       <!-- Stock Picking List Report -->
-      <div style="height:12px"></div>
       <div class="rpt-report-card">
         <div class="rpt-section-header">
           <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
@@ -403,7 +408,6 @@
       </div>
 
       <!-- EXP Report -->
-      <div style="height:12px"></div>
       <div class="rpt-report-card">
         <div class="rpt-section-header">
           <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
@@ -459,7 +463,6 @@
       </div>
 
       <!-- ADR Report -->
-      <div style="height:12px"></div>
       <div class="rpt-report-card">
         <div class="rpt-section-header">
           <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
@@ -510,6 +513,7 @@
         </div>
       </div>
 
+      </div><!-- end .rpt-cards-grid -->
     </section>
 
     <!-- ══════════════════════════════════════════════════════
