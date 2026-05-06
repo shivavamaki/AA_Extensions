@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initExpReport();
   initAdrReport();
   initFormularyTab();
+  initKnowledgeTab();
   initWorkspaceSections();
 });
 
@@ -2889,16 +2890,119 @@ async function loadFormulaList() {
 function initWorkspaceSections() {
   document.querySelectorAll('.ws-section-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
-      const bodyId = btn.getAttribute('aria-controls');
-      const body = document.getElementById(bodyId);
+      const body    = document.getElementById(btn.getAttribute('aria-controls'));
       if (!body) return;
       const expanded = btn.getAttribute('aria-expanded') === 'true';
       btn.setAttribute('aria-expanded', String(!expanded));
-      if (expanded) {
-        body.hidden = true;
-      } else {
-        body.hidden = false;
-      }
+      body.hidden = expanded;
     });
   });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Knowledge Sharing tab
+// ──────────────────────────────────────────────────────────────────────────────
+function knowledgeUrl(hash) {
+  const base = chrome.runtime.getURL('knowledge/index.html');
+  return hash ? `${base}#${hash}` : base;
+}
+
+function initKnowledgeTab() {
+  document.getElementById('btnKsFaqs')?.addEventListener('click',  () => chrome.tabs.create({ url: knowledgeUrl('faqs') }));
+  document.getElementById('btnKsItems')?.addEventListener('click', () => chrome.tabs.create({ url: knowledgeUrl('items') }));
+  document.getElementById('btnKsVdos')?.addEventListener('click',  () => chrome.tabs.create({ url: knowledgeUrl('vdos') }));
+
+  document.querySelectorAll('.ks-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const body = document.getElementById(btn.getAttribute('aria-controls'));
+      if (!body) return;
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', String(!expanded));
+      body.hidden = expanded;
+    });
+  });
+
+  loadKsPreview();
+}
+
+function loadKsPreview() {
+  loadKsFaqPreview();
+  loadKsItemsPreview();
+  loadKsVdosPreview();
+}
+
+function loadKsFaqPreview() {
+  const el = document.getElementById('ksFaqList');
+  if (!el) return;
+  try {
+    const faqs = JSON.parse(localStorage.getItem('bkn_ks.faqs.v1')) || [];
+    if (!faqs.length) {
+      el.innerHTML = '<div class="formula-empty">ยังไม่มีข้อมูล — เปิด Knowledge App เพื่อดูเพิ่มเติม</div>';
+      return;
+    }
+    el.innerHTML = faqs.slice(0, 3).map(f => `
+      <div class="ks-preview-item" data-ks-open="faqs">
+        <span class="ks-preview-icon">💬</span>
+        <div class="ks-preview-text">
+          <div class="ks-preview-title">${escKs(f.question)}</div>
+        </div>
+      </div>`).join('');
+    el.querySelectorAll('[data-ks-open]').forEach(item => {
+      item.addEventListener('click', () => chrome.tabs.create({ url: knowledgeUrl('faqs') }));
+    });
+  } catch { el.innerHTML = '<div class="formula-empty">เปิด Knowledge App เพื่อดู FAQs</div>'; }
+}
+
+function loadKsItemsPreview() {
+  const el = document.getElementById('ksItemsList');
+  if (!el) return;
+  try {
+    const items = JSON.parse(localStorage.getItem('bkn_ks.items.v1')) || [];
+    if (!items.length) {
+      el.innerHTML = '<div class="formula-empty">ยังไม่มีรายการยาใหม่</div>';
+      return;
+    }
+    const sorted = [...items].sort((a, b) => new Date(b.addedDate) - new Date(a.addedDate));
+    el.innerHTML = sorted.slice(0, 3).map(i => `
+      <div class="ks-preview-item" data-ks-open="items">
+        <span class="ks-preview-icon">💊</span>
+        <div class="ks-preview-text">
+          <div class="ks-preview-title">${escKs(i.name)}</div>
+          ${i.generic ? `<div class="ks-preview-sub">${escKs(i.generic)}</div>` : ''}
+        </div>
+      </div>`).join('');
+    el.querySelectorAll('[data-ks-open]').forEach(item => {
+      item.addEventListener('click', () => chrome.tabs.create({ url: knowledgeUrl('items') }));
+    });
+  } catch { el.innerHTML = '<div class="formula-empty">เปิด Knowledge App เพื่อดูรายการ</div>'; }
+}
+
+function loadKsVdosPreview() {
+  const el = document.getElementById('ksVdosList');
+  if (!el) return;
+  try {
+    const vdos = JSON.parse(localStorage.getItem('bkn_ks.vdos.v1')) || [];
+    if (!vdos.length) {
+      el.innerHTML = '<div class="formula-empty">ยังไม่มีวิดีโอ</div>';
+      return;
+    }
+    const sorted = [...vdos].sort((a, b) => new Date(b.addedDate) - new Date(a.addedDate));
+    el.innerHTML = sorted.slice(0, 3).map(v => `
+      <div class="ks-preview-item" data-ks-open="vdos">
+        <span class="ks-preview-icon">🎬</span>
+        <div class="ks-preview-text">
+          <div class="ks-preview-title">${escKs(v.title)}</div>
+          ${v.duration ? `<div class="ks-preview-sub">${escKs(v.duration)}</div>` : ''}
+        </div>
+      </div>`).join('');
+    el.querySelectorAll('[data-ks-open]').forEach(item => {
+      item.addEventListener('click', () => chrome.tabs.create({ url: knowledgeUrl('vdos') }));
+    });
+  } catch { el.innerHTML = '<div class="formula-empty">เปิด Knowledge App เพื่อดูวิดีโอ</div>'; }
+}
+
+function escKs(v) {
+  return String(v ?? '').replace(/[&<>'"]/g, s =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[s])
+  );
 }

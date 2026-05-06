@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BKN Knowledge Sharing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="app-layout">
+
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">⚕</div>
+        <div class="brand-text">
+          <div class="brand-title">BKN Knowledge</div>
+          <div class="brand-sub">Pharmacy Knowledge Sharing</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" id="sidebarNav">
+        <button class="nav-item active" data-page="faqs">
+          <span class="nav-icon">❓</span><span>FAQs</span>
+        </button>
+        <button class="nav-item" data-page="items">
+          <span class="nav-icon">💊</span><span>New Items</span>
+        </button>
+        <button class="nav-item" data-page="vdos">
+          <span class="nav-icon">🎬</span><span>New Vdos</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer" id="sidebarFooter">
+        <!-- Admin section rendered by JS -->
+      </div>
+    </aside>
+
+    <!-- ── Main ── -->
+    <main class="main-content" id="mainContent">
+      <!-- Rendered by JS -->
+    </main>
+
+  </div>
+
+  <!-- ── Login Modal ── -->
+  <div class="modal-overlay" id="loginModal" hidden>
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <div class="modal-title">🔐 Admin Login</div>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="loginPwInput" class="form-input" placeholder="Enter admin password" autocomplete="current-password">
+          <div class="form-error" id="loginError" hidden>รหัสผ่านไม่ถูกต้อง</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="btnLoginCancel">Cancel</button>
+        <button class="btn btn-primary" id="btnLoginConfirm">Login</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Edit Modal ── -->
+  <div class="modal-overlay" id="editModal" hidden>
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <div class="modal-title" id="editModalTitle">Add</div>
+        <button class="modal-close" id="btnEditClose">✕</button>
+      </div>
+      <div class="modal-body" id="editModalBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="btnEditCancel">Cancel</button>
+        <button class="btn btn-primary" id="btnEditSave">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Confirm Delete Modal ── -->
+  <div class="modal-overlay" id="confirmModal" hidden>
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <div class="modal-title">Confirm Delete</div>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-mid);font-size:13px;line-height:1.6" id="confirmMsg">ต้องการลบรายการนี้ใช่ไหม?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="btnConfirmCancel">Cancel</button>
+        <button class="btn btn-danger" id="btnConfirmDelete">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Toast container ── -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

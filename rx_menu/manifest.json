@@ -56,7 +56,10 @@
         "formulary/app.js",
         "formulary/styles.css",
         "formulary/data/formulas.json",
-        "formulary/data/default_formulas.js"
+        "formulary/data/default_formulas.js",
+        "knowledge/index.html",
+        "knowledge/app.js",
+        "knowledge/styles.css"
       ],
       "matches": [
         "<all_urls>"
