@@ -136,8 +136,9 @@
   .entries-table tr:hover td { background: #f8faff; }
   .entries-table input, .entries-table select { padding: 6px 9px; font-size: 13px; }
   .time-display { font-family: var(--mono); font-size: 13px; font-weight: 500; padding: 4px 10px; border-radius: 5px; text-align: center; min-width: 52px; display: inline-block; background: var(--blue-bg); color: var(--blue-txt); }
-  .time-ok   { background: var(--green-bg); color: var(--green-txt); }
-  .time-fail { background: var(--red-bg);   color: var(--red-txt); }
+  .time-ok   { background: var(--green-bg);  color: var(--green-txt); }
+  .time-fail { background: var(--red-bg);    color: var(--red-txt); }
+  .time-sus  { background: var(--yellow-bg); color: var(--yellow-txt); }
   .del-btn { background: none; border: none; color: var(--text3); cursor: pointer; padding: 5px 9px; border-radius: 6px; font-size: 16px; line-height: 1; transition: all 0.15s; }
   .del-btn:hover { color: var(--red-txt); background: var(--red-bg); }
   .add-row-btn { width: 100%; margin-top: 10px; background: transparent; border: 1.5px dashed var(--border2); color: var(--text3); padding: 9px; border-radius: 8px; cursor: pointer; font-family: var(--font); font-size: 13px; font-weight: 600; transition: all 0.15s; }
@@ -493,6 +494,7 @@
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <button class="btn btn-success btn-sm" onclick="loadSharedFolderDashboard()">🔄 โหลด Dashboard</button>
           <button class="btn btn-ghost btn-sm" onclick="exportDashboardExcel()">📊 Export Excel</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportDashboardDataStudioJSON()">🧩 Export Data Studio JSON</button>
           <button class="btn btn-ghost btn-sm" onclick="exportDashboardPDF()">🖨 Export PDF</button>
         </div>
       </div>
@@ -582,6 +584,30 @@ const IPD_WARDS = ['ward 4','ward 5','ward 6','ward 7','ward 8','ward 9','ICU','
 
 let savedRecords=[], reportRecords=[], dirHandle=null, opdStatRows=[], ipdStatRows=[];
 let opdBriefState={}, ipdBriefState={};
+
+// ── DRAFT AUTOSAVE ──
+const DRAFT_KEY = 'kpi_draft';
+function saveDraft(){
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      date: new Date().toISOString().split('T')[0],
+      opdStatRows, ipdStatRows, opdBriefState, ipdBriefState
+    }));
+  } catch(_) {}
+}
+function restoreDraft(){
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return false;
+    const draft = JSON.parse(raw);
+    if (draft.date !== new Date().toISOString().split('T')[0]) { localStorage.removeItem(DRAFT_KEY); return false; }
+    if (Array.isArray(draft.opdStatRows) && draft.opdStatRows.some(r => isRowStarted(r))) opdStatRows = draft.opdStatRows;
+    if (Array.isArray(draft.ipdStatRows) && draft.ipdStatRows.some(r => isRowStarted(r))) ipdStatRows = draft.ipdStatRows;
+    if (draft.opdBriefState && typeof draft.opdBriefState === 'object') opdBriefState = draft.opdBriefState;
+    if (draft.ipdBriefState && typeof draft.ipdBriefState === 'object') ipdBriefState = draft.ipdBriefState;
+    return true;
+  } catch(_) { return false; }
+}
 
 
 const FOLDER_DB_NAME = 'pharmacy-kpi-folder-db';
@@ -693,12 +719,34 @@ window.addEventListener('DOMContentLoaded', async () => {
   ['opd-brief-date','ipd-brief-date','opd-stat-date','ipd-stat-date','med-error-date'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value=today;
   });
+
+  const hasDraft = restoreDraft();
+
   buildChecklist(OPD_CHECKS,'opd-brief-checks',opdBriefState);
   buildChecklist(IPD_CHECKS,'ipd-brief-checks',ipdBriefState);
-  addOPDRow(); addIPDRow(); updateBadges();
+
+  ensureSingleTrailingRow('opd-stat-body');
+  const opdCfg = statConfig('opd-stat-body');
+  renderStatTable('opd-stat-body', opdCfg.rows, opdCfg.depts, opdCfg.target, opdCfg.onSummary);
+
+  ensureSingleTrailingRow('ipd-stat-body');
+  const ipdCfg = statConfig('ipd-stat-body');
+  renderStatTable('ipd-stat-body', ipdCfg.rows, ipdCfg.depts, ipdCfg.target, ipdCfg.onSummary);
+
+  updateBadges();
   initDropZone();
   await restoreFolderAccess();
   enforceAppLock();
+
+  if (hasDraft) showToast('💾', 'กู้คืนข้อมูล draft จากเมื่อกี้แล้ว');
+
+  window.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      saveDraft();
+      showToast('💾', 'บันทึก draft แล้ว');
+    }
+  });
 });
 
 // ── FOLDER PICKER ──
@@ -806,11 +854,29 @@ function setCheck(containerId, key, val) {
   const btns = item.querySelectorAll('.toggle-btn');
   if(btns[0]) btns[0].className = 'toggle-btn'+(val?' selected-ok':'');
   if(btns[1]) btns[1].className = 'toggle-btn'+(val?''  :' selected-x');
+  saveDraft();
 }
 
 // ── STAT TABLE ──
 function timeToMin(t) { if(!t) return null; const [h,m]=t.split(':').map(Number); return h*60+m; }
 function calcDiff(t1,t2) { const a=timeToMin(t1),b=timeToMin(t2); if(a===null||b===null) return null; let d=b-a; if(d<0)d+=1440; return d; }
+
+// Central config for OPD vs IPD — eliminates repeated ternary patterns throughout
+function statConfig(tbodyId) {
+  const isOPD = tbodyId === 'opd-stat-body';
+  return {
+    isOPD,
+    rows:      isOPD ? opdStatRows : ipdStatRows,
+    setRows:   v => { if (isOPD) opdStatRows = v; else ipdStatRows = v; },
+    depts:     isOPD ? OPD_DEPTS : IPD_WARDS,
+    target:    isOPD ? 5 : 15,
+    onSummary: isOPD ? updateOPDSummary : updateIPDSummary,
+    cntId:     isOPD ? 'opd-cnt' : 'ipd-cnt',
+    avgId:     isOPD ? 'opd-avg' : 'ipd-avg',
+    passId:    isOPD ? 'opd-pass' : 'ipd-pass',
+    pctId:     isOPD ? 'opd-pct' : 'ipd-pct',
+  };
+}
 
 function sanitizeFileNo(value){
   let v = String(value || '');
@@ -840,10 +906,21 @@ function renderStatTable(tbodyId, rows, options, limitMin, updateFn) {
     const timeEnd = row.timeEnd || '';
 
     const diff = calcDiff(timeStart, timeEnd);
-    const pass = diff !== null ? diff <= limitMin : null;
+    const suspicious = diff !== null && diff > 120;
+    const pass = diff !== null && !suspicious ? diff <= limitMin : null;
 
     const fileReady = fileNo.length === 4;
     const startReady = fileReady && !!timeStart;
+
+    const timeClass = diff === null ? '' : suspicious ? 'time-sus' : pass ? 'time-ok' : 'time-fail';
+    const timeLabel = diff === null ? '—' : suspicious ? `${diff} m ⚠` : `${diff} m`;
+    const checkIcon = diff === null
+      ? '<span style="color:var(--text3)">—</span>'
+      : suspicious
+        ? '<span style="color:var(--yellow-txt)" title="เวลาอาจผิดปกติ กรุณาตรวจสอบ">⚠</span>'
+        : pass
+          ? '<span style="color:var(--green-txt)">✓</span>'
+          : '<span style="color:var(--red-txt)">✗</span>';
 
     const tr = document.createElement('tr');
 
@@ -893,20 +970,10 @@ function renderStatTable(tbodyId, rows, options, limitMin, updateFn) {
       </td>
 
       <td>
-        <span class="time-display ${diff===null ? '' : pass ? 'time-ok' : 'time-fail'}">
-          ${diff===null ? '—' : diff + ' m'}
-        </span>
+        <span class="time-display ${timeClass}">${timeLabel}</span>
       </td>
 
-      <td style="text-align:center;font-size:16px">
-        ${
-          diff===null
-            ? '<span style="color:var(--text3)">—</span>'
-            : pass
-              ? '<span style="color:var(--green-txt)">✓</span>'
-              : '<span style="color:var(--red-txt)">✗</span>'
-        }
-      </td>
+      <td style="text-align:center;font-size:16px">${checkIcon}</td>
 
       <td>
         <button class="del-btn" onclick="deleteRow('${tbodyId}',${i})">×</button>
@@ -936,66 +1003,33 @@ function parseHHMM(val){
 }
 
 function handleTimeText(el){
-  let v = el.value.replace(/\D/g,''); // digits only
-
+  let v = el.value.replace(/\D/g,'');
   if(v.length > 4) v = v.slice(0,4);
-
   el.value = v;
 
   const tbodyId = el.dataset.tbody;
   const idx = Number(el.dataset.idx);
   const field = el.dataset.field;
-
-  const isOPD = tbodyId === 'opd-stat-body';
-  const rows = isOPD ? opdStatRows : ipdStatRows;
+  const cfg = statConfig(tbodyId);
+  const { rows } = cfg;
 
   const parsed = parseHHMM(v);
+  rows[idx][field] = parsed || '';
 
-  // save as HH:MM
-  if(parsed){
-    rows[idx][field] = parsed;
-  } else {
-    rows[idx][field] = '';
-  }
-
-  // 👉 AUTO JUMP when 4 digits entered
   if(v.length === 4 && parsed){
-
     if(field === 'timeStart'){
       focusTableField(tbodyId, idx, 'timeEnd');
       return;
     }
-
     if(field === 'timeEnd'){
-
-      // ensure next row
-      if(!rows[idx+1]){
-        rows.push({
-          id: crypto.randomUUID(),
-          fileNo:'',
-          timeStart:'',
-          timeEnd:''
-        });
-      }
-
-      renderStatTable(
-        tbodyId,
-        rows,
-        isOPD ? OPD_DEPTS : IPD_WARDS,
-        isOPD ? 5 : 15,
-        isOPD ? updateOPDSummary : updateIPDSummary
-      );
-
+      if(!rows[idx+1]) rows.push({ id: crypto.randomUUID(), fileNo:'', timeStart:'', timeEnd:'' });
+      renderStatTable(tbodyId, rows, cfg.depts, cfg.target, cfg.onSummary);
       focusTableField(tbodyId, idx+1, 'fileNo');
     }
   }
 
-  // update summary live
-  if(isOPD){
-    updateOPDSummary();
-  }else{
-    updateIPDSummary();
-  }
+  cfg.onSummary();
+  saveDraft();
 }
 
 function handleTimeDone(el){
@@ -1004,9 +1038,8 @@ function handleTimeDone(el){
   const tbodyId = el.dataset.tbody;
   const idx = Number(el.dataset.idx);
   const field = el.dataset.field;
-
-  const isOPD = tbodyId === 'opd-stat-body';
-  const rows = isOPD ? opdStatRows : ipdStatRows;
+  const cfg = statConfig(tbodyId);
+  const { rows } = cfg;
   const row = rows[idx];
 
   if(field === 'timeStart' && row.timeStart){
@@ -1015,24 +1048,8 @@ function handleTimeDone(el){
   }
 
   if(field === 'timeEnd' && row.timeEnd){
-
-    if(!rows[idx+1]){
-      rows.push({
-        id: crypto.randomUUID(),
-        fileNo:'',
-        timeStart:'',
-        timeEnd:''
-      });
-    }
-
-    renderStatTable(
-      tbodyId,
-      rows,
-      isOPD ? OPD_DEPTS : IPD_WARDS,
-      isOPD ? 5 : 15,
-      isOPD ? updateOPDSummary : updateIPDSummary
-    );
-
+    if(!rows[idx+1]) rows.push({ id: crypto.randomUUID(), fileNo:'', timeStart:'', timeEnd:'' });
+    renderStatTable(tbodyId, rows, cfg.depts, cfg.target, cfg.onSummary);
     focusTableField(tbodyId, idx+1, 'fileNo');
   }
 }
@@ -1057,17 +1074,14 @@ function focusTableField(tbodyId, idx, field){
 }
 
 function handleTimeInput(el){
-  handleStatInput(el); // keep your logic
+  handleStatInput(el);
 
   const tbodyId = el.dataset.tbody;
   const idx = Number(el.dataset.idx);
   const field = el.dataset.field;
-
-  const isOPD = tbodyId === 'opd-stat-body';
-  const rows = isOPD ? opdStatRows : ipdStatRows;
+  const cfg = statConfig(tbodyId);
+  const { rows } = cfg;
   const row = rows[idx];
-
-  // 👉 FLOW LOGIC (same as Enter)
 
   if(field === 'timeStart' && row.timeStart){
     focusTableField(tbodyId, idx, 'timeEnd');
@@ -1075,24 +1089,8 @@ function handleTimeInput(el){
   }
 
   if(field === 'timeEnd' && row.timeEnd){
-    // ensure next row
-    if(!rows[idx + 1]){
-      rows.push({
-        id: crypto.randomUUID(),
-        fileNo:'',
-        timeStart:'',
-        timeEnd:''
-      });
-    }
-
-    renderStatTable(
-      tbodyId,
-      rows,
-      isOPD ? OPD_DEPTS : IPD_WARDS,
-      isOPD ? 5 : 15,
-      isOPD ? updateOPDSummary : updateIPDSummary
-    );
-
+    if(!rows[idx + 1]) rows.push({ id: crypto.randomUUID(), fileNo:'', timeStart:'', timeEnd:'' });
+    renderStatTable(tbodyId, rows, cfg.depts, cfg.target, cfg.onSummary);
     focusTableField(tbodyId, idx + 1, 'fileNo');
   }
 }
@@ -1101,132 +1099,61 @@ function handleStatInput(el){
   const tbodyId = el.dataset.tbody;
   const idx = Number(el.dataset.idx);
   const field = el.dataset.field;
-
-  const isOPD = tbodyId === 'opd-stat-body';
-  const rows = isOPD ? opdStatRows : ipdStatRows;
+  const cfg = statConfig(tbodyId);
+  const { rows } = cfg;
   const row = rows[idx];
 
   let value = el.value;
 
-  // --- FILE NO ---
   if(field === 'fileNo'){
     value = sanitizeFileNo(value);
     if(el.value !== value) el.value = value;
     row.fileNo = value;
 
-    // ✅ FORCE re-render when fileNo becomes valid
     if(value.length === 4){
-      renderStatTable(
-        tbodyId,
-        rows,
-        isOPD ? OPD_DEPTS : IPD_WARDS,
-        isOPD ? 5 : 15,
-        isOPD ? updateOPDSummary : updateIPDSummary
-      );
-
-      // focus next field
+      renderStatTable(tbodyId, rows, cfg.depts, cfg.target, cfg.onSummary);
       focusTableField(tbodyId, idx, 'timeStart');
     }
 
-    updateSummary(
-      rows,
-      isOPD ? 5 : 15,
-      isOPD ? 'opd-cnt' : 'ipd-cnt',
-      isOPD ? 'opd-avg' : 'ipd-avg',
-      isOPD ? 'opd-pass' : 'ipd-pass',
-      isOPD ? 'opd-pct' : 'ipd-pct'
-    );
-
+    updateSummary(rows, cfg.target, cfg.cntId, cfg.avgId, cfg.passId, cfg.pctId);
+    saveDraft();
     return;
   }
 
-  // --- TIME INPUT ---
   row[field] = value;
+  updateSummary(rows, cfg.target, cfg.cntId, cfg.avgId, cfg.passId, cfg.pctId);
 
-  // instant visual update (no full rebuild yet)
-  updateSummary(
-    rows,
-    isOPD ? 5 : 15,
-    isOPD ? 'opd-cnt' : 'ipd-cnt',
-    isOPD ? 'opd-avg' : 'ipd-avg',
-    isOPD ? 'opd-pass' : 'ipd-pass',
-    isOPD ? 'opd-pct' : 'ipd-pct'
-  );
-
-  // --- only rerender when row complete ---
   if(isRowComplete(row)){
     ensureSingleTrailingRow(tbodyId);
-    renderStatTable(
-      tbodyId,
-      rows,
-      isOPD ? OPD_DEPTS : IPD_WARDS,
-      isOPD ? 5 : 15,
-      isOPD ? updateOPDSummary : updateIPDSummary
-    );
+    renderStatTable(tbodyId, statConfig(tbodyId).rows, cfg.depts, cfg.target, cfg.onSummary);
   }
+  saveDraft();
 }
 
 function ensureSingleTrailingRow(tbodyId){
-  const isOPD = tbodyId === 'opd-stat-body';
-  let rows = isOPD ? opdStatRows : ipdStatRows;
-
-  // remove empty rows except last
-  const cleaned = rows.filter(r => isRowStarted(r));
-
-  // always ensure one empty row
-  cleaned.push({
-    id: crypto.randomUUID(),
-    fileNo:'',
-    timeStart:'',
-    timeEnd:''
-  });
-
-  if(isOPD){
-    opdStatRows = cleaned;
-  }else{
-    ipdStatRows = cleaned;
-  }
+  const cfg = statConfig(tbodyId);
+  const cleaned = cfg.rows.filter(r => isRowStarted(r));
+  cleaned.push({ id: crypto.randomUUID(), fileNo:'', timeStart:'', timeEnd:'' });
+  cfg.setRows(cleaned);
 }
 
-function updateRow(tbodyId,idx,field,val,rerender=true){
-  const isOPD = tbodyId==='opd-stat-body';
-  const rows = isOPD ? opdStatRows : ipdStatRows;
-
-  if(field==='fileNo') val = sanitizeFileNo(val);
-
-  rows[idx][field] = val;
-
-  // ❌ remove ensureTrailingEmptyRow
-  // ✅ use clean summary only
-
+function updateRow(tbodyId, idx, field, val, rerender=true){
+  const cfg = statConfig(tbodyId);
+  if(field === 'fileNo') val = sanitizeFileNo(val);
+  cfg.rows[idx][field] = val;
   if(rerender){
-    renderStatTable(
-      tbodyId,
-      rows,
-      isOPD ? OPD_DEPTS : IPD_WARDS,
-      isOPD ? 5 : 15,
-      isOPD ? updateOPDSummary : updateIPDSummary
-    );
-  }else{
-    (isOPD ? updateOPDSummary : updateIPDSummary)();
+    renderStatTable(tbodyId, cfg.rows, cfg.depts, cfg.target, cfg.onSummary);
+  } else {
+    cfg.onSummary();
   }
 }
 
-function deleteRow(tbodyId,idx){
-  const isOPD = tbodyId==='opd-stat-body';
-  let rows = isOPD ? opdStatRows : ipdStatRows;
-
-  rows.splice(idx,1);
-
+function deleteRow(tbodyId, idx){
+  statConfig(tbodyId).rows.splice(idx, 1);
   ensureSingleTrailingRow(tbodyId);
-
-  renderStatTable(
-    tbodyId,
-    isOPD ? opdStatRows : ipdStatRows,
-    isOPD ? OPD_DEPTS : IPD_WARDS,
-    isOPD ? 5 : 15,
-    isOPD ? updateOPDSummary : updateIPDSummary
-  );
+  const cfg = statConfig(tbodyId);
+  renderStatTable(tbodyId, cfg.rows, cfg.depts, cfg.target, cfg.onSummary);
+  saveDraft();
 }
 
 function addOPDRow(){
@@ -1341,57 +1268,29 @@ function saveMedError(){if(!requireFolderSetup()) return; const data=collectMedE
 
 function handleStatKeyDown(e){
   if(e.key !== 'Enter') return;
-
   e.preventDefault();
 
   const tbodyId = e.target.dataset.tbody;
   const idx = Number(e.target.dataset.idx);
   const field = e.target.dataset.field;
-
-  const isOPD = tbodyId === 'opd-stat-body';
-  const rows = isOPD ? opdStatRows : ipdStatRows;
+  const cfg = statConfig(tbodyId);
+  const { rows } = cfg;
   const row = rows[idx];
 
-  // 👉 FLOW
-
   if(field === 'fileNo'){
-    if(row.fileNo.length === 4){
-      focusTableField(tbodyId, idx, 'timeStart');
-    }
+    if(row.fileNo.length === 4) focusTableField(tbodyId, idx, 'timeStart');
     return;
   }
 
   if(field === 'timeStart'){
-    if(row.timeStart){
-      focusTableField(tbodyId, idx, 'timeEnd');
-    }
+    if(row.timeStart) focusTableField(tbodyId, idx, 'timeEnd');
     return;
   }
 
   if(field === 'timeEnd'){
     if(row.timeEnd){
-
-      // ✅ ensure next row exists (BUT DO NOT render immediately)
-      const next = rows[idx + 1];
-      if(!next){
-        rows.push({
-          id: crypto.randomUUID(),
-          fileNo:'',
-          timeStart:'',
-          timeEnd:''
-        });
-      }
-
-      // 👉 now render ONCE
-      renderStatTable(
-        tbodyId,
-        rows,
-        isOPD ? OPD_DEPTS : IPD_WARDS,
-        isOPD ? 5 : 15,
-        isOPD ? updateOPDSummary : updateIPDSummary
-      );
-
-      // 👉 move to next row AFTER render
+      if(!rows[idx + 1]) rows.push({ id: crypto.randomUUID(), fileNo:'', timeStart:'', timeEnd:'' });
+      renderStatTable(tbodyId, rows, cfg.depts, cfg.target, cfg.onSummary);
       focusTableField(tbodyId, idx + 1, 'fileNo');
     }
     return;
@@ -1714,9 +1613,18 @@ async function loadSharedFolderReport(){
         console.warn('Skip invalid JSON file:', name, e);
       }
     }
-    reportRecords = records;
+    const seen = new Set();
+    const deduped = records.filter(r => {
+      const key = `${r.savedAt}|${r.type}|${r.date}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    const dupeCount = records.length - deduped.length;
+    reportRecords = deduped;
     renderReport();
-    showToast('📊', `โหลดรายงาน ${reportRecords.length} รายการ จาก ${jsonFiles} ไฟล์`);
+    const dupeNote = dupeCount > 0 ? ` (ซ้ำ ${dupeCount})` : '';
+    showToast('📊', `โหลดรายงาน ${reportRecords.length} รายการ จาก ${jsonFiles} ไฟล์${dupeNote}`);
   } catch (e) {
     console.error('loadSharedFolderReport failed:', e);
     showToast('⚠','โหลดรายงานไม่สำเร็จ: ' + e.message);
@@ -1876,6 +1784,7 @@ function renderDashboard(){
 
     <div class="export-row">
       <button class="btn btn-ghost btn-sm" onclick="exportDashboardExcel()">📊 Export Excel</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportDashboardDataStudioJSON()">🧩 Export Data Studio JSON</button>
       <button class="btn btn-ghost btn-sm" onclick="exportDashboardPDF()">🖨 Export PDF</button>
     </div>
   `;
@@ -1901,6 +1810,142 @@ function buildDashboardExportTables(){
     opdPassPercent:pctText(m.opdPass,m.opdTotal), ipdPassPercent:pctText(m.ipdPass,m.ipdTotal), opdN:m.opdTotal, ipdN:m.ipdTotal
   }));
   return {filtered, k, monthRows};
+}
+
+function safeNumber(value){
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function buildDataStudioRows(records){
+  const rows = [];
+  records.forEach(record => {
+    const date = record.date || '';
+    const month = monthKey(date);
+    const year = date ? date.slice(0,4) : '';
+    const common = {
+      schema_version: String(record.schemaVersion || 'legacy'),
+      app_name: record.appName || KPI_APP_NAME,
+      source_file: record.__sourceFile || '',
+      saved_at: record.savedAt || '',
+      date,
+      year,
+      month,
+      record_type: record.type || '',
+      service_type: '',
+      row_type: '',
+      row_id: '',
+      file_no: '',
+      time_start: '',
+      time_end: '',
+      target_minutes: null,
+      minutes_used: null,
+      within_target: null,
+      pass_count: 0,
+      fail_count: 0,
+      stat_count: 0,
+      med_error_count: 0,
+      brief_count: 0,
+      checklist_total: null,
+      checklist_pass: null,
+      checklist_issue: null,
+      med_error_item: '',
+      med_error_type: '',
+      med_error_location: '',
+      signature: record.signature || '',
+      detail: '',
+      note: ''
+    };
+
+    if ((record.type === 'opd-stat' || record.type === 'ipd-stat') && Array.isArray(record.entries)) {
+      const service = record.type === 'opd-stat' ? 'OPD' : 'IPD';
+      record.entries.forEach((entry, idx) => {
+        const minutes = safeNumber(entry.minutesUsed ?? calcDiff(entry.timeStart, entry.timeEnd));
+        const within = entry.withinTarget === true ? true : entry.withinTarget === false ? false : null;
+        rows.push({
+          ...common,
+          service_type: service,
+          row_type: 'stat_entry',
+          row_id: entry.id || `${record.type}_${date}_${idx + 1}`,
+          file_no: String(entry.fileNo || ''),
+          time_start: entry.timeStart || '',
+          time_end: entry.timeEnd || '',
+          target_minutes: safeNumber(entry.targetMinutes || record.targetMinutes || (record.type === 'opd-stat' ? 5 : 15)),
+          minutes_used: minutes,
+          within_target: within,
+          pass_count: within === true ? 1 : 0,
+          fail_count: within === false ? 1 : 0,
+          stat_count: 1,
+          note: entry.note || ''
+        });
+      });
+      return;
+    }
+
+    if (record.type === 'med-error') {
+      rows.push({
+        ...common,
+        row_type: 'med_error',
+        row_id: `${record.type}_${date}_${record.savedAt || ''}`,
+        med_error_count: 1,
+        med_error_item: record.item || '',
+        med_error_type: record.errorType || 'ไม่ระบุประเภท',
+        med_error_location: record.location || 'ไม่ระบุ Location',
+        detail: record.detail || '',
+        note: record.note || ''
+      });
+      return;
+    }
+
+    if (record.type === 'opd-brief' || record.type === 'ipd-brief') {
+      const checks = record.checks && typeof record.checks === 'object' ? record.checks : {};
+      const values = Object.values(checks);
+      const pass = values.filter(v => v === true).length;
+      const issue = values.filter(v => v === false).length;
+      rows.push({
+        ...common,
+        service_type: record.type === 'opd-brief' ? 'OPD' : 'IPD',
+        row_type: 'brief_record',
+        row_id: `${record.type}_${date}_${record.savedAt || ''}`,
+        brief_count: 1,
+        checklist_total: values.length,
+        checklist_pass: pass,
+        checklist_issue: issue,
+        detail: record.issues || ''
+      });
+    }
+  });
+  return rows;
+}
+
+function buildDataStudioExportObject(){
+  const sourceRecords = reportRecords.length ? getDashboardFilteredRecords() : savedRecords;
+  const rows = buildDataStudioRows(sourceRecords);
+  return {
+    schemaVersion: 'looker-studio-flat-v1',
+    appName: KPI_APP_NAME,
+    generatedAt: new Date().toISOString(),
+    timezone: 'Asia/Bangkok',
+    description: 'Flat analytics-ready JSON for Looker Studio/Data Studio. Each object in rows has the same fields; use date/month/record_type/service_type as dimensions and *_count/minutes_used as metrics.',
+    rowCount: rows.length,
+    rows
+  };
+}
+
+function exportDashboardDataStudioJSON(){
+  const sourceRecords = reportRecords.length ? getDashboardFilteredRecords() : savedRecords;
+  if(!sourceRecords.length){
+    showToast('⚠','ยังไม่มีข้อมูลสำหรับ Export Data Studio JSON');
+    return;
+  }
+  const exportObject = buildDataStudioExportObject();
+  const today = new Date().toISOString().slice(0,10);
+  downloadBlob(
+    `pharmacy_kpi_datastudio_${today}.json`,
+    JSON.stringify(exportObject, null, 2),
+    'application/json;charset=utf-8'
+  );
+  showToast('🧩', `Export Data Studio JSON ${exportObject.rowCount} rows`);
 }
 
 function exportDashboardExcel(){
