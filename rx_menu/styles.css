@@ -252,6 +252,8 @@ body {
   border-radius: var(--radius-md);
   text-decoration: none;
   color: var(--text-main);
+  font-family: inherit;
+  font-size: inherit;
   transition: border-color var(--transition), box-shadow var(--transition),
               transform var(--transition), background var(--transition);
   cursor: pointer;

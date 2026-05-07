@@ -26,12 +26,17 @@ from pathlib import Path
 # ── Config ─────────────────────────────────────────────────────
 DEFAULT_PORT = 8765
 DATA_DIR     = Path(__file__).parent / 'data'
+KPI_DIR      = DATA_DIR / 'kpi'
+KS_DIR       = DATA_DIR / 'ks'
 COLLECTIONS  = {'faqs', 'items', 'vdos', 'kpi'}
 
 
 # ── File helpers ───────────────────────────────────────────────
+def col_dir(col):
+    return KPI_DIR if col == 'kpi' else KS_DIR
+
 def data_file(col):
-    return DATA_DIR / f'{col}.json'
+    return col_dir(col) / f'{col}.json'
 
 def load(col):
     p = data_file(col)
@@ -43,7 +48,7 @@ def load(col):
         return []
 
 def save_col(col, data):
-    DATA_DIR.mkdir(exist_ok=True)
+    col_dir(col).mkdir(parents=True, exist_ok=True)
     data_file(col).write_text(
         json.dumps(data, ensure_ascii=False, indent=2),
         encoding='utf-8'
@@ -87,7 +92,11 @@ class Handler(BaseHTTPRequestHandler):
     # GET
     def do_GET(self):
         if self.path == '/ping':
-            self.send_json(200, {'ok': True, 'server': 'BKN KS Server'})
+            self.send_json(200, {
+                'ok': True,
+                'server': 'BKN KS Server',
+                'url': f'http://{Handler._ip}:{Handler._port}'
+            })
             return
         col = self.parse_col()
         if col:
@@ -153,14 +162,17 @@ def main():
             print(f'Invalid port: {args[1]}')
             sys.exit(1)
 
-    # Init empty data files on first run
-    DATA_DIR.mkdir(exist_ok=True)
+    # Init sub-folders and empty data files on first run
+    KPI_DIR.mkdir(parents=True, exist_ok=True)
+    KS_DIR.mkdir(parents=True, exist_ok=True)
     for col in COLLECTIONS:
         p = data_file(col)
         if not p.exists():
             p.write_text('[]', encoding='utf-8')
 
     ip     = get_local_ip()
+    Handler._ip   = ip
+    Handler._port = port
     server = HTTPServer(('0.0.0.0', port), Handler)
 
     print()
@@ -169,7 +181,8 @@ def main():
     print('  ╚══════════════════════════════════════════════╝')
     print()
     print(f'  Server URL  :  http://{ip}:{port}')
-    print(f'  Data folder :  {DATA_DIR.resolve()}')
+    print(f'  KPI data    :  {KPI_DIR.resolve()}')
+    print(f'  KS data     :  {KS_DIR.resolve()}')
     print()
     print('  ── How to connect ──────────────────────────────')
     print('  1. Copy the Server URL above.')

@@ -639,20 +639,38 @@ function updateFolderUI(isActive, labelText) {
   }
 }
 
+async function pingServer(url, timeoutMs = 3000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(`${url}/ping`, { signal: ctrl.signal });
+    clearTimeout(t);
+    return await r.json();
+  } catch { clearTimeout(t); return null; }
+}
+
 async function restoreFolderAccess() {
   serverUrl = getServerUrl();
-  if (!serverUrl) { updateFolderUI(false); return; }
-  try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 3000);
-    const r = await fetch(`${serverUrl}/ping`, { signal: ctrl.signal });
-    clearTimeout(t);
-    const j = await r.json();
-    if (j.ok) { updateFolderUI(true); showToast('🌐', 'เชื่อมต่อ Server สำเร็จ'); }
-    else throw new Error('bad response');
-  } catch {
-    updateFolderUI(false, serverUrl + ' — ไม่สามารถเชื่อมต่อได้ (จะลองใหม่เมื่อบันทึก)');
+
+  // Try saved URL first
+  if (serverUrl) {
+    const j = await pingServer(serverUrl);
+    if (j?.ok) { updateFolderUI(true); showToast('🌐', 'เชื่อมต่อ Server สำเร็จ'); return; }
+    updateFolderUI(false, serverUrl + ' — ไม่สามารถเชื่อมต่อได้');
   }
+
+  // Auto-discover on localhost (fixed port)
+  const j = await pingServer('http://localhost:8765', 1500);
+  if (j?.ok) {
+    const lanUrl = j.url || 'http://localhost:8765';
+    serverUrl = lanUrl;
+    localStorage.setItem(SERVER_KEY, lanUrl);
+    updateFolderUI(true, lanUrl + ' (auto-detected)');
+    showToast('🌐', 'พบ Server อัตโนมัติ: ' + lanUrl);
+    return;
+  }
+
+  if (!serverUrl) updateFolderUI(false);
 }
 
 window.addEventListener('DOMContentLoaded', async () => {

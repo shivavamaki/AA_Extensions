@@ -82,6 +82,24 @@ function getServerUrl() {
   return (localStorage.getItem(SERVER_KEY) || '').replace(/\/$/, '');
 }
 
+async function pingServer(url, timeoutMs = 2000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(`${url}/ping`, { signal: ctrl.signal });
+    clearTimeout(t);
+    return await r.json();
+  } catch { clearTimeout(t); return null; }
+}
+
+async function autoDiscoverServer() {
+  const j = await pingServer('http://localhost:8765', 1500);
+  if (!j?.ok) return null;
+  const lanUrl = j.url || 'http://localhost:8765';
+  localStorage.setItem(SERVER_KEY, lanUrl);
+  return lanUrl;
+}
+
 function getData(key) {
   const col = KEY_COL[key];
   if (col && cache[col] !== null) return cache[col];
@@ -128,9 +146,13 @@ function updateServerBar(configured, ok) {
     el.innerHTML = '<div class="server-bar-off"><span class="server-dot-icon"></span>No server</div>';
     return;
   }
+  const url = getServerUrl();
+  const copyBtn = url
+    ? `<button onclick="navigator.clipboard?.writeText('${url}')" style="margin-left:6px;background:none;border:none;cursor:pointer;font-size:10px;color:inherit;opacity:.7;" title="Copy URL">⧉</button>`
+    : '';
   el.innerHTML = ok
-    ? '<div class="server-bar-ok"><span class="server-dot-icon"></span>Server connected</div>'
-    : '<div class="server-bar-err"><span class="server-dot-icon"></span>Server unreachable</div>';
+    ? `<div class="server-bar-ok"><span class="server-dot-icon"></span>Server connected${copyBtn}</div>`
+    : `<div class="server-bar-err"><span class="server-dot-icon"></span>Server unreachable${copyBtn}</div>`;
 }
 
 function getAdminPw() {
@@ -1103,12 +1125,30 @@ function seedSampleData() {
 // INIT
 // ════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
-  const configured = !!getServerUrl();
+  let configured = !!getServerUrl();
+
+  // Auto-discover if no saved URL, or if saved URL fails
+  if (!configured) {
+    const found = await autoDiscoverServer();
+    if (found) { configured = true; showToast('🌐 พบ Server อัตโนมัติ: ' + found, 'ok'); }
+  }
+
   if (configured) {
     const ok = await loadAllFromServer();
     state.serverOk = ok;
     updateServerBar(true, ok);
-    if (!ok) showToast('⚠ Server ไม่ตอบกลับ — ใช้ข้อมูลสำรองในเครื่อง', 'error');
+    if (!ok) {
+      // Saved URL failed — try localhost auto-discovery as fallback
+      const found = await autoDiscoverServer();
+      if (found && found !== getServerUrl()) {
+        const ok2 = await loadAllFromServer();
+        state.serverOk = ok2;
+        updateServerBar(true, ok2);
+        if (!ok2) showToast('⚠ Server ไม่ตอบกลับ — ใช้ข้อมูลสำรองในเครื่อง', 'error');
+      } else {
+        showToast('⚠ Server ไม่ตอบกลับ — ใช้ข้อมูลสำรองในเครื่อง', 'error');
+      }
+    }
   } else {
     seedSampleData();
     updateServerBar(false, false);

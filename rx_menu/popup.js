@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAdrReport();
   initFormularyTab();
   initKnowledgeTab();
+  initKpiApp();
   initWorkspaceSections();
 });
 
@@ -2907,6 +2908,14 @@ function initWorkspaceSections() {
 // ──────────────────────────────────────────────────────────────────────────────
 // Knowledge Sharing tab
 // ──────────────────────────────────────────────────────────────────────────────
+function kpiUrl() {
+  return chrome.runtime.getURL('kpi/index.html');
+}
+
+function initKpiApp() {
+  document.getElementById('btnKpiApp')?.addEventListener('click', () => chrome.tabs.create({ url: kpiUrl() }));
+}
+
 function knowledgeUrl(hash) {
   const base = chrome.runtime.getURL('knowledge/index.html');
   return hash ? `${base}#${hash}` : base;

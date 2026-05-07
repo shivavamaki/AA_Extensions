@@ -60,7 +60,8 @@
         "formulary/data/default_formulas.js",
         "knowledge/index.html",
         "knowledge/app.js",
-        "knowledge/styles.css"
+        "knowledge/styles.css",
+        "kpi/index.html"
       ],
       "matches": [
         "<all_urls>"
