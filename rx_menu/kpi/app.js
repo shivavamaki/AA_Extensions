@@ -1,6 +1,5 @@
 const KPI_SCHEMA_VERSION = '1.0.0';
 const KPI_APP_NAME = 'pharmacy-kpi-data-system';
-const SERVER_KEY = 'pharm_kpi.server_url';
 
 const APP_UPDATE_SOURCE_PATH = '\\\\10.134.10.5\\BKNinfo\\24 Pharmacy\\EXT\\pharmacy';
 const APP_TARGET_PATH = 'D:\\pharmacy';
@@ -68,10 +67,6 @@ function restoreDraft(){
 // ── SERVER CONNECTION ──
 let serverUrl = '';
 
-function getServerUrl() {
-  return (localStorage.getItem(SERVER_KEY) || '').replace(/\/$/, '');
-}
-
 function updateFolderUI(isActive, labelText) {
   const dot = document.getElementById('folderDot');
   const path = document.getElementById('folderPath');
@@ -83,6 +78,9 @@ function updateFolderUI(isActive, labelText) {
   }
 }
 
+// ── ADMIN: edit this URL if the server moves ──────────────────
+const SERVER_URL = 'http://10.134.110.81:8765';
+
 async function pingServer(url, timeoutMs = 3000) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -93,46 +91,17 @@ async function pingServer(url, timeoutMs = 3000) {
   } catch { clearTimeout(t); return null; }
 }
 
-const SERVER_CANDIDATES = [
-  'http://localhost:8765',
-  'http://10.134.10.5:8765',
-  'http://10.134.10.91:8765',
-];
-
-async function autoDiscoverServer() {
-  for (const candidate of SERVER_CANDIDATES) {
-    const j = await pingServer(candidate, 1500);
-    if (j?.ok) {
-      const lanUrl = j.url || candidate;
-      serverUrl = lanUrl;
-      localStorage.setItem(SERVER_KEY, lanUrl);
-      return lanUrl;
-    }
-  }
-  return null;
-}
-
 async function restoreFolderAccess() {
-  serverUrl = getServerUrl();
-
-  // Try saved URL first
-  if (serverUrl) {
-    const j = await pingServer(serverUrl, 2000);
-    if (j?.ok) { updateFolderUI(true); return; }
-  }
-
-  // Auto-discover across known candidates
-  updateFolderUI(false, 'กำลังค้นหา Server ...');
-  const found = await autoDiscoverServer();
-  if (found) {
+  serverUrl = SERVER_URL;
+  updateFolderUI(false, 'กำลังเชื่อมต่อ Server ...');
+  const j = await pingServer(serverUrl, 3000);
+  if (j?.ok) {
     updateFolderUI(true);
-    showToast('🌐', 'เชื่อมต่อ Server สำเร็จ: ' + found);
     return;
   }
-
-  // Server not reachable — alert and show lock screen
   updateFolderUI(false, 'ไม่พบ Server — กด "ค้นหา Server" เพื่อลองใหม่');
-  alert('ไม่พบ KPI Server\n\nกรุณาตรวจสอบ:\n• เปิด start_server.bat บนเครื่อง Server แล้วหรือยัง\n• เครื่องนี้อยู่ใน Network เดียวกันหรือไม่\n\nกด "ค้นหา Server" บนหน้าจอเพื่อเชื่อมต่อใหม่');
+  alert('ไม่พบ KPI Server: ' + serverUrl + '\n\nกรุณาตรวจสอบ:\n• เปิด start_server.bat บนเครื่อง Server แล้วหรือยัง\n• เครื่องนี้อยู่ใน Network เดียวกันหรือไม่');
+  serverUrl = '';
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
@@ -282,15 +251,17 @@ function requireFolderSetup() {
 }
 
 async function pickFolder() {
-  updateFolderUI(false, 'กำลังค้นหา Server ...');
-  const found = await autoDiscoverServer();
-  if (found) {
+  serverUrl = SERVER_URL;
+  updateFolderUI(false, 'กำลังเชื่อมต่อ Server ...');
+  const j = await pingServer(serverUrl, 3000);
+  if (j?.ok) {
     updateFolderUI(true);
     enforceAppLock();
-    showToast('🌐', 'เชื่อมต่อ Server สำเร็จ: ' + found);
+    showToast('🌐', 'เชื่อมต่อ Server สำเร็จ: ' + serverUrl);
   } else {
+    serverUrl = '';
     updateFolderUI(false, 'ไม่พบ Server — กด "ค้นหา Server" เพื่อลองใหม่');
-    alert('ไม่พบ KPI Server\n\nกรุณาตรวจสอบ:\n• เปิด start_server.bat บนเครื่อง Server แล้วหรือยัง\n• เครื่องนี้อยู่ใน Network เดียวกันหรือไม่');
+    alert('ไม่พบ KPI Server: ' + SERVER_URL + '\n\nกรุณาตรวจสอบ:\n• เปิด start_server.bat บนเครื่อง Server แล้วหรือยัง\n• เครื่องนี้อยู่ใน Network เดียวกันหรือไม่');
   }
 }
 

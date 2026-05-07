@@ -8,7 +8,8 @@ const KEYS = {
   adminPw: 'bkn_ks.admin_pw.v1',
 };
 
-const SERVER_KEY = 'bkn_ks.server_url';
+// ── ADMIN: edit this URL if the server moves ──────────────────
+const SERVER_URL = 'http://10.134.110.81:8765';
 const DEFAULT_PW = 'pharmacy2024';
 
 // ── Category labels ────────────────────────────────────────────
@@ -78,9 +79,7 @@ const KEY_COL = {
   [KEYS.vdos]:  'vdos',
 };
 
-function getServerUrl() {
-  return (localStorage.getItem(SERVER_KEY) || '').replace(/\/$/, '');
-}
+function getServerUrl() { return SERVER_URL; }
 
 async function pingServer(url, timeoutMs = 2000) {
   const ctrl = new AbortController();
@@ -90,19 +89,6 @@ async function pingServer(url, timeoutMs = 2000) {
     clearTimeout(t);
     return await r.json();
   } catch { clearTimeout(t); return null; }
-}
-
-async function autoDiscoverServer() {
-  const candidates = ['http://localhost:8765', 'http://10.134.10.5:8765', 'http://10.134.10.91:8765'];
-  for (const candidate of candidates) {
-    const j = await pingServer(candidate, 1500);
-    if (j?.ok) {
-      const lanUrl = j.url || candidate;
-      localStorage.setItem(SERVER_KEY, lanUrl);
-      return lanUrl;
-    }
-  }
-  return null;
 }
 
 function getData(key) {
@@ -582,15 +568,13 @@ function buildAdminSettingsPage() {
       <div class="settings-section">
         <div class="settings-section-title">🖥 Server URL ${serverStatus}</div>
         <div class="form-group">
-          <label class="form-label">URL ของ Python Server (เช่น http://10.134.10.50:8765)</label>
-          <input class="form-input" id="setServerUrl" value="${esc(serverUrl)}" placeholder="http://10.x.x.x:8765">
-          <div class="form-hint">เว้นว่างเพื่อใช้ข้อมูลเฉพาะเครื่อง (localStorage)</div>
+          <div class="form-hint" style="font-family:monospace;font-size:13px">${esc(SERVER_URL)}</div>
+          <div class="form-hint">แก้ไข URL ได้ในไฟล์ <code>knowledge/app.js</code> บรรทัดแรก (ต้องการสิทธิ์ Admin)</div>
         </div>
         <div class="settings-gap"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-primary" id="btnSaveServerUrl">💾 Save &amp; Connect</button>
           <button class="btn btn-ghost" id="btnTestServerUrl">🔌 Test Connection</button>
-          ${serverUrl ? '<button class="btn btn-ghost" id="btnMigrateLocal">⬆ Push local data to server</button>' : ''}
+          <button class="btn btn-ghost" id="btnMigrateLocal">⬆ Push local data to server</button>
         </div>
         <div class="form-error" id="serverUrlError" hidden></div>
       </div>
@@ -675,8 +659,7 @@ function bindPageEvents() {
   mc.querySelectorAll('[data-del-item]').forEach(btn => btn.addEventListener('click', e => { e.stopPropagation(); openConfirmModal('item', btn.dataset.delItem); }));
   mc.querySelectorAll('[data-del-vdo]').forEach(btn  => btn.addEventListener('click', e => { e.stopPropagation(); openConfirmModal('vdo',  btn.dataset.delVdo);  }));
 
-  // Settings page — server URL
-  mc.querySelector('#btnSaveServerUrl')?.addEventListener('click', doSaveServerUrl);
+  // Settings page — server URL (read-only, set in code)
   mc.querySelector('#btnTestServerUrl')?.addEventListener('click', doTestServerUrl);
   mc.querySelector('#btnMigrateLocal')?.addEventListener('click', doMigrateLocalToServer);
 
@@ -940,45 +923,11 @@ function doLogout() {
   showToast('ออกจากระบบแล้ว', 'info');
 }
 
-async function doSaveServerUrl() {
-  const input  = document.getElementById('setServerUrl');
-  const errEl  = document.getElementById('serverUrlError');
-  const url    = (input?.value ?? '').trim().replace(/\/$/, '');
-
-  if (url && !url.startsWith('http')) {
-    errEl.textContent = 'URL ต้องขึ้นต้นด้วย http://'; errEl.hidden = false; return;
-  }
-  errEl.hidden = true;
-  localStorage.setItem(SERVER_KEY, url);
-
-  if (url) {
-    showToast('กำลังเชื่อมต่อ Server…', 'info');
-    const ok = await loadAllFromServer();
-    state.serverOk = ok;
-    updateServerBar(true, ok);
-    if (ok) {
-      showToast('เชื่อมต่อ Server สำเร็จ ✓', 'success');
-    } else {
-      errEl.textContent = 'ไม่สามารถเชื่อมต่อได้ — ตรวจสอบว่า Server กำลังรันอยู่';
-      errEl.hidden = false;
-    }
-  } else {
-    state.serverOk = false;
-    updateServerBar(false, false);
-    showToast('ปิดการใช้งาน Server แล้ว', 'info');
-  }
-  renderPage();
-}
-
 async function doTestServerUrl() {
-  const input = document.getElementById('setServerUrl');
   const errEl = document.getElementById('serverUrlError');
-  const url   = (input?.value ?? '').trim().replace(/\/$/, '');
   errEl.hidden = true;
-
-  if (!url) { errEl.textContent = 'กรุณาใส่ URL ก่อน'; errEl.hidden = false; return; }
   try {
-    const r = await fetch(`${url}/ping`);
+    const r = await fetch(`${SERVER_URL}/ping`);
     const j = await r.json();
     if (j.ok) {
       showToast(`✓ Server ตอบกลับ: ${j.server || 'OK'}`, 'success');
@@ -986,7 +935,7 @@ async function doTestServerUrl() {
       throw new Error('bad response');
     }
   } catch {
-    errEl.textContent = 'ไม่สามารถเชื่อมต่อได้ — ตรวจสอบ URL และ Server';
+    errEl.textContent = 'ไม่สามารถเชื่อมต่อได้ — ตรวจสอบว่า Server กำลังรันอยู่';
     errEl.hidden = false;
   }
 }
@@ -1130,34 +1079,10 @@ function seedSampleData() {
 // INIT
 // ════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
-  let configured = !!getServerUrl();
-
-  // Auto-discover if no saved URL, or if saved URL fails
-  if (!configured) {
-    const found = await autoDiscoverServer();
-    if (found) { configured = true; showToast('🌐 พบ Server อัตโนมัติ: ' + found, 'ok'); }
-  }
-
-  if (configured) {
-    const ok = await loadAllFromServer();
-    state.serverOk = ok;
-    updateServerBar(true, ok);
-    if (!ok) {
-      // Saved URL failed — try localhost auto-discovery as fallback
-      const found = await autoDiscoverServer();
-      if (found && found !== getServerUrl()) {
-        const ok2 = await loadAllFromServer();
-        state.serverOk = ok2;
-        updateServerBar(true, ok2);
-        if (!ok2) showToast('⚠ Server ไม่ตอบกลับ — ใช้ข้อมูลสำรองในเครื่อง', 'error');
-      } else {
-        showToast('⚠ Server ไม่ตอบกลับ — ใช้ข้อมูลสำรองในเครื่อง', 'error');
-      }
-    }
-  } else {
-    seedSampleData();
-    updateServerBar(false, false);
-  }
+  const ok = await loadAllFromServer();
+  state.serverOk = ok;
+  updateServerBar(true, ok);
+  if (!ok) showToast('⚠ Server ไม่ตอบกลับ (' + SERVER_URL + ') — ใช้ข้อมูลสำรองในเครื่อง', 'error');
 
   // Sidebar public nav
   document.querySelectorAll('#sidebarNav .nav-item[data-page]').forEach(btn => {
