@@ -28,10 +28,10 @@
     <div class="folder-dot" id="folderDot"></div>
     <div class="folder-info">
       <div class="folder-label">KPI Server</div>
-      <div class="folder-path" id="folderPath">ยังไม่ได้ตั้งค่า Server — กด "ตั้งค่า Server URL"</div>
+      <div class="folder-path" id="folderPath">กำลังค้นหา Server ...</div>
     </div>
   </div>
-  <button id="btn-pick-folder" class="btn btn-primary btn-sm">🌐 ตั้งค่า Server URL</button>
+  <button id="btn-pick-folder" class="btn btn-primary btn-sm">🔄 ค้นหา Server</button>
   <button id="btn-show-records" class="btn btn-ghost btn-sm">🗂 ดูบันทึกทั้งหมด</button>
 </div>
 
@@ -307,11 +307,11 @@
 
 <div class="app-lock" id="app-lock">
   <div class="app-lock-card">
-    <div class="app-lock-title">กรุณาตั้งค่า Server URL ก่อนใช้งาน</div>
-    <div class="app-lock-text">ระบบต้องเชื่อมต่อกับ KPI Server เพื่อบันทึกและอ่านข้อมูล กรุณาใส่ Server URL แล้วกดเชื่อมต่อก่อนเริ่มบันทึกข้อมูล (เปิด start_server.bat บน Server PC ก่อน)</div>
+    <div class="app-lock-title">ไม่พบ KPI Server</div>
+    <div class="app-lock-text">ระบบค้นหา Server อัตโนมัติแล้วแต่ไม่พบ — กรุณาเปิด start_server.bat บนเครื่อง Server แล้วกดปุ่มด้านล่างเพื่อค้นหาใหม่</div>
     <div class="app-lock-path" id="app-lock-path">http://10.134.10.5:8765</div>
     <div class="actions-row" style="margin-top:0">
-      <button id="btn-pick-folder-lock" class="btn btn-primary">🌐 ตั้งค่า Server URL</button>
+      <button id="btn-pick-folder-lock" class="btn btn-primary">🔄 ค้นหา Server</button>
     </div>
   </div>
 </div>

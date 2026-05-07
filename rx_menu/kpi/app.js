@@ -93,31 +93,46 @@ async function pingServer(url, timeoutMs = 3000) {
   } catch { clearTimeout(t); return null; }
 }
 
-async function restoreFolderAccess() {
-  serverUrl = getServerUrl();
+const SERVER_CANDIDATES = [
+  'http://localhost:8765',
+  'http://10.134.10.5:8765',
+  'http://10.134.10.91:8765',
+];
 
-  // Try saved URL first
-  if (serverUrl) {
-    const j = await pingServer(serverUrl);
-    if (j?.ok) { updateFolderUI(true); showToast('🌐', 'เชื่อมต่อ Server สำเร็จ'); return; }
-    updateFolderUI(false, serverUrl + ' — ไม่สามารถเชื่อมต่อได้');
-  }
-
-  // Auto-discover: try known candidates (localhost first, then LAN server)
-  const candidates = ['http://localhost:8765', 'http://10.134.10.5:8765', 'http://10.134.10.91:8765'];
-  for (const candidate of candidates) {
+async function autoDiscoverServer() {
+  for (const candidate of SERVER_CANDIDATES) {
     const j = await pingServer(candidate, 1500);
     if (j?.ok) {
       const lanUrl = j.url || candidate;
       serverUrl = lanUrl;
       localStorage.setItem(SERVER_KEY, lanUrl);
-      updateFolderUI(true, lanUrl + ' (auto-detected)');
-      showToast('🌐', 'พบ Server อัตโนมัติ: ' + lanUrl);
-      return;
+      return lanUrl;
     }
   }
+  return null;
+}
 
-  if (!serverUrl) updateFolderUI(false);
+async function restoreFolderAccess() {
+  serverUrl = getServerUrl();
+
+  // Try saved URL first
+  if (serverUrl) {
+    const j = await pingServer(serverUrl, 2000);
+    if (j?.ok) { updateFolderUI(true); return; }
+  }
+
+  // Auto-discover across known candidates
+  updateFolderUI(false, 'กำลังค้นหา Server ...');
+  const found = await autoDiscoverServer();
+  if (found) {
+    updateFolderUI(true);
+    showToast('🌐', 'เชื่อมต่อ Server สำเร็จ: ' + found);
+    return;
+  }
+
+  // Server not reachable — alert and show lock screen
+  updateFolderUI(false, 'ไม่พบ Server — กด "ค้นหา Server" เพื่อลองใหม่');
+  alert('ไม่พบ KPI Server\n\nกรุณาตรวจสอบ:\n• เปิด start_server.bat บนเครื่อง Server แล้วหรือยัง\n• เครื่องนี้อยู่ใน Network เดียวกันหรือไม่\n\nกด "ค้นหา Server" บนหน้าจอเพื่อเชื่อมต่อใหม่');
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
@@ -267,23 +282,15 @@ function requireFolderSetup() {
 }
 
 async function pickFolder() {
-  const url = prompt('ใส่ URL ของ KPI Server:\nเช่น http://10.134.10.5:8765', serverUrl || getServerUrl() || 'http://10.134.10.5:8765');
-  if (url === null) return;
-  const trimmed = (url || '').trim().replace(/\/$/, '');
-  if (!trimmed) {
-    serverUrl = ''; localStorage.removeItem(SERVER_KEY); updateFolderUI(false); enforceAppLock(); return;
-  }
-  updateFolderUI(false, 'กำลังเชื่อมต่อ ' + trimmed + ' ...');
-  try {
-    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 4000);
-    const r = await fetch(`${trimmed}/ping`, { signal: ctrl.signal }); clearTimeout(t);
-    const j = await r.json(); if (!j.ok) throw new Error('Server ตอบผิดปกติ');
-    serverUrl = trimmed; localStorage.setItem(SERVER_KEY, trimmed); updateFolderUI(true); enforceAppLock();
-    showToast('✓', 'เชื่อมต่อ Server สำเร็จ: ' + trimmed);
-  } catch (e) {
-    const force = confirm('ไม่สามารถเชื่อมต่อ Server ได้\n\nต้องการบันทึก URL นี้อยู่ดีไหม?');
-    if (force) { serverUrl = trimmed; localStorage.setItem(SERVER_KEY, trimmed); updateFolderUI(false, trimmed + ' — ตั้งค่าแล้ว (offline)'); enforceAppLock(); }
-    else { updateFolderUI(false); }
+  updateFolderUI(false, 'กำลังค้นหา Server ...');
+  const found = await autoDiscoverServer();
+  if (found) {
+    updateFolderUI(true);
+    enforceAppLock();
+    showToast('🌐', 'เชื่อมต่อ Server สำเร็จ: ' + found);
+  } else {
+    updateFolderUI(false, 'ไม่พบ Server — กด "ค้นหา Server" เพื่อลองใหม่');
+    alert('ไม่พบ KPI Server\n\nกรุณาตรวจสอบ:\n• เปิด start_server.bat บนเครื่อง Server แล้วหรือยัง\n• เครื่องนี้อยู่ใน Network เดียวกันหรือไม่');
   }
 }
 
