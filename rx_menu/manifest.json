@@ -61,7 +61,9 @@
         "knowledge/index.html",
         "knowledge/app.js",
         "knowledge/styles.css",
-        "kpi/index.html"
+        "kpi/index.html",
+        "kpi/app.js",
+        "kpi/styles.css"
       ],
       "matches": [
         "<all_urls>"
