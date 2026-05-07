@@ -103,15 +103,18 @@ async function restoreFolderAccess() {
     updateFolderUI(false, serverUrl + ' — ไม่สามารถเชื่อมต่อได้');
   }
 
-  // Auto-discover on localhost (fixed port)
-  const j = await pingServer('http://localhost:8765', 1500);
-  if (j?.ok) {
-    const lanUrl = j.url || 'http://localhost:8765';
-    serverUrl = lanUrl;
-    localStorage.setItem(SERVER_KEY, lanUrl);
-    updateFolderUI(true, lanUrl + ' (auto-detected)');
-    showToast('🌐', 'พบ Server อัตโนมัติ: ' + lanUrl);
-    return;
+  // Auto-discover: try known candidates (localhost first, then LAN server)
+  const candidates = ['http://localhost:8765', 'http://10.134.10.5:8765', 'http://10.134.10.91:8765'];
+  for (const candidate of candidates) {
+    const j = await pingServer(candidate, 1500);
+    if (j?.ok) {
+      const lanUrl = j.url || candidate;
+      serverUrl = lanUrl;
+      localStorage.setItem(SERVER_KEY, lanUrl);
+      updateFolderUI(true, lanUrl + ' (auto-detected)');
+      showToast('🌐', 'พบ Server อัตโนมัติ: ' + lanUrl);
+      return;
+    }
   }
 
   if (!serverUrl) updateFolderUI(false);
@@ -264,7 +267,7 @@ function requireFolderSetup() {
 }
 
 async function pickFolder() {
-  const url = prompt('ใส่ URL ของ KPI Server:\nเช่น http://10.134.10.50:8765', serverUrl || getServerUrl());
+  const url = prompt('ใส่ URL ของ KPI Server:\nเช่น http://10.134.10.5:8765', serverUrl || getServerUrl() || 'http://10.134.10.5:8765');
   if (url === null) return;
   const trimmed = (url || '').trim().replace(/\/$/, '');
   if (!trimmed) {

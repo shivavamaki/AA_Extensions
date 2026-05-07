@@ -93,11 +93,16 @@ async function pingServer(url, timeoutMs = 2000) {
 }
 
 async function autoDiscoverServer() {
-  const j = await pingServer('http://localhost:8765', 1500);
-  if (!j?.ok) return null;
-  const lanUrl = j.url || 'http://localhost:8765';
-  localStorage.setItem(SERVER_KEY, lanUrl);
-  return lanUrl;
+  const candidates = ['http://localhost:8765', 'http://10.134.10.5:8765', 'http://10.134.10.91:8765'];
+  for (const candidate of candidates) {
+    const j = await pingServer(candidate, 1500);
+    if (j?.ok) {
+      const lanUrl = j.url || candidate;
+      localStorage.setItem(SERVER_KEY, lanUrl);
+      return lanUrl;
+    }
+  }
+  return null;
 }
 
 function getData(key) {
