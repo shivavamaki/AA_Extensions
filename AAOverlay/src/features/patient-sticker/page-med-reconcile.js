@@ -202,8 +202,14 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btnPrint")?.addEventListener("click", () => window.print());
   document.getElementById("btnAdd")?.addEventListener("click", addDrug);
 
+  // Live updates when tab is already open and background sends a new message
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type !== "OPEN_MED_RECONCILE") return;
     loadData(msg);
+  });
+
+  // First open: background stored the payload in session storage before creating the tab
+  chrome.storage.session.get("payload_medReconcile", (result) => {
+    if (result?.payload_medReconcile) loadData(result.payload_medReconcile);
   });
 });

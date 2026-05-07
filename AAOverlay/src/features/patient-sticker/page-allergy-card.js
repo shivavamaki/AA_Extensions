@@ -145,4 +145,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (msg.type !== MSG.OPEN_ALLERGY_CARD) return;
     renderCard(msg);
   });
+
+  chrome.storage.session.get("payload_allergyCard", (result) => {
+    if (result?.payload_allergyCard) renderCard(result.payload_allergyCard);
+  });
 });
