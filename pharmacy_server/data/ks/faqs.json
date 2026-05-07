@@ -1,0 +1,15 @@
+[
+  {
+    "id": "test1",
+    "question": "Test Q",
+    "answer": "Test A"
+  },
+  {
+    "id": "mouxkg5xuhd9h",
+    "question": "test test",
+    "answer": "test",
+    "category": "clinical",
+    "createdAt": "2026-05-07T03:32:32.854Z",
+    "updatedAt": "2026-05-07T03:32:32.854Z"
+  }
+]

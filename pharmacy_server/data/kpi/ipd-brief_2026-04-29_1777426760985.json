@@ -1,0 +1,20 @@
+{
+  "type": "ipd-brief",
+  "date": "2026-04-29",
+  "signature": "พัชรี  ดวงบัณฑิต",
+  "checks": {
+    "shoes": true,
+    "trash": true,
+    "bottles": true,
+    "temp": true,
+    "sink": true,
+    "fridge": true,
+    "dehumid": true,
+    "expiry": true,
+    "narc": true,
+    "std": true,
+    "it": true
+  },
+  "issues": "ผช. ดักจับ ตอนเช็ค std ห้อง 809 Ganaton จัดเป็น cefspan",
+  "savedAt": "2026-04-29T01:39:20.985Z"
+}

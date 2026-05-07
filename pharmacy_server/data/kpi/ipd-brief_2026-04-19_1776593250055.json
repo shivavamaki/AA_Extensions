@@ -1,0 +1,20 @@
+{
+  "type": "ipd-brief",
+  "date": "2026-04-19",
+  "signature": "",
+  "checks": {
+    "shoes": null,
+    "trash": null,
+    "bottles": null,
+    "temp": null,
+    "sink": null,
+    "fridge": null,
+    "dehumid": null,
+    "expiry": null,
+    "narc": null,
+    "std": null,
+    "it": null
+  },
+  "issues": "",
+  "savedAt": "2026-04-19T10:07:30.055Z"
+}

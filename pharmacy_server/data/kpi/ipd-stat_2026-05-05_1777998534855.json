@@ -1,0 +1,183 @@
+{
+  "type": "ipd-stat",
+  "date": "2026-05-05",
+  "entries": [
+    {
+      "id": "60fb94b7-36a3-42ae-aecc-1530f207943b",
+      "fileNo": "0765",
+      "timeStart": "17:25",
+      "timeEnd": "17:30",
+      "minutesUsed": 5,
+      "withinTarget": true
+    },
+    {
+      "id": "c1c042a7-7eca-49d0-9920-a74424c50f0e",
+      "fileNo": "0735",
+      "timeStart": "16:49",
+      "timeEnd": "16:56",
+      "minutesUsed": 7,
+      "withinTarget": true
+    },
+    {
+      "id": "cae76ccd-b512-49b1-8eba-9065bed4e423",
+      "fileNo": "0723",
+      "timeStart": "16:25",
+      "timeEnd": "16:29",
+      "minutesUsed": 4,
+      "withinTarget": true
+    },
+    {
+      "id": "2ecfed87-74d4-435f-8fe6-d93c23052a11",
+      "fileNo": "0725",
+      "timeStart": "16:26",
+      "timeEnd": "16:30",
+      "minutesUsed": 4,
+      "withinTarget": true
+    },
+    {
+      "id": "d8394c6d-f082-460f-a7f3-65c2f3ed9e39",
+      "fileNo": "0714",
+      "timeStart": "16:10",
+      "timeEnd": "16:18",
+      "minutesUsed": 8,
+      "withinTarget": true
+    },
+    {
+      "id": "5650e643-0383-455c-9af1-a56d19c00e23",
+      "fileNo": "0491",
+      "timeStart": "12:19",
+      "timeEnd": "12:22",
+      "minutesUsed": 3,
+      "withinTarget": true
+    },
+    {
+      "id": "b77b7b05-dc84-44b2-b34c-cf50b81a947e",
+      "fileNo": "0219",
+      "timeStart": "11:32",
+      "timeEnd": "11:33",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "4224001d-f973-47a0-8624-472ec7278bb5",
+      "fileNo": "0204",
+      "timeStart": "11:13",
+      "timeEnd": "11:19",
+      "minutesUsed": 6,
+      "withinTarget": true
+    },
+    {
+      "id": "0a323b3c-74b2-4873-9bbb-a62dca6b4f02",
+      "fileNo": "0196",
+      "timeStart": "10:57",
+      "timeEnd": "11:03",
+      "minutesUsed": 6,
+      "withinTarget": true
+    },
+    {
+      "id": "9cb80719-dec1-4cac-a86f-3a58bd392fa1",
+      "fileNo": "0162",
+      "timeStart": "10:06",
+      "timeEnd": "10:08",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "b2aa43c8-9037-47fe-872d-ecbd248fb31d",
+      "fileNo": "0151",
+      "timeStart": "09:54",
+      "timeEnd": "09:58",
+      "minutesUsed": 4,
+      "withinTarget": true
+    },
+    {
+      "id": "bf52edca-fe7b-47db-9513-f5102b45080a",
+      "fileNo": "0120",
+      "timeStart": "09:17",
+      "timeEnd": "09:30",
+      "minutesUsed": 13,
+      "withinTarget": true
+    },
+    {
+      "id": "9969e09a-3885-4771-ac80-abede5e4c777",
+      "fileNo": "0140",
+      "timeStart": "09:22",
+      "timeEnd": "09:30",
+      "minutesUsed": 8,
+      "withinTarget": true
+    },
+    {
+      "id": "3e078e43-f601-4923-add8-080b3405fa71",
+      "fileNo": "0131",
+      "timeStart": "09:25",
+      "timeEnd": "09:38",
+      "minutesUsed": 13,
+      "withinTarget": true
+    },
+    {
+      "id": "faa2a8e4-1ba4-4f01-9614-712f2a92446e",
+      "fileNo": "0127",
+      "timeStart": "09:20",
+      "timeEnd": "09:31",
+      "minutesUsed": 11,
+      "withinTarget": true
+    },
+    {
+      "id": "33e72be9-f45a-4f58-be8c-c9ee4a39677d",
+      "fileNo": "0118",
+      "timeStart": "09:12",
+      "timeEnd": "09:22",
+      "minutesUsed": 10,
+      "withinTarget": true
+    },
+    {
+      "id": "b35dec2c-75e3-4ca3-9708-b5b19073335a",
+      "fileNo": "0113",
+      "timeStart": "09:08",
+      "timeEnd": "09:17",
+      "minutesUsed": 9,
+      "withinTarget": true
+    },
+    {
+      "id": "18b82506-1d97-4d07-9bd0-d9ebd3780384",
+      "fileNo": "0115",
+      "timeStart": "09:08",
+      "timeEnd": "09:15",
+      "minutesUsed": 7,
+      "withinTarget": true
+    },
+    {
+      "id": "220a3ad9-5c94-4aa5-8fb4-b74f51f0b703",
+      "fileNo": "0114",
+      "timeStart": "09:08",
+      "timeEnd": "09:12",
+      "minutesUsed": 4,
+      "withinTarget": true
+    },
+    {
+      "id": "147ea4c3-626d-4f38-ac79-b4b1398c5e22",
+      "fileNo": "0110",
+      "timeStart": "08:56",
+      "timeEnd": "09:00",
+      "minutesUsed": 4,
+      "withinTarget": true
+    },
+    {
+      "id": "a462d1e6-3319-4515-be10-85f2f7d5b297",
+      "fileNo": "0102",
+      "timeStart": "08:49",
+      "timeEnd": "08:52",
+      "minutesUsed": 3,
+      "withinTarget": true
+    },
+    {
+      "id": "8186f62e-8f38-4a08-8752-61a7e66164f0",
+      "fileNo": "0051",
+      "timeStart": "07:24",
+      "timeEnd": "07:33",
+      "minutesUsed": 9,
+      "withinTarget": true
+    }
+  ],
+  "savedAt": "2026-05-05T16:28:54.855Z"
+}

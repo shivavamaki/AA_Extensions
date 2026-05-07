@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0.0",
+  "appName": "pharmacy-kpi-data-system",
+  "type": "med-error",
+  "date": "2026-05-06",
+  "payloadVersion": 1,
+  "item": "test",
+  "errorType": "ผิดชนิด",
+  "detail": "test",
+  "location": "Floor 2",
+  "signature": "wannaporn",
+  "note": "test test",
+  "savedAt": "2026-05-06T04:25:02.986Z"
+}

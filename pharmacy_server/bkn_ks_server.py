@@ -9,12 +9,18 @@ Usage:
   python bkn_ks_server.py --port 9000
 
 API:
-  GET  /ping                  — health check (returns server URL)
-  GET  /api/kpi               — list all daily KPI docs (sorted newest first)
-  GET  /api/kpi/YYYY-MM-DD    — get one day's KPI doc (null if not exists)
-  PUT  /api/kpi/YYYY-MM-DD    — save/update one day's KPI doc (JSON object)
-  GET  /api/{ks_col}          — get KS collection (faqs | items | vdos)
-  PUT  /api/{ks_col}          — replace KS collection (JSON array)
+  GET    /ping                              — health check (returns server URL)
+  GET    /api/kpi                           — all daily KPI docs (newest first)
+  GET    /api/kpi/YYYY-MM-DD               — one day's KPI doc (null if missing)
+  PUT    /api/kpi/YYYY-MM-DD               — replace full day doc
+  PUT    /api/kpi/YYYY-MM-DD/opd-brief     — update opdBrief section only
+  PUT    /api/kpi/YYYY-MM-DD/ipd-brief     — update ipdBrief section only
+  PUT    /api/kpi/YYYY-MM-DD/opd-stat      — update opdStat section only
+  PUT    /api/kpi/YYYY-MM-DD/ipd-stat      — update ipdStat section only
+  POST   /api/kpi/YYYY-MM-DD/med-errors    — append one med-error record
+  DELETE /api/kpi/YYYY-MM-DD/med-errors/ID — remove by savedAt (URL-encoded)
+  GET    /api/{ks_col}                      — get KS collection (faqs|items|vdos)
+  PUT    /api/{ks_col}                      — replace KS collection (JSON array)
 
 Data layout:
   data/kpi/YYYY-MM-DD.json    — one file per day
@@ -27,21 +33,42 @@ import json
 import re
 import sys
 import socket
+import urllib.parse
+from datetime import datetime, timezone
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 
 # ── Config ─────────────────────────────────────────────────────
-DEFAULT_PORT = 8765
-DATA_DIR     = Path(__file__).parent / 'data'
-KPI_DIR      = DATA_DIR / 'kpi'
-KS_DIR       = DATA_DIR / 'ks'
-KS_COLS      = {'faqs', 'items', 'vdos'}
-DATE_RE      = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+DEFAULT_PORT  = 8765
+DATA_DIR      = Path(__file__).parent / 'data'
+KPI_DIR       = DATA_DIR / 'kpi'
+KS_DIR        = DATA_DIR / 'ks'
+KS_COLS       = {'faqs', 'items', 'vdos'}
+DATE_RE       = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+SECTION_KEYS  = {'opd-brief', 'ipd-brief', 'opd-stat', 'ipd-stat'}
+SECTION_FIELD = {
+    'opd-brief': 'opdBrief',
+    'ipd-brief': 'ipdBrief',
+    'opd-stat':  'opdStat',
+    'ipd-stat':  'ipdStat',
+}
 
 
 # ── KPI helpers (per-day files) ────────────────────────────────
 def kpi_file(date_key):
     return KPI_DIR / f'{date_key}.json'
+
+def _now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+def _empty_day(date_key):
+    ts = _now_iso()
+    return {
+        'date': date_key, 'createdAt': ts, 'updatedAt': ts,
+        'opdBrief': None, 'ipdBrief': None,
+        'opdStat': None,  'ipdStat': None,
+        'medErrors': [],
+    }
 
 def load_kpi_day(date_key):
     p = kpi_file(date_key)
@@ -52,8 +79,17 @@ def load_kpi_day(date_key):
     except Exception:
         return None
 
+def load_or_create_day(date_key):
+    doc = load_kpi_day(date_key)
+    if doc is None:
+        doc = _empty_day(date_key)
+    if not isinstance(doc.get('medErrors'), list):
+        doc['medErrors'] = []
+    return doc
+
 def save_kpi_day(date_key, data):
     KPI_DIR.mkdir(parents=True, exist_ok=True)
+    data['updatedAt'] = _now_iso()
     kpi_file(date_key).write_text(
         json.dumps(data, ensure_ascii=False, indent=2),
         encoding='utf-8'
@@ -98,7 +134,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _cors(self):
         self.send_header('Access-Control-Allow-Origin',  '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS')
+        self.send_header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
 
     def send_json(self, code, obj):
@@ -110,23 +146,51 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _read_json_body(self):
+        length = int(self.headers.get('Content-Length', 0))
+        return json.loads(self.rfile.read(length))
+
     def parse_route(self):
-        """Return (route_type, key).
-        route_type: 'kpi-all' | 'kpi-day' | 'ks' | None
-        key: date string for kpi-day, col name for ks, None otherwise.
+        """Return (route_type, date_or_col, extra).
+
+        route_type          date_or_col     extra
+        ──────────────────  ──────────────  ─────────────────────
+        'kpi-all'           None            None
+        'kpi-day'           date            None
+        'kpi-section'       date            section key (e.g. 'opd-brief')
+        'kpi-med-errors'    date            None
+        'kpi-med-error-item'date            record savedAt (URL-decoded)
+        'ks'                col             None
+        None                None            None
         """
-        parts = self.path.split('?')[0].strip('/').split('/')
-        if len(parts) == 2 and parts[0] == 'api':
-            col = parts[1]
-            if col == 'kpi':
-                return 'kpi-all', None
-            if col in KS_COLS:
-                return 'ks', col
-        if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'kpi':
-            date_key = parts[2]
-            if DATE_RE.match(date_key):
-                return 'kpi-day', date_key
-        return None, None
+        raw   = self.path.split('?')[0]
+        parts = raw.strip('/').split('/')
+
+        # /api/kpi
+        if parts == ['api', 'kpi']:
+            return 'kpi-all', None, None
+
+        if len(parts) >= 3 and parts[0] == 'api' and parts[1] == 'kpi' and DATE_RE.match(parts[2]):
+            date = parts[2]
+            # /api/kpi/DATE
+            if len(parts) == 3:
+                return 'kpi-day', date, None
+            # /api/kpi/DATE/SECTION  or  /api/kpi/DATE/med-errors  or  /api/kpi/DATE/med-errors/ID
+            sub = parts[3]
+            if sub in SECTION_KEYS and len(parts) == 4:
+                return 'kpi-section', date, sub
+            if sub == 'med-errors':
+                if len(parts) == 4:
+                    return 'kpi-med-errors', date, None
+                if len(parts) == 5:
+                    item_id = urllib.parse.unquote(parts[4])
+                    return 'kpi-med-error-item', date, item_id
+
+        # /api/COL  (ks collections)
+        if len(parts) == 2 and parts[0] == 'api' and parts[1] in KS_COLS:
+            return 'ks', parts[1], None
+
+        return None, None, None
 
     # OPTIONS (preflight)
     def do_OPTIONS(self):
@@ -138,12 +202,11 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/ping':
             self.send_json(200, {
-                'ok':     True,
-                'server': 'BKN KS Server',
-                'url':    f'http://{Handler._ip}:{Handler._port}'
+                'ok': True, 'server': 'BKN KS Server',
+                'url': f'http://{Handler._ip}:{Handler._port}'
             })
             return
-        rtype, key = self.parse_route()
+        rtype, key, _ = self.parse_route()
         if rtype == 'kpi-all':
             self.send_json(200, load_all_kpi())
         elif rtype == 'kpi-day':
@@ -153,28 +216,67 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self.send_json(404, {'error': 'Not found'})
 
-    # PUT
+    # PUT — full day doc OR single section
     def do_PUT(self):
-        rtype, key = self.parse_route()
+        rtype, key, extra = self.parse_route()
         try:
-            length = int(self.headers.get('Content-Length', 0))
-            body   = json.loads(self.rfile.read(length))
+            body = self._read_json_body()
         except Exception as e:
-            self.send_json(400, {'error': str(e)})
-            return
+            self.send_json(400, {'error': str(e)}); return
 
         if rtype == 'kpi-day':
             if not isinstance(body, dict):
                 self.send_json(400, {'error': 'Body must be a JSON object'}); return
             save_kpi_day(key, body)
             self.send_json(200, {'ok': True})
+
+        elif rtype == 'kpi-section':
+            # extra = section slug e.g. 'opd-brief'
+            field = SECTION_FIELD[extra]
+            doc   = load_or_create_day(key)
+            doc[field] = body
+            save_kpi_day(key, doc)
+            self.send_json(200, {'ok': True, 'date': key, 'section': extra})
+
         elif rtype == 'ks':
             if not isinstance(body, list):
                 self.send_json(400, {'error': 'Body must be a JSON array'}); return
             save_ks(key, body)
             self.send_json(200, {'ok': True, 'count': len(body)})
+
         else:
             self.send_json(404, {'error': 'Not found'})
+
+    # POST — append med error
+    def do_POST(self):
+        rtype, key, _ = self.parse_route()
+        try:
+            body = self._read_json_body()
+        except Exception as e:
+            self.send_json(400, {'error': str(e)}); return
+
+        if rtype == 'kpi-med-errors':
+            if not isinstance(body, dict):
+                self.send_json(400, {'error': 'Body must be a JSON object'}); return
+            doc = load_or_create_day(key)
+            doc['medErrors'].append(body)
+            save_kpi_day(key, doc)
+            self.send_json(201, {'ok': True, 'date': key, 'count': len(doc['medErrors'])})
+        else:
+            self.send_json(404, {'error': 'Not found'})
+
+    # DELETE — remove a med error by savedAt
+    def do_DELETE(self):
+        rtype, key, item_id = self.parse_route()
+        if rtype != 'kpi-med-error-item':
+            self.send_json(404, {'error': 'Not found'}); return
+
+        doc = load_or_create_day(key)
+        before = len(doc['medErrors'])
+        doc['medErrors'] = [e for e in doc['medErrors'] if e.get('savedAt') != item_id]
+        removed = before - len(doc['medErrors'])
+        save_kpi_day(key, doc)
+        self.send_json(200, {'ok': True, 'removed': removed})
 
 
 # ── Network helpers ────────────────────────────────────────────

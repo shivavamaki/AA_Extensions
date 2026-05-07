@@ -1,0 +1,20 @@
+{
+  "type": "opd-brief",
+  "date": "2026-04-29",
+  "signature": "",
+  "checks": {
+    "shoes": true,
+    "trash": true,
+    "break": true,
+    "temp": false,
+    "tv": true,
+    "expiry": true,
+    "dehumid": true,
+    "coldbag": true,
+    "it": true,
+    "narc1": true,
+    "narc2": true
+  },
+  "issues": "ควาชื้น 66 %",
+  "savedAt": "2026-04-29T00:14:06.275Z"
+}

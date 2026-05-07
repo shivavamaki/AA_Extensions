@@ -1,0 +1,48 @@
+{
+  "date": "2026-04-20",
+  "createdAt": "2026-05-07T09:12:42.817170+00:00",
+  "updatedAt": "2026-05-07T09:12:42.817343+00:00",
+  "opdBrief": {
+    "type": "opd-brief",
+    "date": "2026-04-20",
+    "signature": "อลิศรา กล่ำทอง",
+    "checks": {
+      "shoes": true,
+      "trash": true,
+      "break": true,
+      "temp": true,
+      "tv": true,
+      "expiry": true,
+      "dehumid": true,
+      "coldbag": true,
+      "it": true,
+      "narc1": true,
+      "narc2": true
+    },
+    "issues": "",
+    "savedAt": "2026-04-20T09:29:11.456Z"
+  },
+  "ipdBrief": {
+    "type": "ipd-brief",
+    "date": "2026-04-20",
+    "signature": "พิษณุ แข่งขัน",
+    "checks": {
+      "shoes": true,
+      "trash": true,
+      "bottles": true,
+      "temp": true,
+      "sink": true,
+      "fridge": true,
+      "dehumid": true,
+      "expiry": true,
+      "narc": true,
+      "std": true,
+      "it": true
+    },
+    "issues": "",
+    "savedAt": "2026-04-20T01:39:30.296Z"
+  },
+  "opdStat": null,
+  "ipdStat": null,
+  "medErrors": []
+}

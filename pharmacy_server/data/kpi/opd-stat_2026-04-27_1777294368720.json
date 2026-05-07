@@ -1,0 +1,39 @@
+{
+  "type": "opd-stat",
+  "date": "2026-04-27",
+  "entries": [
+    {
+      "id": "b59e5f1a-fb4d-42dd-9d87-5812e173f73f",
+      "fileNo": "0311",
+      "timeStart": "17:56",
+      "timeEnd": "17:58",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "1b620488-8826-4b2e-835d-72e2422b275e",
+      "fileNo": "0312",
+      "timeStart": "17:56",
+      "timeEnd": "17:58",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "49f58498-9f52-45c9-be5a-a6a217efe146",
+      "fileNo": "0300",
+      "timeStart": "17:35",
+      "timeEnd": "17:37",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "736fedab-9039-4d01-aa5a-9f86ffaa8877",
+      "fileNo": "0286",
+      "timeStart": "17:13",
+      "timeEnd": "17:15",
+      "minutesUsed": 2,
+      "withinTarget": true
+    }
+  ],
+  "savedAt": "2026-04-27T12:52:48.720Z"
+}

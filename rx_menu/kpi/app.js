@@ -710,36 +710,36 @@ async function saveOPDBrief() {
   if (!requireFolderSetup()) return;
   const data = collectOPDBrief();
   if (!data.date) { showToast('⚠', 'กรุณาระบุวันที่'); return; }
-  const ok = await saveSection('opdBrief', data);
-  if (ok) { savedRecords = savedRecords.filter(r => !(r.type === 'opd-brief' && r.date === data.date)); savedRecords.push(data); updateBadges(); showToast('✓', `บันทึก OPD Brief ${data.date} สำเร็จ`); }
+  const j = await apiPut(`/api/kpi/${data.date}/opd-brief`, data);
+  if (j?.ok) { savedRecords = savedRecords.filter(r => !(r.type === 'opd-brief' && r.date === data.date)); savedRecords.push(data); updateBadges(); showToast('✓', `บันทึก OPD Brief ${data.date} สำเร็จ`); }
 }
 async function saveIPDBrief() {
   if (!requireFolderSetup()) return;
   const data = collectIPDBrief();
   if (!data.date) { showToast('⚠', 'กรุณาระบุวันที่'); return; }
-  const ok = await saveSection('ipdBrief', data);
-  if (ok) { savedRecords = savedRecords.filter(r => !(r.type === 'ipd-brief' && r.date === data.date)); savedRecords.push(data); updateBadges(); showToast('✓', `บันทึก IPD Brief ${data.date} สำเร็จ`); }
+  const j = await apiPut(`/api/kpi/${data.date}/ipd-brief`, data);
+  if (j?.ok) { savedRecords = savedRecords.filter(r => !(r.type === 'ipd-brief' && r.date === data.date)); savedRecords.push(data); updateBadges(); showToast('✓', `บันทึก IPD Brief ${data.date} สำเร็จ`); }
 }
 async function saveOPDStat() {
   if (!requireFolderSetup()) return;
   const data = collectOPDStat();
   if (!data.entries.length) { showToast('⚠', 'ไม่มีข้อมูล OPD Stat'); return; }
-  const ok = await saveSection('opdStat', data);
-  if (ok) { savedRecords = savedRecords.filter(r => !(r.type === 'opd-stat' && r.date === data.date)); savedRecords.push(data); updateBadges(); showToast('✓', `บันทึก OPD Stat ${data.date} สำเร็จ`); }
+  const j = await apiPut(`/api/kpi/${data.date}/opd-stat`, data);
+  if (j?.ok) { savedRecords = savedRecords.filter(r => !(r.type === 'opd-stat' && r.date === data.date)); savedRecords.push(data); updateBadges(); showToast('✓', `บันทึก OPD Stat ${data.date} สำเร็จ`); }
 }
 async function saveIPDStat() {
   if (!requireFolderSetup()) return;
   const data = collectIPDStat();
   if (!data.entries.length) { showToast('⚠', 'ไม่มีข้อมูล IPD Stat'); return; }
-  const ok = await saveSection('ipdStat', data);
-  if (ok) { savedRecords = savedRecords.filter(r => !(r.type === 'ipd-stat' && r.date === data.date)); savedRecords.push(data); updateBadges(); showToast('✓', `บันทึก IPD Stat ${data.date} สำเร็จ`); }
+  const j = await apiPut(`/api/kpi/${data.date}/ipd-stat`, data);
+  if (j?.ok) { savedRecords = savedRecords.filter(r => !(r.type === 'ipd-stat' && r.date === data.date)); savedRecords.push(data); updateBadges(); showToast('✓', `บันทึก IPD Stat ${data.date} สำเร็จ`); }
 }
 async function saveMedError() {
   if (!requireFolderSetup()) return;
   const data = collectMedError();
   if (!data.date || !data.item || !data.errorType || !data.detail || !data.location || !data.signature) { showToast('⚠', 'กรุณากรอกวันที่, รายการยา, Error, รายละเอียด, Location และลงชื่อ'); return; }
-  const ok = await saveSection('medErrors', data);
-  if (ok) { savedRecords.push(data); updateBadges(); showToast('✓', `บันทึก Med Error ${data.date} สำเร็จ`); }
+  const j = await apiPost(`/api/kpi/${data.date}/med-errors`, data);
+  if (j?.ok) { savedRecords.push(data); updateBadges(); showToast('✓', `บันทึก Med Error ${data.date} สำเร็จ`); }
 }
 
 function handleStatKeyDown(e){
@@ -775,49 +775,22 @@ function handleStatKeyDown(e){
 
 // ── SERVER I/O ──
 
-function emptyDayDoc(date) {
-  const now = new Date().toISOString();
-  return { date, createdAt: now, updatedAt: now, opdBrief: null, ipdBrief: null, opdStat: null, ipdStat: null, medErrors: [] };
-}
-
-async function getDayDoc(date) {
-  if (!serverUrl) return emptyDayDoc(date);
+async function _apiFetch(method, path, body) {
+  if (!serverUrl) { enforceAppLock(); showToast('🌐', 'กรุณาตั้งค่า Server URL ก่อนบันทึก'); return null; }
   try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 4000);
-    const r = await fetch(`${serverUrl}/api/kpi/${date}`, { signal: ctrl.signal });
-    clearTimeout(t);
-    if (r.ok) { const d = await r.json(); if (d && typeof d === 'object') return d; }
-  } catch {}
-  return emptyDayDoc(date);
-}
-
-async function saveDayDoc(doc) {
-  if (!serverUrl) { enforceAppLock(); showToast('🌐', 'กรุณาตั้งค่า Server URL ก่อนบันทึก'); return false; }
-  doc.updatedAt = new Date().toISOString();
-  try {
-    const r = await fetch(`${serverUrl}/api/kpi/${doc.date}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(doc)
-    });
-    const j = await r.json();
-    if (!j.ok) throw new Error('Server returned error');
-    return true;
-  } catch (e) { showToast('✗', 'บันทึกไม่สำเร็จ: ' + e.message); return false; }
-}
-
-async function saveSection(sectionKey, data) {
-  const doc = await getDayDoc(data.date);
-  if (sectionKey === 'medErrors') {
-    if (!Array.isArray(doc.medErrors)) doc.medErrors = [];
-    doc.medErrors.push(data);
-  } else {
-    doc[sectionKey] = data;
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body !== undefined) opts.body = JSON.stringify(body);
+    const r = await fetch(`${serverUrl}${path}`, opts);
+    return await r.json();
+  } catch (e) {
+    showToast('✗', 'บันทึกไม่สำเร็จ: ' + e.message);
+    return null;
   }
-  if (!doc.createdAt) doc.createdAt = new Date().toISOString();
-  return saveDayDoc(doc);
 }
+
+async function apiPut(path, data)    { return _apiFetch('PUT',    path, data); }
+async function apiPost(path, data)   { return _apiFetch('POST',   path, data); }
+async function apiDelete(path)       { return _apiFetch('DELETE', path); }
 
 // Flatten a daily doc back to individual type-based records for report/dashboard
 function flattenDayDoc(doc) {
@@ -924,7 +897,15 @@ function renderRecords(){
   }).join('')+'</div>';
 }
 function reExportRecord(idx){const r=savedRecords[idx];downloadBlob(`${r.type}_${r.date}_reexport.json`,JSON.stringify(r,null,2),'application/json;charset=utf-8');showToast('⬇','Download: '+r.type+' '+r.date);}
-function deleteRecord(idx){savedRecords.splice(idx,1);updateBadges();renderRecords();}
+async function deleteRecord(idx){
+  const r = savedRecords[idx];
+  if (r?.type === 'med-error' && r?.savedAt && serverUrl) {
+    await apiDelete(`/api/kpi/${r.date}/med-errors/${encodeURIComponent(r.savedAt)}`);
+  }
+  savedRecords.splice(idx,1);
+  updateBadges();
+  renderRecords();
+}
 function clearAllRecords(){if(!requireFolderSetup()) return; if(!confirm('ลบบันทึกทั้งหมด?'))return;savedRecords=[];updateBadges();renderRecords();}
 
 // ── IMPORT / DRAG & DROP ──

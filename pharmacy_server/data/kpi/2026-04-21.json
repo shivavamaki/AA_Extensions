@@ -1,0 +1,29 @@
+{
+  "date": "2026-04-21",
+  "createdAt": "2026-05-07T09:12:42.817585+00:00",
+  "updatedAt": "2026-05-07T09:12:42.817668+00:00",
+  "opdBrief": {
+    "type": "opd-brief",
+    "date": "2026-04-21",
+    "signature": "วรรณพร ",
+    "checks": {
+      "shoes": true,
+      "trash": true,
+      "break": true,
+      "temp": false,
+      "tv": true,
+      "expiry": true,
+      "dehumid": true,
+      "coldbag": true,
+      "it": true,
+      "narc1": true,
+      "narc2": true
+    },
+    "issues": "**ความชื้นสูงเล็กน้อย 67%**",
+    "savedAt": "2026-04-21T02:12:48.567Z"
+  },
+  "ipdBrief": null,
+  "opdStat": null,
+  "ipdStat": null,
+  "medErrors": []
+}

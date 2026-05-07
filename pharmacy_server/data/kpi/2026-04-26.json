@@ -1,0 +1,51 @@
+{
+  "date": "2026-04-26",
+  "createdAt": "2026-05-07T09:12:42.819599+00:00",
+  "updatedAt": "2026-05-07T09:12:42.819736+00:00",
+  "opdBrief": {
+    "type": "opd-brief",
+    "date": "2026-04-26",
+    "signature": "อรัญญา",
+    "checks": {
+      "shoes": true,
+      "trash": true,
+      "break": true,
+      "temp": true,
+      "tv": true,
+      "expiry": true,
+      "dehumid": true,
+      "coldbag": true,
+      "it": true,
+      "narc1": true,
+      "narc2": true
+    },
+    "issues": "",
+    "savedAt": "2026-04-26T03:00:11.950Z"
+  },
+  "ipdBrief": null,
+  "opdStat": {
+    "type": "opd-stat",
+    "date": "2026-04-26",
+    "entries": [
+      {
+        "id": "17a8fea1-94bb-43f4-88a3-10b7dc2645bb",
+        "fileNo": "4654",
+        "timeStart": "12:05",
+        "timeEnd": "12:08",
+        "minutesUsed": 3,
+        "withinTarget": true
+      },
+      {
+        "id": "ce195832-279e-4e48-9873-acb97430004e",
+        "fileNo": "5465",
+        "timeStart": "12:03",
+        "timeEnd": "12:09",
+        "minutesUsed": 6,
+        "withinTarget": false
+      }
+    ],
+    "savedAt": "2026-04-26T07:02:03.609Z"
+  },
+  "ipdStat": null,
+  "medErrors": []
+}

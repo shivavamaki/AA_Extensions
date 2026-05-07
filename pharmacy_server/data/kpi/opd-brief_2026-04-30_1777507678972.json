@@ -1,0 +1,20 @@
+{
+  "type": "opd-brief",
+  "date": "2026-04-30",
+  "signature": "วรรณิกา ดีแป้น",
+  "checks": {
+    "shoes": true,
+    "trash": true,
+    "break": true,
+    "temp": true,
+    "tv": true,
+    "expiry": true,
+    "dehumid": true,
+    "coldbag": true,
+    "it": true,
+    "narc1": true,
+    "narc2": true
+  },
+  "issues": "",
+  "savedAt": "2026-04-30T00:07:58.972Z"
+}

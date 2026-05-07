@@ -1,0 +1,35 @@
+[
+  {
+    "id": "motyic94bskpf",
+    "name": "Sacubitril/Valsartan (Entresto)",
+    "generic": "Sacubitril + Valsartan",
+    "category": "cardiac",
+    "dosageForm": "Tablet",
+    "indication": "รักษาภาวะหัวใจล้มเหลวชนิด HFrEF (EF ≤ 40%) ลดการนอน รพ. และอัตราตาย",
+    "notes": "เริ่มได้หลัง ACEi/ARB washout 36 ชั่วโมง",
+    "addedDate": "2026-04-29",
+    "updatedAt": "2026-05-06T11:11:07.912Z"
+  },
+  {
+    "id": "motyic945cig5",
+    "name": "Apixaban (Eliquis)",
+    "generic": "Apixaban",
+    "category": "anticoagulant",
+    "dosageForm": "Tablet",
+    "indication": "ป้องกัน stroke ใน NVAF, รักษา DVT/PE; ไม่ต้องติดตาม INR",
+    "notes": "ปรับขนาดใน CrCl < 25 mL/min, ระวังใน renal failure รุนแรง",
+    "addedDate": "2026-04-22",
+    "updatedAt": "2026-05-06T11:11:07.912Z"
+  },
+  {
+    "id": "motyic94en4qj",
+    "name": "Empagliflozin (Jardiance)",
+    "generic": "Empagliflozin",
+    "category": "antidiabetic",
+    "dosageForm": "Tablet",
+    "indication": "เบาหวานชนิดที่ 2, ลดความเสี่ยง CV events และ HF hospitalization",
+    "notes": "ระวัง DKA, ไม่แนะนำเมื่อ eGFR < 30, แจ้งผู้ป่วยเรื่อง genital infections",
+    "addedDate": "2026-04-15",
+    "updatedAt": "2026-05-06T11:11:07.912Z"
+  }
+]

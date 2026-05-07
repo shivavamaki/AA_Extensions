@@ -1,0 +1,159 @@
+{
+  "type": "ipd-stat",
+  "date": "2026-04-27",
+  "entries": [
+    {
+      "id": 1777299990526.699,
+      "fileNo": "0067",
+      "timeStart": "18:32",
+      "timeEnd": "18:45",
+      "minutesUsed": 13,
+      "withinTarget": true
+    },
+    {
+      "id": 1777300734482.0618,
+      "fileNo": "0830",
+      "timeStart": "19:20",
+      "timeEnd": "19:22",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": 1777300752713.0518,
+      "fileNo": "0034",
+      "timeStart": "06:56",
+      "timeEnd": "07:00",
+      "minutesUsed": 4,
+      "withinTarget": true
+    },
+    {
+      "id": 1777300773376.719,
+      "fileNo": "0818",
+      "timeStart": "18:41",
+      "timeEnd": "18:44",
+      "minutesUsed": 3,
+      "withinTarget": true
+    },
+    {
+      "id": 1777300785353.9636,
+      "fileNo": "0803",
+      "timeStart": "18:04",
+      "timeEnd": "18:04",
+      "minutesUsed": 0,
+      "withinTarget": true
+    },
+    {
+      "id": 1777300802201.6487,
+      "fileNo": "0798",
+      "timeStart": "17:52",
+      "timeEnd": "17:55",
+      "minutesUsed": 3,
+      "withinTarget": true
+    },
+    {
+      "id": 1777300821345.8423,
+      "fileNo": "0790",
+      "timeStart": "17:17",
+      "timeEnd": "17:19",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": 1777300920257.9336,
+      "fileNo": "0791",
+      "timeStart": "17:17",
+      "timeEnd": "17:19",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": 1777300932433.492,
+      "fileNo": "0731",
+      "timeStart": "16:52",
+      "timeEnd": "16:55",
+      "minutesUsed": 3,
+      "withinTarget": true
+    },
+    {
+      "id": 1777300944281.367,
+      "fileNo": "0730",
+      "timeStart": "16:51",
+      "timeEnd": "16:54",
+      "minutesUsed": 3,
+      "withinTarget": true
+    },
+    {
+      "id": 1777301298273.0347,
+      "fileNo": "0575",
+      "timeStart": "15:02",
+      "timeEnd": "15:06",
+      "minutesUsed": 4,
+      "withinTarget": true
+    },
+    {
+      "id": 1777301315178.5369,
+      "fileNo": "0571",
+      "timeStart": "14:52",
+      "timeEnd": "14:57",
+      "minutesUsed": 5,
+      "withinTarget": true
+    },
+    {
+      "id": 1777301328284.658,
+      "fileNo": "0460",
+      "timeStart": "12:42",
+      "timeEnd": "12:48",
+      "minutesUsed": 6,
+      "withinTarget": true
+    },
+    {
+      "id": 1777301342513.806,
+      "fileNo": "0384",
+      "timeStart": "11:58",
+      "timeEnd": "11:59",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": 1777301359193.841,
+      "fileNo": "0229",
+      "timeStart": "11:18",
+      "timeEnd": "11:25",
+      "minutesUsed": 7,
+      "withinTarget": true
+    },
+    {
+      "id": 1777301374801.5486,
+      "fileNo": "0208",
+      "timeStart": "11:08",
+      "timeEnd": "11:09",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": 1777301385010.742,
+      "fileNo": "0160",
+      "timeStart": "10:02",
+      "timeEnd": "10:06",
+      "minutesUsed": 4,
+      "withinTarget": true
+    },
+    {
+      "id": 1777301392017.8154,
+      "fileNo": "0081",
+      "timeStart": "08:43",
+      "timeEnd": "08:58",
+      "minutesUsed": 15,
+      "withinTarget": true
+    },
+    {
+      "id": 1777301401577.8862,
+      "fileNo": "0077",
+      "timeStart": "08:04",
+      "timeEnd": "08:06",
+      "minutesUsed": 2,
+      "withinTarget": true
+    }
+  ],
+  "savedAt": "2026-04-27T14:50:12.753Z"
+}

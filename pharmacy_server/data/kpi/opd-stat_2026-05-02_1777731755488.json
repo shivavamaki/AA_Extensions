@@ -1,0 +1,711 @@
+{
+  "type": "opd-stat",
+  "date": "2026-05-02",
+  "entries": [
+    {
+      "id": "1b2e1010-fc01-41ed-9199-7e63c077a881",
+      "fileNo": "0082",
+      "timeStart": "19:37",
+      "timeEnd": "19:42",
+      "minutesUsed": 5,
+      "withinTarget": true
+    },
+    {
+      "id": "f066b2b6-51e2-499c-b4c4-64708dbbf5b1",
+      "fileNo": "0079",
+      "timeStart": "19:34",
+      "timeEnd": "19:35",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "64f7c1e7-73e6-4006-9f90-7e6220f47750",
+      "fileNo": "0073",
+      "timeStart": "18:41",
+      "timeEnd": "18:42",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "56284b09-aefd-45a5-9d13-bfff5824b867",
+      "fileNo": "0071",
+      "timeStart": "18:23",
+      "timeEnd": "18:24",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "f97fb06b-6348-44cb-84b3-105691235145",
+      "fileNo": "0066",
+      "timeStart": "17:36",
+      "timeEnd": "17:40",
+      "minutesUsed": 4,
+      "withinTarget": true
+    },
+    {
+      "id": "97ad6f7d-ea52-4592-88d6-195174897fdc",
+      "fileNo": "0062",
+      "timeStart": "17:06",
+      "timeEnd": "17:08",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "a2894f63-dcf3-4969-bbc8-e1198edb1aa9",
+      "fileNo": "0054",
+      "timeStart": "16:20",
+      "timeEnd": "16:21",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "92f7ff06-ba37-42b6-81c2-f20715de7254",
+      "fileNo": "0057",
+      "timeStart": "16:37",
+      "timeEnd": "16:38",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "a93f0be0-e8d9-4a4c-9951-3552753512a0",
+      "fileNo": "0055",
+      "timeStart": "16:21",
+      "timeEnd": "16:22",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "8d450f6f-f33b-4372-877b-227da1500e4a",
+      "fileNo": "0051",
+      "timeStart": "15:40",
+      "timeEnd": "15:42",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "00613f9a-ecea-4e50-a088-f79ffd5b4b7e",
+      "fileNo": "0050",
+      "timeStart": "14:55",
+      "timeEnd": "14:57",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "1ed3306b-0fd2-4251-bd41-d4c0fd7e5d48",
+      "fileNo": "0045",
+      "timeStart": "14:05",
+      "timeEnd": "14:06",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "0d913555-7007-47e0-a5a8-a6430922a823",
+      "fileNo": "0041",
+      "timeStart": "13:03",
+      "timeEnd": "13:04",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "931fdfe1-4121-4aaa-a886-416ee9f99dc8",
+      "fileNo": "0119",
+      "timeStart": "13:02",
+      "timeEnd": "13:03",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "2611dc62-6aca-464a-870f-a5f02232923c",
+      "fileNo": "0043",
+      "timeStart": "13:05",
+      "timeEnd": "13:06",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "7971cc64-684a-499b-8398-d4b563541b96",
+      "fileNo": "0077",
+      "timeStart": "11:30",
+      "timeEnd": "11:32",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "32b383e8-cc54-4948-aed2-cda3e7d71f3c",
+      "fileNo": "0025",
+      "timeStart": "07:39",
+      "timeEnd": "07:43",
+      "minutesUsed": 4,
+      "withinTarget": true
+    },
+    {
+      "id": "5c89f2be-71cb-4471-9e9b-6264bcce4d96",
+      "fileNo": "0026",
+      "timeStart": "07:40",
+      "timeEnd": "07:43",
+      "minutesUsed": 3,
+      "withinTarget": true
+    },
+    {
+      "id": "934c63fc-9050-4a05-bec8-837e82fb3060",
+      "fileNo": "0029",
+      "timeStart": "07:42",
+      "timeEnd": "07:43",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "2804a71f-41c6-4ac4-8c8d-b09751b11a93",
+      "fileNo": "0028",
+      "timeStart": "07:41",
+      "timeEnd": "07:43",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "7f4f1a23-1327-449b-b9f5-4e4251f1d8c1",
+      "fileNo": "0040",
+      "timeStart": "12:04",
+      "timeEnd": "12:06",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "e4bd82d6-6c07-4204-ab73-e7dec518fc59",
+      "fileNo": "0049",
+      "timeStart": "10:48",
+      "timeEnd": "10:50",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "8487ca34-eb78-465a-b6dd-ff49711f3d23",
+      "fileNo": "0038",
+      "timeStart": "10:40",
+      "timeEnd": "10:43",
+      "minutesUsed": 3,
+      "withinTarget": true
+    },
+    {
+      "id": "3ab3c8f9-c93b-4311-b795-45ac4d21030f",
+      "fileNo": "0032",
+      "timeStart": "08:40",
+      "timeEnd": "08:42",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "8bfc63ae-2f0e-451f-96a7-ffe8d5990888",
+      "fileNo": "0031",
+      "timeStart": "08:14",
+      "timeEnd": "08:16",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "cb43b5fc-0df2-43d5-9e24-4a03c985d5cd",
+      "fileNo": "0009",
+      "timeStart": "02:33",
+      "timeEnd": "02:34",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "0e70464e-3f38-4c18-9a15-e2870b73dc2e",
+      "fileNo": "0003",
+      "timeStart": "00:49",
+      "timeEnd": "00:52",
+      "minutesUsed": 3,
+      "withinTarget": true
+    },
+    {
+      "id": "f607be09-f317-4a08-acea-383077c48fb4",
+      "fileNo": "0001",
+      "timeStart": "00:10",
+      "timeEnd": "00:11",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "716bc031-5bce-4d79-9389-0a894bd8b0da",
+      "fileNo": "0011",
+      "timeStart": "03:52",
+      "timeEnd": "03:53",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "262cff94-3a55-4ac8-bd20-1452003a20d0",
+      "fileNo": "0015",
+      "timeStart": "04:13",
+      "timeEnd": "04:15",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "3a5ce5aa-dfd9-4c3c-8402-6713c872c6b2",
+      "fileNo": "0019",
+      "timeStart": "04:47",
+      "timeEnd": "04:48",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "646c1d97-fa28-4e2e-a39f-fa9b8478d414",
+      "fileNo": "0021",
+      "timeStart": "06:42",
+      "timeEnd": "06:44",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "b8da236b-49ab-4aac-96c2-6d288b1beb96",
+      "fileNo": "0018",
+      "timeStart": "04:28",
+      "timeEnd": "04:30",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "e09dbfe4-6017-4317-b0e3-925213ba5c0f",
+      "fileNo": "0242",
+      "timeStart": "18:54",
+      "timeEnd": "18:56",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "2fbff795-53df-4e50-95da-f06b49eeb721",
+      "fileNo": "0189",
+      "timeStart": "15:21",
+      "timeEnd": "15:22",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "8690cbb2-547d-4f2f-a509-e565c930a073",
+      "fileNo": "0196",
+      "timeStart": "15:37",
+      "timeEnd": "15:44",
+      "minutesUsed": 7,
+      "withinTarget": false
+    },
+    {
+      "id": "8a1cce02-72d1-4321-af01-967d3fd20ee3",
+      "fileNo": "0190",
+      "timeStart": "15:22",
+      "timeEnd": "15:23",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "aa4a0696-0c35-426e-9d04-5b0ce6f680ba",
+      "fileNo": "0175",
+      "timeStart": "14:43",
+      "timeEnd": "14:47",
+      "minutesUsed": 4,
+      "withinTarget": true
+    },
+    {
+      "id": "51105489-57c6-4e1c-96f5-ab585a4b546f",
+      "fileNo": "0048",
+      "timeStart": "10:48",
+      "timeEnd": "10:50",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "869bfba5-d66c-4f77-aca4-3f9db9362a2e",
+      "fileNo": "0016",
+      "timeStart": "09:43",
+      "timeEnd": "09:46",
+      "minutesUsed": 3,
+      "withinTarget": true
+    },
+    {
+      "id": "f2a520fe-251e-4a1d-8180-aded5c438754",
+      "fileNo": "0003",
+      "timeStart": "09:01",
+      "timeEnd": "09:04",
+      "minutesUsed": 3,
+      "withinTarget": true
+    },
+    {
+      "id": "a6dcd2df-369a-4067-9506-724530956ec8",
+      "fileNo": "0236",
+      "timeStart": "18:39",
+      "timeEnd": "18:40",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "acc2e0c6-913c-4382-9d75-d85b552bae10",
+      "fileNo": "0232",
+      "timeStart": "18:28",
+      "timeEnd": "18:30",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "34b9d67b-0fc1-409a-8658-a2c0609a4352",
+      "fileNo": "0202",
+      "timeStart": "15:53",
+      "timeEnd": "15:55",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "f2013ec6-6105-49a4-bbce-be847c4cb263",
+      "fileNo": "0166",
+      "timeStart": "14:26",
+      "timeEnd": "14:29",
+      "minutesUsed": 3,
+      "withinTarget": true
+    },
+    {
+      "id": "1e2d2bf9-ac77-4d95-9b4a-f33b3b2551b6",
+      "fileNo": "0147",
+      "timeStart": "13:50",
+      "timeEnd": "13:52",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "04950554-19d6-49ce-8a00-ff803b2cd746",
+      "fileNo": "0158",
+      "timeStart": "14:06",
+      "timeEnd": "14:08",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "ecfc5112-65c1-429e-a406-4d76312a7e45",
+      "fileNo": "0157",
+      "timeStart": "14:06",
+      "timeEnd": "14:08",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "c716868d-c3d1-4c18-b3de-1d90f5f3e011",
+      "fileNo": "0138",
+      "timeStart": "13:41",
+      "timeEnd": "13:43",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "b3df20d5-c609-4734-b8d9-4c231c421c3d",
+      "fileNo": "0133",
+      "timeStart": "13:33",
+      "timeEnd": "13:35",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "0cf64549-f60b-4a69-9880-02518e7c91d0",
+      "fileNo": "0136",
+      "timeStart": "13:37",
+      "timeEnd": "13:39",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "5c36c98f-88df-46ba-9c24-087dbf74d794",
+      "fileNo": "0132",
+      "timeStart": "13:28",
+      "timeEnd": "13:29",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "34bbcfb7-a8a2-4603-8d1c-703bb86decc6",
+      "fileNo": "0128",
+      "timeStart": "13:18",
+      "timeEnd": "13:19",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "425074cd-b351-42e3-b604-6c8a9e3b741f",
+      "fileNo": "0122",
+      "timeStart": "13:04",
+      "timeEnd": "13:06",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "8758aab8-ea37-4a99-a28d-74a869ae44a6",
+      "fileNo": "0121",
+      "timeStart": "13:03",
+      "timeEnd": "13:06",
+      "minutesUsed": 3,
+      "withinTarget": true
+    },
+    {
+      "id": "00970083-5d22-4deb-8f7d-0b0b433d0dee",
+      "fileNo": "0117",
+      "timeStart": "12:54",
+      "timeEnd": "12:56",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "413e7e2a-83a2-4a05-b41d-4743f7bd7fb3",
+      "fileNo": "0113",
+      "timeStart": "12:44",
+      "timeEnd": "12:44",
+      "minutesUsed": 0,
+      "withinTarget": true
+    },
+    {
+      "id": "684b7a2c-57b1-4547-8bf7-f9b52feda74e",
+      "fileNo": "0112",
+      "timeStart": "12:43",
+      "timeEnd": "12:44",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "fa9ef7ae-d047-41d1-8a1d-6e1119031cc0",
+      "fileNo": "0109",
+      "timeStart": "12:37",
+      "timeEnd": "12:39",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "a4ef3279-c74c-4b68-999c-1a5d576fdf66",
+      "fileNo": "0095",
+      "timeStart": "12:04",
+      "timeEnd": "12:05",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "80b9be8b-686c-4cc8-934c-8e04db396f85",
+      "fileNo": "0094",
+      "timeStart": "12:03",
+      "timeEnd": "12:04",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "c7ce6223-ea98-4788-9196-158190b9d46b",
+      "fileNo": "0093",
+      "timeStart": "12:02",
+      "timeEnd": "12:04",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "7acf72f3-c79d-4109-aa07-79e9818851f0",
+      "fileNo": "0104",
+      "timeStart": "12:20",
+      "timeEnd": "12:22",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "03683e24-28c4-4f4a-a46c-8926d73249e9",
+      "fileNo": "0090",
+      "timeStart": "11:57",
+      "timeEnd": "11:58",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "431b6ef5-7ed1-4ce2-97dd-3533e6e0574e",
+      "fileNo": "0086",
+      "timeStart": "11:47",
+      "timeEnd": "11:47",
+      "minutesUsed": 0,
+      "withinTarget": true
+    },
+    {
+      "id": "15b39941-228a-4154-b697-5c481c2804fa",
+      "fileNo": "0075",
+      "timeStart": "11:29",
+      "timeEnd": "11:30",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "bc885f0f-fa0d-4cc5-a498-47ae3cf1b1ea",
+      "fileNo": "0076",
+      "timeStart": "11:29",
+      "timeEnd": "11:30",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "af278f68-6995-4395-886a-b933fb6bb6df",
+      "fileNo": "0074",
+      "timeStart": "11:28",
+      "timeEnd": "11:29",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "4b1d0edb-f88b-44a0-ac89-68da1df06bba",
+      "fileNo": "0065",
+      "timeStart": "11:21",
+      "timeEnd": "11:22",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "d52a6629-57ac-4bec-929a-8e75f5a7b303",
+      "fileNo": "0061",
+      "timeStart": "11:13",
+      "timeEnd": "11:15",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "f041034c-e698-4f66-99a5-1fdfc6c5244c",
+      "fileNo": "0059",
+      "timeStart": "11:10",
+      "timeEnd": "11:12",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "cc8b66e1-6381-4145-bef9-ac1ffbcd039a",
+      "fileNo": "0051",
+      "timeStart": "10:55",
+      "timeEnd": "10:56",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "3ee31690-2bc9-4d92-8f02-7b4e93a858e7",
+      "fileNo": "0033",
+      "timeStart": "10:10",
+      "timeEnd": "10:13",
+      "minutesUsed": 3,
+      "withinTarget": true
+    },
+    {
+      "id": "049b112d-617d-4734-be87-e9eee9dd5fb9",
+      "fileNo": "0031",
+      "timeStart": "10:09",
+      "timeEnd": "10:11",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "8d7f0c91-a898-4d8b-a7fe-23bd691b4364",
+      "fileNo": "0037",
+      "timeStart": "10:15",
+      "timeEnd": "10:17",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "4cc677ff-6a94-427f-9283-44f8ef014c9b",
+      "fileNo": "0044",
+      "timeStart": "10:37",
+      "timeEnd": "10:38",
+      "minutesUsed": 1,
+      "withinTarget": true
+    },
+    {
+      "id": "aa60893f-264c-4db6-82a1-767518346f3a",
+      "fileNo": "0034",
+      "timeStart": "10:11",
+      "timeEnd": "10:13",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "68a4efb9-ec33-4a13-b1d4-53a2821e34f3",
+      "fileNo": "0030",
+      "timeStart": "10:08",
+      "timeEnd": "10:11",
+      "minutesUsed": 3,
+      "withinTarget": true
+    },
+    {
+      "id": "a6ef34b2-776e-4cea-8806-d67ce3ce7a0d",
+      "fileNo": "0025",
+      "timeStart": "10:00",
+      "timeEnd": "10:02",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "35b0554e-fc8d-4ba0-9e5c-ea03983b2ac7",
+      "fileNo": "0023",
+      "timeStart": "09:54",
+      "timeEnd": "09:56",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "e198e986-98d1-4365-882f-8b0379a8bcf5",
+      "fileNo": "0021",
+      "timeStart": "09:53",
+      "timeEnd": "09:55",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "2aea98ec-ac86-44df-a755-59ca37c30d43",
+      "fileNo": "0024",
+      "timeStart": "09:55",
+      "timeEnd": "09:57",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "22695b4b-da7e-45ed-9327-ecf6042ab7d7",
+      "fileNo": "0023",
+      "timeStart": "09:54",
+      "timeEnd": "09:56",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "970a7fbc-53fb-4a3b-815b-fd92a0646d6d",
+      "fileNo": "0014",
+      "timeStart": "09:42",
+      "timeEnd": "09:44",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "a15f9c6c-aaae-443e-8633-3607377c1b49",
+      "fileNo": "0015",
+      "timeStart": "09:42",
+      "timeEnd": "09:46",
+      "minutesUsed": 4,
+      "withinTarget": true
+    },
+    {
+      "id": "b4ce3f00-c8de-469e-b25d-8c0fe4b258cd",
+      "fileNo": "0008",
+      "timeStart": "09:14",
+      "timeEnd": "09:16",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "ab774e5e-5252-4d9a-855d-554096b57d18",
+      "fileNo": "0007",
+      "timeStart": "09:03",
+      "timeEnd": "09:05",
+      "minutesUsed": 2,
+      "withinTarget": true
+    },
+    {
+      "id": "b7d8e452-eebc-4559-a156-42f837e19d77",
+      "fileNo": "0006",
+      "timeStart": "09:03",
+      "timeEnd": "09:07",
+      "minutesUsed": 4,
+      "withinTarget": true
+    }
+  ],
+  "savedAt": "2026-05-02T14:22:35.488Z"
+}

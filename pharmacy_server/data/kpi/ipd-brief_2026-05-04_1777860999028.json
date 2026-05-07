@@ -1,0 +1,20 @@
+{
+  "type": "ipd-brief",
+  "date": "2026-05-04",
+  "signature": "อรัญญา",
+  "checks": {
+    "shoes": true,
+    "trash": true,
+    "bottles": true,
+    "temp": false,
+    "sink": true,
+    "fridge": true,
+    "dehumid": true,
+    "expiry": true,
+    "narc": true,
+    "std": true,
+    "it": true
+  },
+  "issues": "ความชื้น 75%",
+  "savedAt": "2026-05-04T02:16:39.028Z"
+}

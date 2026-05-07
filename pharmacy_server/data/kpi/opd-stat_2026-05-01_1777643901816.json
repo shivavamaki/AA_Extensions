@@ -1,0 +1,15 @@
+{
+  "type": "opd-stat",
+  "date": "2026-05-01",
+  "entries": [
+    {
+      "id": 1777643766592.2637,
+      "fileNo": "0052",
+      "timeStart": "07:05",
+      "timeEnd": "",
+      "minutesUsed": null,
+      "withinTarget": null
+    }
+  ],
+  "savedAt": "2026-05-01T13:58:21.816Z"
+}

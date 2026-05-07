@@ -1,0 +1,20 @@
+{
+  "type": "ipd-brief",
+  "date": "2026-05-07",
+  "signature": "วรรณพร",
+  "checks": {
+    "shoes": true,
+    "trash": true,
+    "bottles": true,
+    "temp": true,
+    "sink": true,
+    "fridge": true,
+    "dehumid": true,
+    "expiry": true,
+    "narc": true,
+    "std": false,
+    "it": true
+  },
+  "issues": "- STD 815 คีย์ Nexium 40 mg TAB  แต่จัด Nexium inj.\n- STD 809 ย้ายไป CCU04 แต่ไม่ได้ย้ายยาไป\n- STD 705 คนไข้กลับบ้าน ไม่ได้เก็บยาออก",
+  "savedAt": "2026-05-07T00:34:55.153Z"
+}

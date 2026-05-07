@@ -1,0 +1,20 @@
+{
+  "type": "ipd-brief",
+  "date": "2026-04-20",
+  "signature": "พิษณุ แข่งขัน",
+  "checks": {
+    "shoes": true,
+    "trash": true,
+    "bottles": true,
+    "temp": true,
+    "sink": true,
+    "fridge": true,
+    "dehumid": true,
+    "expiry": true,
+    "narc": true,
+    "std": true,
+    "it": true
+  },
+  "issues": "",
+  "savedAt": "2026-04-20T01:39:30.296Z"
+}

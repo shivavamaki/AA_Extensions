@@ -1,0 +1,20 @@
+{
+  "type": "opd-brief",
+  "date": "2026-04-26",
+  "signature": "อรัญญา",
+  "checks": {
+    "shoes": true,
+    "trash": true,
+    "break": true,
+    "temp": true,
+    "tv": true,
+    "expiry": true,
+    "dehumid": true,
+    "coldbag": true,
+    "it": true,
+    "narc1": true,
+    "narc2": true
+  },
+  "issues": "",
+  "savedAt": "2026-04-26T02:32:00.580Z"
+}
