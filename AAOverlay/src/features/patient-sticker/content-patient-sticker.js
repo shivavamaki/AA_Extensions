@@ -236,11 +236,15 @@
    * MESSAGE SENDER
    * ═══════════════════════════════════════════════════════════════ */
   function _sendMessage(payload) {
+    if (!chrome?.runtime?.sendMessage) {
+      alert("⚠️ Extension was updated or disconnected.\nPlease refresh this page (F5) to reconnect.");
+      return;
+    }
     try {
       chrome.runtime.sendMessage(payload, () => void chrome.runtime.lastError);
     } catch (e) {
-      if (e.message && e.message.includes("Extension context invalidated")) {
-        alert("⚠️ Extension was updated. Please refresh this page (F5) to reconnect.");
+      if (e.message?.includes("Extension context invalidated") || e.message?.includes("Cannot read properties")) {
+        alert("⚠️ Extension was updated or disconnected.\nPlease refresh this page (F5) to reconnect.");
       } else {
         console.error("[HM] sendMessage failed:", e);
       }
