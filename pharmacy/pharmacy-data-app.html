@@ -259,11 +259,11 @@
   <div class="folder-status">
     <div class="folder-dot" id="folderDot"></div>
     <div class="folder-info">
-      <div class="folder-label">Save Location</div>
-      <div class="folder-path" id="folderPath">ยังไม่ได้เชื่อมต่อ Shared Folder — กด "เชื่อมต่อ Shared Folder" เพื่อตั้งค่า</div>
+      <div class="folder-label">KPI Server</div>
+      <div class="folder-path" id="folderPath">ยังไม่ได้ตั้งค่า Server — กด "ตั้งค่า Server URL"</div>
     </div>
   </div>
-  <button class="btn btn-primary btn-sm" onclick="pickFolder()">📋 คัดลอก path & เชื่อมต่อ Shared Folder</button>
+  <button class="btn btn-primary btn-sm" onclick="pickFolder()">🌐 ตั้งค่า Server URL</button>
   <button class="btn btn-ghost btn-sm" onclick="showRecords()">🗂 ดูบันทึกทั้งหมด</button>
 </div>
 
@@ -539,11 +539,11 @@
 
 <div class="app-lock" id="app-lock">
   <div class="app-lock-card">
-    <div class="app-lock-title">กรุณาเชื่อมต่อ Shared Folder ก่อนใช้งาน</div>
-    <div class="app-lock-text">ระบบจะล็อกการใช้งานทั้งหมดไว้ก่อน จนกว่าจะตั้งค่า Save Location สำเร็จ แล้วจึงจะเริ่มบันทึกข้อมูลได้</div>
-    <div class="app-lock-path" id="app-lock-path">\\10.134.10.5\BKN-Department Share File\03-BKN Pharmacy\PUBLIC\all_kpi_db</div>
+    <div class="app-lock-title">กรุณาตั้งค่า Server URL ก่อนใช้งาน</div>
+    <div class="app-lock-text">ระบบต้องเชื่อมต่อกับ KPI Server เพื่อบันทึกและอ่านข้อมูล กรุณาใส่ Server URL แล้วกดเชื่อมต่อก่อนเริ่มบันทึกข้อมูล (เปิด start_server.bat บน Server PC ก่อน)</div>
+    <div class="app-lock-path" id="app-lock-path">http://10.134.10.XX:8765</div>
     <div class="actions-row" style="margin-top:0">
-      <button class="btn btn-primary" onclick="pickFolder()">📋 คัดลอก path & เชื่อมต่อ Shared Folder</button>
+      <button class="btn btn-primary" onclick="pickFolder()">🌐 ตั้งค่า Server URL</button>
     </div>
   </div>
 </div>
@@ -554,9 +554,9 @@
 </div>
 
 <script>
-const NETWORK_PATH = '\\\\10.134.10.5\\BKN-Department Share File\\03-BKN Pharmacy\\PUBLIC\\all_kpi_db';
 const KPI_SCHEMA_VERSION = '1.0.0';
 const KPI_APP_NAME = 'pharmacy-kpi-data-system';
+const SERVER_KEY = 'pharm_kpi.server_url';
 
 const APP_UPDATE_SOURCE_PATH = '\\\\10.134.10.5\\BKNinfo\\24 Pharmacy\\EXT\\pharmacy';
 const APP_TARGET_PATH = 'D:\\pharmacy';
@@ -593,7 +593,7 @@ const IPD_CHECKS = [
 const OPD_DEPTS = ['PED','OBG','MED','SUR','ENT','EYE','ORT','DER','PSY','ER','Other'];
 const IPD_WARDS = ['ward 4','ward 5','ward 6','ward 7','ward 8','ward 9','ICU','CCU','NICU','LR','OR','Other'];
 
-let savedRecords=[], reportRecords=[], dirHandle=null, opdStatRows=[], ipdStatRows=[];
+let savedRecords=[], reportRecords=[], opdStatRows=[], ipdStatRows=[];
 let opdBriefState={}, ipdBriefState={};
 
 // ── DRAFT AUTOSAVE ──
@@ -621,107 +621,37 @@ function restoreDraft(){
 }
 
 
-const FOLDER_DB_NAME = 'pharmacy-kpi-folder-db';
-const FOLDER_STORE_NAME = 'handles';
-const FOLDER_KEY = 'shared-folder-handle';
+// ── SERVER CONNECTION ──
+let serverUrl = '';
 
-function openFolderDB(){
-  return new Promise((resolve, reject) => {
-    if (!('indexedDB' in window)) {
-      reject(new Error('Browser นี้ไม่รองรับ IndexedDB'));
-      return;
-    }
-    const req = indexedDB.open(FOLDER_DB_NAME, 1);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(FOLDER_STORE_NAME)) {
-        db.createObjectStore(FOLDER_STORE_NAME);
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error || new Error('เปิด IndexedDB ไม่สำเร็จ'));
-  });
+function getServerUrl() {
+  return (localStorage.getItem(SERVER_KEY) || '').replace(/\/$/, '');
 }
 
-async function saveFolderHandle(handle){
-  const db = await openFolderDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(FOLDER_STORE_NAME, 'readwrite');
-    tx.objectStore(FOLDER_STORE_NAME).put(handle, FOLDER_KEY);
-    tx.oncomplete = () => { db.close(); resolve(true); };
-    tx.onerror = () => { db.close(); reject(tx.error || new Error('บันทึก handle ไม่สำเร็จ')); };
-  });
-}
-
-async function loadFolderHandle(){
-  const db = await openFolderDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(FOLDER_STORE_NAME, 'readonly');
-    const req = tx.objectStore(FOLDER_STORE_NAME).get(FOLDER_KEY);
-    req.onsuccess = () => { db.close(); resolve(req.result || null); };
-    req.onerror = () => { db.close(); reject(req.error || new Error('โหลด handle ไม่สำเร็จ')); };
-  });
-}
-
-async function clearFolderHandle(){
-  try {
-    const db = await openFolderDB();
-    return await new Promise((resolve, reject) => {
-      const tx = db.transaction(FOLDER_STORE_NAME, 'readwrite');
-      tx.objectStore(FOLDER_STORE_NAME).delete(FOLDER_KEY);
-      tx.oncomplete = () => { db.close(); resolve(true); };
-      tx.onerror = () => { db.close(); reject(tx.error || new Error('ลบ handle ไม่สำเร็จ')); };
-    });
-  } catch (e) {
-    console.warn('clearFolderHandle failed:', e);
-    return false;
-  }
-}
-
-async function verifyFolderPermission(handle, readWrite){
-  if(!handle) return false;
-  const options = readWrite ? { mode:'readwrite' } : {};
-  try {
-    if ((await handle.queryPermission(options)) === 'granted') return true;
-    if (readWrite && (await handle.requestPermission(options)) === 'granted') return true;
-    return false;
-  } catch (e) {
-    console.warn('verifyFolderPermission failed:', e);
-    return false;
-  }
-}
-
-function updateFolderUI(isActive, labelText){
+function updateFolderUI(isActive, labelText) {
   const dot = document.getElementById('folderDot');
   const path = document.getElementById('folderPath');
   if (dot) dot.classList.toggle('active', !!isActive);
-  if (path && labelText) path.textContent = labelText;
-  if (path && !labelText) {
-    path.textContent = isActive
-      ? (NETWORK_PATH + (dirHandle ? '  [' + dirHandle.name + ']' : ''))
-      : 'ยังไม่ได้เชื่อมต่อ Shared Folder — กด "เชื่อมต่อ Shared Folder" เพื่อตั้งค่า';
+  if (path) {
+    path.textContent = labelText || (isActive
+      ? serverUrl
+      : 'ยังไม่ได้ตั้งค่า Server — กด "ตั้งค่า Server URL"');
   }
 }
 
-async function restoreFolderAccess(){
-  if (!('showDirectoryPicker' in window)) return;
+async function restoreFolderAccess() {
+  serverUrl = getServerUrl();
+  if (!serverUrl) { updateFolderUI(false); return; }
   try {
-    const handle = await loadFolderHandle();
-    if(!handle){
-      updateFolderUI(false);
-      return;
-    }
-    const granted = await verifyFolderPermission(handle, false);
-    dirHandle = handle;
-    if (granted) {
-      updateFolderUI(true, NETWORK_PATH + '  [' + handle.name + ']');
-      showToast('📁','เชื่อมต่อ Shared Folder เดิมอัตโนมัติแล้ว');
-    } else {
-      updateFolderUI(false, NETWORK_PATH + '  [' + handle.name + '] — กรุณาเชื่อมต่อใหม่');
-    }
-  } catch (e) {
-    console.warn('restoreFolderAccess failed:', e);
-    updateFolderUI(false);
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 3000);
+    const r = await fetch(`${serverUrl}/ping`, { signal: ctrl.signal });
+    clearTimeout(t);
+    const j = await r.json();
+    if (j.ok) { updateFolderUI(true); showToast('🌐', 'เชื่อมต่อ Server สำเร็จ'); }
+    else throw new Error('bad response');
+  } catch {
+    updateFolderUI(false, serverUrl + ' — ไม่สามารถเชื่อมต่อได้ (จะลองใหม่เมื่อบันทึก)');
   }
 }
 
@@ -760,75 +690,39 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-// ── FOLDER PICKER ──
+// ── SERVER CONNECTION ──
 
-function isFolderConnected(){
-  return !!dirHandle;
-}
-function enforceAppLock(){
+function isFolderConnected() { return !!serverUrl; }
+function enforceAppLock() {
   const locked = !isFolderConnected();
   document.getElementById('app-lock')?.classList.toggle('show', locked);
   document.body.classList.toggle('app-locked', locked);
   return !locked;
 }
-function requireFolderSetup(){
+function requireFolderSetup() {
   if (enforceAppLock()) return true;
-  showToast('📁','กรุณาเชื่อมต่อ Shared Folder ก่อนใช้งาน');
+  showToast('🌐', 'กรุณาตั้งค่า Server URL ก่อนใช้งาน');
   return false;
 }
 
-async function copyNetworkPathToClipboard() {
-  try {
-    await navigator.clipboard.writeText(NETWORK_PATH);
-    return true;
-  } catch (e) {
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = NETWORK_PATH;
-      ta.setAttribute('readonly', '');
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      ta.setSelectionRange(0, ta.value.length);
-      const ok = document.execCommand('copy');
-      document.body.removeChild(ta);
-      return ok;
-    } catch (_) {
-      return false;
-    }
-  }
-}
-
 async function pickFolder() {
-  if (!('showDirectoryPicker' in window)) {
-    showToast('⚠','ใช้ Chrome หรือ Edge เพื่อรองรับ File System Access API'); return;
+  const url = prompt('ใส่ URL ของ KPI Server:\nเช่น http://10.134.10.50:8765', serverUrl || getServerUrl());
+  if (url === null) return;
+  const trimmed = (url || '').trim().replace(/\/$/, '');
+  if (!trimmed) {
+    serverUrl = ''; localStorage.removeItem(SERVER_KEY); updateFolderUI(false); enforceAppLock(); return;
   }
-
-  const copied = await copyNetworkPathToClipboard();
-  const ok = confirm([
-    copied ? 'คัดลอก folder path ไปที่ clipboard แล้ว' : 'คัดลอก path อัตโนมัติไม่สำเร็จ',
-    '',
-    NETWORK_PATH,
-    '',
-    'เมื่อหน้าต่างเลือกโฟลเดอร์เปิดขึ้น ให้คลิกช่อง path/address bar แล้ววาง path นี้ จากนั้นกด Enter',
-    '(ต้องเชื่อมต่อ network/VPN ก่อน)'
-  ].join('\n'));
-  if (!ok) return;
+  updateFolderUI(false, 'กำลังเชื่อมต่อ ' + trimmed + ' ...');
   try {
-    dirHandle = await window.showDirectoryPicker({ mode:'readwrite' });
-    const granted = await verifyFolderPermission(dirHandle, true);
-    if (!granted) {
-      showToast('⚠','ยังไม่ได้รับสิทธิ์เขียนไฟล์ในโฟลเดอร์นี้');
-      return;
-    }
-    await saveFolderHandle(dirHandle);
-    updateFolderUI(true, NETWORK_PATH + '  [' + dirHandle.name + ']');
-    enforceAppLock();
-    showToast(copied ? '📋' : '📁', copied ? 'คัดลอก path แล้ว — ให้วางใน address bar ของ dialog' : 'เปิด dialog แล้ววาง path ใน address bar');
-    setTimeout(() => showToast('📁','โฟลเดอร์พร้อมใช้: ' + dirHandle.name), 600);
-  } catch(e) {
-    if (e.name !== 'AbortError') showToast('✗','เลือกโฟลเดอร์ไม่สำเร็จ: ' + e.message);
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 4000);
+    const r = await fetch(`${trimmed}/ping`, { signal: ctrl.signal }); clearTimeout(t);
+    const j = await r.json(); if (!j.ok) throw new Error('Server ตอบผิดปกติ');
+    serverUrl = trimmed; localStorage.setItem(SERVER_KEY, trimmed); updateFolderUI(true); enforceAppLock();
+    showToast('✓', 'เชื่อมต่อ Server สำเร็จ: ' + trimmed);
+  } catch (e) {
+    const force = confirm('ไม่สามารถเชื่อมต่อ Server ได้\n\nต้องการบันทึก URL นี้อยู่ดีไหม?');
+    if (force) { serverUrl = trimmed; localStorage.setItem(SERVER_KEY, trimmed); updateFolderUI(false, trimmed + ' — ตั้งค่าแล้ว (offline)'); enforceAppLock(); }
+    else { updateFolderUI(false); }
   }
 }
 
@@ -1250,7 +1144,7 @@ function collectMedError(){
   });
 }
 
-async function saveRecord(data){const fn=`${data.type}_${data.date}_${Date.now()}.json`;const ok = await saveToFolder(fn,JSON.stringify(data,null,2));if(!ok) return;savedRecords.push(data);updateBadges();showToast('✓',`บันทึก ${fn}`);}
+async function saveRecord(data){const ok=await saveToServer(data);if(!ok) return;savedRecords.push(data);updateBadges();showToast('✓',`บันทึก ${data.type} ${data.date} สำเร็จ`);}
 function saveOPDBrief(){if(!requireFolderSetup()) return; saveRecord(collectOPDBrief());}
 function saveIPDBrief(){if(!requireFolderSetup()) return; saveRecord(collectIPDBrief());}
 function saveOPDStat() {
@@ -1308,48 +1202,20 @@ function handleStatKeyDown(e){
   }
 }
 
-// ── FILE SYSTEM ──
-async function saveToFolder(filename,content){
-  if(!dirHandle){
-    enforceAppLock();
-    showToast('📁','กรุณาเชื่อมต่อ Shared Folder ก่อนบันทึก');
-    return false;
-  }
-  try{
-    const granted = await verifyFolderPermission(dirHandle, false);
-    if(!granted){
-      const reGranted = await verifyFolderPermission(dirHandle, true);
-      if(!reGranted){
-        updateFolderUI(false);
-        showToast('⚠','สิทธิ์เข้าถึง Shared Folder หมดอายุ กรุณาเชื่อมต่อใหม่');
-        return false;
-      }
-    }
-    const fh=await dirHandle.getFileHandle(filename,{create:true});
-    const w=await fh.createWritable();
-    await w.write(content);
-    await w.close();
-    updateFolderUI(true, NETWORK_PATH + '  [' + dirHandle.name + ']');
-    enforceAppLock();
-    return true;
-  }
-  catch(e){
-  if (e.name === 'NotAllowedError') {
-    dirHandle = null;
-    await clearFolderHandle();
-    updateFolderUI(false);
-    enforceAppLock();
-    showToast('⚠','ไม่มีสิทธิ์บันทึกแล้ว กรุณาเชื่อมต่อใหม่');
-    return false;
-  }
-  }
+// ── SERVER I/O ──
+async function saveToServer(record) {
+  if (!serverUrl) { enforceAppLock(); showToast('🌐','กรุณาตั้งค่า Server URL ก่อนบันทึก'); return false; }
+  try {
+    const r = await fetch(`${serverUrl}/api/kpi`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(record) });
+    const j = await r.json(); if (!j.ok) throw new Error('Server returned error'); return true;
+  } catch (e) { showToast('✗','บันทึกไม่สำเร็จ: ' + e.message); return false; }
 }
-async function exportAllJSON(){
-  if(!requireFolderSetup()) return;
-  if(!savedRecords.length){showToast('⚠','ยังไม่มีบันทึก');return;}
+function exportAllJSON(){
+  const source = savedRecords.length ? savedRecords : reportRecords;
+  if(!source.length){showToast('⚠','ยังไม่มีบันทึก');return;}
   const fn=`pharmacy_export_${new Date().toISOString().split('T')[0]}.json`;
-  const ok = await saveToFolder(fn,JSON.stringify(savedRecords,null,2));
-  if (ok) showToast('⬇',`Export ${savedRecords.length} รายการ → ${fn}`);
+  downloadBlob(fn, JSON.stringify(source,null,2), 'application/json;charset=utf-8');
+  showToast('⬇',`Export ${source.length} รายการ → ${fn}`);
 }
 
 // ── TABS ──
@@ -1434,7 +1300,7 @@ function renderRecords(){
     return`<div class="record-item"><div class="record-meta"><span class="record-date">${r.date}</span><span class="record-type type-${r.type}">${lbl[r.type]}</span><span class="record-count">${cnt}</span></div><div class="record-actions"><button class="btn btn-ghost btn-sm" onclick="reExportRecord(${ri})">⬇ JSON</button><button class="btn btn-danger btn-sm" onclick="deleteRecord(${ri})">✕</button></div></div>`;
   }).join('')+'</div>';
 }
-async function reExportRecord(idx){const r=savedRecords[idx];await saveToFolder(`${r.type}_${r.date}_reexport.json`,JSON.stringify(r,null,2));showToast('⬇','Re-export: '+r.type+' '+r.date);}
+function reExportRecord(idx){const r=savedRecords[idx];downloadBlob(`${r.type}_${r.date}_reexport.json`,JSON.stringify(r,null,2),'application/json;charset=utf-8');showToast('⬇','Download: '+r.type+' '+r.date);}
 function deleteRecord(idx){savedRecords.splice(idx,1);updateBadges();renderRecords();}
 function clearAllRecords(){if(!requireFolderSetup()) return; if(!confirm('ลบบันทึกทั้งหมด?'))return;savedRecords=[];updateBadges();renderRecords();}
 
@@ -1649,48 +1515,24 @@ function renderReport(){
 }
 
 async function loadSharedFolderReport(){
-  if(!dirHandle){
-    showToast('📁','กรุณาเชื่อมต่อ Shared Folder ก่อนโหลดรายงาน');
-    return;
-  }
-  const granted = await verifyFolderPermission(dirHandle, false);
-  if(!granted){
-    showToast('⚠','ไม่มีสิทธิ์อ่าน Shared Folder กรุณาเชื่อมต่อใหม่');
-    return;
-  }
-
-  const records = [];
-  let jsonFiles = 0;
+  if(!serverUrl){ showToast('🌐','กรุณาตั้งค่า Server URL ก่อนโหลดรายงาน'); return; }
   try {
-    for await (const [name, handle] of dirHandle.entries()) {
-      if (handle.kind !== 'file' || !/\.json$/i.test(name)) continue;
-      jsonFiles += 1;
-      try {
-        const file = await handle.getFile();
-        const text = await file.text();
-        const parsed = JSON.parse(text);
-        const normalized = normalizeImportedRecords(parsed).map(item => ({ ...item, __sourceFile: name }));
-        records.push(...normalized);
-      } catch (e) {
-        console.warn('Skip invalid JSON file:', name, e);
-      }
-    }
+    const r = await fetch(`${serverUrl}/api/kpi`);
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    const normalized = normalizeImportedRecords(data);
     const seen = new Set();
-    const deduped = records.filter(r => {
-      const key = `${r.savedAt}|${r.type}|${r.date}`;
+    const deduped = normalized.filter(rec => {
+      const key = `${rec.savedAt}|${rec.type}|${rec.date}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
-    const dupeCount = records.length - deduped.length;
-    reportRecords = deduped;
-    renderReport();
+    const dupeCount = normalized.length - deduped.length;
+    reportRecords = deduped; renderReport();
     const dupeNote = dupeCount > 0 ? ` (ซ้ำ ${dupeCount})` : '';
-    showToast('📊', `โหลดรายงาน ${reportRecords.length} รายการ จาก ${jsonFiles} ไฟล์${dupeNote}`);
-  } catch (e) {
-    console.error('loadSharedFolderReport failed:', e);
-    showToast('⚠','โหลดรายงานไม่สำเร็จ: ' + e.message);
-  }
+    showToast('📊', `โหลดรายงาน ${reportRecords.length} รายการ${dupeNote}`);
+  } catch(e) { showToast('⚠','โหลดรายงานไม่สำเร็จ: ' + e.message); }
 }
 
 

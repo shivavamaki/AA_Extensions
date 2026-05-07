@@ -26,7 +26,7 @@ from pathlib import Path
 # ── Config ─────────────────────────────────────────────────────
 DEFAULT_PORT = 8765
 DATA_DIR     = Path(__file__).parent / 'data'
-COLLECTIONS  = {'faqs', 'items', 'vdos'}
+COLLECTIONS  = {'faqs', 'items', 'vdos', 'kpi'}
 
 
 # ── File helpers ───────────────────────────────────────────────
@@ -59,7 +59,7 @@ class Handler(BaseHTTPRequestHandler):
     # CORS headers on every response
     def _cors(self):
         self.send_header('Access-Control-Allow-Origin',  '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS')
+        self.send_header('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
 
     def send_json(self, code, obj):
@@ -95,7 +95,25 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self.send_json(404, {'error': 'Not found'})
 
-    # PUT — replace entire collection
+    # POST — append one record (kpi only)
+    def do_POST(self):
+        col = self.parse_col()
+        if col != 'kpi':
+            self.send_json(405, {'error': 'POST only supported for /api/kpi'})
+            return
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            record = json.loads(self.rfile.read(length))
+            if not isinstance(record, dict):
+                raise ValueError('Body must be a JSON object')
+            data = load(col)
+            data.append(record)
+            save_col(col, data)
+            self.send_json(200, {'ok': True, 'count': len(data)})
+        except Exception as e:
+            self.send_json(400, {'error': str(e)})
+
+    # PUT — replace entire collection (faqs / items / vdos)
     def do_PUT(self):
         col = self.parse_col()
         if not col:
