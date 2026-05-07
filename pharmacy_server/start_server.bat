@@ -1,55 +1,51 @@
 @echo off
-chcp 65001 > nul
+setlocal
 
-:: pushd maps UNC paths (\\server\share) to a temporary drive letter automatically
-pushd "%~dp0"
+set SCRIPT=%~dp0bkn_ks_server.py
 
-title BKN Knowledge Sharing Server
 echo.
-echo  Starting BKN Knowledge Sharing Server...
-echo  Close this window to stop.
+echo  BKN Knowledge Sharing Server
+echo  =============================
 echo.
 
-:: 1. Try 'py' launcher (installed with Python on Windows, recommended)
-py --version > nul 2>&1
-if %errorlevel% == 0 ( set PYTHON=py & goto :run )
-
-:: 2. Try 'python' from PATH
-python --version > nul 2>&1
-if %errorlevel% == 0 ( set PYTHON=python & goto :run )
-
-:: 3. Scan user-level install (no admin required location)
-for /d %%D in ("%LocalAppData%\Programs\Python\Python3*") do (
-  if exist "%%D\python.exe" ( set PYTHON=%%D\python.exe & goto :run )
+:: Try 'py' launcher (comes with Python installer on Windows)
+py --version >nul 2>&1
+if not errorlevel 1 (
+  py "%SCRIPT%" %*
+  goto :done
 )
 
-:: 4. Scan system-level installs
-for /d %%D in ("C:\Python3*") do (
-  if exist "%%D\python.exe" ( set PYTHON=%%D\python.exe & goto :run )
+:: Try 'python' from PATH
+python --version >nul 2>&1
+if not errorlevel 1 (
+  python "%SCRIPT%" %*
+  goto :done
 )
 
-echo  ERROR: Python not found.
-echo.
-echo  Install Python without admin rights — 2 options:
-echo.
-echo  Option A (easiest):
-echo    Open Microsoft Store, search "Python 3.12", click Install.
-echo.
-echo  Option B (python.org):
-echo    Go to https://www.python.org/downloads/
-echo    Download the installer, run it, and CHECK the box
-echo    "Add python.exe to PATH" before clicking Install Now.
-echo.
-echo  After installing, run this file again.
-echo.
-popd
-pause
-exit /b 1
+:: Try common user-level install paths (no admin required)
+if exist "%LocalAppData%\Programs\Python\Python313\python.exe" (
+  "%LocalAppData%\Programs\Python\Python313\python.exe" "%SCRIPT%" %*
+  goto :done
+)
+if exist "%LocalAppData%\Programs\Python\Python312\python.exe" (
+  "%LocalAppData%\Programs\Python\Python312\python.exe" "%SCRIPT%" %*
+  goto :done
+)
+if exist "%LocalAppData%\Programs\Python\Python311\python.exe" (
+  "%LocalAppData%\Programs\Python\Python311\python.exe" "%SCRIPT%" %*
+  goto :done
+)
+if exist "%LocalAppData%\Programs\Python\Python310\python.exe" (
+  "%LocalAppData%\Programs\Python\Python310\python.exe" "%SCRIPT%" %*
+  goto :done
+)
 
-:run
-echo  Python : %PYTHON%
+echo  Python not found.
 echo.
-%PYTHON% "%~dp0bkn_ks_server.py" %*
+echo  Install without admin rights:
+echo  Open Microsoft Store and search "Python 3.12"
 echo.
-popd
+
+:done
+endlocal
 pause
