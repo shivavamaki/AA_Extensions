@@ -9,15 +9,22 @@ Usage:
   python bkn_ks_server.py --port 9000
 
 API:
-  GET  /ping            — health check
-  GET  /api/{col}       — get all records (col = faqs | items | vdos)
-  PUT  /api/{col}       — replace entire collection (JSON array in body)
+  GET  /ping                  — health check (returns server URL)
+  GET  /api/kpi               — list all daily KPI docs (sorted newest first)
+  GET  /api/kpi/YYYY-MM-DD    — get one day's KPI doc (null if not exists)
+  PUT  /api/kpi/YYYY-MM-DD    — save/update one day's KPI doc (JSON object)
+  GET  /api/{ks_col}          — get KS collection (faqs | items | vdos)
+  PUT  /api/{ks_col}          — replace KS collection (JSON array)
 
-Data stored as JSON files in ./data/
+Data layout:
+  data/kpi/YYYY-MM-DD.json    — one file per day
+  data/ks/faqs.json
+  data/ks/items.json
+  data/ks/vdos.json
 """
 
 import json
-import os
+import re
 import sys
 import socket
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -28,18 +35,46 @@ DEFAULT_PORT = 8765
 DATA_DIR     = Path(__file__).parent / 'data'
 KPI_DIR      = DATA_DIR / 'kpi'
 KS_DIR       = DATA_DIR / 'ks'
-COLLECTIONS  = {'faqs', 'items', 'vdos', 'kpi'}
+KS_COLS      = {'faqs', 'items', 'vdos'}
+DATE_RE      = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
 
-# ── File helpers ───────────────────────────────────────────────
-def col_dir(col):
-    return KPI_DIR if col == 'kpi' else KS_DIR
+# ── KPI helpers (per-day files) ────────────────────────────────
+def kpi_file(date_key):
+    return KPI_DIR / f'{date_key}.json'
 
-def data_file(col):
-    return col_dir(col) / f'{col}.json'
+def load_kpi_day(date_key):
+    p = kpi_file(date_key)
+    if not p.exists():
+        return None
+    try:
+        return json.loads(p.read_text(encoding='utf-8'))
+    except Exception:
+        return None
 
-def load(col):
-    p = data_file(col)
+def save_kpi_day(date_key, data):
+    KPI_DIR.mkdir(parents=True, exist_ok=True)
+    kpi_file(date_key).write_text(
+        json.dumps(data, ensure_ascii=False, indent=2),
+        encoding='utf-8'
+    )
+
+def load_all_kpi():
+    days = []
+    for p in sorted(KPI_DIR.glob('????-??-??.json'), reverse=True):
+        try:
+            days.append(json.loads(p.read_text(encoding='utf-8')))
+        except Exception:
+            pass
+    return days
+
+
+# ── KS helpers (single file per collection) ───────────────────
+def ks_file(col):
+    return KS_DIR / f'{col}.json'
+
+def load_ks(col):
+    p = ks_file(col)
     if not p.exists():
         return []
     try:
@@ -47,9 +82,9 @@ def load(col):
     except Exception:
         return []
 
-def save_col(col, data):
-    col_dir(col).mkdir(parents=True, exist_ok=True)
-    data_file(col).write_text(
+def save_ks(col, data):
+    KS_DIR.mkdir(parents=True, exist_ok=True)
+    ks_file(col).write_text(
         json.dumps(data, ensure_ascii=False, indent=2),
         encoding='utf-8'
     )
@@ -61,10 +96,9 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         print(f'  [{self.address_string()}]  {fmt % args}')
 
-    # CORS headers on every response
     def _cors(self):
         self.send_header('Access-Control-Allow-Origin',  '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
 
     def send_json(self, code, obj):
@@ -76,12 +110,23 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def parse_col(self):
-        """Return collection name from /api/{col}, or None."""
+    def parse_route(self):
+        """Return (route_type, key).
+        route_type: 'kpi-all' | 'kpi-day' | 'ks' | None
+        key: date string for kpi-day, col name for ks, None otherwise.
+        """
         parts = self.path.split('?')[0].strip('/').split('/')
-        if len(parts) == 2 and parts[0] == 'api' and parts[1] in COLLECTIONS:
-            return parts[1]
-        return None
+        if len(parts) == 2 and parts[0] == 'api':
+            col = parts[1]
+            if col == 'kpi':
+                return 'kpi-all', None
+            if col in KS_COLS:
+                return 'ks', col
+        if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'kpi':
+            date_key = parts[2]
+            if DATE_RE.match(date_key):
+                return 'kpi-day', date_key
+        return None, None
 
     # OPTIONS (preflight)
     def do_OPTIONS(self):
@@ -93,50 +138,43 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/ping':
             self.send_json(200, {
-                'ok': True,
+                'ok':     True,
                 'server': 'BKN KS Server',
-                'url': f'http://{Handler._ip}:{Handler._port}'
+                'url':    f'http://{Handler._ip}:{Handler._port}'
             })
             return
-        col = self.parse_col()
-        if col:
-            self.send_json(200, load(col))
+        rtype, key = self.parse_route()
+        if rtype == 'kpi-all':
+            self.send_json(200, load_all_kpi())
+        elif rtype == 'kpi-day':
+            self.send_json(200, load_kpi_day(key))   # null if not exists
+        elif rtype == 'ks':
+            self.send_json(200, load_ks(key))
         else:
             self.send_json(404, {'error': 'Not found'})
 
-    # POST — append one record (kpi only)
-    def do_POST(self):
-        col = self.parse_col()
-        if col != 'kpi':
-            self.send_json(405, {'error': 'POST only supported for /api/kpi'})
-            return
-        try:
-            length = int(self.headers.get('Content-Length', 0))
-            record = json.loads(self.rfile.read(length))
-            if not isinstance(record, dict):
-                raise ValueError('Body must be a JSON object')
-            data = load(col)
-            data.append(record)
-            save_col(col, data)
-            self.send_json(200, {'ok': True, 'count': len(data)})
-        except Exception as e:
-            self.send_json(400, {'error': str(e)})
-
-    # PUT — replace entire collection (faqs / items / vdos)
+    # PUT
     def do_PUT(self):
-        col = self.parse_col()
-        if not col:
-            self.send_json(404, {'error': 'Not found'})
-            return
+        rtype, key = self.parse_route()
         try:
             length = int(self.headers.get('Content-Length', 0))
             body   = json.loads(self.rfile.read(length))
-            if not isinstance(body, list):
-                raise ValueError('Body must be a JSON array')
-            save_col(col, body)
-            self.send_json(200, {'ok': True, 'count': len(body)})
         except Exception as e:
             self.send_json(400, {'error': str(e)})
+            return
+
+        if rtype == 'kpi-day':
+            if not isinstance(body, dict):
+                self.send_json(400, {'error': 'Body must be a JSON object'}); return
+            save_kpi_day(key, body)
+            self.send_json(200, {'ok': True})
+        elif rtype == 'ks':
+            if not isinstance(body, list):
+                self.send_json(400, {'error': 'Body must be a JSON array'}); return
+            save_ks(key, body)
+            self.send_json(200, {'ok': True, 'count': len(body)})
+        else:
+            self.send_json(404, {'error': 'Not found'})
 
 
 # ── Network helpers ────────────────────────────────────────────
@@ -162,15 +200,15 @@ def main():
             print(f'Invalid port: {args[1]}')
             sys.exit(1)
 
-    # Init sub-folders and empty data files on first run
+    # Init sub-folders (KPI files created on demand per day)
     KPI_DIR.mkdir(parents=True, exist_ok=True)
     KS_DIR.mkdir(parents=True, exist_ok=True)
-    for col in COLLECTIONS:
-        p = data_file(col)
+    for col in KS_COLS:
+        p = ks_file(col)
         if not p.exists():
             p.write_text('[]', encoding='utf-8')
 
-    ip     = get_local_ip()
+    ip = get_local_ip()
     Handler._ip   = ip
     Handler._port = port
     server = HTTPServer(('0.0.0.0', port), Handler)
@@ -186,8 +224,8 @@ def main():
     print()
     print('  ── How to connect ──────────────────────────────')
     print('  1. Copy the Server URL above.')
-    print('  2. Open Knowledge app in the extension.')
-    print('  3. Go to Admin → Settings → paste URL → Save.')
+    print('  2. Open the KPI or Knowledge app in the extension.')
+    print('  3. Set Server URL → Save.')
     print()
     print('  Press Ctrl+C to stop.')
     print()

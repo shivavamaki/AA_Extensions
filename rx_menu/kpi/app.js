@@ -699,32 +699,41 @@ function collectMedError(){
   });
 }
 
-async function saveRecord(data){const ok=await saveToServer(data);if(!ok) return;savedRecords.push(data);updateBadges();showToast('✓',`บันทึก ${data.type} ${data.date} สำเร็จ`);}
-function saveOPDBrief(){if(!requireFolderSetup()) return; saveRecord(collectOPDBrief());}
-function saveIPDBrief(){if(!requireFolderSetup()) return; saveRecord(collectIPDBrief());}
-function saveOPDStat() {
-  if(!requireFolderSetup()) return;
-
+async function saveOPDBrief() {
+  if (!requireFolderSetup()) return;
+  const data = collectOPDBrief();
+  if (!data.date) { showToast('⚠', 'กรุณาระบุวันที่'); return; }
+  const ok = await saveSection('opdBrief', data);
+  if (ok) { savedRecords = savedRecords.filter(r => !(r.type === 'opd-brief' && r.date === data.date)); savedRecords.push(data); updateBadges(); showToast('✓', `บันทึก OPD Brief ${data.date} สำเร็จ`); }
+}
+async function saveIPDBrief() {
+  if (!requireFolderSetup()) return;
+  const data = collectIPDBrief();
+  if (!data.date) { showToast('⚠', 'กรุณาระบุวันที่'); return; }
+  const ok = await saveSection('ipdBrief', data);
+  if (ok) { savedRecords = savedRecords.filter(r => !(r.type === 'ipd-brief' && r.date === data.date)); savedRecords.push(data); updateBadges(); showToast('✓', `บันทึก IPD Brief ${data.date} สำเร็จ`); }
+}
+async function saveOPDStat() {
+  if (!requireFolderSetup()) return;
   const data = collectOPDStat();
-  if(!data.entries.length){
-    showToast('⚠','ไม่มีข้อมูล OPD Stat');
-    return;
-  }
-
-  saveRecord(data);
+  if (!data.entries.length) { showToast('⚠', 'ไม่มีข้อมูล OPD Stat'); return; }
+  const ok = await saveSection('opdStat', data);
+  if (ok) { savedRecords = savedRecords.filter(r => !(r.type === 'opd-stat' && r.date === data.date)); savedRecords.push(data); updateBadges(); showToast('✓', `บันทึก OPD Stat ${data.date} สำเร็จ`); }
 }
-function saveIPDStat() {
-  if(!requireFolderSetup()) return;
-
+async function saveIPDStat() {
+  if (!requireFolderSetup()) return;
   const data = collectIPDStat();
-  if(!data.entries.length){
-    showToast('⚠','ไม่มีข้อมูล IPD Stat');
-    return;
-  }
-
-  saveRecord(data);
+  if (!data.entries.length) { showToast('⚠', 'ไม่มีข้อมูล IPD Stat'); return; }
+  const ok = await saveSection('ipdStat', data);
+  if (ok) { savedRecords = savedRecords.filter(r => !(r.type === 'ipd-stat' && r.date === data.date)); savedRecords.push(data); updateBadges(); showToast('✓', `บันทึก IPD Stat ${data.date} สำเร็จ`); }
 }
-function saveMedError(){if(!requireFolderSetup()) return; const data=collectMedError(); if(!data.date || !data.item || !data.errorType || !data.detail || !data.location || !data.signature){showToast('⚠','กรุณากรอกวันที่, รายการยา, Error, รายละเอียด, Location และลงชื่อ'); return;} saveRecord(data);}
+async function saveMedError() {
+  if (!requireFolderSetup()) return;
+  const data = collectMedError();
+  if (!data.date || !data.item || !data.errorType || !data.detail || !data.location || !data.signature) { showToast('⚠', 'กรุณากรอกวันที่, รายการยา, Error, รายละเอียด, Location และลงชื่อ'); return; }
+  const ok = await saveSection('medErrors', data);
+  if (ok) { savedRecords.push(data); updateBadges(); showToast('✓', `บันทึก Med Error ${data.date} สำเร็จ`); }
+}
 
 function handleStatKeyDown(e){
   if(e.key !== 'Enter') return;
@@ -758,15 +767,67 @@ function handleStatKeyDown(e){
 }
 
 // ── SERVER I/O ──
-async function saveToServer(record) {
-  if (!serverUrl) { enforceAppLock(); showToast('🌐','กรุณาตั้งค่า Server URL ก่อนบันทึก'); return false; }
-  try {
-    const r = await fetch(`${serverUrl}/api/kpi`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(record) });
-    const j = await r.json(); if (!j.ok) throw new Error('Server returned error'); return true;
-  } catch (e) { showToast('✗','บันทึกไม่สำเร็จ: ' + e.message); return false; }
+
+function emptyDayDoc(date) {
+  const now = new Date().toISOString();
+  return { date, createdAt: now, updatedAt: now, opdBrief: null, ipdBrief: null, opdStat: null, ipdStat: null, medErrors: [] };
 }
+
+async function getDayDoc(date) {
+  if (!serverUrl) return emptyDayDoc(date);
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 4000);
+    const r = await fetch(`${serverUrl}/api/kpi/${date}`, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (r.ok) { const d = await r.json(); if (d && typeof d === 'object') return d; }
+  } catch {}
+  return emptyDayDoc(date);
+}
+
+async function saveDayDoc(doc) {
+  if (!serverUrl) { enforceAppLock(); showToast('🌐', 'กรุณาตั้งค่า Server URL ก่อนบันทึก'); return false; }
+  doc.updatedAt = new Date().toISOString();
+  try {
+    const r = await fetch(`${serverUrl}/api/kpi/${doc.date}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(doc)
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error('Server returned error');
+    return true;
+  } catch (e) { showToast('✗', 'บันทึกไม่สำเร็จ: ' + e.message); return false; }
+}
+
+async function saveSection(sectionKey, data) {
+  const doc = await getDayDoc(data.date);
+  if (sectionKey === 'medErrors') {
+    if (!Array.isArray(doc.medErrors)) doc.medErrors = [];
+    doc.medErrors.push(data);
+  } else {
+    doc[sectionKey] = data;
+  }
+  if (!doc.createdAt) doc.createdAt = new Date().toISOString();
+  return saveDayDoc(doc);
+}
+
+// Flatten a daily doc back to individual type-based records for report/dashboard
+function flattenDayDoc(doc) {
+  const records = [];
+  const d = doc.date;
+  if (doc.opdBrief) records.push({ ...doc.opdBrief, type: 'opd-brief', date: doc.opdBrief.date || d });
+  if (doc.ipdBrief) records.push({ ...doc.ipdBrief, type: 'ipd-brief', date: doc.ipdBrief.date || d });
+  if (doc.opdStat)  records.push({ ...doc.opdStat,  type: 'opd-stat',  date: doc.opdStat.date  || d });
+  if (doc.ipdStat)  records.push({ ...doc.ipdStat,  type: 'ipd-stat',  date: doc.ipdStat.date  || d });
+  if (Array.isArray(doc.medErrors)) {
+    doc.medErrors.forEach(e => records.push({ ...e, type: 'med-error', date: e.date || d }));
+  }
+  return records;
+}
+
 function exportAllJSON(){
-  const source = savedRecords.length ? savedRecords : reportRecords;
+  const source = reportRecords.length ? reportRecords : savedRecords;
   if(!source.length){showToast('⚠','ยังไม่มีบันทึก');return;}
   const fn=`pharmacy_export_${new Date().toISOString().split('T')[0]}.json`;
   downloadBlob(fn, JSON.stringify(source,null,2), 'application/json;charset=utf-8');
@@ -904,7 +965,17 @@ async function handleImportFiles(fileList){
 // ── REPORT FROM SHARED FOLDER ──
 function normalizeImportedRecords(parsed){
   const items = Array.isArray(parsed) ? parsed : [parsed];
-  return items.filter(x => x && typeof x === 'object' && x.type && x.date);
+  const flat = [];
+  items.forEach(x => {
+    if (!x || typeof x !== 'object') return;
+    // Old flat record format
+    if (x.type && x.date) { flat.push(x); return; }
+    // New daily doc format
+    if (x.date && (x.opdBrief || x.ipdBrief || x.opdStat || x.ipdStat || x.medErrors)) {
+      flat.push(...flattenDayDoc(x));
+    }
+  });
+  return flat;
 }
 
 function escapeHTML(value){
@@ -1074,19 +1145,10 @@ async function loadSharedFolderReport(){
   try {
     const r = await fetch(`${serverUrl}/api/kpi`);
     if(!r.ok) throw new Error(`HTTP ${r.status}`);
-    const data = await r.json();
-    const normalized = normalizeImportedRecords(data);
-    const seen = new Set();
-    const deduped = normalized.filter(rec => {
-      const key = `${rec.savedAt}|${rec.type}|${rec.date}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-    const dupeCount = normalized.length - deduped.length;
-    reportRecords = deduped; renderReport();
-    const dupeNote = dupeCount > 0 ? ` (ซ้ำ ${dupeCount})` : '';
-    showToast('📊', `โหลดรายงาน ${reportRecords.length} รายการ${dupeNote}`);
+    const days = await r.json(); // array of daily docs
+    reportRecords = days.flatMap(flattenDayDoc);
+    renderReport();
+    showToast('📊', `โหลดรายงาน ${days.length} วัน · ${reportRecords.length} รายการ`);
   } catch(e) { showToast('⚠','โหลดรายงานไม่สำเร็จ: ' + e.message); }
 }
 
