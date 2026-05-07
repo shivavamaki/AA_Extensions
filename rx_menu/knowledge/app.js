@@ -8,6 +8,7 @@ const KEYS = {
   adminPw: 'bkn_ks.admin_pw.v1',
 };
 
+const SERVER_KEY = 'bkn_ks.server_url';
 const DEFAULT_PW = 'pharmacy2024';
 
 // ── Category labels ────────────────────────────────────────────
@@ -43,6 +44,7 @@ const state = {
   editId:      null,
   delType:     null,
   delId:       null,
+  serverOk:    false,
 };
 
 // ── Utilities ──────────────────────────────────────────────────
@@ -66,13 +68,71 @@ function fmtDate(iso) {
 function now() { return new Date().toISOString(); }
 
 // ── Storage ────────────────────────────────────────────────────
+// In-memory cache populated from server on load; localStorage used as
+// offline backup and for password/settings that never leave the device.
+const cache = { faqs: null, items: null, vdos: null };
+
+const KEY_COL = {
+  [KEYS.faqs]:  'faqs',
+  [KEYS.items]: 'items',
+  [KEYS.vdos]:  'vdos',
+};
+
+function getServerUrl() {
+  return (localStorage.getItem(SERVER_KEY) || '').replace(/\/$/, '');
+}
+
 function getData(key) {
+  const col = KEY_COL[key];
+  if (col && cache[col] !== null) return cache[col];
   try { return JSON.parse(localStorage.getItem(key)) || []; }
   catch { return []; }
 }
+
 function saveData(key, data) {
-  localStorage.setItem(key, JSON.stringify(data));
+  const col = KEY_COL[key];
+  if (col) cache[col] = data;
+  localStorage.setItem(key, JSON.stringify(data)); // local backup
+
+  const base = getServerUrl();
+  if (!base || !col) return;
+  fetch(`${base}/api/${col}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).catch(() => showToast('⚠ Server sync failed — data saved locally', 'error'));
 }
+
+async function loadAllFromServer() {
+  const base = getServerUrl();
+  if (!base) return false;
+  try {
+    const [faqs, items, vdos] = await Promise.all([
+      fetch(`${base}/api/faqs`).then(r  => r.ok  ? r.json()  : Promise.reject()),
+      fetch(`${base}/api/items`).then(r => r.ok  ? r.json()  : Promise.reject()),
+      fetch(`${base}/api/vdos`).then(r  => r.ok  ? r.json()  : Promise.reject()),
+    ]);
+    cache.faqs  = Array.isArray(faqs)  ? faqs  : [];
+    cache.items = Array.isArray(items) ? items : [];
+    cache.vdos  = Array.isArray(vdos)  ? vdos  : [];
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function updateServerBar(configured, ok) {
+  const el = document.getElementById('serverBar');
+  if (!el) return;
+  if (!configured) {
+    el.innerHTML = '<div class="server-bar-off"><span class="server-dot-icon"></span>No server</div>';
+    return;
+  }
+  el.innerHTML = ok
+    ? '<div class="server-bar-ok"><span class="server-dot-icon"></span>Server connected</div>'
+    : '<div class="server-bar-err"><span class="server-dot-icon"></span>Server unreachable</div>';
+}
+
 function getAdminPw() {
   return localStorage.getItem(KEYS.adminPw) || DEFAULT_PW;
 }
@@ -480,12 +540,34 @@ function buildAdminVdosPage() {
 
 // ── Admin Settings ─────────────────────────────────────────────
 function buildAdminSettingsPage() {
+  const serverUrl = getServerUrl();
+  const serverStatus = state.serverOk
+    ? '<span style="color:#22c55e;font-size:12px">● Connected</span>'
+    : (serverUrl ? '<span style="color:#ef4444;font-size:12px">● Unreachable</span>' : '<span style="color:#94a3b8;font-size:12px">● Not configured</span>');
+
   return `
     <div class="page-header">
       <div class="page-title">⚙️ Settings</div>
       <div class="page-sub">ตั้งค่าระบบ Admin</div>
     </div>
     <div class="page-body">
+
+      <div class="settings-section">
+        <div class="settings-section-title">🖥 Server URL ${serverStatus}</div>
+        <div class="form-group">
+          <label class="form-label">URL ของ Python Server (เช่น http://10.134.10.50:8765)</label>
+          <input class="form-input" id="setServerUrl" value="${esc(serverUrl)}" placeholder="http://10.x.x.x:8765">
+          <div class="form-hint">เว้นว่างเพื่อใช้ข้อมูลเฉพาะเครื่อง (localStorage)</div>
+        </div>
+        <div class="settings-gap"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="btnSaveServerUrl">💾 Save &amp; Connect</button>
+          <button class="btn btn-ghost" id="btnTestServerUrl">🔌 Test Connection</button>
+          ${serverUrl ? '<button class="btn btn-ghost" id="btnMigrateLocal">⬆ Push local data to server</button>' : ''}
+        </div>
+        <div class="form-error" id="serverUrlError" hidden></div>
+      </div>
+
       <div class="settings-section">
         <div class="settings-section-title">🔐 เปลี่ยนรหัสผ่าน Admin</div>
         <div class="form-group">
@@ -506,6 +588,7 @@ function buildAdminSettingsPage() {
         <div class="settings-gap"></div>
         <button class="btn btn-primary" id="btnChangePw">💾 Save Password</button>
       </div>
+
     </div>`;
 }
 
@@ -565,7 +648,12 @@ function bindPageEvents() {
   mc.querySelectorAll('[data-del-item]').forEach(btn => btn.addEventListener('click', e => { e.stopPropagation(); openConfirmModal('item', btn.dataset.delItem); }));
   mc.querySelectorAll('[data-del-vdo]').forEach(btn  => btn.addEventListener('click', e => { e.stopPropagation(); openConfirmModal('vdo',  btn.dataset.delVdo);  }));
 
-  // Settings page
+  // Settings page — server URL
+  mc.querySelector('#btnSaveServerUrl')?.addEventListener('click', doSaveServerUrl);
+  mc.querySelector('#btnTestServerUrl')?.addEventListener('click', doTestServerUrl);
+  mc.querySelector('#btnMigrateLocal')?.addEventListener('click', doMigrateLocalToServer);
+
+  // Settings page — password
   mc.querySelector('#btnChangePw')?.addEventListener('click', doChangePassword);
 }
 
@@ -825,6 +913,74 @@ function doLogout() {
   showToast('ออกจากระบบแล้ว', 'info');
 }
 
+async function doSaveServerUrl() {
+  const input  = document.getElementById('setServerUrl');
+  const errEl  = document.getElementById('serverUrlError');
+  const url    = (input?.value ?? '').trim().replace(/\/$/, '');
+
+  if (url && !url.startsWith('http')) {
+    errEl.textContent = 'URL ต้องขึ้นต้นด้วย http://'; errEl.hidden = false; return;
+  }
+  errEl.hidden = true;
+  localStorage.setItem(SERVER_KEY, url);
+
+  if (url) {
+    showToast('กำลังเชื่อมต่อ Server…', 'info');
+    const ok = await loadAllFromServer();
+    state.serverOk = ok;
+    updateServerBar(true, ok);
+    if (ok) {
+      showToast('เชื่อมต่อ Server สำเร็จ ✓', 'success');
+    } else {
+      errEl.textContent = 'ไม่สามารถเชื่อมต่อได้ — ตรวจสอบว่า Server กำลังรันอยู่';
+      errEl.hidden = false;
+    }
+  } else {
+    state.serverOk = false;
+    updateServerBar(false, false);
+    showToast('ปิดการใช้งาน Server แล้ว', 'info');
+  }
+  renderPage();
+}
+
+async function doTestServerUrl() {
+  const input = document.getElementById('setServerUrl');
+  const errEl = document.getElementById('serverUrlError');
+  const url   = (input?.value ?? '').trim().replace(/\/$/, '');
+  errEl.hidden = true;
+
+  if (!url) { errEl.textContent = 'กรุณาใส่ URL ก่อน'; errEl.hidden = false; return; }
+  try {
+    const r = await fetch(`${url}/ping`);
+    const j = await r.json();
+    if (j.ok) {
+      showToast(`✓ Server ตอบกลับ: ${j.server || 'OK'}`, 'success');
+    } else {
+      throw new Error('bad response');
+    }
+  } catch {
+    errEl.textContent = 'ไม่สามารถเชื่อมต่อได้ — ตรวจสอบ URL และ Server';
+    errEl.hidden = false;
+  }
+}
+
+async function doMigrateLocalToServer() {
+  const base = getServerUrl();
+  if (!base) return;
+  try {
+    await Promise.all([
+      fetch(`${base}/api/faqs`,  { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: localStorage.getItem(KEYS.faqs)  || '[]' }),
+      fetch(`${base}/api/items`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: localStorage.getItem(KEYS.items) || '[]' }),
+      fetch(`${base}/api/vdos`,  { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: localStorage.getItem(KEYS.vdos)  || '[]' }),
+    ]);
+    await loadAllFromServer();
+    showToast('ย้ายข้อมูลไปยัง Server สำเร็จ ✓', 'success');
+    renderPage();
+  } catch {
+    showToast('❌ Migrate failed — ตรวจสอบ Server', 'error');
+  }
+}
+
 function doChangePassword() {
   const cur     = document.getElementById('setPwCurrent')?.value ?? '';
   const newPw   = document.getElementById('setPwNew')?.value ?? '';
@@ -865,6 +1021,7 @@ function showToast(msg, type = 'info') {
 // SEED SAMPLE DATA (first run only)
 // ════════════════════════════════════════════════════════════════
 function seedSampleData() {
+  if (getServerUrl()) return; // server is the source of truth
   if (localStorage.getItem('bkn_ks.seeded')) return;
 
   saveData(KEYS.faqs, [
@@ -945,8 +1102,17 @@ function seedSampleData() {
 // ════════════════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-  seedSampleData();
+document.addEventListener('DOMContentLoaded', async () => {
+  const configured = !!getServerUrl();
+  if (configured) {
+    const ok = await loadAllFromServer();
+    state.serverOk = ok;
+    updateServerBar(true, ok);
+    if (!ok) showToast('⚠ Server ไม่ตอบกลับ — ใช้ข้อมูลสำรองในเครื่อง', 'error');
+  } else {
+    seedSampleData();
+    updateServerBar(false, false);
+  }
 
   // Sidebar public nav
   document.querySelectorAll('#sidebarNav .nav-item[data-page]').forEach(btn => {

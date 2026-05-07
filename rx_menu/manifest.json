@@ -14,7 +14,7 @@
     "https://script.google.com/*",
     "https://arcusair.bdms.co.th/*",
     "https://bdmsgroup-my.sharepoint.com/*",
-    "http://10.134.10.91/*"
+    "http://10.134.10.*/*"
   ],
   "background": {
     "service_worker": "background.js"
