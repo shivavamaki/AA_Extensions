@@ -144,6 +144,12 @@ const MIXING_DB = [
     storage: "ตู้เย็น", days: 10, note: "กันแสง · protect from light"
   },
   {
+    name: "AMK ES-600 Syrup",
+    steps:    ["1. เขย่าขวดยาให้ผงยากระจายตัว","2. เติมน้ำสะอาด ~3/4 ของขีด","3. เขย่าให้เข้ากันดี","4. เติมน้ำให้ถึงขีด เขย่าอีกครั้ง"],
+    steps_en: ["1. Tap bottle to loosen powder","2. Add water to ~3/4 of the mark","3. Shake well","4. Top up to mark, shake again"],
+    storage: "ตู้เย็น", days: 7, note: "กันแสง · protect from light"
+  },
+  {
     name: "Tamiflu Oral Suspension",
     steps:    ["1. เขย่าขวดยาให้ผงยากระจายตัว","2. เติมน้ำสะอาด 55 ml","   (ถึงปลายหัวลูกศรที่ถ้วยตวง)","3. เขย่าให้เข้ากันดี"],
     steps_en: ["1. Tap bottle to loosen powder","2. Add 55 mL of clean water","   (to arrow tip on measuring cup)","3. Shake well"],
