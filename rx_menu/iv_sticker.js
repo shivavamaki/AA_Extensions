@@ -448,8 +448,8 @@ function generatePfsLabel() {
   showToast('สร้าง PFS Label สำเร็จ');
 }
 
-/** Build small button/cap label (3×1 cm) — compact, includes lot if available */
-function buildPfsBtnLabel({ drug, conc, expStr, prep, lot, colorBg, colorBorder }) {
+/** Build small button/cap label (3×1 cm) — compact, includes lot and prep date if available */
+function buildPfsBtnLabel({ drug, conc, expStr, prep, lot, mfd, colorBg, colorBorder }) {
   const labelStyle = colorBg
     ? `style="background:${colorBg};border-color:${colorBorder};"`
     : '';
@@ -458,7 +458,7 @@ function buildPfsBtnLabel({ drug, conc, expStr, prep, lot, colorBg, colorBorder 
   ${conc ? `<div class="pfs-btn-conc">${esc(conc)}</div>` : ''}
   <div class="pfs-btn-exp">Exp ${esc(expStr)}</div>
   ${lot ? `<div class="pfs-btn-lot">Lot ${esc(lot)}</div>` : ''}
-  <div class="pfs-btn-prep">by ${esc(prep)}</div>
+  <div class="pfs-btn-prep">Prep ${esc(mfd)} by ${esc(prep)}</div>
 </div>`;
 }
 
