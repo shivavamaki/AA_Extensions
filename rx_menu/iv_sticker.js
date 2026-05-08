@@ -457,8 +457,8 @@ function buildPfsBtnLabel({ drug, conc, expStr, prep, lot, mfd, colorBg, colorBo
   <div class="pfs-btn-drug">${esc(drug)}</div>
   ${conc ? `<div class="pfs-btn-conc">${esc(conc)}</div>` : ''}
   <div class="pfs-btn-exp">Exp ${esc(expStr)}</div>
-  ${lot ? `<div class="pfs-btn-lot">Lot ${esc(lot)}</div>` : ''}
   <div class="pfs-btn-prep">Prep ${esc(mfd)} by ${esc(prep)}</div>
+  ${lot ? `<div class="pfs-btn-lot">Lot ${esc(lot)}</div>` : ''}
 </div>`;
 }
 
