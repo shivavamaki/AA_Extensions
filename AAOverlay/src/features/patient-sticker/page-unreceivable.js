@@ -4,8 +4,11 @@
 
   function getUrlData() {
     try {
+      // URLSearchParams.get() already URL-decodes the value — do NOT call
+      // decodeURIComponent again or a bare % in a drug name (e.g. "NSS 0.9 %")
+      // will throw URIError: URI malformed and silently return {}.
       const raw = new URLSearchParams(window.location.search).get("data");
-      return raw ? JSON.parse(decodeURIComponent(raw)) : {};
+      return raw ? JSON.parse(raw) : {};
     } catch (_) { return {}; }
   }
   const D = getUrlData();
