@@ -8,7 +8,6 @@
     restorePanelDismissed,
     getPanelDismissed,
     setPanelDismissed,
-    syncScraperState,
   } = window.ArcusShared;
 
   function wirePanelButtons() {
@@ -52,7 +51,6 @@
       wirePanelButtons();
       window.ArcusPanel?.renderStats();
       window.ArcusPanel?.renderLog();
-      window.ArcusPanel?.renderScrapePreview([]);
       window.ArcusPanel?.updateButtonState();
     }
   }
@@ -62,24 +60,10 @@
     createPanelIfNeeded();
   }
 
-  window.addEventListener("arcus-toolkit:start-scrape", () => {
-    setPanelDismissed(false);
-    createPanelIfNeeded();
-    // Ensure scraper panel is visible, then start
-    window.dispatchEvent(new CustomEvent("arcus-toolkit:show-scraper-panel"));
-    window.ArcusScraper?.runSharedScraper({ pdpa: true });
-  });
-
-  // Stop automation only — does NOT touch scraperStopRequested
   window.addEventListener("arcus-toolkit:stop", () => {
     state.stopRequested = true;
     window.ArcusPanel?.setStatus("Stopping...");
     window.ArcusPanel?.pushLog("info", "Stop requested by popup");
-  });
-
-  // Stop scraper only — handled by scraper_panel.js listener, but keep here for safety
-  window.addEventListener("arcus-toolkit:stop-scraper", () => {
-    state.scraperStopRequested = true;
   });
 
   window.addEventListener("arcus-toolkit:remove-panel", () => {

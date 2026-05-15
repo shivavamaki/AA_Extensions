@@ -2,8 +2,7 @@
   if (window.__ARCUS_SHARED_LOADED__) return;
   window.__ARCUS_SHARED_LOADED__ = true;
 
-  // Arcus Toolkit v3.8.0
-  // Phase 1 upgrade: selector fallback helper, structured debug store, and safer click helpers.
+  // Arcus Toolkit v4.0.0
 
   const CONFIG = {
     routes: {
@@ -102,12 +101,9 @@
     autoNoMatchIntervalMs: 30000,
     rowMatchTextLength: 240,
     maxRetriesPerRow: 2,
-    scrapePaneWaitMs: 5000,
     scrollLoadWaitMs: 900,
-    maxEmptyScrollAttempts: 8,
     mouseWheelScrollSteps: 5,
     mouseWheelDeltaY: 650,
-    milestoneSaveEvery: 50,
   };
 
   const PANEL_STORAGE_KEY = "arcusAutoPanelState";
@@ -123,7 +119,6 @@
   const state = {
     isRunning: false,
     stopRequested: false,
-    scraperStopRequested: false,
     stats: { processed: 0, success: 0, fail: 0 },
     logItems: [],
     settings: {
@@ -135,23 +130,7 @@
     panel: {
       dismissed: false,
     },
-    scraper: {
-      state: "idle",
-      data: [],
-      reason: "",
-      progressText: "",
-      pdpa: true,
-    },
   };
-
-  function syncScraperState() {
-    window.__ARCUS_SHARED_SCRAPER_STATE__ = {
-      state: state.scraper.state,
-      data: state.scraper.data,
-      reason: state.scraper.reason,
-      progressText: state.scraper.progressText,
-    };
-  }
 
   function setPanelDismissed(value) {
     state.panel.dismissed = !!value;
@@ -254,7 +233,7 @@
   }
 
   window.ArcusStore = window.ArcusStore || {};
-  window.ArcusStore.core = { state, CONFIG, version: "3.9.4" };
+  window.ArcusStore.core = { state, CONFIG, version: "4.0.0" };
 
   function getMainContainer() {
     for (const selector of CONFIG.containerSelectors) {
@@ -769,15 +748,12 @@
     return Math.min(Math.max(value, min), max);
   }
 
-  syncScraperState();
-
   window.ArcusShared = {
     CONFIG,
     PANEL_STORAGE_KEY,
     PANEL_DISMISSED_KEY,
     ORDER_FILTERS,
     state,
-    syncScraperState,
     setPanelDismissed,
     getPanelDismissed,
     restorePanelDismissed,

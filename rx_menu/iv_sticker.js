@@ -6,7 +6,30 @@
 
 'use strict';
 
-// ── EMBEDDED DEFAULT DATA ─────────────────────────────────────────────────
+// ── SERVER CONFIG ─────────────────────────────────────────────────────────
+const _PHARMACY_SERVER_DEFAULT = 'http://10.134.110.81:8765';
+function _serverUrl() {
+  return (localStorage.getItem('pharmacyServerUrl') || _PHARMACY_SERVER_DEFAULT).replace(/\/$/, '');
+}
+
+async function _fetchRx(endpoint) {
+  const r = await fetch(`${_serverUrl()}${endpoint}`, { signal: AbortSignal.timeout(4000) });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+async function _putRx(endpoint, data) {
+  const r = await fetch(`${_serverUrl()}${endpoint}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+    signal: AbortSignal.timeout(6000),
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+// ── EMBEDDED DEFAULT DATA (fallback when server is unavailable) ───────────
 const DEFAULT_DRUGS = [
   {"codeName":"KCl","generic":"KCl","type":"HAD","exp":7,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":""},
   {"codeName":"50%MgSO4","generic":"50%MgSO4","type":"HAD","exp":30,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":""},
@@ -104,17 +127,26 @@ let history     = [];
 let editDrugIdx = -1;
 
 // ── DATA BOOTSTRAP ────────────────────────────────────────────────────────
-function loadData() {
+async function loadData() {
+  // Load drugs & staff from server; fall back to embedded defaults if unreachable
   try {
-    const s = localStorage.getItem('iv_drugs');
-    drugs = s ? JSON.parse(s) : JSON.parse(JSON.stringify(DEFAULT_DRUGS));
-  } catch { drugs = JSON.parse(JSON.stringify(DEFAULT_DRUGS)); }
+    const [serverDrugs, serverStaff] = await Promise.all([
+      _fetchRx('/api/iv-drugs'),
+      _fetchRx('/api/iv-staff'),
+    ]);
+    drugs = Array.isArray(serverDrugs) && serverDrugs.length
+      ? serverDrugs
+      : JSON.parse(JSON.stringify(DEFAULT_DRUGS));
+    staff = Array.isArray(serverStaff) && serverStaff.length
+      ? serverStaff
+      : JSON.parse(JSON.stringify(DEFAULT_STAFF));
+  } catch (_) {
+    // Server unavailable — use embedded fallback
+    drugs = JSON.parse(JSON.stringify(DEFAULT_DRUGS));
+    staff = JSON.parse(JSON.stringify(DEFAULT_STAFF));
+  }
 
-  try {
-    const s = localStorage.getItem('iv_staff');
-    staff = s ? JSON.parse(s) : JSON.parse(JSON.stringify(DEFAULT_STAFF));
-  } catch { staff = JSON.parse(JSON.stringify(DEFAULT_STAFF)); }
-
+  // History stays local (user-specific, not shared)
   try {
     const s = localStorage.getItem('iv_history');
     history = s ? JSON.parse(s) : [];
@@ -124,20 +156,35 @@ function loadData() {
 }
 
 function saveState() {
+  // Persist history locally (user-specific)
   try {
-    localStorage.setItem('iv_drugs',   JSON.stringify(drugs));
-    localStorage.setItem('iv_staff',   JSON.stringify(staff));
     localStorage.setItem('iv_history', JSON.stringify(history.slice(0, 200)));
   } catch (e) {
-    showToast('ไม่สามารถบันทึกได้: ' + e.message, 'error');
+    showToast('ไม่สามารถบันทึก history: ' + e.message, 'error');
+  }
+  // Sync drugs & staff to server in background
+  _syncToServer();
+}
+
+async function _syncToServer() {
+  try {
+    await Promise.all([
+      _putRx('/api/iv-drugs', drugs),
+      _putRx('/api/iv-staff', staff),
+    ]);
+  } catch (e) {
+    showToast('Server sync failed: ' + e.message, 'error');
   }
 }
 
-function resetToDefaults() {
+async function resetToDefaults() {
   if (!confirm('รีเซ็ตข้อมูลยาและบุคลากรกลับค่าเริ่มต้น?')) return;
-  localStorage.removeItem('iv_drugs');
-  localStorage.removeItem('iv_staff');
-  loadData();
+  drugs = JSON.parse(JSON.stringify(DEFAULT_DRUGS));
+  staff = JSON.parse(JSON.stringify(DEFAULT_STAFF));
+  await _syncToServer();
+  populateSelects();
+  renderDrugTable?.();
+  renderStaffTable?.();
   showToast('รีเซ็ตสำเร็จ');
 }
 
@@ -1222,8 +1269,8 @@ async function loadArcusScrape() {
 }
 
 // ── INIT & EVENT BINDINGS ────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  loadData();
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadData();
   goPage('ipd');
   // Load Arcus scrape data AFTER drug master is ready
   loadArcusScrape();

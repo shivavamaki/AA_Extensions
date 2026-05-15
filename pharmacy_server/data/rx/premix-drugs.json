@@ -1,0 +1,314 @@
+[
+  {
+    "no": 1,
+    "name": "0.5% HIBITANE IN WATER 100 ML",
+    "shelf": 30,
+    "label1": "หลังเปิดใช้ เก็บได้ 24 ชั่วโมง",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 2,
+    "name": "SAVLON PURE 10 ml (BACTRICIDE)",
+    "shelf": 180,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 3,
+    "name": "1% HYDROGEN PEROXIDE 120 ML",
+    "shelf": 7,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": "ใช้สำหรับกลั้วปาก"
+  },
+  {
+    "no": 4,
+    "name": "3% Acetic Acid (30 ml)",
+    "shelf": 180,
+    "label1": "หลังเปิดใช้ เก็บได้ 7 วัน",
+    "w1": null,
+    "w2": null
+  },
+  {
+    "no": 5,
+    "name": "Hibiscrub Soap (60 ML)",
+    "shelf": 7,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 6,
+    "name": "Lidocaine 2% Viscous 5 ml",
+    "shelf": 180,
+    "label1": null,
+    "w1": null,
+    "w2": null
+  },
+  {
+    "no": 7,
+    "name": "Lidocaine 2% Viscous 10 ml",
+    "shelf": 180,
+    "label1": null,
+    "w1": null,
+    "w2": null
+  },
+  {
+    "no": 8,
+    "name": "Lugol's Solution",
+    "shelf": 365,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 9,
+    "name": "Savlon 1% For Dressing (Alcohol 95%) Bot",
+    "shelf": 90,
+    "label1": "หลังเปิดใช้ เก็บได้ 7 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 10,
+    "name": "Xylocaine 2% Adrenaline 10 ml",
+    "shelf": 3,
+    "label1": "หลังเปิดใช้ เก็บได้ 3 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": "ยาแช่เย็น"
+  },
+  {
+    "no": 11,
+    "name": "Xylocaine 1% Adrenaline 10 ml",
+    "shelf": 3,
+    "label1": "หลังเปิดใช้ เก็บได้ 3 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": "ยาแช่เย็น"
+  },
+  {
+    "no": 12,
+    "name": "Xylocaine 1% Adrenaline 20 ml",
+    "shelf": 3,
+    "label1": "หลังเปิดใช้ เก็บได้ 3 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": "ยาแช่เย็น"
+  },
+  {
+    "no": 13,
+    "name": "Xylocaine 2% Adrenaline 20 ml",
+    "shelf": 3,
+    "label1": "หลังเปิดใช้ เก็บได้ 3 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": "ยาแช่เย็น"
+  },
+  {
+    "no": 14,
+    "name": "Benzac Ac 2.5% Gel",
+    "shelf": 180,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 15,
+    "name": "Differin 0.1% Gel",
+    "shelf": 180,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 16,
+    "name": "Emla (5%) Cream 5 G",
+    "shelf": 180,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 17,
+    "name": "Silver Sulfadiazine 1% Cream (30 G)",
+    "shelf": 180,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 18,
+    "name": "T.A.0.1% + 10% Urea Cream",
+    "shelf": 180,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 19,
+    "name": "White Vaseline 5 Gm",
+    "shelf": 180,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 20,
+    "name": "White Vaseline 10 Gm",
+    "shelf": 180,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 21,
+    "name": "White Vaseline 15 Gm",
+    "shelf": 180,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 22,
+    "name": "8% Lidocaine Solution 10 ml",
+    "shelf": 90,
+    "label1": "หลังเปิดใช้ เก็บได้ 7 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 23,
+    "name": "Lidocaine 2% Adrenaline 50 ml",
+    "shelf": 7,
+    "label1": "หลังเปิดใช้ เก็บได้ 7 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 24,
+    "name": "Lidocaine 1% Adrenaline 50 ml",
+    "shelf": 7,
+    "label1": "หลังเปิดใช้ เก็บได้ 7 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 25,
+    "name": "Lidocaine 2% Adrenaline 20 ml",
+    "shelf": 3,
+    "label1": "หลังเปิดใช้ เก็บได้ 7 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 26,
+    "name": "Lidocaine 1% Adrenaline 20 ml",
+    "shelf": 3,
+    "label1": "หลังเปิดใช้ เก็บได้ 7 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 27,
+    "name": "Lidocaine 10% Cream 15 Gm",
+    "shelf": 180,
+    "label1": "หลังเปิดใช้ เก็บได้ 180 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 28,
+    "name": "Emla (5%) Cream 5 G (2)",
+    "shelf": 180,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 29,
+    "name": "Lidocaine 10% Cream 30 Gm",
+    "shelf": 180,
+    "label1": "หลังเปิดใช้ เก็บได้ 180 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 30,
+    "name": "Adrenaline 0.3 mg/0.3 mL",
+    "shelf": 180,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 31,
+    "name": "White Vaseline 30 Gm",
+    "shelf": 180,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 32,
+    "name": "Savlon Douch 1:100 Solution",
+    "shelf": 180,
+    "label1": "หลังเปิดใช้ เก็บได้ 7 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 33,
+    "name": "Oxymetazoline 0.025% + Lidocaine 2% 20 mL",
+    "shelf": 30,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 34,
+    "name": "Savlon Douch 1:100 Solution (100 mL)",
+    "shelf": 180,
+    "label1": "หลังเปิดใช้ เก็บได้ 7 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 35,
+    "name": "Oxymetazoline 0.025% + Lidocaine 4% in 40 mL",
+    "shelf": 30,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 36,
+    "name": "Lidocaine 10% Cream 10 Gm",
+    "shelf": 180,
+    "label1": "หลังเปิดใช้ เก็บได้ 180 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 37,
+    "name": "Lidocaine Powder 8 Gm",
+    "shelf": 360,
+    "label1": null,
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 38,
+    "name": "3% Acetic Acid 100 ML",
+    "shelf": 180,
+    "label1": "หลังเปิดใช้ เก็บได้ 7 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  },
+  {
+    "no": 39,
+    "name": "TCA 50% Solutions",
+    "shelf": 720,
+    "label1": "หลังเปิดใช้ เก็บได้ 180 วัน",
+    "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
+    "w2": null
+  }
+]

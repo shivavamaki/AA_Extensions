@@ -22,15 +22,31 @@ API:
   GET    /api/{ks_col}                      — get KS collection (faqs|items|vdos)
   PUT    /api/{ks_col}                      — replace KS collection (JSON array)
 
+  GET    /api/premix-drugs                  — premix drug list (array)
+  GET    /api/mixing-protocols              — mixing label protocols (array)
+  GET    /api/iv-drugs                      — IV drug master list (array)
+  PUT    /api/iv-drugs                      — replace IV drug master list
+  GET    /api/iv-staff                      — pharmacy staff list (array)
+  PUT    /api/iv-staff                      — replace pharmacy staff list
+  GET    /api/medication-db                 — BKN medication DB keyed by item code
+
 Data layout:
   data/kpi/YYYY-MM-DD.json    — one file per day
   data/ks/faqs.json
   data/ks/items.json
   data/ks/vdos.json
+  data/rx/premix-drugs.json
+  data/rx/mixing-protocols.json
+  data/rx/iv-drugs.json
+  data/rx/iv-staff.json
+  data/rx/medication-db.json
 """
 
+import hashlib
 import json
+import mimetypes
 import re
+import secrets
 import sys
 import socket
 import urllib.parse
@@ -43,7 +59,15 @@ DEFAULT_PORT  = 8765
 DATA_DIR      = Path(__file__).parent / 'data'
 KPI_DIR       = DATA_DIR / 'kpi'
 KS_DIR        = DATA_DIR / 'ks'
+RX_DIR        = DATA_DIR / 'rx'
+AUTH_DIR      = DATA_DIR / 'auth'
+AUTH_FILE     = AUTH_DIR / 'users.json'
+WWW_DIR       = Path(__file__).parent / 'www'
 KS_COLS       = {'faqs', 'items', 'vdos'}
+# All rx collections — GET is public; PUT requires editor/admin auth
+RX_COLS       = {'premix-drugs', 'mixing-protocols', 'medication-db', 'iv-drugs', 'iv-staff'}
+# medication-db is a dict; all others are arrays
+RX_DICT_COLS  = {'medication-db'}
 DATE_RE       = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 SECTION_KEYS  = {'opd-brief', 'ipd-brief', 'opd-stat', 'ipd-stat'}
 SECTION_FIELD = {
@@ -126,6 +150,64 @@ def save_ks(col, data):
     )
 
 
+# ── RX helpers (pharmacy master data) ────────────────────────
+def rx_file(col):
+    return RX_DIR / f'{col}.json'
+
+def load_rx(col):
+    p = rx_file(col)
+    if not p.exists():
+        return {} if col in RX_DICT_COLS else []
+    try:
+        return json.loads(p.read_text(encoding='utf-8'))
+    except Exception:
+        return {} if col in RX_DICT_COLS else []
+
+def save_rx(col, data):
+    RX_DIR.mkdir(parents=True, exist_ok=True)
+    rx_file(col).write_text(
+        json.dumps(data, ensure_ascii=False, indent=2),
+        encoding='utf-8'
+    )
+
+
+# ── Auth helpers ───────────────────────────────────────────────
+# In-memory sessions: token → {username, role}
+_sessions = {}
+
+ROLES = ('admin', 'editor', 'user')
+
+def _hash_pw(pw):
+    return hashlib.sha256(pw.encode('utf-8')).hexdigest()
+
+def _load_users():
+    if not AUTH_FILE.exists():
+        return {}
+    try:
+        return json.loads(AUTH_FILE.read_text(encoding='utf-8'))
+    except Exception:
+        return {}
+
+def _save_users(users):
+    AUTH_DIR.mkdir(parents=True, exist_ok=True)
+    AUTH_FILE.write_text(
+        json.dumps(users, ensure_ascii=False, indent=2),
+        encoding='utf-8'
+    )
+
+def _ensure_default_admin():
+    users = _load_users()
+    if not users:
+        users['admin'] = {'password_hash': _hash_pw('admin1234'), 'role': 'admin'}
+        _save_users(users)
+        print('  Default admin created  →  username: admin  password: admin1234')
+
+def _create_session(username, role):
+    token = secrets.token_hex(32)
+    _sessions[token] = {'username': username, 'role': role}
+    return token
+
+
 # ── HTTP handler ───────────────────────────────────────────────
 class Handler(BaseHTTPRequestHandler):
 
@@ -135,7 +217,27 @@ class Handler(BaseHTTPRequestHandler):
     def _cors(self):
         self.send_header('Access-Control-Allow-Origin',  '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+    def _session(self):
+        """Return session dict {username, role} or None."""
+        h = self.headers.get('Authorization', '')
+        if h.startswith('Bearer '):
+            return _sessions.get(h[7:])
+        return None
+
+    def _role(self):
+        s = self._session()
+        return s['role'] if s else None
+
+    def _require(self, *allowed_roles):
+        """Send 401/403 and return False if caller lacks permission."""
+        s = self._session()
+        if not s:
+            self.send_json(401, {'error': 'Authentication required'}); return False
+        if s['role'] not in allowed_roles:
+            self.send_json(403, {'error': 'Insufficient role'}); return False
+        return True
 
     def send_json(self, code, obj):
         body = json.dumps(obj, ensure_ascii=False).encode('utf-8')
@@ -161,6 +263,9 @@ class Handler(BaseHTTPRequestHandler):
         'kpi-med-errors'    date            None
         'kpi-med-error-item'date            record savedAt (URL-decoded)
         'ks'                col             None
+        'rx'                col             None
+        'auth'              action          None  (login|logout|me)
+        'users'             username|None   None
         None                None            None
         """
         raw   = self.path.split('?')[0]
@@ -190,6 +295,19 @@ class Handler(BaseHTTPRequestHandler):
         if len(parts) == 2 and parts[0] == 'api' and parts[1] in KS_COLS:
             return 'ks', parts[1], None
 
+        # /api/COL  (rx pharmacy master data)
+        if len(parts) == 2 and parts[0] == 'api' and parts[1] in RX_COLS:
+            return 'rx', parts[1], None
+
+        # /api/auth/ACTION
+        if len(parts) == 3 and parts[:2] == ['api', 'auth'] and parts[2] in ('login', 'logout', 'me'):
+            return 'auth', parts[2], None
+
+        # /api/users  or  /api/users/:username
+        if len(parts) >= 2 and parts[0] == 'api' and parts[1] == 'users':
+            uname = urllib.parse.unquote(parts[2]) if len(parts) == 3 else None
+            return 'users', uname, None
+
         return None, None, None
 
     # OPTIONS (preflight)
@@ -200,24 +318,66 @@ class Handler(BaseHTTPRequestHandler):
 
     # GET
     def do_GET(self):
+        # ── Static webapp files ────────────────────────────────
+        clean = self.path.split('?')[0]
+        if clean in ('/', '/index.html', ''):
+            self._serve_file(WWW_DIR / 'index.html', 'text/html; charset=utf-8'); return
+        if clean.startswith('/static/'):
+            self._serve_file(WWW_DIR / clean.lstrip('/'), None); return
+
+        # ── API ────────────────────────────────────────────────
         if self.path == '/ping':
             self.send_json(200, {
                 'ok': True, 'server': 'BKN KS Server',
                 'url': f'http://{Handler._ip}:{Handler._port}'
             })
             return
+
         rtype, key, _ = self.parse_route()
+
+        if rtype == 'auth' and key == 'me':
+            s = self._session()
+            if not s: self.send_json(401, {'error': 'Not authenticated'}); return
+            self.send_json(200, {'username': s['username'], 'role': s['role']}); return
+
+        if rtype == 'users':
+            if not self._require('admin'): return
+            users = _load_users()
+            if key:
+                u = users.get(key)
+                if not u: self.send_json(404, {'error': 'User not found'}); return
+                self.send_json(200, {'username': key, 'role': u['role']}); return
+            self.send_json(200, [
+                {'username': u, 'role': d['role']} for u, d in users.items()
+            ]); return
+
         if rtype == 'kpi-all':
             self.send_json(200, load_all_kpi())
         elif rtype == 'kpi-day':
-            self.send_json(200, load_kpi_day(key))   # null if not exists
+            self.send_json(200, load_kpi_day(key))
         elif rtype == 'ks':
             self.send_json(200, load_ks(key))
+        elif rtype == 'rx':
+            self.send_json(200, load_rx(key))
         else:
             self.send_json(404, {'error': 'Not found'})
 
-    # PUT — full day doc OR single section
+    def _serve_file(self, path, content_type):
+        p = Path(path)
+        if not p.exists() or not p.is_file():
+            self.send_json(404, {'error': 'File not found'}); return
+        data = p.read_bytes()
+        ct = content_type or mimetypes.guess_type(str(p))[0] or 'application/octet-stream'
+        self.send_response(200)
+        self.send_header('Content-Type', ct)
+        self.send_header('Content-Length', str(len(data)))
+        self._cors()
+        self.end_headers()
+        self.wfile.write(data)
+
+    # PUT — full day doc OR single section OR rx collection OR user
     def do_PUT(self):
+        if not self._require('admin', 'editor'): return
         rtype, key, extra = self.parse_route()
         try:
             body = self._read_json_body()
@@ -231,7 +391,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, {'ok': True})
 
         elif rtype == 'kpi-section':
-            # extra = section slug e.g. 'opd-brief'
             field = SECTION_FIELD[extra]
             doc   = load_or_create_day(key)
             doc[field] = body
@@ -244,10 +403,39 @@ class Handler(BaseHTTPRequestHandler):
             save_ks(key, body)
             self.send_json(200, {'ok': True, 'count': len(body)})
 
+        elif rtype == 'rx':
+            if key in RX_DICT_COLS:
+                if not isinstance(body, dict):
+                    self.send_json(400, {'error': 'Body must be a JSON object'}); return
+            else:
+                if not isinstance(body, list):
+                    self.send_json(400, {'error': 'Body must be a JSON array'}); return
+            save_rx(key, body)
+            count = len(body) if isinstance(body, (list, dict)) else 0
+            self.send_json(200, {'ok': True, 'count': count})
+
+        elif rtype == 'users':
+            if not self._require('admin'): return
+            if not key:
+                self.send_json(400, {'error': 'Username required in URL'}); return
+            users = _load_users()
+            if key not in users:
+                self.send_json(404, {'error': 'User not found'}); return
+            role = body.get('role')
+            if role and role not in ROLES:
+                self.send_json(400, {'error': f'Role must be one of {ROLES}'}); return
+            if role:
+                users[key]['role'] = role
+            pw = body.get('password')
+            if pw:
+                users[key]['password_hash'] = _hash_pw(pw)
+            _save_users(users)
+            self.send_json(200, {'ok': True, 'username': key, 'role': users[key]['role']})
+
         else:
             self.send_json(404, {'error': 'Not found'})
 
-    # POST — append med error
+    # POST — login / logout / create user / append med error
     def do_POST(self):
         rtype, key, _ = self.parse_route()
         try:
@@ -255,6 +443,43 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json(400, {'error': str(e)}); return
 
+        # ── Auth: login (public) ───────────────────────────────
+        if rtype == 'auth' and key == 'login':
+            username = body.get('username', '').strip()
+            password = body.get('password', '')
+            users = _load_users()
+            u = users.get(username)
+            if not u or u.get('password_hash') != _hash_pw(password):
+                self.send_json(401, {'error': 'Invalid credentials'}); return
+            token = _create_session(username, u['role'])
+            self.send_json(200, {'token': token, 'username': username, 'role': u['role']}); return
+
+        # ── Auth: logout ──────────────────────────────────────
+        if rtype == 'auth' and key == 'logout':
+            h = self.headers.get('Authorization', '')
+            if h.startswith('Bearer '):
+                _sessions.pop(h[7:], None)
+            self.send_json(200, {'ok': True}); return
+
+        # ── User create (admin only) ───────────────────────────
+        if rtype == 'users' and key is None:
+            if not self._require('admin'): return
+            uname = body.get('username', '').strip()
+            pw    = body.get('password', '')
+            role  = body.get('role', 'user')
+            if not uname or not pw:
+                self.send_json(400, {'error': 'username and password required'}); return
+            if role not in ROLES:
+                self.send_json(400, {'error': f'Role must be one of {ROLES}'}); return
+            users = _load_users()
+            if uname in users:
+                self.send_json(409, {'error': 'Username already exists'}); return
+            users[uname] = {'password_hash': _hash_pw(pw), 'role': role}
+            _save_users(users)
+            self.send_json(201, {'ok': True, 'username': uname, 'role': role}); return
+
+        # ── KPI med errors (editor/admin) ──────────────────────
+        if not self._require('admin', 'editor'): return
         if rtype == 'kpi-med-errors':
             if not isinstance(body, dict):
                 self.send_json(400, {'error': 'Body must be a JSON object'}); return
@@ -265,9 +490,29 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self.send_json(404, {'error': 'Not found'})
 
-    # DELETE — remove a med error by savedAt
+    # DELETE — remove a med error by savedAt, or delete a user
     def do_DELETE(self):
         rtype, key, item_id = self.parse_route()
+
+        if rtype == 'users':
+            if not self._require('admin'): return
+            if not key:
+                self.send_json(400, {'error': 'Username required in URL'}); return
+            users = _load_users()
+            if key not in users:
+                self.send_json(404, {'error': 'User not found'}); return
+            # Prevent deleting last admin
+            if users[key]['role'] == 'admin' and sum(1 for u in users.values() if u['role'] == 'admin') <= 1:
+                self.send_json(409, {'error': 'Cannot delete the last admin'}); return
+            del users[key]
+            _save_users(users)
+            # Evict any active sessions for this user
+            evict = [t for t, s in _sessions.items() if s['username'] == key]
+            for t in evict:
+                del _sessions[t]
+            self.send_json(200, {'ok': True}); return
+
+        if not self._require('admin', 'editor'): return
         if rtype != 'kpi-med-error-item':
             self.send_json(404, {'error': 'Not found'}); return
 
@@ -305,10 +550,19 @@ def main():
     # Init sub-folders (KPI files created on demand per day)
     KPI_DIR.mkdir(parents=True, exist_ok=True)
     KS_DIR.mkdir(parents=True, exist_ok=True)
+    RX_DIR.mkdir(parents=True, exist_ok=True)
+    AUTH_DIR.mkdir(parents=True, exist_ok=True)
+    WWW_DIR.mkdir(parents=True, exist_ok=True)
     for col in KS_COLS:
         p = ks_file(col)
         if not p.exists():
             p.write_text('[]', encoding='utf-8')
+    for col in RX_COLS:
+        p = rx_file(col)
+        if not p.exists():
+            empty = '{}' if col in RX_DICT_COLS else '[]'
+            p.write_text(empty, encoding='utf-8')
+    _ensure_default_admin()
 
     ip = get_local_ip()
     Handler._ip   = ip
@@ -323,6 +577,7 @@ def main():
     print(f'  Server URL  :  http://{ip}:{port}')
     print(f'  KPI data    :  {KPI_DIR.resolve()}')
     print(f'  KS data     :  {KS_DIR.resolve()}')
+    print(f'  RX data     :  {RX_DIR.resolve()}')
     print()
     print('  ── How to connect ──────────────────────────────')
     print('  1. Copy the Server URL above.')

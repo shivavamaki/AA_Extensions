@@ -1,0 +1,354 @@
+[
+  {
+    "name": "Samnir Suspension",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด 19 ml",
+      "3. เขย่าให้เข้ากันดี",
+      "4. เติมน้ำให้ถึงขีด เขย่าอีกครั้ง"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add 19 mL of clean water",
+      "3. Shake well",
+      "4. Top up to mark, shake again"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 14,
+    "note": null
+  },
+  {
+    "name": "Moxicillin Suspension",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด ~3/4 ของขีด",
+      "3. เขย่าให้เข้ากันดี",
+      "4. เติมน้ำให้ถึงขีด เขย่าอีกครั้ง"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add water to ~3/4 of the mark",
+      "3. Shake well",
+      "4. Top up to mark, shake again"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 14,
+    "note": null
+  },
+  {
+    "name": "Distaclor Suspension",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด ~3/4 ของขีด",
+      "3. เขย่าให้เข้ากันดี",
+      "4. เติมน้ำให้ถึงขีด เขย่าอีกครั้ง"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add water to ~3/4 of the mark",
+      "3. Shake well",
+      "4. Top up to mark, shake again"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 14,
+    "note": null
+  },
+  {
+    "name": "Augmentin 457 mg. Suspension",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด ~3/4 ของขีด",
+      "3. เขย่าให้เข้ากันดี",
+      "4. เติมน้ำให้ถึงขีด เขย่าอีกครั้ง"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add water to ~3/4 of the mark",
+      "3. Shake well",
+      "4. Top up to mark, shake again"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 7,
+    "note": null
+  },
+  {
+    "name": "Dicloxacillin Suspension",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด ~3/4 ของขีด เขย่าให้เข้ากัน",
+      "3. เติมน้ำให้ถึงขีด",
+      "4. เขย่าให้เข้ากันดีอีกครั้ง"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add water to ~3/4 of mark, shake well",
+      "3. Top up to mark",
+      "4. Shake again"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 14,
+    "note": null
+  },
+  {
+    "name": "Cefspan Suspension",
+    "steps": [
+      "1. เคาะขวดยาให้ยากระจายตัว",
+      "2. เติมน้ำสะอาด 20 ml",
+      "3. เขย่าให้เข้ากันดี"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add 20 mL of clean water",
+      "3. Shake well"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 14,
+    "note": null
+  },
+  {
+    "name": "Omnicef Suspension",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด 19 ml",
+      "3. เขย่าให้เข้ากันดี"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add 19 mL of clean water",
+      "3. Shake well"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 14,
+    "note": null
+  },
+  {
+    "name": "Klacid Ped (125mg/5ml) 60 ml",
+    "steps": [
+      "1. เคาะขวดยาให้ยากระจายตัว",
+      "2. เติมน้ำสะอาด ~3/4 ของขีด",
+      "3. เขย่าให้เข้ากันดี",
+      "4. เติมน้ำให้ถึงขีด เขย่าอีกครั้ง"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add water to ~3/4 of the mark",
+      "3. Shake well",
+      "4. Top up to mark, shake again"
+    ],
+    "storage": "อุณหภูมิห้อง",
+    "days": 14,
+    "note": "15–30°C"
+  },
+  {
+    "name": "Keflex Suspension",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด ~2/3 ของขีด",
+      "3. เขย่าให้เข้ากัน เติมน้ำให้ถึงขีด",
+      "4. เขย่าให้เข้ากันอีกครั้ง"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add water to ~2/3 of the mark",
+      "3. Shake well, top up to mark",
+      "4. Shake again"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 14,
+    "note": "4–8°C"
+  },
+  {
+    "name": "Zithromax Suspension",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด 9 ml",
+      "3. เขย่าให้เข้ากันดี"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add 9 mL of clean water",
+      "3. Shake well"
+    ],
+    "storage": "อุณหภูมิห้อง",
+    "days": 10,
+    "note": null
+  },
+  {
+    "name": "Azithromycin Suspension",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด 9 ml",
+      "3. เขย่าให้เข้ากันดี"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add 9 mL of clean water",
+      "3. Shake well"
+    ],
+    "storage": "อุณหภูมิห้อง",
+    "days": 10,
+    "note": null
+  },
+  {
+    "name": "AMK 457 mg Suspension",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด ~3/4 ของขีด",
+      "3. เขย่าให้เข้ากันดี",
+      "4. เติมน้ำให้ถึงขีด เขย่าอีกครั้ง"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add water to ~3/4 of the mark",
+      "3. Shake well",
+      "4. Top up to mark, shake again"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 7,
+    "note": "กันแสง · protect from light"
+  },
+  {
+    "name": "Augmentin ES Syrup",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด ~3/4 ของขีด",
+      "3. เขย่าให้เข้ากันดี",
+      "4. เติมน้ำให้ถึงขีด เขย่าอีกครั้ง"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add water to ~3/4 of the mark",
+      "3. Shake well",
+      "4. Top up to mark, shake again"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 10,
+    "note": "กันแสง · protect from light"
+  },
+  {
+    "name": "AMK ES-600 Syrup",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด ~3/4 ของขีด",
+      "3. เขย่าให้เข้ากันดี",
+      "4. เติมน้ำให้ถึงขีด เขย่าอีกครั้ง"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add water to ~3/4 of the mark",
+      "3. Shake well",
+      "4. Top up to mark, shake again"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 7,
+    "note": "กันแสง · protect from light"
+  },
+  {
+    "name": "Tamiflu Oral Suspension",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด 55 ml",
+      "   (ถึงปลายหัวลูกศรที่ถ้วยตวง)",
+      "3. เขย่าให้เข้ากันดี"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add 55 mL of clean water",
+      "   (to arrow tip on measuring cup)",
+      "3. Shake well"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 17,
+    "note": "or room temp 10 days"
+  },
+  {
+    "name": "Vercef (125 mg/5 mL) Suspension",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด ~3/4 ของขีด",
+      "3. เขย่าให้เข้ากันดี",
+      "4. เติมน้ำให้ถึงขีด เขย่าอีกครั้ง"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add water to ~3/4 of the mark",
+      "3. Shake well",
+      "4. Top up to mark, shake again"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 14,
+    "note": null
+  },
+  {
+    "name": "Miotin Dry Syrup",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด ~3/4 ของขีด",
+      "3. เขย่าให้เข้ากันดี",
+      "4. เติมน้ำให้ถึงขีด เขย่าอีกครั้ง"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add water to ~3/4 of the mark",
+      "3. Shake well",
+      "4. Top up to mark, shake again"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 7,
+    "note": null
+  },
+  {
+    "name": "CAVUMOX ES 600 mg Suspension",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด ~3/4 ของขีด",
+      "3. เขย่าให้เข้ากันดี",
+      "4. เติมน้ำให้ถึงขีด เขย่าอีกครั้ง"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add water to ~3/4 of the mark",
+      "3. Shake well",
+      "4. Top up to mark, shake again"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 10,
+    "note": null
+  },
+  {
+    "name": "Unasyn Suspension",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด ~3/4 ของขีด",
+      "3. เขย่าให้เข้ากันดี",
+      "4. เติมน้ำให้ถึงขีด เขย่าอีกครั้ง"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add water to ~3/4 of the mark",
+      "3. Shake well",
+      "4. Top up to mark, shake again"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 14,
+    "note": null
+  },
+  {
+    "name": "Cloxacillin Suspension",
+    "steps": [
+      "1. เขย่าขวดยาให้ผงยากระจายตัว",
+      "2. เติมน้ำสะอาด ~3/4 ของขีด เขย่าให้เข้ากัน",
+      "3. เติมน้ำให้ถึงขีด",
+      "4. เขย่าให้เข้ากันดีอีกครั้ง"
+    ],
+    "steps_en": [
+      "1. Tap bottle to loosen powder",
+      "2. Add water to ~3/4 of mark, shake well",
+      "3. Top up to mark",
+      "4. Shake again"
+    ],
+    "storage": "ตู้เย็น",
+    "days": 7,
+    "note": null
+  }
+]

@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>BKN Pharmacy — Admin</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;background:#f0f4f8;color:#1a2030;min-height:100vh}
+
+/* ── Login ── */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh}
+.login-card{background:#fff;border-radius:12px;padding:36px 32px;width:340px;box-shadow:0 4px 24px rgba(0,0,0,.12)}
+.login-card h1{font-size:18px;font-weight:700;color:#1565c0;margin-bottom:4px}
+.login-card p{font-size:11px;color:#888;margin-bottom:24px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;font-weight:600;color:#555;margin-bottom:4px}
+.field input{width:100%;padding:8px 10px;border:1px solid #d0d7e3;border-radius:6px;font-size:13px;outline:none;transition:border-color .15s}
+.field input:focus{border-color:#1565c0}
+#login-err{color:#c62828;font-size:11px;min-height:16px;margin-bottom:8px}
+#login-btn{width:100%;padding:10px;background:#1565c0;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
+#login-btn:hover{opacity:.88}
+
+/* ── App shell ── */
+#app{display:none;flex-direction:column;min-height:100vh}
+.topbar{background:#1565c0;color:#fff;display:flex;align-items:center;padding:0 20px;height:48px;gap:12px;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;flex:1}
+.topbar-role{font-size:11px;background:rgba(255,255,255,.18);padding:2px 8px;border-radius:10px}
+.topbar-user{font-size:12px;opacity:.85}
+#btn-logout{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 12px;border-radius:5px;font-size:11px;cursor:pointer}
+#btn-logout:hover{background:rgba(255,255,255,.25)}
+
+.layout{display:flex;flex:1;overflow:hidden}
+
+/* ── Sidebar ── */
+.sidebar{width:180px;background:#fff;border-right:1px solid #e3e8ef;display:flex;flex-direction:column;padding:12px 0;flex-shrink:0}
+.nav-section{font-size:10px;font-weight:700;color:#aaa;letter-spacing:.6px;padding:10px 16px 4px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;color:#444;font-size:12px;font-weight:500;border-radius:0;transition:background .12s,color .12s;border-left:3px solid transparent}
+.nav-item:hover{background:#f0f4ff;color:#1565c0}
+.nav-item.active{background:#e8f0fe;color:#1565c0;border-left-color:#1565c0;font-weight:600}
+.nav-icon{font-size:14px;width:18px;text-align:center}
+.nav-item.admin-only{display:none}
+
+/* ── Main ── */
+.main{flex:1;overflow-y:auto;padding:20px}
+.page{display:none}
+.page.active{display:block}
+
+/* ── Page header ── */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.page-title{font-size:16px;font-weight:700;color:#1a2030}
+.page-sub{font-size:11px;color:#888;margin-top:2px}
+
+/* ── Toolbar ── */
+.toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.search-box{flex:1;min-width:160px;max-width:320px;padding:7px 10px;border:1px solid #d0d7e3;border-radius:6px;font-size:12px;outline:none}
+.search-box:focus{border-color:#1565c0}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:filter .12s,transform .1s;white-space:nowrap}
+.btn:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-primary{background:#1565c0;color:#fff}
+.btn-success{background:#2e7d32;color:#fff}
+.btn-danger{background:#c62828;color:#fff}
+.btn-ghost{background:#f0f4f8;color:#444;border:1px solid #d0d7e3}
+.btn-sm{padding:4px 10px;font-size:11px}
+
+/* ── Table ── */
+.tbl-wrap{background:#fff;border-radius:8px;border:1px solid #e3e8ef;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead th{background:#f7f9fc;padding:9px 12px;text-align:left;font-size:11px;font-weight:700;color:#666;border-bottom:1px solid #e3e8ef;white-space:nowrap}
+tbody tr{border-bottom:1px solid #f0f3f8;transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#f7f9fc}
+tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
+.td-actions{white-space:nowrap;text-align:right}
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;line-height:1.4}
+.badge-admin{background:#e8f0fe;color:#1565c0}
+.badge-editor{background:#e8f6e8;color:#2e7d32}
+.badge-user{background:#f5f5f5;color:#777}
+.badge-fridge{background:#e3f2fd;color:#0d47a1}
+.badge-room{background:#fff3e0;color:#e65100}
+.empty-row td{text-align:center;color:#aaa;padding:24px;font-style:italic}
+
+/* ── Pagination ── */
+.pagination{display:flex;gap:4px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.pg-btn{padding:5px 10px;border:1px solid #d0d7e3;border-radius:5px;background:#fff;font-size:11px;cursor:pointer;transition:background .1s}
+.pg-btn:hover:not(:disabled){background:#e8f0fe;border-color:#1565c0;color:#1565c0}
+.pg-btn.active{background:#1565c0;color:#fff;border-color:#1565c0}
+.pg-btn:disabled{opacity:.4;cursor:default}
+.pg-info{font-size:11px;color:#888;margin-left:8px}
+
+/* ── Modal ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:10px;width:560px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.18)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e3e8ef}
+.modal-head h2{font-size:14px;font-weight:700}
+.modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:#888;line-height:1}
+.modal-close:hover{color:#333}
+.modal-body{padding:20px;overflow-y:auto;flex:1}
+.modal-foot{padding:12px 20px;border-top:1px solid #e3e8ef;display:flex;justify-content:flex-end;gap:8px}
+
+/* ── Form ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid .span2{grid-column:1/-1}
+.form-field{display:flex;flex-direction:column;gap:4px}
+.form-field label{font-size:11px;font-weight:600;color:#555}
+.form-field input,.form-field select,.form-field textarea{padding:7px 9px;border:1px solid #d0d7e3;border-radius:5px;font-size:12px;outline:none;font-family:inherit;transition:border-color .15s}
+.form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:#1565c0}
+.form-field textarea{resize:vertical;min-height:64px}
+.step-list{display:flex;flex-direction:column;gap:6px}
+.step-row{display:flex;gap:6px;align-items:center}
+.step-row input{flex:1}
+.step-row button{flex-shrink:0}
+
+/* ── Toast ── */
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:200}
+.toast{padding:10px 16px;border-radius:7px;font-size:12px;font-weight:600;color:#fff;box-shadow:0 3px 12px rgba(0,0,0,.18);animation:slideIn .2s ease}
+.toast.ok{background:#2e7d32}.toast.err{background:#c62828}.toast.warn{background:#e65100}
+@keyframes slideIn{from{transform:translateX(80px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ── Users page ── */
+.role-select{padding:4px 6px;border:1px solid #d0d7e3;border-radius:4px;font-size:11px}
+</style>
+</head>
+<body>
+
+<!-- ── Login ─────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>BKN Pharmacy</h1>
+    <p>Admin Portal — sign in to continue</p>
+    <div class="field"><label>Username</label><input id="un" type="text" autocomplete="username" placeholder="username"/></div>
+    <div class="field"><label>Password</label><input id="pw" type="password" autocomplete="current-password" placeholder="password"/></div>
+    <div id="login-err"></div>
+    <button id="login-btn">Sign in</button>
+  </div>
+</div>
+
+<!-- ── App ───────────────────────────────────────────── -->
+<div id="app">
+  <div class="topbar">
+    <span class="topbar-title">BKN Pharmacy Admin</span>
+    <span class="topbar-user" id="hdr-user"></span>
+    <span class="topbar-role" id="hdr-role"></span>
+    <button id="btn-logout">Sign out</button>
+  </div>
+  <div class="layout">
+    <nav class="sidebar">
+      <div class="nav-section">Rx Master Data</div>
+      <div class="nav-item active" data-page="premix"><span class="nav-icon">💊</span>Premix Drugs</div>
+      <div class="nav-item" data-page="mixing"><span class="nav-icon">🧪</span>Mixing Protocols</div>
+      <div class="nav-item" data-page="meddb"><span class="nav-icon">📋</span>Medication DB</div>
+      <div class="nav-section admin-only">Admin</div>
+      <div class="nav-item admin-only" data-page="users"><span class="nav-icon">👥</span>Users</div>
+    </nav>
+    <div class="main">
+
+      <!-- Premix Drugs -->
+      <div class="page active" id="page-premix">
+        <div class="page-header">
+          <div><div class="page-title">Premix Drugs</div><div class="page-sub" id="premix-sub"></div></div>
+          <button class="btn btn-success editor-only" id="btn-add-premix">+ Add Drug</button>
+        </div>
+        <div class="toolbar">
+          <input class="search-box" id="premix-search" placeholder="Search name…"/>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Name</th><th>Shelf (days)</th><th>Label</th><th>Warning 1</th><th>Warning 2</th><th class="editor-only"></th></tr></thead>
+            <tbody id="premix-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mixing Protocols -->
+      <div class="page" id="page-mixing">
+        <div class="page-header">
+          <div><div class="page-title">Mixing Protocols</div><div class="page-sub" id="mixing-sub"></div></div>
+          <button class="btn btn-success editor-only" id="btn-add-mixing">+ Add Protocol</button>
+        </div>
+        <div class="toolbar">
+          <input class="search-box" id="mixing-search" placeholder="Search name…"/>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Storage</th><th>Days</th><th>Note</th><th class="editor-only"></th></tr></thead>
+            <tbody id="mixing-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Medication DB -->
+      <div class="page" id="page-meddb">
+        <div class="page-header">
+          <div><div class="page-title">Medication Database</div><div class="page-sub" id="meddb-sub"></div></div>
+          <button class="btn btn-success editor-only" id="btn-add-meddb">+ Add Item</button>
+        </div>
+        <div class="toolbar">
+          <input class="search-box" id="meddb-search" placeholder="Search code or name…"/>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Code</th><th>Name</th><th>Unit</th><th>Image</th><th class="editor-only"></th></tr></thead>
+            <tbody id="meddb-tbody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="meddb-pages"></div>
+      </div>
+
+      <!-- Users -->
+      <div class="page" id="page-users">
+        <div class="page-header">
+          <div><div class="page-title">User Management</div><div class="page-sub">Admin only</div></div>
+          <button class="btn btn-success" id="btn-add-user">+ Add User</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Username</th><th>Role</th><th></th></tr></thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- .main -->
+  </div><!-- .layout -->
+</div><!-- #app -->
+
+<!-- ── Modals ─────────────────────────────────────────── -->
+
+<!-- Premix modal -->
+<div class="modal-overlay" id="modal-premix">
+  <div class="modal">
+    <div class="modal-head"><h2 id="premix-modal-title">Add Premix Drug</h2><button class="modal-close" data-close="modal-premix">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field"><label>No.</label><input id="pm-no" type="number" min="1" placeholder="1"/></div>
+        <div class="form-field"><label>Shelf life (days)</label><input id="pm-shelf" type="number" min="1" placeholder="30"/></div>
+        <div class="form-field span2"><label>Drug name</label><input id="pm-name" placeholder="e.g. 0.5% HIBITANE IN WATER 100 ML"/></div>
+        <div class="form-field span2"><label>Label 1 (Thai)</label><input id="pm-label1" placeholder="หลังเปิดใช้ เก็บได้ … (optional)"/></div>
+        <div class="form-field span2"><label>Warning 1</label><input id="pm-w1" placeholder="ยาใช้ภายนอก ห้ามรับประทาน (optional)"/></div>
+        <div class="form-field span2"><label>Warning 2</label><input id="pm-w2" placeholder="ยาแช่เย็น (optional)"/></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close="modal-premix">Cancel</button>
+      <button class="btn btn-primary" id="pm-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mixing modal -->
+<div class="modal-overlay" id="modal-mixing">
+  <div class="modal">
+    <div class="modal-head"><h2 id="mixing-modal-title">Add Mixing Protocol</h2><button class="modal-close" data-close="modal-mixing">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field span2"><label>Drug name</label><input id="mx-name" placeholder="e.g. Zithromax Suspension"/></div>
+        <div class="form-field"><label>Storage</label>
+          <select id="mx-storage"><option value="ตู้เย็น">ตู้เย็น (Refrigerator)</option><option value="อุณหภูมิห้อง">อุณหภูมิห้อง (Room temp)</option></select>
+        </div>
+        <div class="form-field"><label>Shelf after mixing (days)</label><input id="mx-days" type="number" min="1" placeholder="14"/></div>
+        <div class="form-field span2"><label>Note</label><input id="mx-note" placeholder="optional"/></div>
+        <div class="form-field span2"><label>Steps (Thai) — one per line</label>
+          <div class="step-list" id="mx-steps-th"></div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:6px" id="mx-add-step-th">+ Add step</button>
+        </div>
+        <div class="form-field span2"><label>Steps (English) — one per line</label>
+          <div class="step-list" id="mx-steps-en"></div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:6px" id="mx-add-step-en">+ Add step</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close="modal-mixing">Cancel</button>
+      <button class="btn btn-primary" id="mx-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Medication DB modal -->
+<div class="modal-overlay" id="modal-meddb">
+  <div class="modal">
+    <div class="modal-head"><h2 id="meddb-modal-title">Add Medication Item</h2><button class="modal-close" data-close="modal-meddb">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field span2"><label>Item Code</label><input id="md-code" placeholder="e.g. 51001060102004"/></div>
+        <div class="form-field span2"><label>Name</label><input id="md-name" placeholder="Thai or English name"/></div>
+        <div class="form-field"><label>Unit (base_uom)</label><input id="md-uom" placeholder="VIA / BOX / BAG…"/></div>
+        <div class="form-field"><label>Has image?</label>
+          <select id="md-has-image"><option value="false">No</option><option value="true">Yes</option></select>
+        </div>
+        <div class="form-field span2"><label>Image path (relative)</label><input id="md-img-path" placeholder="images/code.jpg (optional)"/></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close="modal-meddb">Cancel</button>
+      <button class="btn btn-primary" id="md-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- User modal -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal" style="width:380px">
+    <div class="modal-head"><h2 id="user-modal-title">Add User</h2><button class="modal-close" data-close="modal-user">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field span2"><label>Username</label><input id="u-name" autocomplete="off"/></div>
+        <div class="form-field span2"><label>Password</label><input id="u-pw" type="password" autocomplete="new-password" placeholder="Leave blank to keep unchanged"/></div>
+        <div class="form-field span2"><label>Role</label>
+          <select id="u-role">
+            <option value="user">user — view only</option>
+            <option value="editor">editor — full CRUD</option>
+            <option value="admin">admin — full control</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close="modal-user">Cancel</button>
+      <button class="btn btn-primary" id="u-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+'use strict';
+
+// ── Config ────────────────────────────────────────────────────
+const BASE = window.location.origin;   // same host as the server
+
+// ── State ─────────────────────────────────────────────────────
+let _token = localStorage.getItem('admin_token') || '';
+let _role  = '';
+let _user  = '';
+
+// Data caches
+let premixData  = [];
+let mixingData  = [];
+let medDbData   = {};      // dict keyed by code
+let medDbArr    = [];      // flattened array for pagination
+let medDbPage   = 0;
+const MED_PAGE_SIZE = 50;
+
+// Edit state
+let premixEditIdx  = -1;
+let mixingEditIdx  = -1;
+let medDbEditCode  = null;
+let userEditName   = null;
+
+// ── API helpers ───────────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = { method, headers: { Authorization: `Bearer ${_token}` } };
+  if (body !== undefined) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(BASE + path, opts);
+  const json = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(json.error || `HTTP ${r.status}`);
+  return json;
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+function toast(msg, type = 'ok') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ── Modal helpers ─────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('[data-close]').forEach(btn =>
+  btn.addEventListener('click', () => closeModal(btn.dataset.close))
+);
+document.querySelectorAll('.modal-overlay').forEach(ov =>
+  ov.addEventListener('click', e => { if (e.target === ov) ov.classList.remove('open'); })
+);
+
+// ── Navigation ────────────────────────────────────────────────
+function goPage(name) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === name));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === `page-${name}`));
+}
+document.querySelectorAll('.nav-item[data-page]').forEach(n =>
+  n.addEventListener('click', () => goPage(n.dataset.page))
+);
+
+// ── Auth: apply role visibility ───────────────────────────────
+function applyRoleUI() {
+  const isEditor = _role === 'editor' || _role === 'admin';
+  const isAdmin  = _role === 'admin';
+  document.querySelectorAll('.editor-only').forEach(el => el.style.display = isEditor ? '' : 'none');
+  document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAdmin ? '' : 'none');
+  document.getElementById('hdr-user').textContent = _user;
+  document.getElementById('hdr-role').textContent = _role;
+}
+
+// ── Login ─────────────────────────────────────────────────────
+document.getElementById('login-btn').addEventListener('click', doLogin);
+document.getElementById('pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+async function doLogin() {
+  const un = document.getElementById('un').value.trim();
+  const pw = document.getElementById('pw').value;
+  const err = document.getElementById('login-err');
+  err.textContent = '';
+  try {
+    const res = await fetch(BASE + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: un, password: pw }),
+    });
+    const j = await res.json();
+    if (!res.ok) { err.textContent = j.error || 'Login failed'; return; }
+    _token = j.token;
+    _role  = j.role;
+    _user  = j.username;
+    localStorage.setItem('admin_token', _token);
+    showApp();
+  } catch (e) {
+    err.textContent = 'Cannot reach server: ' + e.message;
+  }
+}
+
+async function tryAutoLogin() {
+  if (!_token) return false;
+  try {
+    const me = await api('GET', '/api/auth/me');
+    _role = me.role; _user = me.username;
+    return true;
+  } catch (_) {
+    localStorage.removeItem('admin_token');
+    _token = '';
+    return false;
+  }
+}
+
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  try { await api('POST', '/api/auth/logout'); } catch (_) {}
+  localStorage.removeItem('admin_token');
+  _token = ''; _role = ''; _user = '';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+});
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  applyRoleUI();
+  loadPremix();
+  loadMixing();
+  loadMedDb();
+  if (_role === 'admin') loadUsers();
+}
+
+// ══════════════════════════════════════════════════════════════
+// PREMIX DRUGS
+// ══════════════════════════════════════════════════════════════
+async function loadPremix() {
+  try {
+    premixData = await api('GET', '/api/premix-drugs');
+    renderPremix();
+  } catch (e) { toast('Failed to load premix drugs: ' + e.message, 'err'); }
+}
+
+function renderPremix() {
+  const q = document.getElementById('premix-search').value.toLowerCase();
+  const rows = premixData.filter(d => !q || d.name.toLowerCase().includes(q));
+  document.getElementById('premix-sub').textContent = `${rows.length} of ${premixData.length} drugs`;
+  const isEditor = _role === 'editor' || _role === 'admin';
+  const tbody = document.getElementById('premix-tbody');
+  tbody.innerHTML = rows.length ? '' : '<tr class="empty-row"><td colspan="7">No drugs found</td></tr>';
+  rows.forEach((d, vi) => {
+    const i = premixData.indexOf(d);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${d.no ?? ''}</td>
+      <td>${esc(d.name)}</td>
+      <td>${d.shelf}</td>
+      <td>${esc(d.label1 || '—')}</td>
+      <td>${esc(d.w1 || '—')}</td>
+      <td>${esc(d.w2 || '—')}</td>
+      ${isEditor ? `<td class="td-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editPremix(${i})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePremix(${i})">Del</button>
+      </td>` : '<td></td>'}`;
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('premix-search').addEventListener('input', renderPremix);
+
+document.getElementById('btn-add-premix').addEventListener('click', () => {
+  premixEditIdx = -1;
+  document.getElementById('premix-modal-title').textContent = 'Add Premix Drug';
+  ['pm-no','pm-name','pm-shelf','pm-label1','pm-w1','pm-w2'].forEach(id => document.getElementById(id).value = '');
+  openModal('modal-premix');
+});
+
+function editPremix(i) {
+  premixEditIdx = i;
+  const d = premixData[i];
+  document.getElementById('premix-modal-title').textContent = 'Edit Premix Drug';
+  document.getElementById('pm-no').value     = d.no ?? '';
+  document.getElementById('pm-name').value   = d.name;
+  document.getElementById('pm-shelf').value  = d.shelf;
+  document.getElementById('pm-label1').value = d.label1 || '';
+  document.getElementById('pm-w1').value     = d.w1 || '';
+  document.getElementById('pm-w2').value     = d.w2 || '';
+  openModal('modal-premix');
+}
+
+document.getElementById('pm-save').addEventListener('click', async () => {
+  const entry = {
+    no:     parseInt(document.getElementById('pm-no').value) || undefined,
+    name:   document.getElementById('pm-name').value.trim(),
+    shelf:  parseInt(document.getElementById('pm-shelf').value) || 0,
+    label1: document.getElementById('pm-label1').value.trim() || null,
+    w1:     document.getElementById('pm-w1').value.trim() || null,
+    w2:     document.getElementById('pm-w2').value.trim() || null,
+  };
+  if (!entry.name) { toast('Name is required', 'err'); return; }
+  if (premixEditIdx >= 0) premixData[premixEditIdx] = entry;
+  else premixData.push(entry);
+  await savePremix();
+  closeModal('modal-premix');
+});
+
+async function deletePremix(i) {
+  if (!confirm(`Delete "${premixData[i].name}"?`)) return;
+  premixData.splice(i, 1);
+  await savePremix();
+}
+
+async function savePremix() {
+  try {
+    await api('PUT', '/api/premix-drugs', premixData);
+    renderPremix();
+    toast('Premix drugs saved');
+  } catch (e) { toast('Save failed: ' + e.message, 'err'); }
+}
+
+// ══════════════════════════════════════════════════════════════
+// MIXING PROTOCOLS
+// ══════════════════════════════════════════════════════════════
+async function loadMixing() {
+  try {
+    mixingData = await api('GET', '/api/mixing-protocols');
+    renderMixing();
+  } catch (e) { toast('Failed to load mixing protocols: ' + e.message, 'err'); }
+}
+
+function renderMixing() {
+  const q = document.getElementById('mixing-search').value.toLowerCase();
+  const rows = mixingData.filter(d => !q || d.name.toLowerCase().includes(q));
+  document.getElementById('mixing-sub').textContent = `${rows.length} of ${mixingData.length} protocols`;
+  const isEditor = _role === 'editor' || _role === 'admin';
+  const tbody = document.getElementById('mixing-tbody');
+  tbody.innerHTML = rows.length ? '' : '<tr class="empty-row"><td colspan="5">No protocols found</td></tr>';
+  rows.forEach(d => {
+    const i = mixingData.indexOf(d);
+    const storageBadge = d.storage === 'ตู้เย็น'
+      ? '<span class="badge badge-fridge">🧊 Fridge</span>'
+      : '<span class="badge badge-room">🌡 Room</span>';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${esc(d.name)}</td>
+      <td>${storageBadge}</td>
+      <td>${d.days} days</td>
+      <td>${esc(d.note || '—')}</td>
+      ${isEditor ? `<td class="td-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editMixing(${i})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteMixing(${i})">Del</button>
+      </td>` : '<td></td>'}`;
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('mixing-search').addEventListener('input', renderMixing);
+
+function buildStepRows(containerId, steps) {
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  (steps || ['']).forEach(s => addStepRow(c, s));
+}
+
+function addStepRow(container, value = '') {
+  const row = document.createElement('div');
+  row.className = 'step-row';
+  row.innerHTML = `<input value="${esc(value)}" placeholder="Step…"/>
+    <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>`;
+  container.appendChild(row);
+}
+
+function getSteps(containerId) {
+  return [...document.querySelectorAll(`#${containerId} input`)].map(i => i.value.trim()).filter(Boolean);
+}
+
+document.getElementById('mx-add-step-th').addEventListener('click', () =>
+  addStepRow(document.getElementById('mx-steps-th')));
+document.getElementById('mx-add-step-en').addEventListener('click', () =>
+  addStepRow(document.getElementById('mx-steps-en')));
+
+document.getElementById('btn-add-mixing').addEventListener('click', () => {
+  mixingEditIdx = -1;
+  document.getElementById('mixing-modal-title').textContent = 'Add Mixing Protocol';
+  ['mx-name','mx-note'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('mx-storage').value = 'ตู้เย็น';
+  document.getElementById('mx-days').value = '';
+  buildStepRows('mx-steps-th', ['']);
+  buildStepRows('mx-steps-en', ['']);
+  openModal('modal-mixing');
+});
+
+function editMixing(i) {
+  mixingEditIdx = i;
+  const d = mixingData[i];
+  document.getElementById('mixing-modal-title').textContent = 'Edit Mixing Protocol';
+  document.getElementById('mx-name').value    = d.name;
+  document.getElementById('mx-storage').value = d.storage;
+  document.getElementById('mx-days').value    = d.days;
+  document.getElementById('mx-note').value    = d.note || '';
+  buildStepRows('mx-steps-th', d.steps);
+  buildStepRows('mx-steps-en', d.steps_en);
+  openModal('modal-mixing');
+}
+
+document.getElementById('mx-save').addEventListener('click', async () => {
+  const entry = {
+    name:     document.getElementById('mx-name').value.trim(),
+    storage:  document.getElementById('mx-storage').value,
+    days:     parseInt(document.getElementById('mx-days').value) || 0,
+    note:     document.getElementById('mx-note').value.trim() || null,
+    steps:    getSteps('mx-steps-th'),
+    steps_en: getSteps('mx-steps-en'),
+  };
+  if (!entry.name) { toast('Name is required', 'err'); return; }
+  if (mixingEditIdx >= 0) mixingData[mixingEditIdx] = entry;
+  else mixingData.push(entry);
+  await saveMixing();
+  closeModal('modal-mixing');
+});
+
+async function deleteMixing(i) {
+  if (!confirm(`Delete "${mixingData[i].name}"?`)) return;
+  mixingData.splice(i, 1);
+  await saveMixing();
+}
+
+async function saveMixing() {
+  try {
+    await api('PUT', '/api/mixing-protocols', mixingData);
+    renderMixing();
+    toast('Mixing protocols saved');
+  } catch (e) { toast('Save failed: ' + e.message, 'err'); }
+}
+
+// ══════════════════════════════════════════════════════════════
+// MEDICATION DB
+// ══════════════════════════════════════════════════════════════
+async function loadMedDb() {
+  try {
+    medDbData = await api('GET', '/api/medication-db');
+    medDbArr  = Object.values(medDbData);
+    medDbPage = 0;
+    renderMedDb();
+  } catch (e) { toast('Failed to load medication DB: ' + e.message, 'err'); }
+}
+
+function renderMedDb() {
+  const q = document.getElementById('meddb-search').value.toLowerCase();
+  const filtered = q
+    ? medDbArr.filter(d => d.code?.toLowerCase().includes(q) || d.name?.toLowerCase().includes(q))
+    : medDbArr;
+
+  const total = filtered.length;
+  const pages = Math.ceil(total / MED_PAGE_SIZE) || 1;
+  if (medDbPage >= pages) medDbPage = pages - 1;
+
+  document.getElementById('meddb-sub').textContent =
+    `${total.toLocaleString()} of ${medDbArr.length.toLocaleString()} items`;
+
+  const slice = filtered.slice(medDbPage * MED_PAGE_SIZE, (medDbPage + 1) * MED_PAGE_SIZE);
+  const isEditor = _role === 'editor' || _role === 'admin';
+  const tbody = document.getElementById('meddb-tbody');
+  tbody.innerHTML = slice.length ? '' : '<tr class="empty-row"><td colspan="5">No items found</td></tr>';
+  slice.forEach(d => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><code>${esc(d.code)}</code></td>
+      <td>${esc(d.name)}</td>
+      <td>${esc(d.base_uom || '—')}</td>
+      <td>${d.has_image ? '✅' : '—'}</td>
+      ${isEditor ? `<td class="td-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editMedDb('${esc(d.code)}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteMedDb('${esc(d.code)}')">Del</button>
+      </td>` : '<td></td>'}`;
+    tbody.appendChild(tr);
+  });
+
+  // Pagination
+  const pg = document.getElementById('meddb-pages');
+  pg.innerHTML = '';
+  const makeBtn = (label, page, disabled, active) => {
+    const b = document.createElement('button');
+    b.className = 'pg-btn' + (active ? ' active' : '');
+    b.textContent = label;
+    b.disabled = disabled;
+    b.addEventListener('click', () => { medDbPage = page; renderMedDb(); });
+    pg.appendChild(b);
+  };
+  makeBtn('‹ Prev', medDbPage - 1, medDbPage === 0, false);
+  const start = Math.max(0, medDbPage - 2);
+  const end   = Math.min(pages, start + 5);
+  for (let p = start; p < end; p++) makeBtn(p + 1, p, false, p === medDbPage);
+  makeBtn('Next ›', medDbPage + 1, medDbPage >= pages - 1, false);
+  const info = document.createElement('span');
+  info.className = 'pg-info';
+  info.textContent = `Page ${medDbPage + 1} of ${pages}`;
+  pg.appendChild(info);
+}
+
+document.getElementById('meddb-search').addEventListener('input', () => { medDbPage = 0; renderMedDb(); });
+
+document.getElementById('btn-add-meddb').addEventListener('click', () => {
+  medDbEditCode = null;
+  document.getElementById('meddb-modal-title').textContent = 'Add Medication Item';
+  ['md-code','md-name','md-uom','md-img-path'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('md-has-image').value = 'false';
+  document.getElementById('md-code').readOnly = false;
+  openModal('modal-meddb');
+});
+
+function editMedDb(code) {
+  medDbEditCode = code;
+  const d = medDbData[code];
+  if (!d) return;
+  document.getElementById('meddb-modal-title').textContent = 'Edit Medication Item';
+  document.getElementById('md-code').value      = d.code;
+  document.getElementById('md-code').readOnly   = true;
+  document.getElementById('md-name').value      = d.name;
+  document.getElementById('md-uom').value       = d.base_uom || '';
+  document.getElementById('md-has-image').value = d.has_image ? 'true' : 'false';
+  document.getElementById('md-img-path').value  = d.image_path || '';
+  openModal('modal-meddb');
+}
+
+document.getElementById('md-save').addEventListener('click', async () => {
+  const code = document.getElementById('md-code').value.trim();
+  if (!code) { toast('Code is required', 'err'); return; }
+  const hasImg = document.getElementById('md-has-image').value === 'true';
+  const imgPath = document.getElementById('md-img-path').value.trim();
+  const entry = {
+    code,
+    name:      document.getElementById('md-name').value.trim(),
+    base_uom:  document.getElementById('md-uom').value.trim(),
+    has_image: hasImg,
+    image_path: imgPath || (hasImg ? `images/${code}.jpg` : ''),
+    image_file: imgPath ? imgPath.split('/').pop() : '',
+    itemimage_name: hasImg ? 'มีรูปภาพ' : 'ไม่มีรูปภาพ',
+    files_status: hasImg ? 'YES' : 'NOT',
+    original_image_file: '',
+  };
+  medDbData[code] = entry;
+  medDbArr = Object.values(medDbData);
+  await saveMedDb();
+  closeModal('modal-meddb');
+});
+
+async function deleteMedDb(code) {
+  if (!confirm(`Delete item "${code}"?`)) return;
+  delete medDbData[code];
+  medDbArr = Object.values(medDbData);
+  await saveMedDb();
+}
+
+async function saveMedDb() {
+  try {
+    await api('PUT', '/api/medication-db', medDbData);
+    renderMedDb();
+    toast('Medication DB saved');
+  } catch (e) { toast('Save failed: ' + e.message, 'err'); }
+}
+
+// ══════════════════════════════════════════════════════════════
+// USERS (admin only)
+// ══════════════════════════════════════════════════════════════
+async function loadUsers() {
+  try {
+    const list = await api('GET', '/api/users');
+    renderUsers(list);
+  } catch (e) { toast('Failed to load users: ' + e.message, 'err'); }
+}
+
+function renderUsers(list) {
+  const tbody = document.getElementById('users-tbody');
+  tbody.innerHTML = list.length ? '' : '<tr class="empty-row"><td colspan="3">No users</td></tr>';
+  list.forEach(u => {
+    const tr = document.createElement('tr');
+    const badgeCls = `badge-${u.role}`;
+    tr.innerHTML = `
+      <td>${esc(u.username)}</td>
+      <td><span class="badge ${badgeCls}">${u.role}</span></td>
+      <td class="td-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editUser('${esc(u.username)}','${u.role}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteUser('${esc(u.username)}')">Del</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('btn-add-user').addEventListener('click', () => {
+  userEditName = null;
+  document.getElementById('user-modal-title').textContent = 'Add User';
+  document.getElementById('u-name').value = '';
+  document.getElementById('u-name').readOnly = false;
+  document.getElementById('u-pw').value = '';
+  document.getElementById('u-role').value = 'user';
+  openModal('modal-user');
+});
+
+function editUser(username, role) {
+  userEditName = username;
+  document.getElementById('user-modal-title').textContent = 'Edit User';
+  document.getElementById('u-name').value = username;
+  document.getElementById('u-name').readOnly = true;
+  document.getElementById('u-pw').value = '';
+  document.getElementById('u-role').value = role;
+  openModal('modal-user');
+}
+
+document.getElementById('u-save').addEventListener('click', async () => {
+  const name = document.getElementById('u-name').value.trim();
+  const pw   = document.getElementById('u-pw').value;
+  const role = document.getElementById('u-role').value;
+  if (!name) { toast('Username required', 'err'); return; }
+  try {
+    if (userEditName) {
+      const body = { role };
+      if (pw) body.password = pw;
+      await api('PUT', `/api/users/${encodeURIComponent(name)}`, body);
+      toast(`User "${name}" updated`);
+    } else {
+      if (!pw) { toast('Password required for new user', 'err'); return; }
+      await api('POST', '/api/users', { username: name, password: pw, role });
+      toast(`User "${name}" created`);
+    }
+    closeModal('modal-user');
+    loadUsers();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+});
+
+async function deleteUser(username) {
+  if (!confirm(`Delete user "${username}"?`)) return;
+  try {
+    await api('DELETE', `/api/users/${encodeURIComponent(username)}`);
+    toast(`User "${username}" deleted`);
+    loadUsers();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+}
+
+// ── Utility ───────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+(async () => {
+  const ok = await tryAutoLogin();
+  if (ok) showApp();
+  // else login screen is already visible
+})();
+</script>
+</body>
+</html>

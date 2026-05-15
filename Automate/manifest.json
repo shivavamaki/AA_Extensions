@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Arcus Toolkit",
-  "version": "3.9.4",
-  "description": "Scraper mouse-wheel lazy-load patch for Arcus Toolkit.",
+  "version": "4.0.0",
+  "description": "Auto Dispense and IP Fill automation for Arcus Pharmacy Management System.",
   "permissions": [
     "activeTab",
     "scripting",
@@ -24,8 +24,6 @@
         "content/shared.js",
         "content/panel.js",
         "content/automation.js",
-        "content/scraper.js",
-        "content/scraper_panel.js",
         "content/boot.js",
         "content/ipfill_panel.js"
       ],

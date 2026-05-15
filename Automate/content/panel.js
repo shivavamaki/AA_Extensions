@@ -46,10 +46,6 @@
     // no visible log in compact v3.8.0 panel
   }
 
-  function renderScrapePreview() {
-    // hidden in compact automation panel
-  }
-
   function normalizeSelectedFilters(selected) {
     const arr = Array.isArray(selected) ? selected.filter(Boolean) : [selected || "all"];
     if (!arr.length || arr.includes("all")) return ["all"];
@@ -73,7 +69,6 @@
 
   function updateButtonState() {
     const running = state.isRunning;
-    const scraperRunning = state.scraper.state === "running";
 
     const allocateBtn = document.querySelector("#arcus-btn-allocate");
     const dispenseBtn = document.querySelector("#arcus-btn-dispense");
@@ -83,13 +78,13 @@
     const modeSelect = document.querySelector("#arcus-mode-select");
     const filterBoxes = document.querySelectorAll(".arcus-order-type-check");
 
-    if (allocateBtn) allocateBtn.disabled = running || scraperRunning;
-    if (dispenseBtn) dispenseBtn.disabled = running || scraperRunning;
-    if (stopBtn) stopBtn.disabled = !(running || scraperRunning);
+    if (allocateBtn) allocateBtn.disabled = running;
+    if (dispenseBtn) dispenseBtn.disabled = running;
+    if (stopBtn) stopBtn.disabled = !running;
     if (copyBtn) copyBtn.disabled = false;
-    if (waitOverride) waitOverride.disabled = running || scraperRunning;
-    if (modeSelect) modeSelect.disabled = running || scraperRunning;
-    filterBoxes.forEach((box) => (box.disabled = running || scraperRunning));
+    if (waitOverride) waitOverride.disabled = running;
+    if (modeSelect) modeSelect.disabled = running;
+    filterBoxes.forEach((box) => (box.disabled = running));
   }
 
   function savePanelState(panel) {
@@ -357,7 +352,6 @@
     renderStats,
     pushLog,
     renderLog,
-    renderScrapePreview,
     updateButtonState,
     savePanelState,
     restorePanelState,

@@ -7,11 +7,27 @@
 'use strict';
 
 /* ──────────────────────────────────────────────────────────────
+   SERVER CONFIG
+   Override URL via localStorage key 'pharmacyServerUrl'.
+────────────────────────────────────────────────────────────── */
+const _PHARMACY_SERVER_DEFAULT = 'http://10.134.110.81:8765';
+function _serverUrl() {
+  return (localStorage.getItem('pharmacyServerUrl') || _PHARMACY_SERVER_DEFAULT).replace(/\/$/, '');
+}
+
+async function _fetchRx(endpoint) {
+  const r = await fetch(`${_serverUrl()}${endpoint}`, { signal: AbortSignal.timeout(4000) });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+/* ──────────────────────────────────────────────────────────────
    DATABASE: Premix drugs (from Premix_STK_2024.xlsx > data sheet)
    Fields: name, shelf_life (days), label1, warning1, warning2
    Dates are calculated from today + shelf_life
+   Fallback — live data loaded from server on init.
 ────────────────────────────────────────────────────────────── */
-const PREMIX_DB = [
+let PREMIX_DB = [
   { no:1,  name:"0.5% HIBITANE IN WATER 100 ML",                    shelf:30,  label1:"หลังเปิดใช้ เก็บได้ 24 ชั่วโมง",  w1:"ยาใช้ภายนอก ห้ามรับประทาน",  w2:null },
   { no:2,  name:"SAVLON PURE 10 ml (BACTRICIDE)",                   shelf:180, label1:null,                               w1:"ยาใช้ภายนอก ห้ามรับประทาน",  w2:null },
   { no:3,  name:"1% HYDROGEN PEROXIDE 120 ML",                       shelf:7,   label1:null,                               w1:"ยาใช้ภายนอก ห้ามรับประทาน",  w2:"ใช้สำหรับกลั้วปาก" },
@@ -62,8 +78,9 @@ const PREMIX_DB = [
      storage  — "ตู้เย็น" | "อุณหภูมิห้อง"  (longest shelf life chosen)
      days     — shelf life after mixing (number)
      note     — optional extra (Thai · English separated by " · ")
+   Fallback — live data loaded from server on init.
 ────────────────────────────────────────────────────────────── */
-const MIXING_DB = [
+let MIXING_DB = [
   {
     name: "Samnir Suspension",
     steps:    ["1. เขย่าขวดยาให้ผงยากระจายตัว","2. เติมน้ำสะอาด 19 ml","3. เขย่าให้เข้ากันดี","4. เติมน้ำให้ถึงขีด เขย่าอีกครั้ง"],
@@ -711,7 +728,7 @@ function clearCurrentForm() {
 /* ──────────────────────────────────────────────────────────────
    INIT
 ────────────────────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // Nav
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => showPage(item.dataset.page));
@@ -720,7 +737,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Clear form button
   document.getElementById('btn-clear-form').addEventListener('click', clearCurrentForm);
 
-  // Init pages
+  // Try to load live data from server; silently fall back to embedded constants
+  try {
+    const [premix, mixing] = await Promise.all([
+      _fetchRx('/api/premix-drugs'),
+      _fetchRx('/api/mixing-protocols'),
+    ]);
+    if (Array.isArray(premix) && premix.length) PREMIX_DB = premix;
+    if (Array.isArray(mixing) && mixing.length) MIXING_DB = mixing;
+  } catch (_) { /* server unavailable — embedded fallback data used */ }
+
+  // Init pages (use whatever PREMIX_DB / MIXING_DB resolved to)
   initPremix();
   initMixing();
 

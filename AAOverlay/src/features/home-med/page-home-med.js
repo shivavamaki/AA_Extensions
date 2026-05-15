@@ -86,24 +86,40 @@ function _runtimeUrl(path) {
   return path;
 }
 
+function _pharmacyServerUrl() {
+  const stored = typeof localStorage !== "undefined"
+    ? localStorage.getItem("pharmacyServerUrl")
+    : null;
+  return (stored || "http://10.134.110.81:8765").replace(/\/$/, "");
+}
+
 async function _loadMedicationDatabase() {
   if (_medDbByCode) return _medDbByCode;
   if (_medDbLoadPromise) return _medDbLoadPromise;
 
-  _medDbLoadPromise = fetch(_runtimeUrl(MED_DB_PATH))
-    .then((res) => {
-      if (!res.ok) throw new Error(`Medication database load failed: ${res.status}`);
-      return res.json();
-    })
-    .then((data) => {
-      _medDbByCode = data || {};
-      return _medDbByCode;
-    })
-    .catch((err) => {
+  _medDbLoadPromise = (async () => {
+    // 1. Try server first
+    try {
+      const r = await fetch(`${_pharmacyServerUrl()}/api/medication-db`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (r.ok) {
+        _medDbByCode = await r.json();
+        return _medDbByCode;
+      }
+    } catch (_) { /* server unavailable */ }
+
+    // 2. Fall back to bundled extension asset
+    try {
+      const r = await fetch(_runtimeUrl(MED_DB_PATH));
+      if (!r.ok) throw new Error(`status ${r.status}`);
+      _medDbByCode = await r.json();
+    } catch (err) {
       console.warn("[home-med] Medication database unavailable:", err);
       _medDbByCode = {};
-      return _medDbByCode;
-    });
+    }
+    return _medDbByCode;
+  })();
 
   return _medDbLoadPromise;
 }

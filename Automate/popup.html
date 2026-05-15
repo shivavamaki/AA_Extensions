@@ -6,152 +6,196 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      width: 340px;
+      width: 320px;
       font-family: 'Segoe UI', system-ui, sans-serif;
       font-size: 12px;
-      background: #fff;
-      color: #222;
+      background: #f8f9fa;
+      color: #1a1a2e;
     }
 
+    /* ── Header ── */
     .header {
-      background: #1565c0;
+      background: linear-gradient(135deg, #1565c0, #1976d2);
       color: #fff;
-      padding: 8px 12px;
-      font-size: 13px;
+      padding: 11px 14px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-title {
+      font-size: 14px;
       font-weight: 700;
       letter-spacing: 0.3px;
     }
+    .header-version {
+      font-size: 10px;
+      opacity: 0.7;
+      background: rgba(255,255,255,0.15);
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
 
-    .tabs {
+    /* ── Section cards ── */
+    .section {
+      background: #fff;
+      margin: 10px 10px 0;
+      border-radius: 8px;
+      border: 1px solid #e3e8ef;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .section:last-of-type { margin-bottom: 10px; }
+
+    .section-head {
       display: flex;
-      border-bottom: 2px solid #e0e0e0;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 12px 8px;
+      border-bottom: 1px solid #f0f3f8;
     }
-
-    .tab-btn {
+    .section-icon {
+      font-size: 15px;
+      line-height: 1;
+    }
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1565c0;
       flex: 1;
-      padding: 8px 2px;
-      border: none;
-      background: none;
-      font-size: 11px;
+    }
+    .section-badge {
+      font-size: 9px;
       font-weight: 600;
-      color: #888;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -2px;
-      transition: color 0.15s, border-color 0.15s;
+      color: #fff;
+      background: #43a047;
+      padding: 1px 5px;
+      border-radius: 8px;
+      letter-spacing: 0.3px;
     }
 
-    .tab-btn.active { color: #1565c0; border-bottom-color: #1565c0; }
-    .tab-btn:hover:not(.active) { color: #444; }
-
-    .panel { display: none; padding: 12px; }
-    .panel.active { display: block; }
-
-    h3 {
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
+    .section-body { padding: 10px 12px 12px; }
 
     .desc {
       font-size: 11px;
-      color: #666;
-      line-height: 1.5;
+      color: #6b7280;
+      line-height: 1.45;
       margin-bottom: 10px;
     }
 
-    .btn-group {
+    /* ── Buttons ── */
+    .btn-row {
       display: flex;
       gap: 6px;
-      margin-bottom: 10px;
+      margin-bottom: 9px;
     }
 
-    button {
+    .btn {
       flex: 1;
-      padding: 8px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 8px 6px;
       border: none;
-      border-radius: 4px;
-      font-size: 12px;
+      border-radius: 6px;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
-      transition: opacity 0.15s;
+      transition: filter 0.15s, transform 0.1s;
+      letter-spacing: 0.2px;
     }
+    .btn:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn:active:not(:disabled) { transform: translateY(0); filter: brightness(0.95); }
+    .btn:disabled { opacity: 0.38; cursor: not-allowed; transform: none; filter: none; }
 
-    button:hover { opacity: 0.85; }
-    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: #1565c0; color: #fff; }
+    .btn-danger  { background: #d32f2f; color: #fff; }
 
-    .btn-green  { background: #2e7d32; color: #fff; }
-    .btn-red    { background: #c62828; color: #fff; }
-    .btn-blue   { background: #1565c0; color: #fff; }
+    .btn-icon { font-size: 12px; line-height: 1; }
 
+    /* ── Status bar ── */
     .status {
-      background: #f5f5f5;
-      border: 1px solid #e0e0e0;
-      border-radius: 4px;
-      padding: 7px 9px;
-      min-height: 32px;
-      line-height: 1.5;
+      font-size: 10.5px;
+      line-height: 1.45;
+      padding: 7px 10px;
+      border-radius: 5px;
+      border-left: 3px solid #bdbdbd;
+      background: #f5f7fa;
       color: #555;
-      font-size: 11px;
       white-space: pre-line;
-      margin-bottom: 10px;
+      min-height: 28px;
+    }
+    .status.running { border-color: #2e7d32; color: #1b5e20; background: #f0faf0; }
+    .status.paused  { border-color: #e65100; color: #bf360c; background: #fff8f5; }
+    .status.done    { border-color: #1565c0; color: #0d47a1; background: #f0f4ff; }
+    .status.error   { border-color: #c62828; color: #b71c1c; background: #fff5f5; }
+
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: #e3e8ef;
+      margin: 0 10px;
     }
 
-    .status.running { border-color: #2e7d32; color: #2e7d32; }
-    .status.paused  { border-color: #e65100; color: #e65100; }
-    .status.done    { border-color: #1565c0; color: #1565c0; }
-    .status.error   { border-color: #b71c1c; color: #b71c1c; }
-
-    .note {
-      font-size: 10px;
-      color: #888;
-      margin-top: 6px;
-      line-height: 1.4;
+    /* ── Footer ── */
+    .footer {
+      padding: 6px 12px 8px;
+      font-size: 9.5px;
+      color: #aaa;
+      text-align: center;
     }
   </style>
 </head>
 <body>
 
-  <div class="header">🔧 Arcus Toolkit</div>
-
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="dispense">⚙️ Auto Dispense</button>
-    <button class="tab-btn" data-tab="scraper">🗂 Scraper</button>
-    <button class="tab-btn" data-tab="ipfill">💉 IP Fill</button>
+  <div class="header">
+    <span class="header-title">Arcus Toolkit</span>
+    <span class="header-version">v4.0.0</span>
   </div>
 
-  <div id="tab-dispense" class="panel active">
-    <h3>Auto Dispense</h3>
-    <p class="desc">Open the Arcus dispense workbench. The floating page panel supports drag, minimize, row type filter, and manual override wait.</p>
-    <div class="btn-group">
-      <button id="openWorkbench" class="btn-blue">🔗 Open Workbench</button>
-      <button id="closeWorkbenchPanel" class="btn-red">✕ Close Tool</button>
+  <!-- Auto Dispense -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-icon">⚙️</span>
+      <span class="section-title">Auto Dispense</span>
+      <span class="section-badge">AUTOMATION</span>
     </div>
-    <div id="dispenseStatus" class="status">Open the Arcus dispense workbench page — the automation panel will appear automatically.</div>
-    <p class="note">IP Fill now has its own page side panel and is no longer in this popup.</p>
+    <div class="section-body">
+      <p class="desc">Automate allocate &amp; dispense on the workbench. Drag, minimize, filter by row type, or pause for manual override from the page panel.</p>
+      <div class="btn-row">
+        <button id="openWorkbench" class="btn btn-primary">
+          <span class="btn-icon">🔗</span> Open Workbench
+        </button>
+        <button id="closeWorkbenchPanel" class="btn btn-danger">
+          <span class="btn-icon">✕</span> Close Panel
+        </button>
+      </div>
+      <div id="dispenseStatus" class="status">Open the workbench — the automation panel appears automatically.</div>
+    </div>
   </div>
 
-  <div id="tab-ipfill" class="panel">
-    <h3>IP Fill Tools</h3>
-    <p class="desc">Open the IP Fill page and show the floating page panel. Panel supports drag, minimize, manual Ward pause, and retry logic.</p>
-    <div class="btn-group">
-      <button id="openIpFill" class="btn-blue">🔗 Open IP Fill</button>
-      <button id="closeIpFillPanel" class="btn-red">✕ Close IP Fill Tool</button>
+  <!-- IP Fill -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-icon">💉</span>
+      <span class="section-title">IP Fill</span>
+      <span class="section-badge">AUTOMATION</span>
     </div>
-    <div id="ipfillStatus" class="status">Open IP Fill page — the IP Fill panel will appear automatically.</div>
-    <p class="note">Use this if the panel was closed and you want to reopen it from popup.</p>
+    <div class="section-body">
+      <p class="desc">Automate inpatient pharmaceutical fill by ward. Supports drag, minimize, manual pause, and retry from the page panel.</p>
+      <div class="btn-row">
+        <button id="openIpFill" class="btn btn-primary">
+          <span class="btn-icon">🔗</span> Open IP Fill
+        </button>
+        <button id="closeIpFillPanel" class="btn btn-danger">
+          <span class="btn-icon">✕</span> Close Panel
+        </button>
+      </div>
+      <div id="ipfillStatus" class="status">Open IP Fill — the panel appears automatically.</div>
+    </div>
   </div>
 
-  <div id="tab-scraper" class="panel">
-    <h3>Table Scraper</h3>
-    <p class="desc">Uses the same row engine and order-type filter as Auto Dispense.</p>
-    <div class="btn-group">
-      <button id="runScraper" class="btn-green">▶ Start</button>
-      <button id="stopScraper" class="btn-red" disabled>■ Stop</button>
-    </div>
-    <div id="scraperStatus" class="status">Waiting…</div>
-    <p class="note">Start from popup. The page panel no longer shows the Table Scraper button.</p>
-  </div>
+  <div class="footer">arcusair.bdms.co.th &nbsp;·&nbsp; Pharmacy Automation</div>
 
   <script src="popup.js"></script>
 </body>

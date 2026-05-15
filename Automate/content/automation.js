@@ -399,7 +399,7 @@
       alert("This function works only on Arcus dispense workbench pharmacy routes.");
       return;
     }
-    if (state.isRunning || state.scraper.state === "running") {
+    if (state.isRunning) {
       alert("Another workbench task is already running.");
       return;
     }
