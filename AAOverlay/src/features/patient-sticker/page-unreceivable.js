@@ -50,20 +50,10 @@
       </table>`;
   }
 
-  /* ── TOP 60%: สำหรับห้องยา — full layout, space below sig for notes ── */
+  /* ── TOP 60%: สำหรับห้องยา — no header/logo, no sig (sig lives at page bottom) ── */
   function buildPharmacy(v) {
     return `
       <div class="f-for">สำหรับห้องยา</div>
-
-      <div class="f-head">
-        <div class="f-logo">
-          <img src="${LOGO}" alt="BKH" onerror="this.style.display='none'"/>
-        </div>
-        <div class="f-title-block">
-          <div class="f-title">รายการยาที่ค้างจ่าย</div>
-          <div class="f-sub">(UNRECEIVABLE MEDICINE)</div>
-        </div>
-      </div>
 
       ${summaryTable(v)}
 
@@ -86,17 +76,10 @@
       <div class="f-pt-row">
         <span style="grid-column:3" class="lbl">TEL</span>
         <span class="val light">${esc(v.tel)}</span>
-      </div>
-
-      <div class="f-sig">
-        <table>
-          <tr><td>เภสัชกร</td><td class="sv">${esc(v.pharm)}</td></tr>
-          <tr><td>วันที่</td>  <td class="sv">${esc(v.date)}</td></tr>
-        </table>
       </div>`;
   }
 
-  /* ── BOTTOM 40%: สำหรับคนไข้ — compact (no apology text) ────────── */
+  /* ── BOTTOM 40%: สำหรับคนไข้ — compact, no sig (sig lives at page bottom) ── */
   function buildPatient(v) {
     return `
       <div class="f-for">สำหรับคนไข้</div>
@@ -137,14 +120,16 @@
       <div class="f-pt-row">
         <span style="grid-column:3" class="lbl">TEL</span>
         <span class="val light">${esc(v.tel)}</span>
-      </div>
-
-      <div class="f-sig">
-        <table>
-          <tr><td>เภสัชกร</td><td class="sv">${esc(v.pharm)}</td></tr>
-          <tr><td>วันที่</td>  <td class="sv">${esc(v.date)}</td></tr>
-        </table>
       </div>`;
+  }
+
+  /* ── Shared signature rendered at the very bottom of the A5 page ── */
+  function buildSig(v) {
+    return `
+      <table>
+        <tr><td>เภสัชกร</td><td class="sv">${esc(v.pharm)}</td></tr>
+        <tr><td>วันที่</td>  <td class="sv">${esc(v.date)}</td></tr>
+      </table>`;
   }
 
   /* ── Calc ─────────────────────────────────────────────────────── */
@@ -182,10 +167,12 @@
       pharm:      $("inPharm")?.value    || "",
       date:       $("inDate")?.value     || today(),
     };
-    const pt = $("copy-patient");
-    const ph = $("copy-pharmacy");
-    if (pt) pt.innerHTML = buildPatient(v);
-    if (ph) ph.innerHTML = buildPharmacy(v);
+    const pt  = $("copy-patient");
+    const ph  = $("copy-pharmacy");
+    const sig = $("pageSig");
+    if (pt)  pt.innerHTML  = buildPatient(v);
+    if (ph)  ph.innerHTML  = buildPharmacy(v);
+    if (sig) sig.innerHTML = buildSig(v);
   }
 
   /* ── DOM ready ────────────────────────────────────────────────── */

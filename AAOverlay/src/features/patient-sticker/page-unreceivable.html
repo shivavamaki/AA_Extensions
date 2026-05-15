@@ -221,11 +221,23 @@
       font-style: italic; line-height: 1.35; margin-bottom: 1.5mm; flex-shrink: 0;
     }
 
-    /* ── signature ────────────────────────────────────────── */
+    /* ── signature (inside copy sections, kept for CSS reuse) ── */
     .f-sig { margin-top: auto; display: flex; justify-content: flex-end; flex-shrink: 0; }
     .f-sig table { font-family: var(--ff); font-size: var(--fs); }
     .f-sig table td { padding: 0.3mm 3mm 0.3mm 0; vertical-align: baseline; }
     .f-sig .sv { font-weight: bold; min-width: 38mm; }
+
+    /* ── page-level signature at very bottom of A5 ─────────── */
+    .page-sig {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: flex-end;
+      padding: 2mm 9mm 3mm;
+      border-top: 1px solid #ccc;
+    }
+    .page-sig table { font-family: var(--ff); font-size: var(--fs); }
+    .page-sig table td { padding: 0.3mm 3mm 0.3mm 0; vertical-align: baseline; }
+    .page-sig .sv { font-weight: bold; min-width: 38mm; }
     /* ── Print ────────────────────────────────────────────── */
     @media print {
       @page { size: A5 portrait; margin: 0; }
@@ -288,6 +300,7 @@
       <div id="copy-pharmacy"></div>
       <hr class="divider"/>
       <div id="copy-patient"></div>
+      <div id="pageSig" class="page-sig"></div>
     </div>
   </div>
 
