@@ -96,10 +96,10 @@
       flex-shrink: 0;
     }
 
-    /* ── TOP 75%: patient copy ────────────────────────────── */
-    #copy-patient {
-      flex: 3;                /* 75% */
-      padding: 4mm 9mm 10mm; /* extra 10mm = 1cm bottom margin */
+    /* ── TOP 60%: pharmacy copy ──────────────────────────── */
+    #copy-pharmacy {
+      flex: 3;                /* 60% */
+      padding: 4mm 9mm 3mm;
       display: flex;
       flex-direction: column;
       font-family: var(--ff);
@@ -118,15 +118,15 @@
       flex-shrink: 0;
     }
 
-    /* ── BOTTOM 25%: pharmacy summary ─────────────────────── */
-    #copy-pharmacy {
-      flex: 1;                /* 25% */
-      padding: 2mm 9mm 2mm;
+    /* ── BOTTOM 40%: patient copy ─────────────────────────── */
+    #copy-patient {
+      flex: 2;                /* 40% */
+      padding: 3mm 9mm 3mm;
       display: flex;
       flex-direction: column;
       font-family: var(--ff);
-      font-size: var(--fsm);
-      line-height: 1.35;
+      font-size: var(--fs);
+      line-height: 1.45;
       color: #111;
       overflow: hidden;
       min-height: 0;
@@ -138,7 +138,7 @@
       text-align: right; text-decoration: underline;
       margin-bottom: 1.5mm; flex-shrink: 0;
     }
-    #copy-pharmacy .f-for { margin-bottom: 1mm; }
+    #copy-pharmacy .f-for { margin-bottom: 1.5mm; }
 
     /* ── logo + title ─────────────────────────────────────── */
     .f-head {
@@ -177,20 +177,13 @@
     .sum-table td.num  { text-align: right; font-weight: bold; }
     .sum-table td.name { font-weight: bold; }
 
-    /* pharmacy copy uses smaller table */
-    #copy-pharmacy .sum-table th,
-    #copy-pharmacy .sum-table td {
-      font-size: var(--fsm) !important;
-      padding: 0.5mm 1.5mm !important;
-    }
-
     /* ── delivery ─────────────────────────────────────────── */
     .f-delivery {
       font-family: var(--ff); font-size: var(--fs);
       display: flex; gap: 3mm; align-items: baseline;
       margin-bottom: 1.5mm; flex-shrink: 0;
     }
-    #copy-pharmacy .f-delivery { font-size: var(--fsm) !important; margin-bottom: 1mm; }
+    #copy-pharmacy .f-delivery { margin-bottom: 1mm; }
 
     /* ── patient section ──────────────────────────────────── */
     .f-pt-hd {
@@ -233,8 +226,6 @@
     .f-sig table { font-family: var(--ff); font-size: var(--fs); }
     .f-sig table td { padding: 0.3mm 3mm 0.3mm 0; vertical-align: baseline; }
     .f-sig .sv { font-weight: bold; min-width: 38mm; }
-    #copy-pharmacy .f-sig table { font-size: var(--fsm) !important; }
-
     /* ── Print ────────────────────────────────────────────── */
     @media print {
       @page { size: A5 portrait; margin: 0; }
@@ -294,9 +285,9 @@
   <!-- Single A5 page -->
   <div class="preview-wrap">
     <div id="a5-page">
-      <div id="copy-patient"></div>
-      <hr class="divider"/>
       <div id="copy-pharmacy"></div>
+      <hr class="divider"/>
+      <div id="copy-patient"></div>
     </div>
   </div>
 

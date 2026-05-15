@@ -50,7 +50,53 @@
       </table>`;
   }
 
-  /* ── TOP 75%: สำหรับคนไข้  — full layout ───────────────────── */
+  /* ── TOP 60%: สำหรับห้องยา — full layout, space below sig for notes ── */
+  function buildPharmacy(v) {
+    return `
+      <div class="f-for">สำหรับห้องยา</div>
+
+      <div class="f-head">
+        <div class="f-logo">
+          <img src="${LOGO}" alt="BKH" onerror="this.style.display='none'"/>
+        </div>
+        <div class="f-title-block">
+          <div class="f-title">รายการยาที่ค้างจ่าย</div>
+          <div class="f-sub">(UNRECEIVABLE MEDICINE)</div>
+        </div>
+      </div>
+
+      ${summaryTable(v)}
+
+      <div class="f-delivery">
+        <span class="lbl">การรับยา (Delivery):</span>
+        <span style="font-weight:bold;">${esc(v.delivery)}</span>
+      </div>
+
+      <div class="f-pt-hd">ข้อมูลคนไข้ <strong>(Patient data):</strong></div>
+      <div class="f-pt-row">
+        <span class="lbl">ชื่อ (Name)</span>
+        <span class="val">${esc(v.name)}</span>
+        <span class="lbl">HN</span>
+        <span class="val">${esc(v.hn)}</span>
+      </div>
+      <div class="f-pt-row">
+        <span class="lbl">ที่อยู่ (Address)</span>
+        <span class="val light" style="white-space:pre-wrap;grid-column:2/5;">${esc(v.address)}</span>
+      </div>
+      <div class="f-pt-row">
+        <span style="grid-column:3" class="lbl">TEL</span>
+        <span class="val light">${esc(v.tel)}</span>
+      </div>
+
+      <div class="f-sig">
+        <table>
+          <tr><td>เภสัชกร</td><td class="sv">${esc(v.pharm)}</td></tr>
+          <tr><td>วันที่</td>  <td class="sv">${esc(v.date)}</td></tr>
+        </table>
+      </div>`;
+  }
+
+  /* ── BOTTOM 40%: สำหรับคนไข้ — compact (no apology text) ────────── */
   function buildPatient(v) {
     return `
       <div class="f-for">สำหรับคนไข้</div>
@@ -86,51 +132,11 @@
       </div>
       <div class="f-pt-row">
         <span class="lbl">ที่อยู่ (Address)</span>
-        <span class="val light" style="white-space:pre-wrap;grid-column:2/3;">${esc(v.address)}</span>
-        <span class="lbl">TEL</span>
+        <span class="val light" style="white-space:pre-wrap;grid-column:2/5;">${esc(v.address)}</span>
+      </div>
+      <div class="f-pt-row">
+        <span style="grid-column:3" class="lbl">TEL</span>
         <span class="val light">${esc(v.tel)}</span>
-      </div>
-
-      <div class="f-apo">ขออภัยในความไม่สะดวก ทางห้องยาจะติดต่อกลับทันทีที่ยามาถึงแล้ว</div>
-      <div class="f-apo-en">We regret the inconvenience we have caused you. we will contact you as soon as the stock are available</div>
-
-      <div class="f-sig">
-        <table>
-          <tr><td>เภสัชกร</td><td class="sv">${esc(v.pharm)}</td></tr>
-          <tr><td>วันที่</td>  <td class="sv">${esc(v.date)}</td></tr>
-        </table>
-      </div>`;
-  }
-
-  /* ── BOTTOM 25%: สำหรับห้องยา — compact, no logo/heading/apology ── */
-  function buildPharmacy(v) {
-    // Compact one-line patient summary
-    const nameParts = [
-      v.name ? `${esc(v.name)}` : "",
-      v.hn   ? `HN&nbsp;<strong>${esc(v.hn)}</strong>` : "",
-      v.address ? esc(v.address) : "",
-      v.tel  ? `TEL&nbsp;${esc(v.tel)}` : "",
-    ].filter(Boolean);
-
-    return `
-      <div class="f-for">สำหรับห้องยา</div>
-
-      ${summaryTable(v)}
-
-      <div class="f-delivery">
-        <span class="lbl">การรับยา (Delivery):</span>
-        <span style="font-weight:bold;">${esc(v.delivery)}</span>
-      </div>
-
-      <div class="f-pt-hd">ข้อมูลคนไข้ <strong>(Patient data):</strong></div>
-
-      <div class="ph-pt-row">
-        <span class="seg">ชื่อ (Name)&nbsp;<span class="val">${esc(v.name)}</span></span>
-        <span class="seg">HN&nbsp;<span class="val">${esc(v.hn)}</span></span>
-      </div>
-      <div class="ph-pt-row" style="flex-wrap:wrap;">
-        <span class="seg">ที่อยู่&nbsp;<span class="val" style="font-weight:normal;white-space:pre-wrap;">${esc(v.address)}</span></span>
-        ${v.tel ? `<span class="seg">TEL&nbsp;${esc(v.tel)}</span>` : ""}
       </div>
 
       <div class="f-sig">

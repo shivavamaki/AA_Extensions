@@ -17,6 +17,7 @@ const { MSG } = window.CoreMessages;
 
 let _patient = null;
 let _lastMsg = null;
+let _pharmacistName = null;
 let _medDbByCode = null;
 let _medDbLoadPromise = null;
 
@@ -59,6 +60,7 @@ function populateHeader(p) {
   safeSetText("patientAN", patient.an || "-");
   safeSetText("patientRoom", patient.room || "-");
   safeSetText("sheetDate", patient.visitDateTime || new Date().toLocaleDateString("th-TH"));
+  safeSetText("pharmacistName", _pharmacistName || "-");
 }
 
 function _appendNoData(tbody, text) {
@@ -629,6 +631,7 @@ async function renderFromMessage(msg) {
   if (!msg || msg.type !== MSG.LOAD_MED_TABLE) return;
   _lastMsg = msg;
   _patient = msg.patientData || _emptyPatient();
+  _pharmacistName = msg.pharmacistName || null;
 
   populateHeader(_patient);
   await _loadMedicationDatabase();
@@ -636,9 +639,25 @@ async function renderFromMessage(msg) {
   bindToolbar(_patient);
 }
 
+function _buildPrintHeader() {
+  const cell = document.getElementById("printHdrCell");
+  if (!cell) return;
+  cell.innerHTML = "";
+  [".top-title", ".patient-card", ".section-title"].forEach((sel) => {
+    const el = document.querySelector(sel);
+    if (el) cell.appendChild(el.cloneNode(true));
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   bindPrintControls();
   bindToolbar(_patient || _emptyPatient());
+
+  window.addEventListener("beforeprint", _buildPrintHeader);
+  window.addEventListener("afterprint", () => {
+    const cell = document.getElementById("printHdrCell");
+    if (cell) cell.innerHTML = "";
+  });
 
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type !== MSG.LOAD_MED_TABLE) return;

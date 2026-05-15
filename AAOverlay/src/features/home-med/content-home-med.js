@@ -29,6 +29,17 @@
   }
 
   /* ─────────────────────────────────────────────
+   * Read the logged-in pharmacist name from the
+   * Arcus top toolbar user menu button span.
+   * ───────────────────────────────────────────── */
+  function getPharmacistName() {
+    const el = document.querySelector(
+      "body > div.full-height.ng-scope.layout-row > div > md-toolbar > div > md-menu:nth-child(9) > button > span"
+    );
+    return el ? (el.textContent || el.innerText || "").trim() : null;
+  }
+
+  /* ─────────────────────────────────────────────
    * Button click handler
    * ───────────────────────────────────────────── */
   let _sending = false;
@@ -37,8 +48,9 @@
     if (_sending) return;
     _sending = true;
 
-    const tableHTML   = getMedTableHTML();
-    const patientData = parseFromBanner();
+    const tableHTML      = getMedTableHTML();
+    const patientData    = parseFromBanner();
+    const pharmacistName = getPharmacistName();
 
     if (!tableHTML) {
       _sending = false;
@@ -48,7 +60,7 @@
 
     try {
       chrome.runtime
-        .sendMessage({ type: MSG.LOAD_MED_TABLE, tableHTML, patientData })
+        .sendMessage({ type: MSG.LOAD_MED_TABLE, tableHTML, patientData, pharmacistName })
         .finally(() => setTimeout(() => (_sending = false), 300));
     } catch (e) {
       _sending = false;
