@@ -445,8 +445,10 @@ document.querySelectorAll('.nav-item[data-page]').forEach(n =>
 function applyRoleUI() {
   const isEditor = _role === 'editor' || _role === 'admin';
   const isAdmin  = _role === 'admin';
-  document.querySelectorAll('.editor-only').forEach(el => el.style.display = isEditor ? '' : 'none');
-  document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAdmin ? '' : 'none');
+  document.querySelectorAll('.editor-only').forEach(el =>
+    el.style.display = isEditor ? (el.classList.contains('nav-item') ? 'flex' : '') : 'none');
+  document.querySelectorAll('.admin-only').forEach(el =>
+    el.style.display = isAdmin ? (el.classList.contains('nav-item') ? 'flex' : '') : 'none');
   document.getElementById('hdr-user').textContent = _user;
   document.getElementById('hdr-role').textContent = _role;
 }
