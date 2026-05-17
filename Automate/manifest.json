@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Arcus Toolkit",
-  "version": "4.0.0",
+  "version": "4.0.1",
+  "version_name": "2026.05.17 - add version tracking",
   "description": "Auto Dispense and IP Fill automation for Arcus Pharmacy Management System.",
   "permissions": [
     "activeTab",

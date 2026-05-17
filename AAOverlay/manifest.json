@@ -1,7 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Discharge Process Checklist",
-  "version": "2.3.14",
+  "version": "2.3.15",
+  "version_name": "2026.05.17 - add description, version tracking",
+  "description": "BKN Hospital — discharge process tools overlaid into Arcusair: home med sheet, medication stickers, patient stickers, med reconciliation, and allergy cards.",
   "permissions": [
     "tabs",
     "scripting",
@@ -79,6 +81,5 @@
         "<all_urls>"
       ]
     }
-  ],
-  "version_name": "2026.05.04 - add home-med A4 page format print controls"
+  ]
 }
