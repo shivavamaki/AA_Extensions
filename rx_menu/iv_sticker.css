@@ -373,6 +373,35 @@ body {
 /* ── REQUIRED MARK ──────────────────────────────────────── */
 .req { color: var(--ivs-danger); }
 
+/* ── FIELD VALIDATION ───────────────────────────────────── */
+.ivs-field-error {
+  border-color: var(--ivs-danger) !important;
+  box-shadow: 0 0 0 3px rgba(224,80,80,.18) !important;
+}
+.ivs-field-error-tip {
+  position: fixed;
+  background: var(--ivs-danger);
+  color: #fff;
+  font-family: 'Sarabun', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 9999;
+  box-shadow: 0 2px 8px rgba(224,80,80,.35);
+}
+.ivs-field-error-tip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--ivs-danger);
+}
+
 /* ── MODAL ──────────────────────────────────────────────── */
 .modal-overlay {
   display: none;

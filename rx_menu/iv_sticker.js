@@ -121,10 +121,9 @@ function getPfsColor(codeName) {
 }
 
 // ── STATE ─────────────────────────────────────────────────────────────────
-let drugs       = [];
-let staff       = [];
-let history     = [];
-let editDrugIdx = -1;
+let drugs   = [];
+let staff   = [];
+let history = [];
 
 // ── DATA BOOTSTRAP ────────────────────────────────────────────────────────
 async function loadData() {
@@ -177,16 +176,6 @@ async function _syncToServer() {
   }
 }
 
-async function resetToDefaults() {
-  if (!confirm('รีเซ็ตข้อมูลยาและบุคลากรกลับค่าเริ่มต้น?')) return;
-  drugs = JSON.parse(JSON.stringify(DEFAULT_DRUGS));
-  staff = JSON.parse(JSON.stringify(DEFAULT_STAFF));
-  await _syncToServer();
-  populateSelects();
-  renderDrugTable?.();
-  renderStaffTable?.();
-  showToast('รีเซ็ตสำเร็จ');
-}
 
 // ── UTILITIES ─────────────────────────────────────────────────────────────
 function fmtDate(d) {
@@ -244,9 +233,6 @@ function showToast(msg, type = 'success') {
 const PAGE_META = {
   ipd:     { title: 'IPD Label',         sub: '8×3.5 cm sticker — A4 landscape' },
   pfs:     { title: 'PFS Small Label',  sub: 'Reference 4×2 cm + Syringe 4×2 cm + Button/Cap 3×1 cm — A4 portrait' },
-  drugs:   { title: 'Drug Master',      sub: 'รายการยาทั้งหมด (แก้ไขได้)' },
-  staff:   { title: 'Staff',            sub: 'บุคลากรเภสัชกรรม' },
-  history: { title: 'History',          sub: 'บันทึกการพิมพ์ label' },
 };
 
 function goPage(id) {
@@ -259,9 +245,6 @@ function goPage(id) {
   const meta = PAGE_META[id] || {};
   document.getElementById('topbar-title').textContent = meta.title || id;
   document.getElementById('topbar-sub').textContent   = meta.sub   || '';
-  if (id === 'drugs')   renderDrugTable();
-  if (id === 'staff')   renderStaffTable();
-  if (id === 'history') renderHistory();
 }
 
 // ── SELECT POPULATION ─────────────────────────────────────────────────────
@@ -780,197 +763,49 @@ function clearForm() {
   showToast('ล้างฟอร์มแล้ว');
 }
 
-// ── DRUG TABLE ────────────────────────────────────────────────────────────
-const TYPE_BADGE_MAP = {
-  HAD: 'badge-had', PFS: 'badge-pfs', ATB: 'badge-atb',
-  Cytotoxic: 'badge-cyto', EYE: 'badge-eye',
-};
+// ── IPD PRINT VALIDATION ──────────────────────────────────────────────────
+const _IPD_REQUIRED = [
+  { id: 'ipd-hn',      label: 'HN' },
+  { id: 'ipd-room',    label: 'ห้อง / Ward' },
+  { id: 'ipd-drug',    label: 'ชื่อยา' },
+  { id: 'ipd-dose',    label: 'Dose' },
+  { id: 'ipd-unit',    label: 'Unit' },
+  { id: 'ipd-solvent', label: 'สารละลาย' },
+  { id: 'ipd-vol',     label: 'ปริมาณ (mL)' },
+  { id: 'ipd-rate',    label: 'วิธีบริหาร / Rate' },
+  { id: 'ipd-prep',    label: 'Prep by' },
+  { id: 'ipd-label',   label: 'Label by' },
+  { id: 'ipd-check',   label: 'Check by' },
+];
 
-function renderDrugTable() {
-  const q  = gv('drug-search').toLowerCase();
-  const ft = gv('drug-filter-type');
-  const filtered = drugs.filter(d => {
-    const match  = (d.codeName + d.generic + d.type).toLowerCase().includes(q);
-    const typeOk = !ft || d.type === ft;
-    return match && typeOk;
+function _clearIpdTips() {
+  document.querySelectorAll('.ivs-field-error-tip').forEach(el => el.remove());
+  _IPD_REQUIRED.forEach(f => g(f.id)?.classList.remove('ivs-field-error'));
+}
+
+function validateIpdPrint() {
+  _clearIpdTips();
+  const invalid = _IPD_REQUIRED.filter(f => { const el = g(f.id); return !el || !el.value.trim(); });
+  if (!invalid.length) return true;
+
+  invalid.forEach(f => {
+    const el = g(f.id);
+    if (!el) return;
+    el.classList.add('ivs-field-error');
+    const rect = el.getBoundingClientRect();
+    const tip = document.createElement('div');
+    tip.className = 'ivs-field-error-tip';
+    tip.textContent = `กรุณากรอก ${f.label}`;
+    tip.style.cssText = `left:${rect.left + rect.width / 2}px;top:${rect.top - 6}px;transform:translateX(-50%) translateY(-100%)`;
+    document.body.appendChild(tip);
+    const cleanup = () => { tip.remove(); el.classList.remove('ivs-field-error'); el.removeEventListener('change', cleanup); el.removeEventListener('input', cleanup); };
+    el.addEventListener('change', cleanup);
+    el.addEventListener('input', cleanup);
   });
 
-  const tbody = g('drug-tbody');
-  if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="ivs-empty-state">ไม่พบยา</td></tr>';
-    return;
-  }
-  tbody.innerHTML = filtered.map(d => {
-    const ri  = drugs.indexOf(d);
-    const bdg = TYPE_BADGE_MAP[d.type] || 'badge-ok';
-    return `<tr>
-      <td><span class="ivs-tag">${esc(d.codeName)}</span></td>
-      <td>${esc(d.generic)}</td>
-      <td><span class="ivs-badge ${bdg}">${esc(d.type)}</span></td>
-      <td style="font-size:11px;color:var(--ivs-muted)">${esc(d.storage || '')}</td>
-      <td>${d.had ? '<span class="ivs-badge badge-had">HAD</span>' : ''}</td>
-      <td style="font-family:monospace">${d.exp} วัน</td>
-      <td>
-        <div style="display:flex;gap:6px">
-          <button class="ivs-btn ivs-btn-outline ivs-btn-xs" data-action="edit-drug" data-idx="${ri}">แก้ไข</button>
-          <button class="ivs-btn ivs-btn-danger  ivs-btn-xs" data-action="del-drug"  data-idx="${ri}">ลบ</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function openAddDrug() {
-  editDrugIdx = -1;
-  ['m-codename','m-generic','m-had','m-conc','m-rate'].forEach(id => sv(id, ''));
-  sv('m-type', 'HAD');
-  sv('m-exp', 7);
-  sv('m-storage', 'Keep in Room Temp.');
-  openModal('modal-drug');
-}
-
-function editDrug(i) {
-  editDrugIdx = i;
-  const d = drugs[i];
-  sv('m-codename', d.codeName); sv('m-generic', d.generic);
-  sv('m-type', d.type); sv('m-exp', d.exp); sv('m-storage', d.storage);
-  sv('m-had', d.had || ''); sv('m-conc', d.conc || ''); sv('m-rate', d.rate || '');
-  openModal('modal-drug');
-}
-
-function saveDrug() {
-  const d = {
-    codeName: gv('m-codename'),
-    generic:  gv('m-generic'),
-    type:     gv('m-type'),
-    exp:      parseInt(gv('m-exp')) || 7,
-    storage:  gv('m-storage'),
-    had:      gv('m-had'),
-    conc:     gv('m-conc'),
-    rate:     gv('m-rate'),
-  };
-  if (!d.codeName) { showToast('กรุณาใส่ชื่อยา', 'error'); return; }
-  if (editDrugIdx >= 0) drugs[editDrugIdx] = d;
-  else drugs.push(d);
-  saveState(); populateSelects(); renderDrugTable();
-  closeModal('modal-drug');
-  showToast('บันทึกยาสำเร็จ');
-}
-
-function deleteDrug(i) {
-  if (!confirm(`ต้องการลบ "${drugs[i].codeName}" ?`)) return;
-  drugs.splice(i, 1);
-  saveState(); populateSelects(); renderDrugTable();
-  showToast('ลบยาแล้ว');
-}
-
-function exportDrugs() {
-  const blob = new Blob([JSON.stringify(drugs, null, 2)], { type: 'application/json' });
-  const a = Object.assign(document.createElement('a'), {
-    href: URL.createObjectURL(blob),
-    download: 'drugs.json',
-  });
-  a.click();
-  showToast('Export drugs.json สำเร็จ');
-}
-
-function importDrugsFile(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (!Array.isArray(data)) throw new Error('ไม่ใช่ Array');
-      drugs = data;
-      saveState(); populateSelects(); renderDrugTable();
-      showToast(`Import สำเร็จ — ${data.length} รายการ`);
-    } catch (err) {
-      showToast('JSON ไม่ถูกต้อง: ' + err.message, 'error');
-    }
-    input.value = '';
-  };
-  reader.readAsText(file);
-}
-
-// ── STAFF TABLE ───────────────────────────────────────────────────────────
-function renderStaffTable() {
-  const tbody = g('staff-tbody');
-  if (!staff.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="ivs-empty-state">ยังไม่มีบุคลากร</td></tr>';
-    return;
-  }
-  tbody.innerHTML = staff.map((s, i) => `
-    <tr>
-      <td style="color:var(--ivs-muted);font-family:monospace;font-size:12px">${i + 1}</td>
-      <td><strong>${esc(s.name)}</strong></td>
-      <td><span class="ivs-badge ${s.role === 'Pharmacist' ? 'badge-atb' : 'badge-pfs'}">${esc(s.role)}</span></td>
-      <td>
-        <div style="display:flex;gap:6px">
-          <button class="ivs-btn ivs-btn-outline ivs-btn-xs" data-action="edit-staff" data-idx="${i}">แก้ไข</button>
-          <button class="ivs-btn ivs-btn-danger  ivs-btn-xs" data-action="del-staff"  data-idx="${i}">ลบ</button>
-        </div>
-      </td>
-    </tr>`).join('');
-}
-
-function openAddStaff() {
-  sv('ms-name', ''); sv('ms-role', 'Pharmacist'); sv('ms-idx', -1);
-  openModal('modal-staff');
-}
-function editStaff(i) {
-  sv('ms-name', staff[i].name); sv('ms-role', staff[i].role); sv('ms-idx', i);
-  openModal('modal-staff');
-}
-function saveStaff() {
-  const name = gv('ms-name').trim();
-  const role = gv('ms-role');
-  const idx  = parseInt(gv('ms-idx'));
-  if (!name) { showToast('กรุณาใส่ชื่อ', 'error'); return; }
-  if (idx >= 0) staff[idx] = { name, role };
-  else staff.push({ name, role });
-  saveState(); populateSelects(); renderStaffTable();
-  closeModal('modal-staff');
-  showToast('บันทึกบุคลากรสำเร็จ');
-}
-function deleteStaff(i) {
-  if (!confirm(`ลบ ${staff[i].name} ?`)) return;
-  staff.splice(i, 1);
-  saveState(); populateSelects(); renderStaffTable();
-  showToast('ลบบุคลากรแล้ว');
-}
-function exportStaff() {
-  const blob = new Blob([JSON.stringify(staff, null, 2)], { type: 'application/json' });
-  const a = Object.assign(document.createElement('a'), {
-    href: URL.createObjectURL(blob),
-    download: 'staff.json',
-  });
-  a.click();
-  showToast('Export staff.json สำเร็จ');
-}
-
-// ── HISTORY ───────────────────────────────────────────────────────────────
-function renderHistory() {
-  const tbody = g('history-tbody');
-  if (!history.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="ivs-empty-state">ยังไม่มีรายการ</td></tr>';
-    return;
-  }
-  const TYPE_BADGE = { OPD:'badge-had', IPD:'badge-atb', PFS:'badge-pfs', Succinyl:'badge-ok' };
-  tbody.innerHTML = history.map(h => `
-    <tr>
-      <td style="font-size:11px;color:var(--ivs-muted);white-space:nowrap">${new Date(h.t).toLocaleString('th-TH')}</td>
-      <td><span class="ivs-badge ${TYPE_BADGE[h.type] || 'badge-ok'}">${esc(h.type)}</span></td>
-      <td>${esc(h.drug)}</td>
-      <td style="font-size:12px">${esc(h.patient)}</td>
-      <td>${esc(h.prep)}</td>
-    </tr>`).join('');
-}
-
-function clearHistory() {
-  if (!confirm('ล้างประวัติทั้งหมด?')) return;
-  history = []; saveState(); renderHistory();
-  showToast('ล้าง History แล้ว');
+  g(invalid[0].id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(_clearIpdTips, 4000);
+  return false;
 }
 
 // ── MODAL ─────────────────────────────────────────────────────────────────
@@ -1292,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   g('ipd-drug') ?.addEventListener('change', autofillIpdDrug);
   g('page-ipd')?.querySelector('.ivs-btn-primary')  ?.addEventListener('click', generateIpdLabel);
-  g('page-ipd')?.querySelector('.ivs-btn-secondary')?.addEventListener('click', () => printLabel('ipd'));
+  g('page-ipd')?.querySelector('.ivs-btn-secondary')?.addEventListener('click', () => { if (validateIpdPrint()) printLabel('ipd'); });
 
   // ── PFS ──────────────────────────────────────────────────────────────
   g('pfs-drug')   ?.addEventListener('change', autofillPfs);
@@ -1304,61 +1139,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   g('page-succ')?.querySelector('.ivs-btn-primary')  ?.addEventListener('click', generateSuccLabel);
   g('page-succ')?.querySelector('.ivs-btn-secondary')?.addEventListener('click', () => printLabel('succ'));
 
-  // ── Drug Master ───────────────────────────────────────────────────────
-  g('drug-search')      ?.addEventListener('input',  renderDrugTable);
-  g('drug-filter-type') ?.addEventListener('change', renderDrugTable);
-
-  // Drug Master toolbar buttons (in order: + เพิ่มยา, Export, Import label, Reset)
-  const drugToolbarBtns = g('page-drugs')?.querySelectorAll('.ivs-toolbar .ivs-btn, .ivs-toolbar label');
-  if (drugToolbarBtns) {
-    drugToolbarBtns[0]?.addEventListener('click', openAddDrug);
-    drugToolbarBtns[1]?.addEventListener('click', exportDrugs);
-    // drugToolbarBtns[2] is the Import <label> — its inner <input> handles file pick
-    drugToolbarBtns[3]?.addEventListener('click', resetToDefaults);
-  }
-
-  // File import input (inside Import label)
-  const importInput = g('page-drugs')?.querySelector('input[type="file"]');
-  importInput?.addEventListener('change', function() { importDrugsFile(this); });
-
-  // ── Staff ─────────────────────────────────────────────────────────────
-  const staffBtns = g('page-staff')?.querySelectorAll('.ivs-toolbar .ivs-btn');
-  if (staffBtns) {
-    staffBtns[0]?.addEventListener('click', openAddStaff);
-    staffBtns[1]?.addEventListener('click', exportStaff);
-  }
-
-  // ── History ───────────────────────────────────────────────────────────
-  const histBtns = g('page-history')?.querySelectorAll('.ivs-toolbar .ivs-btn');
-  if (histBtns) {
-    histBtns[0]?.addEventListener('click', renderHistory);
-    histBtns[1]?.addEventListener('click', clearHistory);
-  }
-
-  // ── Drug table event delegation (replaces inline onclick) ────────────────
-  g('drug-tbody')?.addEventListener('click', e => {
-    const btn = e.target.closest('button[data-action]');
-    if (!btn) return;
-    const idx = parseInt(btn.dataset.idx);
-    if (btn.dataset.action === 'edit-drug')  editDrug(idx);
-    if (btn.dataset.action === 'del-drug')   deleteDrug(idx);
-  });
-
-  // ── Staff table event delegation ──────────────────────────────────────────
-  g('staff-tbody')?.addEventListener('click', e => {
-    const btn = e.target.closest('button[data-action]');
-    if (!btn) return;
-    const idx = parseInt(btn.dataset.idx);
-    if (btn.dataset.action === 'edit-staff') editStaff(idx);
-    if (btn.dataset.action === 'del-staff')  deleteStaff(idx);
-  });
-
-  // ── Modals ────────────────────────────────────────────────────────────
-  // Drug modal
-  g('modal-drug')?.querySelectorAll('.ivs-btn-group .ivs-btn')[0]?.addEventListener('click', saveDrug);
-  g('modal-drug')?.querySelectorAll('.ivs-btn-group .ivs-btn')[1]?.addEventListener('click', () => closeModal('modal-drug'));
-
-  // Staff modal
-  g('modal-staff')?.querySelectorAll('.ivs-btn-group .ivs-btn')[0]?.addEventListener('click', saveStaff);
-  g('modal-staff')?.querySelectorAll('.ivs-btn-group .ivs-btn')[1]?.addEventListener('click', () => closeModal('modal-staff'));
 });
