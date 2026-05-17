@@ -24,6 +24,8 @@
     isVisible,
     textOf,
     sleep,
+    isValidOrderNo,
+    getEffectivePharmacyType,
   } = window.ArcusShared;
 
   function clearHighlight() {
@@ -68,9 +70,13 @@
     return String(getCellText(row, 10) || "").replace(/\s+/g, " ").trim();
   }
 
+  function getOrderPatternLabel() {
+    return getEffectivePharmacyType() === "outpatient" ? "O* or E*" : "I*";
+  }
+
   function isValidAutoIdentity(row) {
     const identity = getAutoRowIdentity(row);
-    return /^I/i.test(identity);
+    return isValidOrderNo(identity);
   }
 
   function findStatusRows(targetStatus) {
@@ -88,7 +94,7 @@
     const refresh = await refreshDispenseSearch();
     if (!refresh.ok) return { ok: false, reason: refresh.reason };
 
-    setStep("Finding row", `Status column = ${targetStatus} AND column 10 starts with I`);
+    setStep("Finding row", `Status column = ${targetStatus} AND column 10 starts with ${getOrderPatternLabel()}`);
     const started = Date.now();
     while (Date.now() - started < 8000) {
       if (state.stopRequested) return { ok: false, reason: "stopped" };
@@ -97,7 +103,7 @@
       await sleep(400);
     }
 
-    return { ok: false, reason: `No row with status ${targetStatus} and column 10 starts with I` };
+    return { ok: false, reason: `No row with status ${targetStatus} and column 10 starts with ${getOrderPatternLabel()}` };
   }
 
   async function clickAllocateSaveAndHandleOverride(functionName) {
@@ -279,10 +285,10 @@
       if (state.stopRequested) return { stopped: true };
       setStep(
         "No matching row",
-        `No ${targetStatus} + I* row found. Refresh again in ${left}s. Loop ${loop}`
+        `No ${targetStatus} + ${getOrderPatternLabel()} row found. Refresh again in ${left}s. Loop ${loop}`
       );
       window.ArcusPanel?.setStatus(
-        `Auto mode waiting\nNo ${targetStatus} + I* row found.\nRefresh again in ${left}s. Press Stop to cancel.`
+        `Auto mode waiting\nNo ${targetStatus} + ${getOrderPatternLabel()} row found.\nRefresh again in ${left}s. Press Stop to cancel.`
       );
       await sleep(1000);
     }

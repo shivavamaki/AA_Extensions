@@ -31,7 +31,19 @@ async function openOrNavigate(url) {
     currentWindow: true,
   });
   if (existing) {
-    await chrome.tabs.update(existing.id, { active: true, url });
+    await chrome.tabs.update(existing.id, { active: true });
+    // Navigate via hash change so Angular's router handles it — avoids the
+    // "back button navigation" security alert that fires when Chrome forces a URL change.
+    try {
+      await executeInTab(existing.id, (targetUrl) => {
+        const hashIndex = targetUrl.indexOf("#");
+        if (hashIndex !== -1) {
+          location.hash = targetUrl.slice(hashIndex + 1);
+        } else {
+          location.href = targetUrl;
+        }
+      }, [url]);
+    } catch (_) {}
     return existing.id;
   }
   const tab = await chrome.tabs.create({ url });

@@ -108,6 +108,7 @@
 
   const PANEL_STORAGE_KEY = "arcusAutoPanelState";
   const PANEL_DISMISSED_KEY = "arcusAutoPanelDismissed";
+  const PHARMACY_TYPE_KEY = "arcusPharmacyType";
 
   const ORDER_FILTERS = {
     all: "ALL ROW",
@@ -126,6 +127,7 @@
       rowFilters: ["all"],
       waitManualOverride: true,
       automationMode: "auto",
+      pharmacyType: "auto",
     },
     panel: {
       dismissed: false,
@@ -748,6 +750,36 @@
     return Math.min(Math.max(value, min), max);
   }
 
+  function detectPharmacyType() {
+    const selectors = [
+      "body > div.full-height.ng-scope.layout-row > div > md-toolbar > div > div",
+      "md-toolbar .font-size-14-imp.ng-binding",
+      "md-toolbar [class*='ng-binding'][class*='font-size']",
+    ];
+    for (const sel of selectors) {
+      try {
+        const el = document.querySelector(sel);
+        if (!el) continue;
+        const txt = ((el.innerText || el.textContent) || "").toUpperCase();
+        if (txt.includes("OUTPATIENT PHARMACY") || txt.includes("OUTPATIENT")) return "outpatient";
+        if (txt.includes("INPATIENT PHARMACY") || txt.includes("INPATIENT")) return "inpatient";
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  function getEffectivePharmacyType() {
+    const override = state.settings.pharmacyType;
+    if (override && override !== "auto") return override;
+    return detectPharmacyType() || "inpatient";
+  }
+
+  function isValidOrderNo(identity) {
+    const type = getEffectivePharmacyType();
+    if (type === "outpatient") return /^[OE]/i.test(identity);
+    return /^I/i.test(identity);
+  }
+
   window.ArcusShared = {
     CONFIG,
     PANEL_STORAGE_KEY,
@@ -798,5 +830,9 @@
     closeDetailPaneIfPresent,
     waitForDetailPaneText,
     clamp,
+    PHARMACY_TYPE_KEY,
+    detectPharmacyType,
+    getEffectivePharmacyType,
+    isValidOrderNo,
   };
 })();

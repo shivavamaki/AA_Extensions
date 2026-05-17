@@ -572,7 +572,9 @@
     const cfg = getModeConfig();
     setStatus(`Step 1: go to ${cfg.label} start page`);
     if (!isStartPage()) {
-      location.href = BASE_URL + cfg.startRoute;
+      // Use hash-only navigation so Angular's router handles it — avoids the
+      // "back button navigation" security alert triggered by full location.href changes.
+      location.hash = cfg.startRoute.replace(/^#/, "");
       const ok = await waitFor(() => isStartPage(), 20000, 300);
       if (!ok) throw new Error(`Cannot reach ${cfg.label} start page`);
     }

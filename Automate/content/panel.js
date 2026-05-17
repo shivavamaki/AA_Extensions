@@ -11,6 +11,8 @@
     setPanelDismissed,
     getSelectedRowFilters,
     getSelectedRowFilterLabel,
+    detectPharmacyType,
+    getEffectivePharmacyType,
   } = window.ArcusShared;
 
   function setStatus(message) {
@@ -76,6 +78,7 @@
     const copyBtn = document.querySelector("#arcus-btn-copy-log");
     const waitOverride = document.querySelector("#arcus-manual-override");
     const modeSelect = document.querySelector("#arcus-mode-select");
+    const pharmacyTypeSelect = document.querySelector("#arcus-pharmacy-type");
     const filterBoxes = document.querySelectorAll(".arcus-order-type-check");
 
     if (allocateBtn) allocateBtn.disabled = running;
@@ -84,12 +87,14 @@
     if (copyBtn) copyBtn.disabled = false;
     if (waitOverride) waitOverride.disabled = running;
     if (modeSelect) modeSelect.disabled = running;
+    if (pharmacyTypeSelect) pharmacyTypeSelect.disabled = running;
     filterBoxes.forEach((box) => (box.disabled = running));
   }
 
   function savePanelState(panel) {
     const waitOverrideEl = document.querySelector("#arcus-manual-override");
     const modeSelectEl = document.querySelector("#arcus-mode-select");
+    const pharmacyTypeEl = document.querySelector("#arcus-pharmacy-type");
     const minimized = panel.classList.contains("is-minimized");
     const rowFilters = readSelectedFilters(panel);
 
@@ -105,8 +110,16 @@
         rowFilters,
         waitManualOverride: !!waitOverrideEl?.checked,
         automationMode: modeSelectEl?.value || state.settings.automationMode || "auto",
+        pharmacyType: pharmacyTypeEl?.value || state.settings.pharmacyType || "auto",
       },
     });
+  }
+
+  function updateLocationLabel(panel) {
+    const label = panel.querySelector("#arcus-location-detected");
+    if (!label) return;
+    const detected = detectPharmacyType();
+    label.textContent = detected ? `detected: ${detected}` : "not detected";
   }
 
   function restorePanelState(panel) {
@@ -114,12 +127,16 @@
       const saved = data?.[PANEL_STORAGE_KEY];
       const waitOverrideEl = panel.querySelector("#arcus-manual-override");
       const modeSelectEl = panel.querySelector("#arcus-mode-select");
+      const pharmacyTypeEl = panel.querySelector("#arcus-pharmacy-type");
+
+      updateLocationLabel(panel);
 
       if (!saved) {
         applySelectedFilters(panel, state.settings.rowFilters || [state.settings.rowFilter || "all"]);
         state.settings.waitManualOverride = true;
         if (waitOverrideEl) waitOverrideEl.checked = true;
         if (modeSelectEl) modeSelectEl.value = state.settings.automationMode || "auto";
+        if (pharmacyTypeEl) pharmacyTypeEl.value = state.settings.pharmacyType || "auto";
         return;
       }
 
@@ -135,8 +152,10 @@
       // v3.8.0: default must be checked even if an older saved state was unchecked.
       state.settings.waitManualOverride = true;
       if (saved.automationMode) state.settings.automationMode = saved.automationMode;
+      if (saved.pharmacyType) state.settings.pharmacyType = saved.pharmacyType;
       if (waitOverrideEl) waitOverrideEl.checked = state.settings.waitManualOverride;
       if (modeSelectEl) modeSelectEl.value = state.settings.automationMode || "auto";
+      if (pharmacyTypeEl) pharmacyTypeEl.value = state.settings.pharmacyType || "auto";
 
       if (saved.minimized) {
         panel.classList.add("is-minimized");
@@ -159,6 +178,7 @@
     const closeBtn = panel.querySelector("#arcus-btn-close");
     const waitOverride = panel.querySelector("#arcus-manual-override");
     const modeSelect = panel.querySelector("#arcus-mode-select");
+    const pharmacyTypeSelect = panel.querySelector("#arcus-pharmacy-type");
 
     let dragging = false;
     let startX = 0;
@@ -246,6 +266,19 @@
       savePanelState(panel);
     });
 
+    pharmacyTypeSelect?.addEventListener("change", () => {
+      state.settings.pharmacyType = pharmacyTypeSelect.value || "auto";
+      const type = pharmacyTypeSelect.value;
+      const label = type === "outpatient"
+        ? "Outpatient: order O* or E*"
+        : type === "inpatient"
+          ? "Inpatient: order I*"
+          : `Auto-detect: ${detectPharmacyType() || "not detected"} (order ${detectPharmacyType() === "outpatient" ? "O* or E*" : "I*"})`;
+      setStep("Location changed", label);
+      pushLog("info", `Location set to ${type}`, "Settings");
+      savePanelState(panel);
+    });
+
     window.addEventListener("resize", () => {
       const rect = panel.getBoundingClientRect();
       const nextLeft = clamp(rect.left, 8, Math.max(8, window.innerWidth - panel.offsetWidth - 8));
@@ -282,6 +315,18 @@
           <select id="arcus-mode-select" class="select compact-select">
             <option value="auto">Auto: refresh search + status Ordered/Allocated</option>
             <option value="semi">Semi-auto: selected order type</option>
+          </select>
+        </div>
+
+        <div class="field-group compact-field">
+          <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+            <span>Location</span>
+            <span id="arcus-location-detected" style="font-size:10px;color:#607d8b;font-weight:500;text-transform:none;letter-spacing:0;"></span>
+          </div>
+          <select id="arcus-pharmacy-type" class="select compact-select">
+            <option value="auto">Auto-detect from page</option>
+            <option value="inpatient">Inpatient — order no. starts with I</option>
+            <option value="outpatient">Outpatient — order no. starts with O or E</option>
           </select>
         </div>
 
