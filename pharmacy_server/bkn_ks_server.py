@@ -66,6 +66,8 @@ WWW_DIR       = Path(__file__).parent / 'www'
 KS_COLS       = {'faqs', 'items', 'vdos'}
 # All rx collections — GET is public; PUT requires editor/admin auth
 RX_COLS       = {'premix-drugs', 'mixing-protocols', 'medication-db', 'iv-drugs', 'iv-staff'}
+# Requests from this Chrome extension may read/write data without login
+EXTENSION_ORIGIN = 'chrome-extension://eeglifkmgelepjmnnldknacamedmckbj'
 # medication-db is a dict; all others are arrays
 RX_DICT_COLS  = {'medication-db'}
 DATE_RE       = re.compile(r'^\d{4}-\d{2}-\d{2}$')
@@ -218,6 +220,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin',  '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+    def _is_trusted_extension(self):
+        return self.headers.get('Origin', '') == EXTENSION_ORIGIN
 
     def _session(self):
         """Return session dict {username, role} or None."""
@@ -377,8 +382,12 @@ class Handler(BaseHTTPRequestHandler):
 
     # PUT — full day doc OR single section OR rx collection OR user
     def do_PUT(self):
-        if not self._require('admin', 'editor'): return
         rtype, key, extra = self.parse_route()
+        # Allow the trusted Chrome extension to write data routes without login.
+        # User-management routes always require explicit auth.
+        ext_data_write = self._is_trusted_extension() and rtype in ('kpi-day', 'kpi-section', 'ks', 'rx')
+        if not ext_data_write:
+            if not self._require('admin', 'editor'): return
         try:
             body = self._read_json_body()
         except Exception as e:
