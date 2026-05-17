@@ -143,22 +143,25 @@ function _lookupMedicationItem(med) {
 function _medicineImageCandidates(med) {
   const item = _lookupMedicationItem(med);
   const code = _cleanValue(med?.code || "").replace(/\D/g, "");
+  const serverBase = `${_pharmacyServerUrl()}/med-images`;
   const candidates = [];
 
-  // 1) Prefer explicit path from medication_by_code.json when available.
-  if (item) {
-    const imagePath = item.image_path || (item.image_file ? `images/${item.image_file}` : "");
-    if (imagePath) candidates.push(imagePath.replace(/^\/+/, ""));
+  // 1) Explicit image_file from DB — server first, then extension bundle fallback.
+  const imageFile = item?.image_file || "";
+  if (imageFile) {
+    candidates.push(`${serverBase}/${imageFile}`);
+    candidates.push(_runtimeUrl(`${MED_DB_IMAGE_BASE_PATH}images/${imageFile}`));
   }
 
-  // 2) Fallback: try direct filename by item code.
-  // This fixes cases where the image file exists in src/assets/bkn_med_database/images/
-  // but medication_by_code.json still says has_image:false or has an empty image_path.
+  // 2) Guess by item code across all extensions — server first, then bundle fallback.
   if (code) {
-    MED_IMAGE_EXTENSIONS.forEach((ext) => candidates.push(`images/${code}.${ext}`));
+    MED_IMAGE_EXTENSIONS.forEach((ext) => candidates.push(`${serverBase}/${code}.${ext}`));
+    MED_IMAGE_EXTENSIONS.forEach((ext) =>
+      candidates.push(_runtimeUrl(`${MED_DB_IMAGE_BASE_PATH}images/${code}.${ext}`))
+    );
   }
 
-  return [...new Set(candidates)].map((path) => _runtimeUrl(MED_DB_IMAGE_BASE_PATH + path));
+  return [...new Set(candidates)];
 }
 
 function _renderNoImageSlot(icon) {

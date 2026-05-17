@@ -62,6 +62,7 @@ KS_DIR        = DATA_DIR / 'ks'
 RX_DIR        = DATA_DIR / 'rx'
 AUTH_DIR      = DATA_DIR / 'auth'
 AUTH_FILE     = AUTH_DIR / 'users.json'
+MED_IMAGES_DIR = DATA_DIR / 'med-images'
 WWW_DIR       = Path(__file__).parent / 'www'
 KS_COLS       = {'faqs', 'items', 'vdos'}
 # All rx collections — GET is public; PUT requires editor/admin auth
@@ -330,6 +331,13 @@ class Handler(BaseHTTPRequestHandler):
         if clean.startswith('/static/'):
             self._serve_file(WWW_DIR / clean.lstrip('/'), None); return
 
+        # ── Med images ─────────────────────────────────────────
+        if clean.startswith('/med-images/'):
+            fname = clean[12:]          # strip leading '/med-images/'
+            if not fname or '/' in fname or fname.startswith('.'):
+                self.send_json(403, {'error': 'Forbidden'}); return
+            self._serve_file(MED_IMAGES_DIR / fname, None); return
+
         # ── API ────────────────────────────────────────────────
         if self.path == '/ping':
             self.send_json(200, {
@@ -561,6 +569,7 @@ def main():
     KS_DIR.mkdir(parents=True, exist_ok=True)
     RX_DIR.mkdir(parents=True, exist_ok=True)
     AUTH_DIR.mkdir(parents=True, exist_ok=True)
+    MED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
     WWW_DIR.mkdir(parents=True, exist_ok=True)
     for col in KS_COLS:
         p = ks_file(col)
@@ -587,6 +596,7 @@ def main():
     print(f'  KPI data    :  {KPI_DIR.resolve()}')
     print(f'  KS data     :  {KS_DIR.resolve()}')
     print(f'  RX data     :  {RX_DIR.resolve()}')
+    print(f'  Med images  :  {MED_IMAGES_DIR.resolve()}  ({len(list(MED_IMAGES_DIR.glob("*")))} files)')
     print()
     print('  ── How to connect ──────────────────────────────')
     print('  1. Copy the Server URL above.')
