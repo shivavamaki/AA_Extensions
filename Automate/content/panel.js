@@ -132,11 +132,11 @@
       updateLocationLabel(panel);
 
       if (!saved) {
-        applySelectedFilters(panel, state.settings.rowFilters || [state.settings.rowFilter || "all"]);
+        if (pharmacyTypeEl) pharmacyTypeEl.value = state.settings.pharmacyType || "auto";
+        renderOrderTypeSection(panel, state.settings.rowFilters || [state.settings.rowFilter || "all"]);
         state.settings.waitManualOverride = true;
         if (waitOverrideEl) waitOverrideEl.checked = true;
         if (modeSelectEl) modeSelectEl.value = state.settings.automationMode || "auto";
-        if (pharmacyTypeEl) pharmacyTypeEl.value = state.settings.pharmacyType || "auto";
         return;
       }
 
@@ -146,9 +146,6 @@
       if (saved.bottom) panel.style.bottom = saved.bottom;
       if (saved.width) panel.style.width = saved.width;
 
-      const restoredFilters = normalizeSelectedFilters(saved.rowFilters || saved.rowFilter || "all");
-      applySelectedFilters(panel, restoredFilters);
-
       // v3.8.0: default must be checked even if an older saved state was unchecked.
       state.settings.waitManualOverride = true;
       if (saved.automationMode) state.settings.automationMode = saved.automationMode;
@@ -156,6 +153,8 @@
       if (waitOverrideEl) waitOverrideEl.checked = state.settings.waitManualOverride;
       if (modeSelectEl) modeSelectEl.value = state.settings.automationMode || "auto";
       if (pharmacyTypeEl) pharmacyTypeEl.value = state.settings.pharmacyType || "auto";
+
+      renderOrderTypeSection(panel, normalizeSelectedFilters(saved.rowFilters || saved.rowFilter || "all"));
 
       if (saved.minimized) {
         panel.classList.add("is-minimized");
@@ -168,6 +167,64 @@
   function removePanel() {
     const panel = document.querySelector("#arcus-auto-panel");
     if (panel) panel.remove();
+  }
+
+  function attachOrderTypeListeners(panel) {
+    panel.querySelectorAll(".arcus-order-type-check").forEach((box) => {
+      box.addEventListener("change", () => {
+        const boxes = Array.from(panel.querySelectorAll(".arcus-order-type-check"));
+        let selected;
+        if (box.value === "all" && box.checked) {
+          selected = ["all"];
+        } else {
+          selected = boxes
+            .filter((item) => item.value !== "all" && item.checked)
+            .map((item) => item.value);
+        }
+        if (!selected.length) selected = ["all"];
+        applySelectedFilters(panel, selected);
+        pushLog("info", `Order type changed to ${getSelectedRowFilterLabel()}`, "Settings");
+        setStep("Ready", `Order type: ${getSelectedRowFilterLabel()}`);
+        savePanelState(panel);
+      });
+    });
+  }
+
+  function renderOrderTypeSection(panel, filtersToRestore) {
+    const container = panel.querySelector("#arcus-order-type-container");
+    if (!container) return;
+
+    const isOpd = getEffectivePharmacyType() === "outpatient";
+
+    if (isOpd) {
+      container.innerHTML = `
+        <label><input class="arcus-order-type-check" type="checkbox" value="all" /> ALL</label>
+        <label><input class="arcus-order-type-check" type="checkbox" value="stat" /> STAT</label>
+        <label><input class="arcus-order-type-check" type="checkbox" value="routine" /> ROUTINE</label>
+      `;
+    } else {
+      container.innerHTML = `
+        <label><input class="arcus-order-type-check" type="checkbox" value="all" /> ALL</label>
+        <label><input class="arcus-order-type-check" type="checkbox" value="daily" /> DAILY</label>
+        <label><input class="arcus-order-type-check" type="checkbox" value="continuous" /> CONT.</label>
+        <label><input class="arcus-order-type-check" type="checkbox" value="discharge" /> D/C</label>
+      `;
+    }
+
+    const boxes = Array.from(container.querySelectorAll(".arcus-order-type-check"));
+    const validValues = new Set(boxes.map((b) => b.value));
+
+    let effective = ["all"];
+    if (filtersToRestore && filtersToRestore.length) {
+      const compatible = filtersToRestore.filter((f) => validValues.has(f));
+      if (compatible.length && !compatible.includes("all")) {
+        effective = compatible;
+      }
+    }
+    applySelectedFilters(panel, effective);
+    boxes.forEach((box) => { box.disabled = state.isRunning; });
+    setStep("Ready", `Order type: ${getSelectedRowFilterLabel()}`);
+    attachOrderTypeListeners(panel);
   }
 
   function attachPanelInteractions(panel) {
@@ -228,27 +285,7 @@
       removePanel();
     });
 
-    panel.querySelectorAll(".arcus-order-type-check").forEach((box) => {
-      box.addEventListener("change", () => {
-        const boxes = Array.from(panel.querySelectorAll(".arcus-order-type-check"));
-        let selected;
-
-        if (box.value === "all" && box.checked) {
-          selected = ["all"];
-        } else {
-          selected = boxes
-            .filter((item) => item.value !== "all" && item.checked)
-            .map((item) => item.value);
-        }
-
-        if (!selected.length) selected = ["all"];
-
-        applySelectedFilters(panel, selected);
-        pushLog("info", `Order type changed to ${getSelectedRowFilterLabel()}`, "Settings");
-        setStep("Ready", `Order type: ${getSelectedRowFilterLabel()}`);
-        savePanelState(panel);
-      });
-    });
+    attachOrderTypeListeners(panel);
 
     waitOverride?.addEventListener("change", () => {
       state.settings.waitManualOverride = waitOverride.checked;
@@ -268,6 +305,8 @@
 
     pharmacyTypeSelect?.addEventListener("change", () => {
       state.settings.pharmacyType = pharmacyTypeSelect.value || "auto";
+      updateLocationLabel(panel);
+      renderOrderTypeSection(panel);
       const type = pharmacyTypeSelect.value;
       const label = type === "outpatient"
         ? "Outpatient: order O* or E*"
@@ -332,7 +371,7 @@
 
         <div class="field-group compact-field">
           <div class="section-title">Order type</div>
-          <div class="arcus-check-grid">
+          <div id="arcus-order-type-container" class="arcus-check-grid">
             <label><input class="arcus-order-type-check" type="checkbox" value="all" checked /> ALL</label>
             <label><input class="arcus-order-type-check" type="checkbox" value="daily" /> DAILY</label>
             <label><input class="arcus-order-type-check" type="checkbox" value="continuous" /> CONT.</label>

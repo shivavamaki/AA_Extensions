@@ -117,6 +117,12 @@
     discharge: "DISCHARGE MEDICATION",
   };
 
+  const OPD_ORDER_FILTERS = {
+    all: "ALL ROW",
+    stat: "STAT",
+    routine: "ROUTINE",
+  };
+
   const state = {
     isRunning: false,
     stopRequested: false,
@@ -264,13 +270,17 @@
 
   function getSelectedRowFilterLabel() {
     const selected = getSelectedRowFilters();
-    if (selected.includes("all")) return ORDER_FILTERS.all;
-    return selected.map((key) => ORDER_FILTERS[key] || key).join(" + ");
+    const filters = getEffectivePharmacyType() === "outpatient" ? OPD_ORDER_FILTERS : ORDER_FILTERS;
+    if (selected.includes("all")) return filters.all;
+    return selected.map((key) => filters[key] || key).join(" + ");
   }
 
-  function matchesRowFilter(rowText, filterKey) {
+  function matchesRowFilter(rowText, filterKey, rowEl = null) {
     const selected = Array.isArray(filterKey) ? filterKey : getSelectedRowFilters();
     if (!selected.length || selected.includes("all")) return true;
+    if (getEffectivePharmacyType() === "outpatient") {
+      return selected.includes(getOpdRowTypeFromEl(rowEl || null));
+    }
     return selected.includes(getRowTypeFromText(rowText));
   }
 
@@ -283,7 +293,8 @@
     const txt = textOf(el);
     if (!txt) return false;
 
-    const type = getRowTypeFromText(txt);
+    const isOpd = getEffectivePharmacyType() === "outpatient";
+    const type = isOpd ? getOpdRowTypeFromEl(el) : getRowTypeFromText(txt);
     if (type === "unknown") return false;
 
     const style = getComputedStyle(el);
@@ -294,6 +305,7 @@
 
     const childOrderRows = Array.from(el.children || []).filter((child) => {
       if (!(child instanceof HTMLElement)) return false;
+      if (isOpd) return getOpdRowTypeFromEl(child) !== "unknown" && textOf(child).length < txt.length * 0.85;
       const childTxt = textOf(child);
       return childTxt && getRowTypeFromText(childTxt) !== "unknown" && childTxt.length < txt.length * 0.85;
     });
@@ -345,7 +357,7 @@
     }
 
     rows = Array.from(byKey.values());
-    rows = rows.filter((row) => matchesRowFilter(textOf(row), getSelectedRowFilters()));
+    rows = rows.filter((row) => matchesRowFilter(textOf(row), getSelectedRowFilters(), row));
 
     rows.sort((a, b) => {
       const ar = a.getBoundingClientRect();
@@ -362,8 +374,8 @@
       return {
         index,
         text,
-        key: `${getRowTypeFromText(text)}::${text}`,
-        rowType: getRowTypeFromText(text),
+        key: `${getEffectivePharmacyType() === "outpatient" ? getOpdRowTypeFromEl(row) : getRowTypeFromText(text)}::${text}`,
+        rowType: getEffectivePharmacyType() === "outpatient" ? getOpdRowTypeFromEl(row) : getRowTypeFromText(text),
       };
     });
   }
@@ -750,6 +762,19 @@
     return Math.min(Math.max(value, min), max);
   }
 
+  function getOpdRowTypeFromEl(el) {
+    if (!el) return "unknown";
+    try {
+      const spans = Array.from(el.querySelectorAll("span.ng-binding"));
+      for (const span of spans) {
+        const t = ((span.innerText || span.textContent) || "").trim();
+        if (t === "Stat") return "stat";
+        if (t === "Routine") return "routine";
+      }
+    } catch (_) {}
+    return "unknown";
+  }
+
   function detectPharmacyType() {
     const selectors = [
       "body > div.full-height.ng-scope.layout-row > div > md-toolbar > div > div",
@@ -761,7 +786,7 @@
         const el = document.querySelector(sel);
         if (!el) continue;
         const txt = ((el.innerText || el.textContent) || "").toUpperCase();
-        if (txt.includes("OUTPATIENT PHARMACY") || txt.includes("OUTPATIENT")) return "outpatient";
+        if (txt.includes("OUTPATIENT PHARMACY") || txt.includes("OUTPATIENT") || txt.includes("PHARMACY FLOOR 2")) return "outpatient";
         if (txt.includes("INPATIENT PHARMACY") || txt.includes("INPATIENT")) return "inpatient";
       } catch (_) {}
     }
@@ -831,8 +856,10 @@
     waitForDetailPaneText,
     clamp,
     PHARMACY_TYPE_KEY,
+    OPD_ORDER_FILTERS,
     detectPharmacyType,
     getEffectivePharmacyType,
     isValidOrderNo,
+    getOpdRowTypeFromEl,
   };
 })();
