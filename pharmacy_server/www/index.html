@@ -123,6 +123,11 @@ tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
 
 /* ── Users page ── */
 .role-select{padding:4px 6px;border:1px solid #d0d7e3;border-radius:4px;font-size:11px}
+
+/* ── Change-password modal ── */
+#modal-chpw .modal{width:380px}
+.pw-strength{font-size:10px;margin-top:3px;min-height:14px}
+.pw-strength.weak{color:#c62828}.pw-strength.ok{color:#e65100}.pw-strength.strong{color:#2e7d32}
 </style>
 </head>
 <body>
@@ -213,12 +218,12 @@ tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
       <!-- Users -->
       <div class="page" id="page-users">
         <div class="page-header">
-          <div><div class="page-title">User Management</div><div class="page-sub">Admin only</div></div>
+          <div><div class="page-title">User Management</div><div class="page-sub">Admin only — KPI page is open to all users</div></div>
           <button class="btn btn-success" id="btn-add-user">+ Add User</button>
         </div>
         <div class="tbl-wrap">
           <table>
-            <thead><tr><th>Username</th><th>Role</th><th></th></tr></thead>
+            <thead><tr><th>Username</th><th>Role</th><th style="text-align:right">Actions</th></tr></thead>
             <tbody id="users-tbody"></tbody>
           </table>
         </div>
@@ -302,26 +307,67 @@ tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
   </div>
 </div>
 
-<!-- User modal -->
+<!-- Add / Edit User modal -->
 <div class="modal-overlay" id="modal-user">
-  <div class="modal" style="width:380px">
+  <div class="modal" style="width:400px">
     <div class="modal-head"><h2 id="user-modal-title">Add User</h2><button class="modal-close" data-close="modal-user">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-field span2"><label>Username</label><input id="u-name" autocomplete="off"/></div>
-        <div class="form-field span2"><label>Password</label><input id="u-pw" type="password" autocomplete="new-password" placeholder="Leave blank to keep unchanged"/></div>
-        <div class="form-field span2"><label>Role</label>
+        <div class="form-field span2">
+          <label>Username</label>
+          <input id="u-name" autocomplete="off" placeholder="e.g. nurse01"/>
+        </div>
+        <div class="form-field span2" id="u-pw-wrap">
+          <label>Password</label>
+          <input id="u-pw" type="password" autocomplete="new-password" placeholder="Required for new user"/>
+          <div class="pw-strength" id="u-pw-strength"></div>
+        </div>
+        <div class="form-field span2">
+          <label>Role</label>
           <select id="u-role">
             <option value="user">user — view only</option>
-            <option value="editor">editor — full CRUD</option>
             <option value="admin">admin — full control</option>
           </select>
+        </div>
+        <div class="form-field span2" id="u-edit-hint" style="display:none">
+          <p style="font-size:11px;color:#888;background:#f7f9fc;padding:8px 10px;border-radius:5px;border:1px solid #e3e8ef">
+            To change this user's password use the <strong>🔑 Password</strong> button in the table.
+          </p>
         </div>
       </div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" data-close="modal-user">Cancel</button>
       <button class="btn btn-primary" id="u-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change Password modal -->
+<div class="modal-overlay" id="modal-chpw">
+  <div class="modal" style="width:380px">
+    <div class="modal-head"><h2>Change Password</h2><button class="modal-close" data-close="modal-chpw">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field span2">
+          <label>Username</label>
+          <input id="chpw-user" readonly style="background:#f7f9fc;color:#888"/>
+        </div>
+        <div class="form-field span2">
+          <label>New Password</label>
+          <input id="chpw-new" type="password" autocomplete="new-password" placeholder="Enter new password"/>
+          <div class="pw-strength" id="chpw-strength"></div>
+        </div>
+        <div class="form-field span2">
+          <label>Confirm Password</label>
+          <input id="chpw-confirm" type="password" autocomplete="new-password" placeholder="Re-enter new password"/>
+          <div class="pw-strength" id="chpw-match"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close="modal-chpw">Cancel</button>
+      <button class="btn btn-primary" id="chpw-save">Change Password</button>
     </div>
   </div>
 </div>
@@ -807,12 +853,13 @@ function renderUsers(list) {
   tbody.innerHTML = list.length ? '' : '<tr class="empty-row"><td colspan="3">No users</td></tr>';
   list.forEach(u => {
     const tr = document.createElement('tr');
-    const badgeCls = `badge-${u.role}`;
+    const badgeCls = u.role === 'admin' ? 'badge-admin' : 'badge-user';
     tr.innerHTML = `
       <td>${esc(u.username)}</td>
       <td><span class="badge ${badgeCls}">${u.role}</span></td>
       <td class="td-actions">
-        <button class="btn btn-ghost btn-sm" onclick="editUser('${esc(u.username)}','${u.role}')">Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="editUser('${esc(u.username)}','${u.role}')">Edit Role</button>
+        <button class="btn btn-ghost btn-sm" onclick="openChangePw('${esc(u.username)}')">🔑 Password</button>
         <button class="btn btn-danger btn-sm" onclick="deleteUser('${esc(u.username)}')">Del</button>
       </td>`;
     tbody.appendChild(tr);
@@ -825,38 +872,85 @@ document.getElementById('btn-add-user').addEventListener('click', () => {
   document.getElementById('u-name').value = '';
   document.getElementById('u-name').readOnly = false;
   document.getElementById('u-pw').value = '';
+  document.getElementById('u-pw-strength').textContent = '';
   document.getElementById('u-role').value = 'user';
+  document.getElementById('u-pw-wrap').style.display = '';
+  document.getElementById('u-edit-hint').style.display = 'none';
   openModal('modal-user');
 });
 
 function editUser(username, role) {
   userEditName = username;
-  document.getElementById('user-modal-title').textContent = 'Edit User';
+  document.getElementById('user-modal-title').textContent = 'Edit Role — ' + username;
   document.getElementById('u-name').value = username;
   document.getElementById('u-name').readOnly = true;
-  document.getElementById('u-pw').value = '';
-  document.getElementById('u-role').value = role;
+  // Hide password field when editing; use Change Password modal instead
+  document.getElementById('u-pw-wrap').style.display = 'none';
+  document.getElementById('u-edit-hint').style.display = '';
+  document.getElementById('u-role').value = role === 'admin' ? 'admin' : 'user';
   openModal('modal-user');
 }
 
+document.getElementById('u-pw').addEventListener('input', () => {
+  pwStrength(document.getElementById('u-pw').value, 'u-pw-strength');
+});
+
 document.getElementById('u-save').addEventListener('click', async () => {
   const name = document.getElementById('u-name').value.trim();
-  const pw   = document.getElementById('u-pw').value;
   const role = document.getElementById('u-role').value;
   if (!name) { toast('Username required', 'err'); return; }
   try {
     if (userEditName) {
-      const body = { role };
-      if (pw) body.password = pw;
-      await api('PUT', `/api/users/${encodeURIComponent(name)}`, body);
-      toast(`User "${name}" updated`);
+      await api('PUT', `/api/users/${encodeURIComponent(name)}`, { role });
+      toast(`Role updated for "${name}"`);
     } else {
-      if (!pw) { toast('Password required for new user', 'err'); return; }
+      const pw = document.getElementById('u-pw').value;
+      if (!pw) { toast('Password is required', 'err'); return; }
+      if (pw.length < 4) { toast('Password must be at least 4 characters', 'err'); return; }
       await api('POST', '/api/users', { username: name, password: pw, role });
       toast(`User "${name}" created`);
     }
     closeModal('modal-user');
     loadUsers();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+});
+
+// ── Change Password ───────────────────────────────────────────
+function openChangePw(username) {
+  document.getElementById('chpw-user').value    = username;
+  document.getElementById('chpw-new').value     = '';
+  document.getElementById('chpw-confirm').value = '';
+  document.getElementById('chpw-strength').textContent = '';
+  document.getElementById('chpw-match').textContent    = '';
+  openModal('modal-chpw');
+}
+
+document.getElementById('chpw-new').addEventListener('input', () => {
+  pwStrength(document.getElementById('chpw-new').value, 'chpw-strength');
+  checkPwMatch();
+});
+document.getElementById('chpw-confirm').addEventListener('input', checkPwMatch);
+
+function checkPwMatch() {
+  const a = document.getElementById('chpw-new').value;
+  const b = document.getElementById('chpw-confirm').value;
+  const el = document.getElementById('chpw-match');
+  if (!b) { el.textContent = ''; return; }
+  if (a === b) { el.className = 'pw-strength strong'; el.textContent = 'Passwords match ✓'; }
+  else         { el.className = 'pw-strength weak';   el.textContent = 'Passwords do not match'; }
+}
+
+document.getElementById('chpw-save').addEventListener('click', async () => {
+  const username = document.getElementById('chpw-user').value;
+  const newPw    = document.getElementById('chpw-new').value;
+  const confirm  = document.getElementById('chpw-confirm').value;
+  if (!newPw)          { toast('New password is required', 'err'); return; }
+  if (newPw.length < 4){ toast('Password must be at least 4 characters', 'err'); return; }
+  if (newPw !== confirm){ toast('Passwords do not match', 'err'); return; }
+  try {
+    await api('PUT', `/api/users/${encodeURIComponent(username)}`, { password: newPw });
+    toast(`Password changed for "${username}"`);
+    closeModal('modal-chpw');
   } catch (e) { toast('Error: ' + e.message, 'err'); }
 });
 
@@ -872,6 +966,16 @@ async function deleteUser(username) {
 // ── Utility ───────────────────────────────────────────────────
 function esc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function pwStrength(pw, targetId) {
+  const el = document.getElementById(targetId);
+  if (!pw) { el.textContent = ''; return; }
+  const score = (pw.length >= 8 ? 1 : 0) + (/[A-Z]/.test(pw) ? 1 : 0) +
+                (/[0-9]/.test(pw) ? 1 : 0) + (/[^A-Za-z0-9]/.test(pw) ? 1 : 0);
+  if (score <= 1) { el.className = 'pw-strength weak';   el.textContent = 'Weak'; }
+  else if (score === 2) { el.className = 'pw-strength ok'; el.textContent = 'Fair'; }
+  else            { el.className = 'pw-strength strong'; el.textContent = 'Strong'; }
 }
 
 // ── Boot ──────────────────────────────────────────────────────
