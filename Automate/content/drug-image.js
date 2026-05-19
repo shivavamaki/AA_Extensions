@@ -23,6 +23,7 @@
     running: false,
     stopRequested: false,
     dismissed: false,
+    includeInactive: false,
     success: 0,
     fail: 0,
     logItems: [],
@@ -148,6 +149,7 @@
           top: panel.style.top || "",
           left: panel.style.left || "",
           minimized: panel.classList.contains("is-minimized"),
+          includeInactive: state.includeInactive,
         },
       });
     } catch (_) {}
@@ -164,6 +166,11 @@
           panel.classList.add("is-minimized");
           const btn = panel.querySelector("#arcus-di-minimize");
           if (btn) btn.textContent = "+";
+        }
+        if (s.includeInactive) {
+          state.includeInactive = true;
+          const cb = panel.querySelector("#arcus-di-incl-inactive");
+          if (cb) cb.checked = true;
         }
       });
     } catch (_) {}
@@ -239,6 +246,8 @@
       .arcus-di-log-success { color:#2e7d32; }
       .arcus-di-log-fail    { color:#c62828; }
       .arcus-di-log-info    { color:#444; }
+      .arcus-di-opt    { display:flex; align-items:center; gap:5px; font-size:11px; cursor:pointer; margin-bottom:8px; }
+      .arcus-di-opt input  { cursor:pointer; accent-color:#0288d1; }
     `;
     document.head.appendChild(style);
   }
@@ -268,6 +277,10 @@
         <div class="arcus-di-row">
           <button id="arcus-di-sync" class="arcus-di-btn arcus-di-sync">🔄 Sync Has Image</button>
         </div>
+        <label class="arcus-di-opt">
+          <input type="checkbox" id="arcus-di-incl-inactive">
+          Include inactive medicines
+        </label>
         <div class="arcus-di-track"><div id="arcus-di-bar" class="arcus-di-bar"></div></div>
         <div id="arcus-di-plabel" class="arcus-di-plabel">0 / 0</div>
         <div id="arcus-di-status" class="arcus-di-status">Ready. Navigate to Item Master then click Start.</div>
@@ -322,6 +335,10 @@
 
     panel.querySelector("#arcus-di-run")?.addEventListener("click",  startRun);
     panel.querySelector("#arcus-di-sync")?.addEventListener("click", syncHasImage);
+    panel.querySelector("#arcus-di-incl-inactive")?.addEventListener("change", (e) => {
+      state.includeInactive = e.target.checked;
+      savePanelState(panel);
+    });
     panel.querySelector("#arcus-di-stop")?.addEventListener("click", () => {
       state.stopRequested = true;
       updateButtons();
@@ -399,12 +416,31 @@
 
   // ── Automation steps ──────────────────────────────────────────────────────
 
+  async function enableIncludeInactive() {
+    if (!state.includeInactive) return;
+    const sw = await waitFor(
+      () => document.querySelector('md-switch[ng-model="vm.includeInactive"]'),
+      5000
+    );
+    if (!sw || sw.getAttribute("aria-checked") === "true") return;
+    if (window.angular) {
+      window.angular.element(sw).triggerHandler("click");
+    } else {
+      sw.click();
+    }
+    await sleep(200);
+  }
+
   async function ensureItemMasterPage() {
-    if (isItemMasterPage()) return;
+    if (isItemMasterPage()) {
+      await enableIncludeInactive();
+      return;
+    }
     location.hash = ITEM_MASTER_HASH;
     const ok = await waitFor(() => isItemMasterPage(), 15000, 200);
     if (!ok) throw new Error("Cannot navigate to Item Master page");
     await sleep(200);
+    await enableIncludeInactive();
   }
 
   async function searchCode(code) {
