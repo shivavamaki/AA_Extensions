@@ -317,6 +317,10 @@ class Handler(BaseHTTPRequestHandler):
         if parts == ['api', 'med-images-list']:
             return 'med-images-list', None, None
 
+        # /api/med-images/:filename  — image upload
+        if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'med-images':
+            return 'med-image-upload', urllib.parse.unquote(parts[2]), None
+
         # /api/auth/ACTION
         if len(parts) == 3 and parts[:2] == ['api', 'auth'] and parts[2] in ('login', 'logout', 'me'):
             return 'auth', parts[2], None
@@ -408,9 +412,22 @@ class Handler(BaseHTTPRequestHandler):
         rtype, key, extra = self.parse_route()
         # Allow the trusted Chrome extension to write data routes without login.
         # User-management routes always require explicit auth.
-        ext_data_write = self._is_trusted_extension() and rtype in ('kpi-day', 'kpi-section', 'ks', 'rx')
+        ext_data_write = self._is_trusted_extension() and rtype in ('kpi-day', 'kpi-section', 'ks', 'rx', 'med-image-upload')
         if not ext_data_write:
             if not self._require('admin', 'editor'): return
+
+        if rtype == 'med-image-upload':
+            safe_name = Path(key).name
+            if not safe_name:
+                self.send_json(400, {'error': 'Invalid filename'}); return
+            length = int(self.headers.get('Content-Length', 0))
+            data   = self.rfile.read(length)
+            if not data:
+                self.send_json(400, {'error': 'Empty body'}); return
+            (MED_IMAGES_DIR / safe_name).write_bytes(data)
+            self.send_json(200, {'ok': True, 'file': safe_name})
+            return
+
         try:
             body = self._read_json_body()
         except Exception as e:

@@ -376,10 +376,16 @@
   }
 
   async function fetchPendingCodes() {
-    const resp = await serverGet("/api/medication-db");
-    if (!resp.ok) throw new Error(`Server responded ${resp.status}`);
-    return Object.entries(resp.data)
-      .filter(([, v]) => v.itemimage_name === "มีรูปภาพ" && v.has_image === false)
+    const [dbResp, fileResp] = await Promise.all([
+      serverGet("/api/medication-db"),
+      serverGet("/api/med-images-list"),
+    ]);
+    if (!dbResp.ok) throw new Error(`Server responded ${dbResp.status}`);
+    const fileStems = fileResp.ok ? new Set(fileResp.data) : new Set();
+    return Object.entries(dbResp.data)
+      .filter(([code, v]) =>
+        v.itemimage_name === "มีรูปภาพ" && v.has_image === false && !fileStems.has(code)
+      )
       .map(([code]) => code);
   }
 
@@ -397,6 +403,8 @@
   }
 
   async function autoSyncDb() {
+    // Only marks has_image=true for files found on the server — never reverts
+    // a true back to false, because downloaded files may not yet be in med-images.
     try {
       const [fileResp, dbResp] = await Promise.all([
         serverGet("/api/med-images-list"),
@@ -407,8 +415,10 @@
       const db        = dbResp.data;
       let changed = 0;
       for (const [code, entry] of Object.entries(db)) {
-        const hasFile = fileStems.has(code);
-        if (entry.has_image !== hasFile) { entry.has_image = hasFile; changed++; }
+        if (!entry.has_image && fileStems.has(code)) {
+          entry.has_image = true;
+          changed++;
+        }
       }
       if (changed) await putMedicationDb(db);
     } catch (_) {}
@@ -518,12 +528,6 @@
     const drugCode = parseDrugCode() || fallbackCode;
     const filename = `${drugCode}.jpg`;
 
-    await new Promise((resolve) => {
-      try {
-        chrome.runtime.sendMessage({ type: "setNextDownloadName", filename }, () => resolve());
-      } catch (_) { resolve(); }
-    });
-
     const downloadBtn = await waitFor(() => {
       const el = document.querySelector("#downloadFileitemImage");
       return el && isVisible(el) ? el : null;
@@ -531,8 +535,30 @@
 
     if (!downloadBtn) return { ok: false, code: drugCode };
 
-    // Single native click only — clickLikeUser fires two clicks (synthetic + el.click())
-    // which would trigger two downloads.
+    // Prefer uploading directly to the server so the file lands in med-images/.
+    const imageUrl = downloadBtn.href;
+    if (imageUrl && !imageUrl.startsWith("javascript") && imageUrl !== location.href) {
+      const resp = await new Promise((resolve) => {
+        try {
+          chrome.runtime.sendMessage(
+            { type: "uploadMedImage", imageUrl, filename },
+            (r) => resolve(r || { ok: false })
+          );
+        } catch (_) { resolve({ ok: false }); }
+      });
+      if (resp.ok) {
+        pushLog("success", `Saved to server: ${filename}`);
+        return { ok: true, code: drugCode };
+      }
+      pushLog("info", `Server upload failed (${resp.error || resp.status}), falling back to download`);
+    }
+
+    // Fallback: Chrome download with renamed file.
+    await new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage({ type: "setNextDownloadName", filename }, () => resolve());
+      } catch (_) { resolve(); }
+    });
     downloadBtn.click();
     await sleep(400);
     pushLog("success", `Downloaded: ${filename}`);
@@ -675,9 +701,13 @@
       const putResp = await putMedicationDb(db);
       if (!putResp.ok) throw new Error(`Save error ${putResp.status || putResp.error}`);
 
+      const pending = Object.values(db).filter(
+        (v) => v.itemimage_name === "มีรูปภาพ" && !v.has_image
+      ).length;
+
       setProgress(total, total);
-      setStatus(`Done. ${updated} record(s) updated out of ${total}.`);
-      pushLog("success", `Sync complete — ${updated} updated`);
+      setStatus(`Done. ${updated} updated.\nStill need image: ${pending} code(s).`);
+      pushLog("success", `Sync complete — ${updated} updated, ${pending} still pending`);
 
     } catch (err) {
       setStatus(`Sync failed: ${err.message}`);

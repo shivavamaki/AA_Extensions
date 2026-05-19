@@ -23,6 +23,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "uploadMedImage") {
+    // Fetch image from Arcus (with session cookies) and PUT raw bytes to local server.
+    fetch(message.imageUrl, { credentials: "include" })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Image fetch ${r.status}`);
+        return r.arrayBuffer();
+      })
+      .then((buf) =>
+        fetch(
+          `http://localhost:8765/api/med-images/${encodeURIComponent(message.filename)}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/octet-stream" },
+            body: buf,
+          }
+        )
+      )
+      .then((r) => sendResponse({ ok: r.ok, status: r.status }))
+      .catch((err) => sendResponse({ ok: false, error: err.message }));
+    return true;
+  }
+
   if (message.type === "putMedicationDb") {
     fetch("http://localhost:8765/api/medication-db", {
       method: "PUT",
