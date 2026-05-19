@@ -335,18 +335,20 @@
 
   // ── Server helpers ────────────────────────────────────────────────────────
 
-  async function fetchPendingCodes() {
-    const resp = await fetch(`${SERVER_URL}/api/medication-db`);
-    if (!resp.ok) throw new Error(`Server responded ${resp.status}`);
-    const db = await resp.json();
-    return Object.entries(db)
-      .filter(([, v]) => v.itemimage_name === "มีรูปภาพ" && v.has_image === false)
-      .map(([code]) => code);
+  // Route all GET requests through the background service worker so they arrive
+  // as chrome-extension:// origin — no CORS preflight needed for simple GETs.
+  function serverGet(path) {
+    return new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage(
+          { type: "serverGet", url: `${SERVER_URL}${path}` },
+          (resp) => resolve(resp || { ok: false })
+        );
+      } catch (_) { resolve({ ok: false }); }
+    });
   }
 
   function putMedicationDb(db) {
-    // PUT must go through the background service worker so the request carries
-    // Origin: chrome-extension://... which the server trusts without auth.
     return new Promise((resolve) => {
       try {
         chrome.runtime.sendMessage({ type: "putMedicationDb", db }, (resp) => {
@@ -356,17 +358,43 @@
     });
   }
 
+  async function fetchPendingCodes() {
+    const resp = await serverGet("/api/medication-db");
+    if (!resp.ok) throw new Error(`Server responded ${resp.status}`);
+    return Object.entries(resp.data)
+      .filter(([, v]) => v.itemimage_name === "มีรูปภาพ" && v.has_image === false)
+      .map(([code]) => code);
+  }
+
   async function markImageDone(code) {
     try {
-      const resp = await fetch(`${SERVER_URL}/api/medication-db`);
+      const resp = await serverGet("/api/medication-db");
       if (!resp.ok) return;
-      const db = await resp.json();
+      const db = resp.data;
       if (!db[code]) return;
       db[code].has_image = true;
       await putMedicationDb(db);
     } catch (err) {
       console.warn("[DrugImage] markImageDone failed:", err);
     }
+  }
+
+  async function autoSyncDb() {
+    try {
+      const [fileResp, dbResp] = await Promise.all([
+        serverGet("/api/med-images-list"),
+        serverGet("/api/medication-db"),
+      ]);
+      if (!fileResp.ok || !dbResp.ok) return;
+      const fileStems = new Set(fileResp.data);
+      const db        = dbResp.data;
+      let changed = 0;
+      for (const [code, entry] of Object.entries(db)) {
+        const hasFile = fileStems.has(code);
+        if (entry.has_image !== hasFile) { entry.has_image = hasFile; changed++; }
+      }
+      if (changed) await putMedicationDb(db);
+    } catch (_) {}
   }
 
   // ── Automation steps ──────────────────────────────────────────────────────
@@ -376,7 +404,7 @@
     location.hash = ITEM_MASTER_HASH;
     const ok = await waitFor(() => isItemMasterPage(), 15000, 200);
     if (!ok) throw new Error("Cannot navigate to Item Master page");
-    await sleep(500);
+    await sleep(200);
   }
 
   async function searchCode(code) {
@@ -388,7 +416,7 @@
 
     await clickLikeUser(codeInput);
     setNativeValue(codeInput, code);
-    await sleep(200);
+    await sleep(100);
 
     const searchBtn = await waitFor(() => {
       const el = document.querySelector("#iSearchBtn");
@@ -411,7 +439,7 @@
     await clickLikeUser(modifyBtn);
     const ok = await waitFor(() => isItemDetailPage(), 12000, 200);
     if (!ok) throw new Error("Did not navigate to Item Detail page");
-    await sleep(600);
+    await sleep(300);
     return true;
   }
 
@@ -434,7 +462,7 @@
     if (!sw) throw new Error('md-switch[ng-model="vm.showItemImage"] not found');
 
     sw.scrollIntoView({ behavior: "smooth", block: "center" });
-    await sleep(300);
+    await sleep(150);
 
     if (sw.getAttribute("aria-checked") === "true") return;
 
@@ -445,7 +473,7 @@
     } else {
       sw.click();
     }
-    await sleep(300);
+    await sleep(200);
   }
 
   async function downloadImage(fallbackCode) {
@@ -470,7 +498,7 @@
     // Single native click only — clickLikeUser fires two clicks (synthetic + el.click())
     // which would trigger two downloads.
     downloadBtn.click();
-    await sleep(800);
+    await sleep(400);
     pushLog("success", `Downloaded: ${filename}`);
     return { ok: true, code: drugCode };
   }
@@ -489,7 +517,7 @@
     }, 3000, 200);
     if (btn) {
       await clickLikeUser(btn);
-      await sleep(300);
+      await sleep(150);
     }
   }
 
@@ -511,7 +539,7 @@
     if (!cancelBtn) throw new Error("#itemCancelBtn not found");
 
     angularClick(cancelBtn);
-    await sleep(300);
+    await sleep(150);
 
     // "Are you sure?" — poll at 100 ms and click the moment the button appears
     const confirmBtn = await waitFor(() => {
@@ -520,7 +548,7 @@
     }, 6000, 100);
     if (confirmBtn) {
       angularClick(confirmBtn);
-      await sleep(300);
+      await sleep(150);
     }
 
     // Security info dialog about back-button navigation — dismiss if it appears
@@ -528,7 +556,7 @@
 
     const back = await waitFor(() => isItemMasterPage(), 12000, 200);
     if (!back) throw new Error("Did not return to Item Master after close");
-    await sleep(300);
+    await sleep(150);
   }
 
   async function processOne(code, index, total) {
@@ -577,14 +605,14 @@
 
     try {
       const [fileResp, dbResp] = await Promise.all([
-        fetch(`${SERVER_URL}/api/med-images-list`),
-        fetch(`${SERVER_URL}/api/medication-db`),
+        serverGet("/api/med-images-list"),
+        serverGet("/api/medication-db"),
       ]);
       if (!fileResp.ok) throw new Error(`File list error ${fileResp.status}`);
       if (!dbResp.ok)   throw new Error(`DB error ${dbResp.status}`);
 
-      const fileStems = new Set(await fileResp.json());   // filenames without extension
-      const db        = await dbResp.json();
+      const fileStems = new Set(fileResp.data);
+      const db        = dbResp.data;
       const codes     = Object.keys(db);
       const total     = codes.length;
       let updated     = 0;
@@ -593,16 +621,16 @@
       setStatus(`Checking ${total} codes against ${fileStems.size} image files…`);
 
       for (let i = 0; i < codes.length; i++) {
-        const code = codes[i];
-        if (fileStems.has(code) && !db[code].has_image) {
-          db[code].has_image = true;
+        const code    = codes[i];
+        const hasFile = fileStems.has(code);
+        if (db[code].has_image !== hasFile) {
+          db[code].has_image = hasFile;
           updated++;
         }
-        // Update progress every 50 items to avoid UI jank
         if (i % 50 === 0 || i === codes.length - 1) {
           setProgress(i + 1, total);
-          setStatus(`Checking… ${i + 1}/${total} | matched: ${updated}`);
-          await sleep(0);   // yield to UI
+          setStatus(`Checking… ${i + 1}/${total} | changes: ${updated}`);
+          await sleep(0);
         }
       }
 
@@ -638,12 +666,14 @@
     state.success = 0;
     state.fail = 0;
     updateButtons();
-    setStatus("Fetching pending drug codes from server…");
+    setStatus("Syncing database with files…");
     pushLog("info", "Run started");
+    await autoSyncDb();
 
     try {
       let codes;
       try {
+        setStatus("Fetching pending drug codes from server…");
         codes = await fetchPendingCodes();
       } catch (err) {
         setStatus(`Server error: ${err.message}`);
@@ -667,7 +697,7 @@
         if (result.stopped) break;
         if (result.ok) state.success++; else state.fail++;
         setProgress(i + 1, codes.length);
-        if (!state.stopRequested && i < codes.length - 1) await sleep(200);
+        if (!state.stopRequested && i < codes.length - 1) await sleep(100);
       }
 
       const summary = `Done: ${state.success} OK, ${state.fail} fail`;

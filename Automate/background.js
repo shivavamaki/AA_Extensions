@@ -13,6 +13,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // PUT requests must originate from the extension context (background) so that
   // the server sees Origin: chrome-extension://... and passes _is_trusted_extension().
   // Content scripts run in the page context and always get 401.
+  if (message.type === "serverGet") {
+    fetch(message.url)
+      .then(async (r) => {
+        const data = await r.json();
+        sendResponse({ ok: r.ok, status: r.status, data });
+      })
+      .catch((err) => sendResponse({ ok: false, error: err.message }));
+    return true;
+  }
+
   if (message.type === "putMedicationDb") {
     fetch("http://localhost:8765/api/medication-db", {
       method: "PUT",
