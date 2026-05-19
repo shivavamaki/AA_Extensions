@@ -1,18 +1,23 @@
 {
   "manifest_version": 3,
   "name": "Arcus Toolkit",
-  "version": "4.0.1",
-  "version_name": "2026.05.17 - add version tracking",
+  "version": "4.1.0",
+  "version_name": "2026.05.19 - add drug image downloader",
   "description": "Auto Dispense and IP Fill automation for Arcus Pharmacy Management System.",
   "permissions": [
     "activeTab",
     "scripting",
     "storage",
-    "tabs"
+    "tabs",
+    "downloads"
   ],
   "host_permissions": [
-    "https://arcusair.bdms.co.th/*"
+    "https://arcusair.bdms.co.th/*",
+    "http://localhost:8765/*"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html"
   },
@@ -26,7 +31,8 @@
         "content/panel.js",
         "content/automation.js",
         "content/boot.js",
-        "content/ipfill_panel.js"
+        "content/ipfill_panel.js",
+        "content/drug-image.js"
       ],
       "css": [
         "styles.css"

@@ -1,3 +1,6 @@
+const ARCUS_ITEM_MASTER_URL =
+  "https://arcusair.bdms.co.th/#!/inventories/itemmaster";
+
 const ARCUS_WORKBENCH_URL =
   "https://arcusair.bdms.co.th/#!/pharmacy/dispenseworkbench/pharmacy/dispense";
 
@@ -89,5 +92,26 @@ document.getElementById("closeIpFillPanel").addEventListener("click", async () =
     setStatus("ipfillStatus", "IP Fill panel closed.", "done");
   } catch (err) {
     setStatus("ipfillStatus", `Failed: ${err?.message || "unknown error"}`, "error");
+  }
+});
+
+// ── Drug Image Downloader ──────────────────────────────────────────────────
+
+document.getElementById("openDrugImage").addEventListener("click", async () => {
+  const tabId = await openOrNavigate(ARCUS_ITEM_MASTER_URL);
+  try { await executeInTab(tabId, () => window.dispatchEvent(new CustomEvent("arcus-toolkit:show-drug-image-panel"))); } catch (_) {}
+  window.close();
+});
+
+document.getElementById("closeDrugImagePanel").addEventListener("click", async () => {
+  const tab = await getActiveArcusTab();
+  if (!tab) { setStatus("drugImageStatus", "No active tab found.", "error"); return; }
+  if (!tab.url?.includes("arcusair.bdms.co.th")) { setStatus("drugImageStatus", "Active tab is not Arcus Air.", "error"); return; }
+
+  try {
+    await executeInTab(tab.id, () => window.dispatchEvent(new CustomEvent("arcus-toolkit:remove-drug-image-panel")));
+    setStatus("drugImageStatus", "Drug Image panel closed.", "done");
+  } catch (err) {
+    setStatus("drugImageStatus", `Failed: ${err?.message || "unknown error"}`, "error");
   }
 });

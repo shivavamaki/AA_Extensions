@@ -74,7 +74,7 @@
         <span class="val light" style="white-space:pre-wrap;grid-column:2/5;">${esc(v.address)}</span>
       </div>
       <div class="f-pt-row">
-        <span style="grid-column:3" class="lbl">TEL</span>
+        <span class="lbl">หมายเลขโทรศัพท์ (TEL)</span>
         <span class="val light">${esc(v.tel)}</span>
       </div>`;
   }
@@ -118,7 +118,7 @@
         <span class="val light" style="white-space:pre-wrap;grid-column:2/5;">${esc(v.address)}</span>
       </div>
       <div class="f-pt-row">
-        <span style="grid-column:3" class="lbl">TEL</span>
+        <span class="lbl">หมายเลขโทรศัพท์ (TEL)</span>
         <span class="val light">${esc(v.tel)}</span>
       </div>`;
   }

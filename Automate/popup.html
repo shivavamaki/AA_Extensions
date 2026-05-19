@@ -195,6 +195,27 @@
     </div>
   </div>
 
+  <!-- Drug Image Downloader -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-icon">🖼️</span>
+      <span class="section-title">Drug Image Downloader</span>
+      <span class="section-badge">AUTOMATION</span>
+    </div>
+    <div class="section-body">
+      <p class="desc">Auto-download drug images from Item Master. Reads pending codes from the local medication DB (<code>has_image: false</code>), searches each code, and downloads + renames the image file automatically.</p>
+      <div class="btn-row">
+        <button id="openDrugImage" class="btn btn-primary">
+          <span class="btn-icon">🔗</span> Open Item Master
+        </button>
+        <button id="closeDrugImagePanel" class="btn btn-danger">
+          <span class="btn-icon">✕</span> Close Panel
+        </button>
+      </div>
+      <div id="drugImageStatus" class="status">Open Item Master — the panel appears automatically.</div>
+    </div>
+  </div>
+
   <div class="footer">arcusair.bdms.co.th &nbsp;·&nbsp; Pharmacy Automation</div>
 
   <script src="popup.js"></script>
