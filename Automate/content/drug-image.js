@@ -135,8 +135,10 @@
   function updateButtons() {
     const run  = document.querySelector("#arcus-di-run");
     const stop = document.querySelector("#arcus-di-stop");
+    const sync = document.querySelector("#arcus-di-sync");
     if (run)  run.disabled  = state.running;
     if (stop) stop.disabled = !state.running;
+    if (sync) sync.disabled = state.running;
   }
 
   function savePanelState(panel) {
@@ -222,6 +224,7 @@
       .arcus-di-btn:hover:not(:disabled){ filter:brightness(1.1); }
       .arcus-di-start  { background:#0288d1; color:#fff; }
       .arcus-di-stop   { background:#d32f2f; color:#fff; }
+      .arcus-di-sync   { background:#388e3c; color:#fff; }
       .arcus-di-track  { height:6px; background:#e0e7ef; border-radius:3px; overflow:hidden; margin-bottom:3px; }
       .arcus-di-bar    { height:100%; background:#0288d1; border-radius:3px; width:0; transition:width .4s; }
       .arcus-di-plabel { font-size:10px; color:#607d8b; text-align:right; margin-bottom:8px; }
@@ -261,6 +264,9 @@
         <div class="arcus-di-row">
           <button id="arcus-di-run"  class="arcus-di-btn arcus-di-start">▶ Start</button>
           <button id="arcus-di-stop" class="arcus-di-btn arcus-di-stop"  disabled>■ Stop</button>
+        </div>
+        <div class="arcus-di-row">
+          <button id="arcus-di-sync" class="arcus-di-btn arcus-di-sync">🔄 Sync Has Image</button>
         </div>
         <div class="arcus-di-track"><div id="arcus-di-bar" class="arcus-di-bar"></div></div>
         <div id="arcus-di-plabel" class="arcus-di-plabel">0 / 0</div>
@@ -315,6 +321,7 @@
     });
 
     panel.querySelector("#arcus-di-run")?.addEventListener("click",  startRun);
+    panel.querySelector("#arcus-di-sync")?.addEventListener("click", syncHasImage);
     panel.querySelector("#arcus-di-stop")?.addEventListener("click", () => {
       state.stopRequested = true;
       updateButtons();
@@ -359,9 +366,9 @@
   async function ensureItemMasterPage() {
     if (isItemMasterPage()) return;
     location.hash = ITEM_MASTER_HASH;
-    const ok = await waitFor(() => isItemMasterPage(), 15000, 300);
+    const ok = await waitFor(() => isItemMasterPage(), 15000, 200);
     if (!ok) throw new Error("Cannot navigate to Item Master page");
-    await sleep(800);
+    await sleep(500);
   }
 
   async function searchCode(code) {
@@ -373,39 +380,34 @@
 
     await clickLikeUser(codeInput);
     setNativeValue(codeInput, code);
-
-    // Dispatch keydown/up so Angular sees the change
-    ["keydown", "keyup"].forEach((type) => {
-      codeInput.dispatchEvent(new KeyboardEvent(type, { key: "Enter", bubbles: true, cancelable: true }));
-    });
-    await sleep(400);
+    await sleep(200);
 
     const searchBtn = await waitFor(() => {
       const el = document.querySelector("#iSearchBtn");
       return el && isVisible(el) && !el.disabled ? el : null;
-    }, 6000);
+    }, 5000);
     if (!searchBtn) throw new Error("#iSearchBtn not found");
 
     await clickLikeUser(searchBtn);
-    await sleep(1800);
+    // Wait for results: #iModifyBtn0 appearing means data loaded
+    await waitFor(() => document.querySelector("#iModifyBtn0"), 10000, 200);
   }
 
   async function openItemDetail() {
     const modifyBtn = await waitFor(() => {
       const el = document.querySelector("#iModifyBtn0");
       return el && isVisible(el) ? el : null;
-    }, 12000);
+    }, 8000);
     if (!modifyBtn) return false;
 
     await clickLikeUser(modifyBtn);
-    const ok = await waitFor(() => isItemDetailPage(), 15000, 300);
+    const ok = await waitFor(() => isItemDetailPage(), 12000, 200);
     if (!ok) throw new Error("Did not navigate to Item Detail page");
-    await sleep(1200);
+    await sleep(600);
     return true;
   }
 
   function parseDrugCode() {
-    // Finds the first span.ng-binding whose text starts with (CODE)-...
     const spans = document.querySelectorAll("span.ng-binding");
     for (const span of spans) {
       const text = (span.innerText || span.textContent || "").trim();
@@ -415,37 +417,35 @@
     return null;
   }
 
-  async function scrollDownToSection() {
-    // Scroll the page to trigger Angular rendering of lower sections
-    for (let i = 0; i < 8; i++) {
-      window.scrollBy(0, 400);
-      await sleep(150);
-    }
-    await sleep(600);
-  }
+  async function enableAddlnDetail() {
+    // Two switches share id="addlndetail"; select by ng-model to get the right one.
+    const sw = await waitFor(
+      () => document.querySelector('md-switch[ng-model="vm.showItemImage"]'),
+      10000
+    );
+    if (!sw) throw new Error('md-switch[ng-model="vm.showItemImage"] not found');
 
-  async function enableSwitch(id) {
-    const sw = await waitFor(() => {
-      const el = document.querySelector(id);
-      return el ? el : null;
-    }, 8000);
-    if (!sw) return;
-    // md-switch uses aria-checked; click only if currently off
-    if (sw.getAttribute("aria-checked") !== "true") {
-      await clickLikeUser(sw);
-      await sleep(700);
+    sw.scrollIntoView({ behavior: "smooth", block: "center" });
+    await sleep(300);
+
+    if (sw.getAttribute("aria-checked") === "true") return;
+
+    // jqLite triggerHandler fires Angular Material's registered click handler
+    // on the exact #addlndetail element — no other switches are touched.
+    if (window.angular) {
+      window.angular.element(sw).triggerHandler("click");
+    } else {
+      sw.click();
     }
+    await sleep(300);
   }
 
   async function downloadImage(fallbackCode) {
-    await scrollDownToSection();
-    await enableSwitch("#addlndetail");
-    await sleep(500);
+    await enableAddlnDetail();
 
     const drugCode = parseDrugCode() || fallbackCode;
     const filename = `${drugCode}.jpg`;
 
-    // Ask background service worker to rename the next download
     await new Promise((resolve) => {
       try {
         chrome.runtime.sendMessage({ type: "setNextDownloadName", filename }, () => resolve());
@@ -455,36 +455,72 @@
     const downloadBtn = await waitFor(() => {
       const el = document.querySelector("#downloadFileitemImage");
       return el && isVisible(el) ? el : null;
-    }, 8000);
+    }, 6000);
 
     if (!downloadBtn) return { ok: false, code: drugCode };
 
-    await clickLikeUser(downloadBtn);
-    await sleep(1500);
+    // Single native click only — clickLikeUser fires two clicks (synthetic + el.click())
+    // which would trigger two downloads.
+    downloadBtn.click();
+    await sleep(800);
     pushLog("success", `Downloaded: ${filename}`);
     return { ok: true, code: drugCode };
+  }
+
+  async function dismissSecurityDialog() {
+    // Arcus shows "back button navigation" info dialog after some navigations.
+    const btn = await waitFor(() => {
+      for (const dialog of document.querySelectorAll("md-dialog")) {
+        if (!isVisible(dialog)) continue;
+        const txt = (dialog.innerText || dialog.textContent || "").toLowerCase();
+        if (!txt.includes("back button")) continue;
+        const ok = dialog.querySelector("md-dialog-actions button");
+        if (ok && isVisible(ok)) return ok;
+      }
+      return null;
+    }, 3000, 200);
+    if (btn) {
+      await clickLikeUser(btn);
+      await sleep(300);
+    }
+  }
+
+  function angularClick(el) {
+    // ng-click handlers are registered via jqLite; triggerHandler reaches them
+    // instantly without the delays or synthetic-event misses of clickLikeUser.
+    if (window.angular) {
+      window.angular.element(el).triggerHandler("click");
+    } else {
+      el.click();
+    }
   }
 
   async function closeDetailPage() {
     const cancelBtn = await waitFor(() => {
       const el = document.querySelector("#itemCancelBtn");
       return el && isVisible(el) ? el : null;
-    }, 8000);
+    }, 6000);
     if (!cancelBtn) throw new Error("#itemCancelBtn not found");
 
-    await clickLikeUser(cancelBtn);
-    await sleep(800);
+    angularClick(cancelBtn);
+    await sleep(300);
 
-    // Confirm close dialog
-    const confirmBtn = await waitFor(() => queryFirst(CONFIRM_CLOSE_SELECTORS), 8000);
+    // "Are you sure?" — poll at 100 ms and click the moment the button appears
+    const confirmBtn = await waitFor(() => {
+      const el = document.querySelector("button.md-confirm-button");
+      return el ? el : null;          // don't gate on isVisible — click immediately
+    }, 6000, 100);
     if (confirmBtn) {
-      await clickLikeUser(confirmBtn);
-      await sleep(800);
+      angularClick(confirmBtn);
+      await sleep(300);
     }
 
-    const back = await waitFor(() => isItemMasterPage(), 15000, 300);
+    // Security info dialog about back-button navigation — dismiss if it appears
+    await dismissSecurityDialog();
+
+    const back = await waitFor(() => isItemMasterPage(), 12000, 200);
     if (!back) throw new Error("Did not return to Item Master after close");
-    await sleep(600);
+    await sleep(300);
   }
 
   async function processOne(code, index, total) {
@@ -519,6 +555,68 @@
         if (isItemDetailPage()) await closeDetailPage();
       } catch (_) {}
       return { ok: false };
+    }
+  }
+
+  // ── Sync has_image from existing files ───────────────────────────────────
+
+  async function syncHasImage() {
+    if (state.running) return;
+    state.running = true;
+    updateButtons();
+    setStatus("Fetching file list and database…");
+    pushLog("info", "Sync started");
+
+    try {
+      const [fileResp, dbResp] = await Promise.all([
+        fetch(`${SERVER_URL}/api/med-images-list`),
+        fetch(`${SERVER_URL}/api/medication-db`),
+      ]);
+      if (!fileResp.ok) throw new Error(`File list error ${fileResp.status}`);
+      if (!dbResp.ok)   throw new Error(`DB error ${dbResp.status}`);
+
+      const fileStems = new Set(await fileResp.json());   // filenames without extension
+      const db        = await dbResp.json();
+      const codes     = Object.keys(db);
+      const total     = codes.length;
+      let updated     = 0;
+
+      setProgress(0, total);
+      setStatus(`Checking ${total} codes against ${fileStems.size} image files…`);
+
+      for (let i = 0; i < codes.length; i++) {
+        const code = codes[i];
+        if (fileStems.has(code) && !db[code].has_image) {
+          db[code].has_image = true;
+          updated++;
+        }
+        // Update progress every 50 items to avoid UI jank
+        if (i % 50 === 0 || i === codes.length - 1) {
+          setProgress(i + 1, total);
+          setStatus(`Checking… ${i + 1}/${total} | matched: ${updated}`);
+          await sleep(0);   // yield to UI
+        }
+      }
+
+      // Write the updated DB back in one request
+      setStatus(`Saving ${updated} update(s) to server…`);
+      const putResp = await fetch(`${SERVER_URL}/api/medication-db`, {
+        method:  "PUT",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(db),
+      });
+      if (!putResp.ok) throw new Error(`Save error ${putResp.status}`);
+
+      setProgress(total, total);
+      setStatus(`Done. ${updated} record(s) updated out of ${total}.`);
+      pushLog("success", `Sync complete — ${updated} updated`);
+
+    } catch (err) {
+      setStatus(`Sync failed: ${err.message}`);
+      pushLog("fail", `Sync error: ${err.message}`);
+    } finally {
+      state.running = false;
+      updateButtons();
     }
   }
 
@@ -565,7 +663,7 @@
         if (result.stopped) break;
         if (result.ok) state.success++; else state.fail++;
         setProgress(i + 1, codes.length);
-        if (!state.stopRequested && i < codes.length - 1) await sleep(600);
+        if (!state.stopRequested && i < codes.length - 1) await sleep(200);
       }
 
       const summary = `Done: ${state.success} OK, ${state.fail} fail`;

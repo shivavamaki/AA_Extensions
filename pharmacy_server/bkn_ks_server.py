@@ -305,6 +305,10 @@ class Handler(BaseHTTPRequestHandler):
         if len(parts) == 2 and parts[0] == 'api' and parts[1] in RX_COLS:
             return 'rx', parts[1], None
 
+        # /api/med-images-list
+        if parts == ['api', 'med-images-list']:
+            return 'med-images-list', None, None
+
         # /api/auth/ACTION
         if len(parts) == 3 and parts[:2] == ['api', 'auth'] and parts[2] in ('login', 'logout', 'me'):
             return 'auth', parts[2], None
@@ -372,6 +376,9 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, load_ks(key))
         elif rtype == 'rx':
             self.send_json(200, load_rx(key))
+        elif rtype == 'med-images-list':
+            stems = [p.stem for p in MED_IMAGES_DIR.iterdir() if p.is_file()]
+            self.send_json(200, stems)
         else:
             self.send_json(404, {'error': 'Not found'})
 
