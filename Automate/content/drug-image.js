@@ -344,6 +344,18 @@
       .map(([code]) => code);
   }
 
+  function putMedicationDb(db) {
+    // PUT must go through the background service worker so the request carries
+    // Origin: chrome-extension://... which the server trusts without auth.
+    return new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage({ type: "putMedicationDb", db }, (resp) => {
+          resolve(resp || { ok: false });
+        });
+      } catch (_) { resolve({ ok: false }); }
+    });
+  }
+
   async function markImageDone(code) {
     try {
       const resp = await fetch(`${SERVER_URL}/api/medication-db`);
@@ -351,11 +363,7 @@
       const db = await resp.json();
       if (!db[code]) return;
       db[code].has_image = true;
-      await fetch(`${SERVER_URL}/api/medication-db`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(db),
-      });
+      await putMedicationDb(db);
     } catch (err) {
       console.warn("[DrugImage] markImageDone failed:", err);
     }
@@ -598,14 +606,10 @@
         }
       }
 
-      // Write the updated DB back in one request
+      // Write the updated DB back via background (requires extension Origin header)
       setStatus(`Saving ${updated} update(s) to server…`);
-      const putResp = await fetch(`${SERVER_URL}/api/medication-db`, {
-        method:  "PUT",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(db),
-      });
-      if (!putResp.ok) throw new Error(`Save error ${putResp.status}`);
+      const putResp = await putMedicationDb(db);
+      if (!putResp.ok) throw new Error(`Save error ${putResp.status || putResp.error}`);
 
       setProgress(total, total);
       setStatus(`Done. ${updated} record(s) updated out of ${total}.`);

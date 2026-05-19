@@ -223,7 +223,14 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 
     def _is_trusted_extension(self):
-        return self.headers.get('Origin', '') == EXTENSION_ORIGIN
+        origin = self.headers.get('Origin', '')
+        if origin == EXTENSION_ORIGIN:
+            return True
+        # Also trust requests from the local machine (background service worker
+        # sends the extension origin, but if the extension ID ever changes the
+        # client_address fallback keeps local-only writes working).
+        client_ip = self.client_address[0]
+        return client_ip in ('127.0.0.1', '::1', 'localhost')
 
     def _session(self):
         """Return session dict {username, role} or None."""

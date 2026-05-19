@@ -7,7 +7,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "setNextDownloadName") {
     nextDownloadName = message.filename || null;
     sendResponse({ ok: true });
+    return false;
   }
+
+  // PUT requests must originate from the extension context (background) so that
+  // the server sees Origin: chrome-extension://... and passes _is_trusted_extension().
+  // Content scripts run in the page context and always get 401.
+  if (message.type === "putMedicationDb") {
+    fetch("http://localhost:8765/api/medication-db", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(message.db),
+    })
+      .then((r) => sendResponse({ ok: r.ok, status: r.status }))
+      .catch((err) => sendResponse({ ok: false, error: err.message }));
+    return true; // keep channel open for async response
+  }
+
   return false;
 });
 
