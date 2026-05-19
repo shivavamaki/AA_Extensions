@@ -17,11 +17,11 @@
 
     :root {
       --ff:  Arial, 'Sarabun', sans-serif;
-      --fs:  11pt;
-      --fsm: 10pt;
-      --fss: 9pt;
-      --fsh: 13pt;
-      --fsl: 14pt;
+      --fs:  9pt;
+      --fsm: 8pt;
+      --fss: 7.5pt;
+      --fsh: 11pt;
+      --fsl: 12pt;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -104,7 +104,7 @@
       flex-direction: column;
       font-family: var(--ff);
       font-size: var(--fs);
-      line-height: 1.45;
+      line-height: 1.3;
       color: #111;
       overflow: hidden;
       min-height: 0;
@@ -126,7 +126,7 @@
       flex-direction: column;
       font-family: var(--ff);
       font-size: var(--fs);
-      line-height: 1.45;
+      line-height: 1.3;
       color: #111;
       overflow: hidden;
       min-height: 0;
@@ -194,7 +194,7 @@
     .f-pt-row {
       font-family: var(--ff); font-size: var(--fs);
       display: grid;
-      grid-template-columns: 20mm 1fr 9mm 36mm;
+      grid-template-columns: auto 1fr auto auto;
       gap: 0 2mm; align-items: baseline;
       margin-bottom: 1mm; flex-shrink: 0;
     }
