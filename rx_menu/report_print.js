@@ -232,7 +232,8 @@ function renderExp(payload) {
   const pageBreakMode = getExpPageBreakMode();
   const grouped = groupRows(rows, groupMode);
 
-  setControlTitle('EXP Report', `${rows.length}/${sourceRows.length} rows · ${grouped.length} groups · A4 portrait · ${expPageBreakLabel(pageBreakMode)}`);
+  const orientation = $('pageOrientation')?.value || 'portrait';
+  setControlTitle('EXP Report', `${rows.length}/${sourceRows.length} rows · ${grouped.length} groups · A4 ${orientation} · ${expPageBreakLabel(pageBreakMode)}`);
   setStatus(`${rows.length}/${sourceRows.length} rows / ${grouped.length} groups`);
 
   const groupSections = grouped.map(([group, groupRows], index) => `
@@ -317,7 +318,8 @@ function renderAdr(payload) {
   const from = meta.from || '-';
   const to = meta.to || '-';
 
-  setControlTitle('ADR Report', `${rows.length} rows · Y ${yRows.length} / N ${nRows.length} · A4 portrait`);
+  const orientation = $('pageOrientation')?.value || 'portrait';
+  setControlTitle('ADR Report', `${rows.length} rows · Y ${yRows.length} / N ${nRows.length} · A4 ${orientation}`);
   setStatus(`${rows.length} rows`);
 
   return `
@@ -378,6 +380,20 @@ function normalizePayload(rawPayload, legacyRows) {
 function updateControlVisibility(type) {
   const expControlRow = $('expControlRow');
   if (expControlRow) expControlRow.hidden = type !== 'exp';
+  const categoryControl = $('categoryControl');
+  if (categoryControl) categoryControl.hidden = type !== 'exp';
+}
+
+function applyOrientation(orientation) {
+  let styleEl = document.getElementById('dynamicPageStyle');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'dynamicPageStyle';
+    document.head.appendChild(styleEl);
+  }
+  const w = orientation === 'landscape' ? '297mm' : '210mm';
+  styleEl.textContent = `@page { size: A4 ${orientation}; margin: 8mm; } @media print { html, body { width: ${w}; } }`;
+  document.body.classList.toggle('landscape', orientation === 'landscape');
 }
 
 function renderPayload(payload) {
@@ -414,10 +430,19 @@ function applyControls() {
     $('btnToggleCompact').textContent = `Compact: ${isCompact ? 'ON' : 'OFF'}`;
   });
 
-  $('fontScale')?.addEventListener('input', (e) => {
+  applyOrientation('portrait');
+
+  $('fontSize')?.addEventListener('change', (e) => {
     const val = Number(e.target.value || 100);
     document.documentElement.style.setProperty('--font-scale', String(val / 100));
-    if ($('fontScaleText')) $('fontScaleText').textContent = `${val}%`;
+  });
+
+  $('pageOrientation')?.addEventListener('change', (e) => {
+    applyOrientation(e.target.value);
+  });
+
+  $('categoryVisible')?.addEventListener('change', (e) => {
+    document.body.classList.toggle('hide-category', e.target.value === 'hide');
   });
 
   $('groupMode')?.addEventListener('change', () => {

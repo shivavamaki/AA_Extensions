@@ -81,15 +81,6 @@ button.primary {
   font-weight: 700;
 }
 
-.control-range {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  font-size: 12px;
-  color: #334155;
-}
-.control-range input { flex: 1; }
 .control-help { margin-top: 6px; color: #475569; font-size: 11px; }
 
 .page-wrap {
@@ -100,6 +91,14 @@ button.primary {
   background: var(--paper);
   box-shadow: 0 8px 28px rgba(15, 23, 42, .12);
 }
+
+body.landscape .page-wrap {
+  width: 297mm;
+  min-height: 210mm;
+}
+
+body.hide-category .exp-table .c-cat { display: none; }
+body.hide-category .exp-table .c-name { width: 78mm; }
 
 .report-page {
   width: 100%;
@@ -227,6 +226,7 @@ body:not(.compact) .report-table td {
     background: #fff;
     font-size: calc(9px * var(--font-scale));
   }
+  body.landscape, body.landscape + html { width: 297mm; }
   .print-control { display: none !important; }
   .page-wrap {
     width: auto;
