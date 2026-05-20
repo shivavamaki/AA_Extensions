@@ -382,10 +382,11 @@
     ]);
     if (!dbResp.ok) throw new Error(`Server responded ${dbResp.status}`);
     const fileStems = fileResp.ok ? new Set(fileResp.data) : new Set();
+    // Include ALL entries without an image file — not just those where Arcus originally
+    // reported having an image. The itemimage_name field is set at DB-import time and
+    // can be stale; Arcus may have added images since then.
     return Object.entries(dbResp.data)
-      .filter(([code, v]) =>
-        v.itemimage_name === "มีรูปภาพ" && v.has_image === false && !fileStems.has(code)
-      )
+      .filter(([code, v]) => v.has_image === false && !fileStems.has(code))
       .map(([code]) => code);
   }
 
@@ -701,12 +702,18 @@
       const putResp = await putMedicationDb(db);
       if (!putResp.ok) throw new Error(`Save error ${putResp.status || putResp.error}`);
 
-      const pending = Object.values(db).filter(
-        (v) => v.itemimage_name === "มีรูปภาพ" && !v.has_image
+      // Count ALL entries without an image — not just those tagged "มีรูปภาพ" at import
+      // time, since that field can be stale. This gives an honest total.
+      const pending         = Object.values(db).filter((v) => !v.has_image).length;
+      const pendingInArcus  = Object.values(db).filter(
+        (v) => !v.has_image && v.itemimage_name === "มีรูปภาพ"
       ).length;
 
       setProgress(total, total);
-      setStatus(`Done. ${updated} updated.\nStill need image: ${pending} code(s).`);
+      const pendingNote = pendingInArcus > 0
+        ? `\n(${pendingInArcus} marked as available in Arcus — run Start to download)`
+        : "";
+      setStatus(`Done. ${updated} updated.\nStill need image: ${pending} code(s).${pendingNote}`);
       pushLog("success", `Sync complete — ${updated} updated, ${pending} still pending`);
 
     } catch (err) {

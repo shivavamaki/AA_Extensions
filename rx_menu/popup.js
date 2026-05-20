@@ -2265,9 +2265,10 @@ const EXP174_FIXED = {
 };
 
 const EXP174_FLOORS = {
-  floor1: { label: 'Floor 1', subtitle: 'Department', storeuid: '5b863a5c3238d86bf03f1626' },
-  floor2: { label: 'Floor 2', subtitle: '', storeuid: '5c862fb8cc6035a21bb9ec1c' },
-  floorG: { label: 'Floor G', subtitle: '', storeuid: '5ee8433e65ec4421d19611d5' },
+  floor1:   { label: 'Floor 1',         subtitle: 'Department', storeuid: '5b863a5c3238d86bf03f1626' },
+  floor2:   { label: 'Floor 2',         subtitle: '',           storeuid: '5c862fb8cc6035a21bb9ec1c' },
+  floorG:   { label: 'Floor G',         subtitle: '',           storeuid: '5ee8433e65ec4421d19611d5' },
+  floorMDH: { label: 'Pharmacy (MDH)',  subtitle: '',           storeuid: '660a0e76e9cea8069ffcce0d' },
 };
 
 let exp174Rows = [];
