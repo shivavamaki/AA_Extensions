@@ -5,15 +5,13 @@ const KEYS = {
   faqs:    'bkn_ks.faqs.v1',
   items:   'bkn_ks.items.v1',
   vdos:    'bkn_ks.vdos.v1',
-  adminPw: 'bkn_ks.admin_pw.v1',
 };
 
-// ── ADMIN: edit this URL if the server moves ──────────────────
+// ── Server URL ────────────────────────────────────────────────
 const SERVER_URL = 'http://10.134.110.81:8765';
-const DEFAULT_PW = 'pharmacy2024';
 
-// ── Category labels ────────────────────────────────────────────
-const FAQ_CATS = {
+// ── Built-in category presets (label + badge colour) ──────────
+const FAQ_CAT_PRESETS = {
   general:  { label: 'ทั่วไป',         cls: '' },
   drug:     { label: 'ยาและสูตร',      cls: 'orange' },
   process:  { label: 'กระบวนงาน',      cls: 'teal' },
@@ -21,7 +19,7 @@ const FAQ_CATS = {
   clinical: { label: 'Clinical',        cls: 'green' },
 };
 
-const ITEM_CATS = {
+const ITEM_CAT_PRESETS = {
   analgesic:     { label: 'Analgesic',     cls: 'orange' },
   antibiotic:    { label: 'Antibiotic',    cls: 'green' },
   cardiac:       { label: 'Cardiac',       cls: 'purple' },
@@ -39,6 +37,9 @@ const DOSAGE_FORMS = ['Tablet','Capsule','Injection','Solution','Suspension','In
 const state = {
   page:        'faqs',
   isAdmin:     false,
+  authToken:   null,
+  authUser:    null,
+  authRole:    null,
   search:      '',
   filterCat:   'all',
   editType:    null,
@@ -68,9 +69,25 @@ function fmtDate(iso) {
 
 function now() { return new Date().toISOString(); }
 
+// ── Category helpers ───────────────────────────────────────────
+function faqCat(key) {
+  return FAQ_CAT_PRESETS[key] ?? { label: key || 'ทั่วไป', cls: '' };
+}
+function itemCat(key) {
+  return ITEM_CAT_PRESETS[key] ?? { label: key || 'Other', cls: '' };
+}
+
+function allFaqCats() {
+  const custom = [...new Set(getData(KEYS.faqs).map(f => f.category).filter(c => c && !FAQ_CAT_PRESETS[c]))];
+  return { ...FAQ_CAT_PRESETS, ...Object.fromEntries(custom.map(c => [c, { label: c, cls: '' }])) };
+}
+
+function allItemCats() {
+  const custom = [...new Set(getData(KEYS.items).map(i => i.category).filter(c => c && !ITEM_CAT_PRESETS[c]))];
+  return { ...ITEM_CAT_PRESETS, ...Object.fromEntries(custom.map(c => [c, { label: c, cls: '' }])) };
+}
+
 // ── Storage ────────────────────────────────────────────────────
-// In-memory cache populated from server on load; localStorage used as
-// offline backup and for password/settings that never leave the device.
 const cache = { faqs: null, items: null, vdos: null };
 
 const KEY_COL = {
@@ -101,13 +118,15 @@ function getData(key) {
 function saveData(key, data) {
   const col = KEY_COL[key];
   if (col) cache[col] = data;
-  localStorage.setItem(key, JSON.stringify(data)); // local backup
+  localStorage.setItem(key, JSON.stringify(data));
 
   const base = getServerUrl();
   if (!base || !col) return;
+  const headers = { 'Content-Type': 'application/json' };
+  if (state.authToken) headers['Authorization'] = `Bearer ${state.authToken}`;
   fetch(`${base}/api/${col}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(data),
   }).catch(() => showToast('⚠ Server sync failed — data saved locally', 'error'));
 }
@@ -146,8 +165,20 @@ function updateServerBar(configured, ok) {
     : `<div class="server-bar-err"><span class="server-dot-icon"></span>Server unreachable${copyBtn}</div>`;
 }
 
-function getAdminPw() {
-  return localStorage.getItem(KEYS.adminPw) || DEFAULT_PW;
+// ── File upload helper ─────────────────────────────────────────
+async function uploadKsFile(file) {
+  const ext      = file.name.split('.').pop().toLowerCase() || 'bin';
+  const filename = `${uid()}.${ext}`;
+  const buf      = await file.arrayBuffer();
+  const headers  = { 'Content-Type': file.type || 'application/octet-stream' };
+  if (state.authToken) headers['Authorization'] = `Bearer ${state.authToken}`;
+  const r = await fetch(`${SERVER_URL}/api/ks-files/${filename}`, {
+    method: 'PUT',
+    headers,
+    body: buf,
+  });
+  if (!r.ok) throw new Error('Upload failed');
+  return `${SERVER_URL}/ks-files/${filename}`;
 }
 
 // ── Navigation ─────────────────────────────────────────────────
@@ -183,14 +214,17 @@ function renderSidebar() {
       <button class="nav-item ${state.page === 'admin-vdos'  ? 'active' : ''}" data-page="admin-vdos">
         <span class="nav-icon">🎬</span><span>Manage Vdos</span>
       </button>
-      <button class="nav-item ${state.page === 'admin-settings' ? 'active' : ''}" data-page="admin-settings">
-        <span class="nav-icon">⚙️</span><span>Settings</span>
+      <button class="nav-item nav-admin-btn" id="btnAdminConsole">
+        <span class="nav-icon">⚙️</span><span>Admin Console</span>
       </button>
       <button class="nav-item nav-logout" id="btnLogout">
-        <span class="nav-icon">🚪</span><span>Logout</span>
+        <span class="nav-icon">🚪</span><span>Logout (${esc(state.authUser || '')})</span>
       </button>
     `;
     document.getElementById('btnLogout')?.addEventListener('click', doLogout);
+    document.getElementById('btnAdminConsole')?.addEventListener('click', () => {
+      window.open(SERVER_URL, '_blank');
+    });
   } else {
     footer.innerHTML = `
       <button class="nav-item nav-admin-btn" id="btnShowLogin">
@@ -209,14 +243,13 @@ function renderSidebar() {
 function renderPage() {
   const el = document.getElementById('mainContent');
   switch (state.page) {
-    case 'faqs':           el.innerHTML = buildFaqsPage();          break;
-    case 'items':          el.innerHTML = buildItemsPage();         break;
-    case 'vdos':           el.innerHTML = buildVdosPage();          break;
-    case 'admin-faqs':     el.innerHTML = buildAdminFaqsPage();     break;
-    case 'admin-items':    el.innerHTML = buildAdminItemsPage();    break;
-    case 'admin-vdos':     el.innerHTML = buildAdminVdosPage();     break;
-    case 'admin-settings': el.innerHTML = buildAdminSettingsPage(); break;
-    default:               el.innerHTML = buildFaqsPage();
+    case 'faqs':        el.innerHTML = buildFaqsPage();       break;
+    case 'items':       el.innerHTML = buildItemsPage();      break;
+    case 'vdos':        el.innerHTML = buildVdosPage();       break;
+    case 'admin-faqs':  el.innerHTML = buildAdminFaqsPage();  break;
+    case 'admin-items': el.innerHTML = buildAdminItemsPage(); break;
+    case 'admin-vdos':  el.innerHTML = buildAdminVdosPage();  break;
+    default:            el.innerHTML = buildFaqsPage();
   }
   bindPageEvents();
 }
@@ -228,10 +261,11 @@ function renderPage() {
 // ── FAQs page ──────────────────────────────────────────────────
 function buildFaqsPage() {
   const all  = getData(KEYS.faqs);
-  const cats = [...new Set(all.map(f => f.category).filter(Boolean))];
+  const cats = allFaqCats();
+  const usedCats = [...new Set(all.map(f => f.category).filter(Boolean))];
 
-  const pills = ['all', ...cats].map(c => {
-    const label = c === 'all' ? 'ทั้งหมด' : (FAQ_CATS[c]?.label ?? c);
+  const pills = ['all', ...usedCats].map(c => {
+    const label = c === 'all' ? 'ทั้งหมด' : (cats[c]?.label ?? c);
     return `<button class="filter-pill ${state.filterCat === c ? 'active' : ''}" data-cat="${esc(c)}">${esc(label)}</button>`;
   }).join('');
 
@@ -240,7 +274,7 @@ function buildFaqsPage() {
   if (state.search) {
     const q = state.search.toLowerCase();
     visible = visible.filter(f =>
-      f.question.toLowerCase().includes(q) || f.answer.toLowerCase().includes(q)
+      (f.question || '').toLowerCase().includes(q) || (f.answer || '').toLowerCase().includes(q)
     );
   }
 
@@ -270,12 +304,20 @@ function buildFaqsPage() {
 }
 
 function buildFaqCard(f) {
-  const cat = FAQ_CATS[f.category] ?? { label: f.category, cls: '' };
+  const cat      = faqCat(f.category);
   const adminBtns = state.isAdmin ? `
     <div class="faq-admin-actions">
       <button class="btn btn-icon btn-icon-edit"   data-edit-faq="${esc(f.id)}" title="Edit">✏️</button>
       <button class="btn btn-icon btn-icon-delete" data-del-faq="${esc(f.id)}"  title="Delete">🗑️</button>
     </div>` : '';
+
+  const images = (f.images || []).map(u =>
+    `<img src="${esc(u)}" class="faq-inline-img" loading="lazy" onerror="this.style.display='none'">`
+  ).join('');
+
+  const attachments = (f.attachments || []).map(a =>
+    `<a href="${esc(a.url)}" target="_blank" class="ks-attach-link">📎 ${esc(a.name)}</a>`
+  ).join('');
 
   return `
     <div class="faq-item" id="faq-${esc(f.id)}">
@@ -287,7 +329,9 @@ function buildFaqCard(f) {
         <span class="faq-chevron">▾</span>
       </button>
       <div class="faq-answer">
-        ${esc(f.answer).replace(/\n/g, '<br>')}
+        <div class="faq-answer-html">${f.answer || ''}</div>
+        ${images ? `<div class="faq-images">${images}</div>` : ''}
+        ${attachments ? `<div class="faq-attachments">${attachments}</div>` : ''}
         <div class="faq-answer-meta">เพิ่มเมื่อ ${fmtDate(f.createdAt)}${f.updatedAt && f.updatedAt !== f.createdAt ? ' · แก้ไข ' + fmtDate(f.updatedAt) : ''}</div>
       </div>
     </div>`;
@@ -296,10 +340,11 @@ function buildFaqCard(f) {
 // ── New Items page ─────────────────────────────────────────────
 function buildItemsPage() {
   const all  = getData(KEYS.items);
-  const cats = [...new Set(all.map(i => i.category).filter(Boolean))];
+  const cats = allItemCats();
+  const usedCats = [...new Set(all.map(i => i.category).filter(Boolean))];
 
-  const pills = ['all', ...cats].map(c => {
-    const label = c === 'all' ? 'ทั้งหมด' : (ITEM_CATS[c]?.label ?? c);
+  const pills = ['all', ...usedCats].map(c => {
+    const label = c === 'all' ? 'ทั้งหมด' : (cats[c]?.label ?? c);
     return `<button class="filter-pill ${state.filterCat === c ? 'active' : ''}" data-cat="${esc(c)}">${esc(label)}</button>`;
   }).join('');
 
@@ -308,7 +353,7 @@ function buildItemsPage() {
   if (state.search) {
     const q = state.search.toLowerCase();
     visible = visible.filter(i =>
-      i.name.toLowerCase().includes(q) || (i.generic || '').toLowerCase().includes(q) ||
+      (i.name || '').toLowerCase().includes(q) || (i.generic || '').toLowerCase().includes(q) ||
       (i.indication || '').toLowerCase().includes(q)
     );
   }
@@ -339,16 +384,25 @@ function buildItemsPage() {
 }
 
 function buildDrugCard(item) {
-  const cat = ITEM_CATS[item.category] ?? { label: item.category || 'Other', cls: '' };
+  const cat      = itemCat(item.category);
   const adminBtns = state.isAdmin ? `
     <div class="drug-card-admin">
       <button class="btn btn-icon btn-icon-edit"   data-edit-item="${esc(item.id)}" title="Edit">✏️</button>
       <button class="btn btn-icon btn-icon-delete" data-del-item="${esc(item.id)}"  title="Delete">🗑️</button>
     </div>` : '';
 
+  const imgHtml = item.image
+    ? `<div class="drug-card-image"><img src="${esc(item.image)}" alt="${esc(item.name)}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`
+    : '';
+
+  const attachments = (item.attachments || []).map(a =>
+    `<a href="${esc(a.url)}" target="_blank" class="ks-attach-link">📎 ${esc(a.name)}</a>`
+  ).join('');
+
   return `
     <div class="drug-card">
       ${adminBtns}
+      ${imgHtml}
       <div class="drug-card-header">
         <div class="drug-card-icon">💊</div>
         <div class="drug-card-meta">
@@ -357,6 +411,7 @@ function buildDrugCard(item) {
         </div>
       </div>
       ${item.indication ? `<div class="drug-card-body">${esc(item.indication)}</div>` : ''}
+      ${attachments ? `<div class="drug-card-attachments">${attachments}</div>` : ''}
       <div class="drug-card-footer">
         <span class="cat-badge ${esc(cat.cls)}">${esc(cat.label)}</span>
         ${item.dosageForm ? `<span class="cat-badge">${esc(item.dosageForm)}</span>` : ''}
@@ -373,7 +428,7 @@ function buildVdosPage() {
   if (state.search) {
     const q = state.search.toLowerCase();
     visible = visible.filter(v =>
-      v.title.toLowerCase().includes(q) || (v.description || '').toLowerCase().includes(q)
+      (v.title || '').toLowerCase().includes(q) || (v.description || '').toLowerCase().includes(q)
     );
   }
 
@@ -439,13 +494,16 @@ function extractYtId(url) {
 
 // ── Admin FAQs ─────────────────────────────────────────────────
 function buildAdminFaqsPage() {
-  const all = getData(KEYS.faqs);
+  const all  = getData(KEYS.faqs);
+  const cats = allFaqCats();
   const rows = all.length ? all.map(f => {
-    const cat = FAQ_CATS[f.category] ?? { label: f.category || '—', cls: '' };
+    const cat = cats[f.category] ?? { label: f.category || '—', cls: '' };
+    const hasMedia = (f.images?.length || f.attachments?.length)
+      ? '<span title="Has images/attachments" style="color:var(--orange);font-size:11px">📎</span>' : '';
     return `
       <tr>
         <td class="td-truncate" style="max-width:280px">${esc(f.question)}</td>
-        <td><span class="cat-badge ${esc(cat.cls)}">${esc(cat.label)}</span></td>
+        <td><span class="cat-badge ${esc(cat.cls)}">${esc(cat.label)}</span> ${hasMedia}</td>
         <td style="white-space:nowrap;color:var(--text-soft);font-size:12px">${fmtDate(f.createdAt)}</td>
         <td class="td-actions"><div class="td-actions-inner">
           <button class="btn btn-icon btn-icon-edit"   data-edit-faq="${esc(f.id)}">✏️</button>
@@ -459,7 +517,7 @@ function buildAdminFaqsPage() {
       <div class="page-header-row">
         <div>
           <div class="page-title">✏️ Manage FAQs <span class="count-badge">${all.length}</span></div>
-          <div class="page-sub">เพิ่ม / แก้ไข / ลบคำถาม-คำตอบ</div>
+          <div class="page-sub">เพิ่ม / แก้ไข / ลบคำถาม-คำตอบ · รองรับ HTML ตาราง รูปภาพ และไฟล์ PDF</div>
         </div>
         <button class="btn btn-primary" id="btnAddFaq">+ Add FAQ</button>
       </div>
@@ -478,13 +536,19 @@ function buildAdminFaqsPage() {
 
 // ── Admin Items ────────────────────────────────────────────────
 function buildAdminItemsPage() {
-  const all = getData(KEYS.items);
+  const all  = getData(KEYS.items);
+  const cats = allItemCats();
   const rows = all.length ? all.map(i => {
-    const cat = ITEM_CATS[i.category] ?? { label: i.category || '—', cls: '' };
+    const cat = cats[i.category] ?? { label: i.category || '—', cls: '' };
+    const hasMedia = (i.image || i.attachments?.length)
+      ? '<span title="Has image/attachments" style="color:var(--orange);font-size:11px">📎</span>' : '';
     return `
       <tr>
-        <td><strong>${esc(i.name)}</strong><br><span style="font-size:11px;color:var(--text-soft)">${esc(i.generic || '')}</span></td>
-        <td><span class="cat-badge ${esc(cat.cls)}">${esc(cat.label)}</span></td>
+        <td>
+          ${i.image ? `<img src="${esc(i.image)}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:6px" onerror="this.style.display='none'">` : ''}
+          <strong>${esc(i.name)}</strong><br><span style="font-size:11px;color:var(--text-soft)">${esc(i.generic || '')}</span>
+        </td>
+        <td><span class="cat-badge ${esc(cat.cls)}">${esc(cat.label)}</span> ${hasMedia}</td>
         <td style="font-size:12px;color:var(--text-soft);white-space:nowrap">${fmtDate(i.addedDate)}</td>
         <td class="td-actions"><div class="td-actions-inner">
           <button class="btn btn-icon btn-icon-edit"   data-edit-item="${esc(i.id)}">✏️</button>
@@ -498,7 +562,7 @@ function buildAdminItemsPage() {
       <div class="page-header-row">
         <div>
           <div class="page-title">💊 Manage Items <span class="count-badge">${all.length}</span></div>
-          <div class="page-sub">เพิ่ม / แก้ไข / ลบยาใหม่ในบัญชีโรงพยาบาล</div>
+          <div class="page-sub">เพิ่ม / แก้ไข / ลบยาใหม่ · รองรับรูปภาพและไฟล์ PDF</div>
         </div>
         <button class="btn btn-primary" id="btnAddItem">+ Add Item</button>
       </div>
@@ -551,71 +615,17 @@ function buildAdminVdosPage() {
     </div>`;
 }
 
-// ── Admin Settings ─────────────────────────────────────────────
-function buildAdminSettingsPage() {
-  const serverUrl = getServerUrl();
-  const serverStatus = state.serverOk
-    ? '<span style="color:#22c55e;font-size:12px">● Connected</span>'
-    : (serverUrl ? '<span style="color:#ef4444;font-size:12px">● Unreachable</span>' : '<span style="color:#94a3b8;font-size:12px">● Not configured</span>');
-
-  return `
-    <div class="page-header">
-      <div class="page-title">⚙️ Settings</div>
-      <div class="page-sub">ตั้งค่าระบบ Admin</div>
-    </div>
-    <div class="page-body">
-
-      <div class="settings-section">
-        <div class="settings-section-title">🖥 Server URL ${serverStatus}</div>
-        <div class="form-group">
-          <div class="form-hint" style="font-family:monospace;font-size:13px">${esc(SERVER_URL)}</div>
-          <div class="form-hint">แก้ไข URL ได้ในไฟล์ <code>knowledge/app.js</code> บรรทัดแรก (ต้องการสิทธิ์ Admin)</div>
-        </div>
-        <div class="settings-gap"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-ghost" id="btnTestServerUrl">🔌 Test Connection</button>
-          <button class="btn btn-ghost" id="btnMigrateLocal">⬆ Push local data to server</button>
-        </div>
-        <div class="form-error" id="serverUrlError" hidden></div>
-      </div>
-
-      <div class="settings-section">
-        <div class="settings-section-title">🔐 เปลี่ยนรหัสผ่าน Admin</div>
-        <div class="form-group">
-          <label class="form-label">รหัสผ่านเดิม</label>
-          <input type="password" id="setPwCurrent" class="form-input" placeholder="Current password">
-        </div>
-        <div class="settings-gap"></div>
-        <div class="form-group">
-          <label class="form-label">รหัสผ่านใหม่</label>
-          <input type="password" id="setPwNew" class="form-input" placeholder="New password (min 6 chars)">
-        </div>
-        <div class="settings-gap"></div>
-        <div class="form-group">
-          <label class="form-label">ยืนยันรหัสผ่านใหม่</label>
-          <input type="password" id="setPwConfirm" class="form-input" placeholder="Confirm new password">
-          <div class="form-error" id="setPwError" hidden></div>
-        </div>
-        <div class="settings-gap"></div>
-        <button class="btn btn-primary" id="btnChangePw">💾 Save Password</button>
-      </div>
-
-    </div>`;
-}
-
 // ════════════════════════════════════════════════════════════════
 // PAGE EVENT BINDING
 // ════════════════════════════════════════════════════════════════
 function bindPageEvents() {
   const mc = document.getElementById('mainContent');
 
-  // Search input
   mc.querySelector('#searchInput')?.addEventListener('input', e => {
     state.search = e.target.value;
     renderPage();
   });
 
-  // Filter pills
   mc.querySelectorAll('.filter-pill').forEach(pill => {
     pill.addEventListener('click', () => {
       state.filterCat = pill.dataset.cat;
@@ -623,48 +633,33 @@ function bindPageEvents() {
     });
   });
 
-  // FAQ accordion toggle
   mc.querySelectorAll('[data-toggle-faq]').forEach(btn => {
     btn.addEventListener('click', e => {
-      // don't toggle if admin edit/delete btn clicked
       if (e.target.closest('[data-edit-faq],[data-del-faq]')) return;
-      const id   = btn.dataset.toggleFaq;
-      const item = document.getElementById('faq-' + id);
+      const item = document.getElementById('faq-' + btn.dataset.toggleFaq);
       item?.classList.toggle('open');
     });
   });
 
-  // Video card click
   mc.querySelectorAll('[data-open-vdo]').forEach(card => {
     card.addEventListener('click', e => {
       if (e.target.closest('[data-edit-vdo],[data-del-vdo]')) return;
-      const id  = card.dataset.openVdo;
-      const vdo = getData(KEYS.vdos).find(v => v.id === id);
+      const vdo = getData(KEYS.vdos).find(v => v.id === card.dataset.openVdo);
       if (vdo?.url) window.open(vdo.url, '_blank');
     });
   });
 
-  // ── Admin add buttons ──
   mc.querySelector('#btnAddFaq')?.addEventListener('click',  () => openEditModal('faq',  null));
   mc.querySelector('#btnAddItem')?.addEventListener('click', () => openEditModal('item', null));
   mc.querySelector('#btnAddVdo')?.addEventListener('click',  () => openEditModal('vdo',  null));
 
-  // Admin edit buttons (delegated)
-  mc.querySelectorAll('[data-edit-faq]').forEach(btn  => btn.addEventListener('click',  e => { e.stopPropagation(); openEditModal('faq',  btn.dataset.editFaq);  }));
-  mc.querySelectorAll('[data-edit-item]').forEach(btn => btn.addEventListener('click',  e => { e.stopPropagation(); openEditModal('item', btn.dataset.editItem); }));
-  mc.querySelectorAll('[data-edit-vdo]').forEach(btn  => btn.addEventListener('click',  e => { e.stopPropagation(); openEditModal('vdo',  btn.dataset.editVdo);  }));
+  mc.querySelectorAll('[data-edit-faq]').forEach(btn  => btn.addEventListener('click', e => { e.stopPropagation(); openEditModal('faq',  btn.dataset.editFaq);  }));
+  mc.querySelectorAll('[data-edit-item]').forEach(btn => btn.addEventListener('click', e => { e.stopPropagation(); openEditModal('item', btn.dataset.editItem); }));
+  mc.querySelectorAll('[data-edit-vdo]').forEach(btn  => btn.addEventListener('click', e => { e.stopPropagation(); openEditModal('vdo',  btn.dataset.editVdo);  }));
 
-  // Admin delete buttons (delegated)
   mc.querySelectorAll('[data-del-faq]').forEach(btn  => btn.addEventListener('click', e => { e.stopPropagation(); openConfirmModal('faq',  btn.dataset.delFaq);  }));
   mc.querySelectorAll('[data-del-item]').forEach(btn => btn.addEventListener('click', e => { e.stopPropagation(); openConfirmModal('item', btn.dataset.delItem); }));
   mc.querySelectorAll('[data-del-vdo]').forEach(btn  => btn.addEventListener('click', e => { e.stopPropagation(); openConfirmModal('vdo',  btn.dataset.delVdo);  }));
-
-  // Settings page — server URL (read-only, set in code)
-  mc.querySelector('#btnTestServerUrl')?.addEventListener('click', doTestServerUrl);
-  mc.querySelector('#btnMigrateLocal')?.addEventListener('click', doMigrateLocalToServer);
-
-  // Settings page — password
-  mc.querySelector('#btnChangePw')?.addEventListener('click', doChangePassword);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -674,42 +669,75 @@ function openEditModal(type, id) {
   state.editType = type;
   state.editId   = id;
 
-  const isNew   = !id;
-  const titles  = { faq: 'FAQ', item: 'Drug Item', vdo: 'Video' };
+  const isNew  = !id;
+  const titles = { faq: 'FAQ', item: 'Drug Item', vdo: 'Video' };
   document.getElementById('editModalTitle').textContent = (isNew ? 'Add ' : 'Edit ') + titles[type];
 
   document.getElementById('editModalBody').innerHTML = buildEditForm(type, id);
   document.getElementById('editModal').hidden = false;
+
+  _bindEditFormEvents(type);
+}
+
+function _catDatalist(id, cats, currentVal) {
+  const opts = Object.entries(cats).map(([v, c]) =>
+    `<option value="${esc(v)}">${esc(c.label)}</option>`
+  ).join('');
+  return `
+    <input class="form-input" id="${id}" list="${id}-list" value="${esc(currentVal || '')}" placeholder="เลือกหรือพิมพ์ category ใหม่">
+    <datalist id="${id}-list">${opts}</datalist>`;
 }
 
 function buildEditForm(type, id) {
   if (type === 'faq') {
-    const d = id ? (getData(KEYS.faqs).find(f => f.id === id) || {}) : {};
-    const catOpts = Object.entries(FAQ_CATS).map(([v, c]) =>
-      `<option value="${v}" ${d.category === v ? 'selected' : ''}>${c.label}</option>`
-    ).join('');
+    const d    = id ? (getData(KEYS.faqs).find(f => f.id === id) || {}) : {};
+    const cats = allFaqCats();
     return `
       <div class="form-group">
         <label class="form-label">Question *</label>
         <input class="form-input" id="ef-question" value="${esc(d.question || '')}" placeholder="คำถาม…">
       </div>
       <div class="form-group">
-        <label class="form-label">Answer *</label>
-        <textarea class="form-textarea" id="ef-answer" style="min-height:120px" placeholder="คำตอบ…">${esc(d.answer || '')}</textarea>
+        <label class="form-label">Answer (HTML supported — ตาราง &lt;table&gt; และ &lt;img&gt; ได้) *</label>
+        <div style="display:flex;gap:6px;margin-bottom:4px">
+          <button type="button" class="btn btn-ghost btn-sm" id="efBtnInsertTable">⊞ Insert Table</button>
+        </div>
+        <textarea class="form-textarea" id="ef-answer" style="min-height:160px;font-family:monospace;font-size:12px" placeholder="คำตอบ… (รองรับ HTML)">${esc(d.answer || '')}</textarea>
       </div>
       <div class="form-group">
         <label class="form-label">Category</label>
-        <select class="form-select" id="ef-cat">
-          ${catOpts}
-        </select>
+        ${_catDatalist('ef-cat', cats, d.category || 'general')}
+        <div class="form-hint">พิมพ์ชื่อ category ใหม่เพื่อสร้าง</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">รูปภาพ (เพิ่มได้หลายรูป)</label>
+        <input type="file" id="ef-img-upload" class="form-input" accept="image/*" multiple>
+        <div id="ef-img-preview" class="ks-upload-preview">${
+          (d.images || []).map((u, i) => `
+            <div class="ks-preview-item" data-img-idx="${i}">
+              <img src="${esc(u)}" onerror="this.src=''">
+              <button type="button" class="ks-remove-btn" data-rm-img="${i}">✕</button>
+            </div>`).join('')
+        }</div>
+        <input type="hidden" id="ef-images-json" value="${esc(JSON.stringify(d.images || []))}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ไฟล์แนบ PDF</label>
+        <input type="file" id="ef-pdf-upload" class="form-input" accept=".pdf" multiple>
+        <div id="ef-attach-list" class="ks-attach-edit-list">${
+          (d.attachments || []).map((a, i) => `
+            <div class="ks-attach-edit-item" data-attach-idx="${i}">
+              📎 ${esc(a.name)}
+              <button type="button" class="ks-remove-btn" data-rm-attach="${i}">✕</button>
+            </div>`).join('')
+        }</div>
+        <input type="hidden" id="ef-attachments-json" value="${esc(JSON.stringify(d.attachments || []))}">
       </div>`;
   }
 
   if (type === 'item') {
-    const d = id ? (getData(KEYS.items).find(i => i.id === id) || {}) : {};
-    const catOpts = Object.entries(ITEM_CATS).map(([v, c]) =>
-      `<option value="${v}" ${d.category === v ? 'selected' : ''}>${c.label}</option>`
-    ).join('');
+    const d    = id ? (getData(KEYS.items).find(i => i.id === id) || {}) : {};
+    const cats = allItemCats();
     const formOpts = DOSAGE_FORMS.map(f =>
       `<option ${d.dosageForm === f ? 'selected' : ''}>${f}</option>`
     ).join('');
@@ -727,7 +755,8 @@ function buildEditForm(type, id) {
       <div class="form-group-row">
         <div class="form-group">
           <label class="form-label">Category</label>
-          <select class="form-select" id="ef-cat">${catOpts}</select>
+          ${_catDatalist('ef-cat', cats, d.category || 'other')}
+          <div class="form-hint">พิมพ์ชื่อ category ใหม่เพื่อสร้าง</div>
         </div>
         <div class="form-group">
           <label class="form-label">Dosage Form</label>
@@ -745,6 +774,26 @@ function buildEditForm(type, id) {
       <div class="form-group">
         <label class="form-label">Date Added</label>
         <input type="date" class="form-input" id="ef-date" value="${(d.addedDate || now()).slice(0,10)}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">รูปภาพยา</label>
+        <input type="file" id="ef-img-upload" class="form-input" accept="image/*">
+        <div id="ef-img-preview" class="ks-upload-preview">${
+          d.image ? `<div class="ks-preview-item"><img src="${esc(d.image)}"><button type="button" class="ks-remove-btn" data-rm-single-img>✕</button></div>` : ''
+        }</div>
+        <input type="hidden" id="ef-image-url" value="${esc(d.image || '')}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ไฟล์แนบ PDF</label>
+        <input type="file" id="ef-pdf-upload" class="form-input" accept=".pdf" multiple>
+        <div id="ef-attach-list" class="ks-attach-edit-list">${
+          (d.attachments || []).map((a, i) => `
+            <div class="ks-attach-edit-item" data-attach-idx="${i}">
+              📎 ${esc(a.name)}
+              <button type="button" class="ks-remove-btn" data-rm-attach="${i}">✕</button>
+            </div>`).join('')
+        }</div>
+        <input type="hidden" id="ef-attachments-json" value="${esc(JSON.stringify(d.attachments || []))}">
       </div>`;
   }
 
@@ -782,22 +831,139 @@ function buildEditForm(type, id) {
   return '';
 }
 
-function doSaveEdit() {
+function _bindEditFormEvents(type) {
+  const mb = document.getElementById('editModalBody');
+  if (!mb) return;
+
+  // Insert table template for FAQ
+  mb.querySelector('#efBtnInsertTable')?.addEventListener('click', () => {
+    const ta = document.getElementById('ef-answer');
+    if (!ta) return;
+    const tpl = `\n<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%">\n  <thead><tr><th>หัวข้อ 1</th><th>หัวข้อ 2</th></tr></thead>\n  <tbody>\n    <tr><td>ข้อมูล</td><td>ข้อมูล</td></tr>\n  </tbody>\n</table>\n`;
+    const pos = ta.selectionStart;
+    ta.value = ta.value.slice(0, pos) + tpl + ta.value.slice(pos);
+    ta.focus();
+  });
+
+  // Image upload (multi for FAQ, single for item)
+  mb.querySelector('#ef-img-upload')?.addEventListener('change', async function () {
+    const files = [...this.files];
+    if (!files.length) return;
+    const preview  = document.getElementById('ef-img-preview');
+    const jsonInp  = document.getElementById('ef-images-json');
+    const singleInp = document.getElementById('ef-image-url');
+
+    showToast('กำลังอัปโหลดรูป…', 'info');
+    try {
+      for (const file of files) {
+        const url = await uploadKsFile(file);
+        if (singleInp) {
+          // single image (item)
+          singleInp.value = url;
+          preview.innerHTML = `<div class="ks-preview-item"><img src="${esc(url)}"><button type="button" class="ks-remove-btn" data-rm-single-img>✕</button></div>`;
+          break; // only one image for items
+        } else if (jsonInp) {
+          // multi images (FAQ)
+          const list = JSON.parse(jsonInp.value || '[]');
+          list.push(url);
+          jsonInp.value = JSON.stringify(list);
+          const idx = list.length - 1;
+          preview.insertAdjacentHTML('beforeend', `
+            <div class="ks-preview-item" data-img-idx="${idx}">
+              <img src="${esc(url)}" onerror="this.src=''">
+              <button type="button" class="ks-remove-btn" data-rm-img="${idx}">✕</button>
+            </div>`);
+        }
+      }
+      showToast('อัปโหลดรูปสำเร็จ ✓', 'success');
+    } catch (e) {
+      showToast('❌ อัปโหลดรูปล้มเหลว: ' + e.message, 'error');
+    }
+    this.value = '';
+  });
+
+  // PDF upload
+  mb.querySelector('#ef-pdf-upload')?.addEventListener('change', async function () {
+    const files = [...this.files];
+    if (!files.length) return;
+    const list    = document.getElementById('ef-attach-list');
+    const jsonInp = document.getElementById('ef-attachments-json');
+    if (!list || !jsonInp) return;
+
+    showToast('กำลังอัปโหลด PDF…', 'info');
+    try {
+      for (const file of files) {
+        const url  = await uploadKsFile(file);
+        const attaches = JSON.parse(jsonInp.value || '[]');
+        const idx  = attaches.length;
+        attaches.push({ name: file.name, url });
+        jsonInp.value = JSON.stringify(attaches);
+        list.insertAdjacentHTML('beforeend', `
+          <div class="ks-attach-edit-item" data-attach-idx="${idx}">
+            📎 ${esc(file.name)}
+            <button type="button" class="ks-remove-btn" data-rm-attach="${idx}">✕</button>
+          </div>`);
+      }
+      showToast('อัปโหลด PDF สำเร็จ ✓', 'success');
+    } catch (e) {
+      showToast('❌ อัปโหลด PDF ล้มเหลว: ' + e.message, 'error');
+    }
+    this.value = '';
+  });
+
+  // Remove image buttons (delegated)
+  mb.querySelector('#ef-img-preview')?.addEventListener('click', e => {
+    const rmBtn = e.target.closest('[data-rm-img],[data-rm-single-img]');
+    if (!rmBtn) return;
+
+    if (rmBtn.hasAttribute('data-rm-single-img')) {
+      const inp = document.getElementById('ef-image-url');
+      if (inp) inp.value = '';
+      rmBtn.closest('.ks-preview-item')?.remove();
+      return;
+    }
+
+    const idx = Number(rmBtn.dataset.rmImg);
+    const jsonInp = document.getElementById('ef-images-json');
+    if (!jsonInp) return;
+    const list = JSON.parse(jsonInp.value || '[]');
+    list.splice(idx, 1);
+    jsonInp.value = JSON.stringify(list);
+    rmBtn.closest('.ks-preview-item')?.remove();
+  });
+
+  // Remove attachment buttons (delegated)
+  mb.querySelector('#ef-attach-list')?.addEventListener('click', e => {
+    const rmBtn = e.target.closest('[data-rm-attach]');
+    if (!rmBtn) return;
+    const idx = Number(rmBtn.dataset.rmAttach);
+    const jsonInp = document.getElementById('ef-attachments-json');
+    if (!jsonInp) return;
+    const list = JSON.parse(jsonInp.value || '[]');
+    list.splice(idx, 1);
+    jsonInp.value = JSON.stringify(list);
+    rmBtn.closest('.ks-attach-edit-item')?.remove();
+  });
+}
+
+async function doSaveEdit() {
   const type = state.editType;
   const id   = state.editId;
-
-  const get = sel => document.getElementById(sel)?.value?.trim() ?? '';
+  const get  = sel => document.getElementById(sel)?.value?.trim() ?? '';
 
   if (type === 'faq') {
     const question = get('ef-question');
     const answer   = get('ef-answer');
     if (!question || !answer) { showToast('กรุณากรอก Question และ Answer', 'error'); return; }
+    const images     = JSON.parse(get('ef-images-json') || '[]');
+    const attachments = JSON.parse(get('ef-attachments-json') || '[]');
+    const category   = get('ef-cat') || 'general';
     const list = getData(KEYS.faqs);
     if (id) {
       const idx = list.findIndex(f => f.id === id);
-      if (idx >= 0) { list[idx] = { ...list[idx], question, answer, category: get('ef-cat'), updatedAt: now() }; }
+      if (idx >= 0) list[idx] = { ...list[idx], question, answer, category, images, attachments, updatedAt: now() };
     } else {
-      list.push({ id: uid(), question, answer, category: get('ef-cat'), createdAt: now(), updatedAt: now() });
+      list.push({ id: uid(), question, answer, category, images, attachments, createdAt: now(), updatedAt: now() });
     }
     saveData(KEYS.faqs, list);
   }
@@ -805,16 +971,20 @@ function doSaveEdit() {
   if (type === 'item') {
     const name = get('ef-name');
     if (!name) { showToast('กรุณากรอกชื่อยา', 'error'); return; }
+    const image       = get('ef-image-url');
+    const attachments = JSON.parse(get('ef-attachments-json') || '[]');
     const list = getData(KEYS.items);
     const entry = {
       name,
-      generic:    get('ef-generic'),
-      category:   get('ef-cat'),
-      dosageForm: get('ef-form'),
-      indication: get('ef-indication'),
-      notes:      get('ef-notes'),
-      addedDate:  get('ef-date') || now().slice(0,10),
-      updatedAt:  now(),
+      generic:     get('ef-generic'),
+      category:    get('ef-cat') || 'other',
+      dosageForm:  get('ef-form'),
+      indication:  get('ef-indication'),
+      notes:       get('ef-notes'),
+      addedDate:   get('ef-date') || now().slice(0,10),
+      image:       image || undefined,
+      attachments: attachments.length ? attachments : undefined,
+      updatedAt:   now(),
     };
     if (id) {
       const idx = list.findIndex(i => i.id === id);
@@ -831,8 +1001,7 @@ function doSaveEdit() {
     if (!title || !url) { showToast('กรุณากรอก Title และ URL', 'error'); return; }
     const list = getData(KEYS.vdos);
     const entry = {
-      title,
-      url,
+      title, url,
       duration:    get('ef-duration'),
       description: get('ef-desc'),
       thumbnail:   get('ef-thumb'),
@@ -877,7 +1046,7 @@ function doDelete() {
   const key    = keyMap[type];
   if (!key || !id) return;
 
-  const list    = getData(key);
+  const list     = getData(key);
   const filtered = list.filter(x => x.id !== id);
   saveData(key, filtered);
 
@@ -894,91 +1063,68 @@ function closeConfirmModal() {
 }
 
 // ════════════════════════════════════════════════════════════════
-// LOGIN / LOGOUT
+// LOGIN / LOGOUT  — uses server auth API
 // ════════════════════════════════════════════════════════════════
 function showLoginModal() {
-  document.getElementById('loginPwInput').value = '';
-  document.getElementById('loginError').hidden  = true;
-  document.getElementById('loginModal').hidden  = false;
-  setTimeout(() => document.getElementById('loginPwInput').focus(), 60);
+  document.getElementById('loginUnInput').value  = '';
+  document.getElementById('loginPwInput').value  = '';
+  document.getElementById('loginError').hidden   = true;
+  document.getElementById('loginModal').hidden   = false;
+  setTimeout(() => document.getElementById('loginUnInput').focus(), 60);
 }
 
-function doLogin() {
-  const pw = document.getElementById('loginPwInput').value;
-  if (pw === getAdminPw()) {
-    state.isAdmin = true;
+async function doLogin() {
+  const un    = document.getElementById('loginUnInput').value.trim();
+  const pw    = document.getElementById('loginPwInput').value;
+  const errEl = document.getElementById('loginError');
+  errEl.hidden = true;
+
+  if (!un || !pw) {
+    errEl.textContent = 'กรุณากรอก Username และ Password';
+    errEl.hidden = false;
+    return;
+  }
+
+  try {
+    const r = await fetch(`${SERVER_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: un, password: pw }),
+    });
+    const j = await r.json();
+    if (!r.ok) {
+      errEl.textContent = j.error || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+      errEl.hidden = false;
+      document.getElementById('loginPwInput').select();
+      return;
+    }
+    state.authToken = j.token;
+    state.authUser  = j.username;
+    state.authRole  = j.role;
+    state.isAdmin   = true;
     document.getElementById('loginModal').hidden = true;
     renderSidebar();
-    showToast('เข้าสู่ระบบสำเร็จ ✓', 'success');
-  } else {
-    document.getElementById('loginError').hidden = false;
-    document.getElementById('loginPwInput').select();
-  }
-}
-
-function doLogout() {
-  state.isAdmin = false;
-  if (state.page.startsWith('admin-')) navigateTo('faqs');
-  else { renderSidebar(); }
-  showToast('ออกจากระบบแล้ว', 'info');
-}
-
-async function doTestServerUrl() {
-  const errEl = document.getElementById('serverUrlError');
-  errEl.hidden = true;
-  try {
-    const r = await fetch(`${SERVER_URL}/ping`);
-    const j = await r.json();
-    if (j.ok) {
-      showToast(`✓ Server ตอบกลับ: ${j.server || 'OK'}`, 'success');
-    } else {
-      throw new Error('bad response');
-    }
-  } catch {
-    errEl.textContent = 'ไม่สามารถเชื่อมต่อได้ — ตรวจสอบว่า Server กำลังรันอยู่';
+    showToast(`เข้าสู่ระบบสำเร็จ (${j.username}) ✓`, 'success');
+  } catch (_) {
+    errEl.textContent = 'ไม่สามารถเชื่อมต่อ Server ได้';
     errEl.hidden = false;
   }
 }
 
-async function doMigrateLocalToServer() {
-  const base = getServerUrl();
-  if (!base) return;
-  try {
-    await Promise.all([
-      fetch(`${base}/api/faqs`,  { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: localStorage.getItem(KEYS.faqs)  || '[]' }),
-      fetch(`${base}/api/items`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: localStorage.getItem(KEYS.items) || '[]' }),
-      fetch(`${base}/api/vdos`,  { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: localStorage.getItem(KEYS.vdos)  || '[]' }),
-    ]);
-    await loadAllFromServer();
-    showToast('ย้ายข้อมูลไปยัง Server สำเร็จ ✓', 'success');
-    renderPage();
-  } catch {
-    showToast('❌ Migrate failed — ตรวจสอบ Server', 'error');
+async function doLogout() {
+  if (state.authToken) {
+    fetch(`${SERVER_URL}/api/auth/logout`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${state.authToken}` },
+    }).catch(() => {});
   }
-}
-
-function doChangePassword() {
-  const cur     = document.getElementById('setPwCurrent')?.value ?? '';
-  const newPw   = document.getElementById('setPwNew')?.value ?? '';
-  const confirm = document.getElementById('setPwConfirm')?.value ?? '';
-  const errEl   = document.getElementById('setPwError');
-
-  if (cur !== getAdminPw()) {
-    errEl.textContent = 'รหัสผ่านเดิมไม่ถูกต้อง'; errEl.hidden = false; return;
-  }
-  if (newPw.length < 6) {
-    errEl.textContent = 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร'; errEl.hidden = false; return;
-  }
-  if (newPw !== confirm) {
-    errEl.textContent = 'รหัสผ่านใหม่ไม่ตรงกัน'; errEl.hidden = false; return;
-  }
-
-  localStorage.setItem(KEYS.adminPw, newPw);
-  errEl.hidden = true;
-  document.getElementById('setPwCurrent').value  = '';
-  document.getElementById('setPwNew').value      = '';
-  document.getElementById('setPwConfirm').value  = '';
-  showToast('เปลี่ยนรหัสผ่านสำเร็จ ✓', 'success');
+  state.isAdmin   = false;
+  state.authToken = null;
+  state.authUser  = null;
+  state.authRole  = null;
+  if (state.page.startsWith('admin-')) navigateTo('faqs');
+  else renderSidebar();
+  showToast('ออกจากระบบแล้ว', 'info');
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -990,89 +1136,7 @@ function showToast(msg, type = 'info') {
   el.className = `toast toast-${type}`;
   el.innerHTML = `<span>${icons[type] ?? ''}</span> ${esc(msg)}`;
   document.getElementById('toastContainer').appendChild(el);
-  setTimeout(() => el.remove(), 3000);
-}
-
-// ════════════════════════════════════════════════════════════════
-// SEED SAMPLE DATA (first run only)
-// ════════════════════════════════════════════════════════════════
-function seedSampleData() {
-  if (getServerUrl()) return; // server is the source of truth
-  if (localStorage.getItem('bkn_ks.seeded')) return;
-
-  saveData(KEYS.faqs, [
-    {
-      id: uid(), category: 'drug',
-      question: 'ยา Warfarin ต้องติดตาม INR ทุกนานแค่ไหน?',
-      answer: 'ในช่วงเริ่มต้นหรือปรับขนาดยา ควรตรวจ INR ทุก 1–3 วัน จนกว่าค่าจะอยู่ใน therapeutic range แล้วค่อยขยายเป็นทุก 4 สัปดาห์ในผู้ป่วยที่ stable แล้ว',
-      createdAt: now(), updatedAt: now(),
-    },
-    {
-      id: uid(), category: 'process',
-      question: 'Medication Reconciliation ควรทำเมื่อไหร่?',
-      answer: 'ควรทำใน 3 จุดหลัก ได้แก่\n1. Admission — เปรียบเทียบยาที่ใช้อยู่กับ order แรกรับ\n2. Transfer — เมื่อย้ายหอผู้ป่วย\n3. Discharge — อธิบายยาที่จะนำกลับบ้านให้ผู้ป่วยเข้าใจ',
-      createdAt: now(), updatedAt: now(),
-    },
-    {
-      id: uid(), category: 'safety',
-      question: 'ยา High Alert ในโรงพยาบาลของเรามีอะไรบ้าง?',
-      answer: 'ยาที่จัดเป็น High Alert ได้แก่ Concentrated Electrolytes (KCl, NaCl 3%), Insulin, Heparin, Warfarin, Opioids, Neuromuscular Blocking Agents และยาเคมีบำบัด ต้องมีกระบวนการ double-check ก่อนจ่าย',
-      createdAt: now(), updatedAt: now(),
-    },
-    {
-      id: uid(), category: 'clinical',
-      question: 'NSAIDs ควรระวังในผู้ป่วยกลุ่มใด?',
-      answer: 'ควรระวังในผู้ป่วย CKD (GFR < 30), ผู้สูงอายุ > 65 ปี, ผู้ที่มีประวัติ peptic ulcer, ผู้ที่รับ anticoagulant และผู้ที่มีภาวะหัวใจล้มเหลว ควรพิจารณาใช้ Paracetamol แทนเมื่อเป็นไปได้',
-      createdAt: now(), updatedAt: now(),
-    },
-  ]);
-
-  saveData(KEYS.items, [
-    {
-      id: uid(), name: 'Sacubitril/Valsartan (Entresto)', generic: 'Sacubitril + Valsartan',
-      category: 'cardiac', dosageForm: 'Tablet',
-      indication: 'รักษาภาวะหัวใจล้มเหลวชนิด HFrEF (EF ≤ 40%) ลดการนอน รพ. และอัตราตาย',
-      notes: 'เริ่มได้หลัง ACEi/ARB washout 36 ชั่วโมง',
-      addedDate: new Date(Date.now() - 7 * 86400e3).toISOString().slice(0,10), updatedAt: now(),
-    },
-    {
-      id: uid(), name: 'Apixaban (Eliquis)', generic: 'Apixaban',
-      category: 'anticoagulant', dosageForm: 'Tablet',
-      indication: 'ป้องกัน stroke ใน NVAF, รักษา DVT/PE; ไม่ต้องติดตาม INR',
-      notes: 'ปรับขนาดใน CrCl < 25 mL/min, ระวังใน renal failure รุนแรง',
-      addedDate: new Date(Date.now() - 14 * 86400e3).toISOString().slice(0,10), updatedAt: now(),
-    },
-    {
-      id: uid(), name: 'Empagliflozin (Jardiance)', generic: 'Empagliflozin',
-      category: 'antidiabetic', dosageForm: 'Tablet',
-      indication: 'เบาหวานชนิดที่ 2, ลดความเสี่ยง CV events และ HF hospitalization',
-      notes: 'ระวัง DKA, ไม่แนะนำเมื่อ eGFR < 30, แจ้งผู้ป่วยเรื่อง genital infections',
-      addedDate: new Date(Date.now() - 21 * 86400e3).toISOString().slice(0,10), updatedAt: now(),
-    },
-  ]);
-
-  saveData(KEYS.vdos, [
-    {
-      id: uid(), title: 'การจัดการยา High Alert ในหน่วยงาน',
-      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      duration: '8:42', description: 'อธิบายกระบวนการตรวจสอบและจัดการยา High Alert อย่างปลอดภัย รวมถึง double-check process',
-      thumbnail: '', addedDate: new Date(Date.now() - 5 * 86400e3).toISOString().slice(0,10), updatedAt: now(),
-    },
-    {
-      id: uid(), title: 'ความรู้เรื่อง Anticoagulant ในผู้ป่วย AF',
-      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      duration: '12:15', description: 'เปรียบเทียบ Warfarin vs DOAC, การติดตามผู้ป่วย และ bleeding management',
-      thumbnail: '', addedDate: new Date(Date.now() - 10 * 86400e3).toISOString().slice(0,10), updatedAt: now(),
-    },
-    {
-      id: uid(), title: 'แนวทางจัดการ Drug Shortages',
-      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      duration: '6:05', description: 'ขั้นตอนและแนวทางการหายาทดแทนเมื่อเกิดการขาดแคลน พร้อมแหล่งข้อมูลอ้างอิง',
-      thumbnail: '', addedDate: new Date(Date.now() - 18 * 86400e3).toISOString().slice(0,10), updatedAt: now(),
-    },
-  ]);
-
-  localStorage.setItem('bkn_ks.seeded', '1');
+  setTimeout(() => el.remove(), 3500);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1082,20 +1146,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   const ok = await loadAllFromServer();
   state.serverOk = ok;
   updateServerBar(true, ok);
-  if (!ok) showToast('⚠ Server ไม่ตอบกลับ (' + SERVER_URL + ') — ใช้ข้อมูลสำรองในเครื่อง', 'error');
+  if (!ok) showToast('⚠ Server ไม่ตอบกลับ — ใช้ข้อมูลสำรองในเครื่อง', 'error');
 
-  // Sidebar public nav
   document.querySelectorAll('#sidebarNav .nav-item[data-page]').forEach(btn => {
     btn.addEventListener('click', () => navigateTo(btn.dataset.page));
   });
 
   // Login modal
   document.getElementById('btnLoginConfirm').addEventListener('click', doLogin);
-  document.getElementById('btnLoginCancel').addEventListener('click',  () => {
+  document.getElementById('btnLoginCancel').addEventListener('click', () => {
     document.getElementById('loginModal').hidden = true;
   });
   document.getElementById('loginPwInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('loginUnInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('loginPwInput').focus();
   });
 
   // Edit modal
@@ -1113,7 +1179,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.target === document.getElementById('confirmModal')) closeConfirmModal();
   });
 
-  // Read hash for deep-linking from popup
   const hash = location.hash.replace('#', '');
   if (['faqs','items','vdos'].includes(hash)) state.page = hash;
 

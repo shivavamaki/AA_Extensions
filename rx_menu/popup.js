@@ -37,6 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
   initKnowledgeTab();
   initKpiApp();
   initWorkspaceSections();
+
+  document.getElementById('btnAdminConsole')?.addEventListener('click', () => {
+    chrome.tabs.create({ url: 'http://10.134.110.81:8765/' });
+  });
 });
 
 // ──────────────────────────────────────────────────────────────────────────────

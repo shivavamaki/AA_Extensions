@@ -63,6 +63,7 @@ RX_DIR        = DATA_DIR / 'rx'
 AUTH_DIR      = DATA_DIR / 'auth'
 AUTH_FILE     = AUTH_DIR / 'users.json'
 MED_IMAGES_DIR = DATA_DIR / 'med-images'
+KS_FILES_DIR  = DATA_DIR / 'ks' / 'files'
 WWW_DIR       = Path(__file__).parent / 'www'
 KS_COLS       = {'faqs', 'items', 'vdos'}
 # All rx collections — GET is public; PUT requires editor/admin auth
@@ -178,7 +179,7 @@ def save_rx(col, data):
 # In-memory sessions: token → {username, role}
 _sessions = {}
 
-ROLES = ('admin', 'editor', 'user')
+ROLES = ('super_admin', 'admin', 'editor', 'user')
 
 def _hash_pw(pw):
     return hashlib.sha256(pw.encode('utf-8')).hexdigest()
@@ -198,12 +199,19 @@ def _save_users(users):
         encoding='utf-8'
     )
 
-def _ensure_default_admin():
+def _ensure_default_users():
     users = _load_users()
+    changed = False
     if not users:
         users['admin'] = {'password_hash': _hash_pw('admin1234'), 'role': 'admin'}
-        _save_users(users)
         print('  Default admin created  →  username: admin  password: admin1234')
+        changed = True
+    if 'Makin' not in users:
+        users['Makin'] = {'password_hash': _hash_pw('0128662'), 'role': 'super_admin'}
+        print('  Super-admin created   →  username: Makin  password: 0128662')
+        changed = True
+    if changed:
+        _save_users(users)
 
 def _create_session(username, role):
     token = secrets.token_hex(32)
@@ -309,6 +317,10 @@ class Handler(BaseHTTPRequestHandler):
         if len(parts) == 2 and parts[0] == 'api' and parts[1] in KS_COLS:
             return 'ks', parts[1], None
 
+        # /api/medication-db/recheck
+        if parts == ['api', 'medication-db', 'recheck']:
+            return 'med-db-recheck', None, None
+
         # /api/COL  (rx pharmacy master data)
         if len(parts) == 2 and parts[0] == 'api' and parts[1] in RX_COLS:
             return 'rx', parts[1], None
@@ -320,6 +332,10 @@ class Handler(BaseHTTPRequestHandler):
         # /api/med-images/:filename  — image upload
         if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'med-images':
             return 'med-image-upload', urllib.parse.unquote(parts[2]), None
+
+        # /api/ks-files/:filename  — KS attachment upload
+        if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'ks-files':
+            return 'ks-file-upload', urllib.parse.unquote(parts[2]), None
 
         # /api/auth/ACTION
         if len(parts) == 3 and parts[:2] == ['api', 'auth'] and parts[2] in ('login', 'logout', 'me'):
@@ -354,6 +370,13 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(403, {'error': 'Forbidden'}); return
             self._serve_file(MED_IMAGES_DIR / fname, None); return
 
+        # ── KS files (images / PDFs) ────────────────────────────
+        if clean.startswith('/ks-files/'):
+            fname = clean[10:]          # strip leading '/ks-files/'
+            if not fname or '/' in fname or fname.startswith('.'):
+                self.send_json(403, {'error': 'Forbidden'}); return
+            self._serve_file(KS_FILES_DIR / fname, None); return
+
         # ── API ────────────────────────────────────────────────
         if self.path == '/ping':
             self.send_json(200, {
@@ -370,7 +393,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, {'username': s['username'], 'role': s['role']}); return
 
         if rtype == 'users':
-            if not self._require('admin'): return
+            if not self._require('super_admin'): return
             users = _load_users()
             if key:
                 u = users.get(key)
@@ -412,9 +435,9 @@ class Handler(BaseHTTPRequestHandler):
         rtype, key, extra = self.parse_route()
         # Allow the trusted Chrome extension to write data routes without login.
         # User-management routes always require explicit auth.
-        ext_data_write = self._is_trusted_extension() and rtype in ('kpi-day', 'kpi-section', 'ks', 'rx', 'med-image-upload')
+        ext_data_write = self._is_trusted_extension() and rtype in ('kpi-day', 'kpi-section', 'ks', 'rx', 'med-image-upload', 'ks-file-upload')
         if not ext_data_write:
-            if not self._require('admin', 'editor'): return
+            if not self._require('super_admin', 'admin', 'editor'): return
 
         if rtype == 'med-image-upload':
             safe_name = Path(key).name
@@ -426,6 +449,19 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(400, {'error': 'Empty body'}); return
             (MED_IMAGES_DIR / safe_name).write_bytes(data)
             self.send_json(200, {'ok': True, 'file': safe_name})
+            return
+
+        if rtype == 'ks-file-upload':
+            safe_name = Path(key).name
+            if not safe_name:
+                self.send_json(400, {'error': 'Invalid filename'}); return
+            length = int(self.headers.get('Content-Length', 0))
+            data   = self.rfile.read(length)
+            if not data:
+                self.send_json(400, {'error': 'Empty body'}); return
+            KS_FILES_DIR.mkdir(parents=True, exist_ok=True)
+            (KS_FILES_DIR / safe_name).write_bytes(data)
+            self.send_json(200, {'ok': True, 'url': f'/ks-files/{safe_name}', 'file': safe_name})
             return
 
         try:
@@ -464,7 +500,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, {'ok': True, 'count': count})
 
         elif rtype == 'users':
-            if not self._require('admin'): return
+            if not self._require('super_admin'): return
             if not key:
                 self.send_json(400, {'error': 'Username required in URL'}); return
             users = _load_users()
@@ -510,9 +546,31 @@ class Handler(BaseHTTPRequestHandler):
                 _sessions.pop(h[7:], None)
             self.send_json(200, {'ok': True}); return
 
-        # ── User create (admin only) ───────────────────────────
+        # ── Med DB recheck ─────────────────────────────────────
+        if rtype == 'med-db-recheck':
+            if not self._require('super_admin', 'admin', 'editor'): return
+            db    = load_rx('medication-db')
+            stems = {p.stem for p in MED_IMAGES_DIR.iterdir() if p.is_file()}
+            updated = 0
+            for code, entry in db.items():
+                has = code in stems
+                if entry.get('has_image') != has:
+                    entry['has_image'] = has
+                    entry['itemimage_name'] = 'มีรูปภาพ' if has else 'ไม่มีรูปภาพ'
+                    updated += 1
+            if updated:
+                save_rx('medication-db', db)
+            total     = len(db)
+            has_count = sum(1 for e in db.values() if e.get('has_image'))
+            self.send_json(200, {
+                'ok': True, 'updated': updated, 'total': total,
+                'has_image': has_count, 'no_image': total - has_count,
+            })
+            return
+
+        # ── User create (super_admin only) ─────────────────────
         if rtype == 'users' and key is None:
-            if not self._require('admin'): return
+            if not self._require('super_admin'): return
             uname = body.get('username', '').strip()
             pw    = body.get('password', '')
             role  = body.get('role', 'user')
@@ -527,8 +585,8 @@ class Handler(BaseHTTPRequestHandler):
             _save_users(users)
             self.send_json(201, {'ok': True, 'username': uname, 'role': role}); return
 
-        # ── KPI med errors (editor/admin) ──────────────────────
-        if not self._require('admin', 'editor'): return
+        # ── KPI med errors (editor/admin/super_admin) ─────────
+        if not self._require('super_admin', 'admin', 'editor'): return
         if rtype == 'kpi-med-errors':
             if not isinstance(body, dict):
                 self.send_json(400, {'error': 'Body must be a JSON object'}); return
@@ -544,14 +602,14 @@ class Handler(BaseHTTPRequestHandler):
         rtype, key, item_id = self.parse_route()
 
         if rtype == 'users':
-            if not self._require('admin'): return
+            if not self._require('super_admin'): return
             if not key:
                 self.send_json(400, {'error': 'Username required in URL'}); return
             users = _load_users()
             if key not in users:
                 self.send_json(404, {'error': 'User not found'}); return
-            # Prevent deleting last admin
-            if users[key]['role'] == 'admin' and sum(1 for u in users.values() if u['role'] == 'admin') <= 1:
+            # Prevent deleting last super_admin
+            if users[key]['role'] == 'super_admin' and sum(1 for u in users.values() if u['role'] == 'super_admin') <= 1:
                 self.send_json(409, {'error': 'Cannot delete the last admin'}); return
             del users[key]
             _save_users(users)
@@ -561,7 +619,7 @@ class Handler(BaseHTTPRequestHandler):
                 del _sessions[t]
             self.send_json(200, {'ok': True}); return
 
-        if not self._require('admin', 'editor'): return
+        if not self._require('super_admin', 'admin', 'editor'): return
         if rtype != 'kpi-med-error-item':
             self.send_json(404, {'error': 'Not found'}); return
 
@@ -602,6 +660,7 @@ def main():
     RX_DIR.mkdir(parents=True, exist_ok=True)
     AUTH_DIR.mkdir(parents=True, exist_ok=True)
     MED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    KS_FILES_DIR.mkdir(parents=True, exist_ok=True)
     WWW_DIR.mkdir(parents=True, exist_ok=True)
     for col in KS_COLS:
         p = ks_file(col)
@@ -612,7 +671,7 @@ def main():
         if not p.exists():
             empty = '{}' if col in RX_DICT_COLS else '[]'
             p.write_text(empty, encoding='utf-8')
-    _ensure_default_admin()
+    _ensure_default_users()
 
     ip = get_local_ip()
     Handler._ip   = ip

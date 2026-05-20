@@ -58,6 +58,10 @@
     .ks-preview-title{font-size:11px;font-weight:600;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
     .ks-preview-sub{font-size:10px;color:var(--text-soft);margin-top:1px;}
 
+    /* ── Header admin console button ── */
+    .header-admin-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);border-radius:var(--radius-sm);color:rgba(255,255,255,.8);font-family:inherit;font-size:10px;font-weight:600;padding:4px 9px;cursor:pointer;white-space:nowrap;flex-shrink:0;letter-spacing:.3px;transition:background var(--transition),color var(--transition),border-color var(--transition);}
+    .header-admin-btn:hover{background:var(--orange);border-color:var(--orange);color:var(--white);}
+
     /* ── Workspace collapsible sections ── */
     .ws-section{margin-bottom:4px;}
     .ws-section-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:5px 2px;background:none;border:none;border-bottom:1px solid var(--border-soft);cursor:pointer;font-family:inherit;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text-soft);margin-bottom:8px;transition:color var(--transition),border-color var(--transition);}
@@ -78,6 +82,7 @@
         <span class="header-sub">Bangkok Hospital Khon Kaen</span>
       </div>
     </div>
+    <button type="button" id="btnAdminConsole" class="header-admin-btn" title="http://10.134.110.81:8765/">⚙ Admin Console</button>
     <div class="header-search" id="searchWrap" style="display:none;">
       <input type="text" id="searchInput" placeholder="ค้นหา…" autocomplete="off">
     </div>

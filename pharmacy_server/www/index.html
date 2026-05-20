@@ -25,7 +25,11 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;background:#f0f4
 #app{display:none;flex-direction:column;min-height:100vh}
 .topbar{background:#1565c0;color:#fff;display:flex;align-items:center;padding:0 20px;height:48px;gap:12px;flex-shrink:0}
 .topbar-title{font-size:15px;font-weight:700;flex:1}
-.topbar-role{font-size:11px;background:rgba(255,255,255,.18);padding:2px 8px;border-radius:10px}
+.topbar-role{font-size:11px;padding:2px 8px;border-radius:10px}
+.role-chip-super_admin{background:#f59e0b;color:#1a2030;}
+.role-chip-admin{background:rgba(255,255,255,.18);color:#fff}
+.role-chip-editor{background:rgba(255,255,255,.12);color:rgba(255,255,255,.85)}
+.role-chip-user{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
 .topbar-user{font-size:12px;opacity:.85}
 #btn-logout{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 12px;border-radius:5px;font-size:11px;cursor:pointer}
 #btn-logout:hover{background:rgba(255,255,255,.25)}
@@ -33,13 +37,13 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;background:#f0f4
 .layout{display:flex;flex:1;overflow:hidden}
 
 /* ── Sidebar ── */
-.sidebar{width:180px;background:#fff;border-right:1px solid #e3e8ef;display:flex;flex-direction:column;padding:12px 0;flex-shrink:0}
+.sidebar{width:190px;background:#fff;border-right:1px solid #e3e8ef;display:flex;flex-direction:column;padding:12px 0;flex-shrink:0;overflow-y:auto}
 .nav-section{font-size:10px;font-weight:700;color:#aaa;letter-spacing:.6px;padding:10px 16px 4px;text-transform:uppercase}
-.nav-item{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;color:#444;font-size:12px;font-weight:500;border-radius:0;transition:background .12s,color .12s;border-left:3px solid transparent}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;color:#444;font-size:12px;font-weight:500;border-left:3px solid transparent;transition:background .12s,color .12s}
 .nav-item:hover{background:#f0f4ff;color:#1565c0}
 .nav-item.active{background:#e8f0fe;color:#1565c0;border-left-color:#1565c0;font-weight:600}
 .nav-icon{font-size:14px;width:18px;text-align:center}
-.nav-item.admin-only{display:none}
+.editor-only,.admin-only,.super-admin-only{display:none}
 
 /* ── Main ── */
 .main{flex:1;overflow-y:auto;padding:20px}
@@ -47,9 +51,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;background:#f0f4
 .page.active{display:block}
 
 /* ── Page header ── */
-.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
 .page-title{font-size:16px;font-weight:700;color:#1a2030}
 .page-sub{font-size:11px;color:#888;margin-top:2px}
+.page-actions{display:flex;gap:8px;flex-wrap:wrap}
 
 /* ── Toolbar ── */
 .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
@@ -58,12 +63,14 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;background:#f0f4
 
 /* ── Buttons ── */
 .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:filter .12s,transform .1s;white-space:nowrap}
-.btn:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px)}
+.btn:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
 .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .btn-primary{background:#1565c0;color:#fff}
 .btn-success{background:#2e7d32;color:#fff}
 .btn-danger{background:#c62828;color:#fff}
 .btn-ghost{background:#f0f4f8;color:#444;border:1px solid #d0d7e3}
+.btn-warning{background:#e65100;color:#fff}
+.btn-amber{background:#f59e0b;color:#1a2030}
 .btn-sm{padding:4px 10px;font-size:11px}
 
 /* ── Table ── */
@@ -76,11 +83,14 @@ tbody tr:hover{background:#f7f9fc}
 tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
 .td-actions{white-space:nowrap;text-align:right}
 .badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;line-height:1.4}
+.badge-super_admin{background:#fef3c7;color:#b45309}
 .badge-admin{background:#e8f0fe;color:#1565c0}
 .badge-editor{background:#e8f6e8;color:#2e7d32}
 .badge-user{background:#f5f5f5;color:#777}
 .badge-fridge{background:#e3f2fd;color:#0d47a1}
 .badge-room{background:#fff3e0;color:#e65100}
+.badge-yes{background:#e8f6e8;color:#2e7d32}
+.badge-no{background:#fdecea;color:#c62828}
 .empty-row td{text-align:center;color:#aaa;padding:24px;font-style:italic}
 
 /* ── Pagination ── */
@@ -110,10 +120,32 @@ tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
 .form-field input,.form-field select,.form-field textarea{padding:7px 9px;border:1px solid #d0d7e3;border-radius:5px;font-size:12px;outline:none;font-family:inherit;transition:border-color .15s}
 .form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:#1565c0}
 .form-field textarea{resize:vertical;min-height:64px}
+.form-hint{font-size:10px;color:#999;margin-top:2px}
 .step-list{display:flex;flex-direction:column;gap:6px}
 .step-row{display:flex;gap:6px;align-items:center}
 .step-row input{flex:1}
 .step-row button{flex-shrink:0}
+
+/* ── Image upload in modal ── */
+.img-upload-wrap{display:flex;flex-direction:column;gap:8px}
+.img-preview-box{width:100%;height:120px;border:2px dashed #d0d7e3;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#f7f9fc;overflow:hidden;position:relative}
+.img-preview-box img{max-width:100%;max-height:100%;object-fit:contain}
+.img-preview-box .img-placeholder{color:#aaa;font-size:12px;text-align:center}
+.img-upload-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.img-status{font-size:11px;padding:3px 8px;border-radius:10px;font-weight:600}
+.img-status.has{background:#e8f6e8;color:#2e7d32}
+.img-status.none{background:#fdecea;color:#c62828}
+
+/* ── Report modal ── */
+.report-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-end}
+.report-filter-group{display:flex;flex-direction:column;gap:4px}
+.report-filter-group label{font-size:10px;font-weight:600;color:#555;text-transform:uppercase}
+.report-filter-group select,.report-filter-group input{padding:6px 8px;border:1px solid #d0d7e3;border-radius:5px;font-size:12px;outline:none}
+.report-stats{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.stat-chip{background:#f0f4f8;border:1px solid #e3e8ef;border-radius:6px;padding:8px 14px;font-size:12px}
+.stat-chip strong{display:block;font-size:18px;font-weight:700;color:#1565c0}
+.stat-chip.green strong{color:#2e7d32}
+.stat-chip.red strong{color:#c62828}
 
 /* ── Toast ── */
 #toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:200}
@@ -158,8 +190,8 @@ tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
       <div class="nav-item active" data-page="premix"><span class="nav-icon">💊</span>Premix Drugs</div>
       <div class="nav-item" data-page="mixing"><span class="nav-icon">🧪</span>Mixing Protocols</div>
       <div class="nav-item" data-page="meddb"><span class="nav-icon">📋</span>Medication DB</div>
-      <div class="nav-section admin-only">Admin</div>
-      <div class="nav-item admin-only" data-page="users"><span class="nav-icon">👥</span>Users</div>
+      <div class="nav-section super-admin-only">Admin</div>
+      <div class="nav-item super-admin-only" data-page="users"><span class="nav-icon">👥</span>Users</div>
     </nav>
     <div class="main">
 
@@ -201,14 +233,23 @@ tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
       <div class="page" id="page-meddb">
         <div class="page-header">
           <div><div class="page-title">Medication Database</div><div class="page-sub" id="meddb-sub"></div></div>
-          <button class="btn btn-success editor-only" id="btn-add-meddb">+ Add Item</button>
+          <div class="page-actions">
+            <button class="btn btn-ghost" id="btn-recheck-meddb" title="Scan actual image files and update has_image status">🔄 Recheck Files</button>
+            <button class="btn btn-amber" id="btn-report-meddb">📊 Report</button>
+            <button class="btn btn-success editor-only" id="btn-add-meddb">+ Add Item</button>
+          </div>
         </div>
         <div class="toolbar">
           <input class="search-box" id="meddb-search" placeholder="Search code or name…"/>
+          <select id="meddb-filter-img" style="padding:7px 9px;border:1px solid #d0d7e3;border-radius:6px;font-size:12px;outline:none">
+            <option value="all">All items</option>
+            <option value="yes">Has image ✅</option>
+            <option value="no">No image ❌</option>
+          </select>
         </div>
         <div class="tbl-wrap">
           <table>
-            <thead><tr><th>Code</th><th>Name</th><th>Unit</th><th>Image</th><th class="editor-only"></th></tr></thead>
+            <thead><tr><th>Code</th><th>Name</th><th>Unit</th><th>Image</th><th style="text-align:center">File Status</th><th class="editor-only"></th></tr></thead>
             <tbody id="meddb-tbody"></tbody>
           </table>
         </div>
@@ -218,7 +259,7 @@ tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
       <!-- Users -->
       <div class="page" id="page-users">
         <div class="page-header">
-          <div><div class="page-title">User Management</div><div class="page-sub">Admin only — KPI page is open to all users</div></div>
+          <div><div class="page-title">User Management</div><div class="page-sub">Super-admin only — manage all accounts</div></div>
           <button class="btn btn-success" id="btn-add-user">+ Add User</button>
         </div>
         <div class="tbl-wrap">
@@ -287,17 +328,30 @@ tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
 
 <!-- Medication DB modal -->
 <div class="modal-overlay" id="modal-meddb">
-  <div class="modal">
+  <div class="modal" style="width:600px">
     <div class="modal-head"><h2 id="meddb-modal-title">Add Medication Item</h2><button class="modal-close" data-close="modal-meddb">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-field span2"><label>Item Code</label><input id="md-code" placeholder="e.g. 51001060102004"/></div>
         <div class="form-field span2"><label>Name</label><input id="md-name" placeholder="Thai or English name"/></div>
         <div class="form-field"><label>Unit (base_uom)</label><input id="md-uom" placeholder="VIA / BOX / BAG…"/></div>
-        <div class="form-field"><label>Has image?</label>
-          <select id="md-has-image"><option value="false">No</option><option value="true">Yes</option></select>
+        <div class="form-field"><label>Image Status</label>
+          <input id="md-has-image-display" readonly style="background:#f7f9fc;font-weight:600" placeholder="auto-detected from file"/>
         </div>
-        <div class="form-field span2"><label>Image path (relative)</label><input id="md-img-path" placeholder="images/code.jpg (optional)"/></div>
+        <div class="form-field span2">
+          <label>Drug Image</label>
+          <div class="img-upload-wrap">
+            <div class="img-preview-box" id="md-img-preview-box">
+              <div class="img-placeholder">No image</div>
+            </div>
+            <div class="img-upload-row">
+              <input type="file" id="md-img-file" accept="image/*" style="flex:1;font-size:12px"/>
+              <button class="btn btn-ghost btn-sm" id="md-img-upload-btn" style="flex-shrink:0">⬆ Upload</button>
+              <button class="btn btn-danger btn-sm" id="md-img-remove-btn" style="display:none">✕ Remove</button>
+            </div>
+            <div class="form-hint">Upload replaces the existing image file on server. Auto-detects has_image after upload.</div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="modal-foot">
@@ -309,7 +363,7 @@ tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
 
 <!-- Add / Edit User modal -->
 <div class="modal-overlay" id="modal-user">
-  <div class="modal" style="width:400px">
+  <div class="modal" style="width:420px">
     <div class="modal-head"><h2 id="user-modal-title">Add User</h2><button class="modal-close" data-close="modal-user">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
@@ -326,7 +380,9 @@ tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
           <label>Role</label>
           <select id="u-role">
             <option value="user">user — view only</option>
-            <option value="admin">admin — full control</option>
+            <option value="editor">editor — edit data</option>
+            <option value="admin">admin — edit all data</option>
+            <option value="super_admin">super_admin — full control + users</option>
           </select>
         </div>
         <div class="form-field span2" id="u-edit-hint" style="display:none">
@@ -372,28 +428,81 @@ tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
   </div>
 </div>
 
+<!-- Report modal -->
+<div class="modal-overlay" id="modal-report">
+  <div class="modal" style="width:820px;max-height:88vh">
+    <div class="modal-head">
+      <h2>📊 Medication DB Report</h2>
+      <button class="modal-close" data-close="modal-report">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:0">
+      <div class="report-filters">
+        <div class="report-filter-group">
+          <label>Image Status</label>
+          <select id="rpt-filter-img">
+            <option value="all">All</option>
+            <option value="yes">Has image</option>
+            <option value="no">No image</option>
+          </select>
+        </div>
+        <div class="report-filter-group">
+          <label>Unit</label>
+          <select id="rpt-filter-unit">
+            <option value="all">All units</option>
+          </select>
+        </div>
+        <div class="report-filter-group">
+          <label>Search</label>
+          <input id="rpt-search" placeholder="Code or name…" style="width:200px"/>
+        </div>
+        <button class="btn btn-primary btn-sm" id="btn-rpt-apply">Apply</button>
+        <button class="btn btn-ghost btn-sm" id="btn-rpt-csv">⬇ Download CSV</button>
+      </div>
+      <div class="report-stats" id="rpt-stats"></div>
+      <div style="flex:1;overflow:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px" id="rpt-table">
+          <thead>
+            <tr style="background:#f7f9fc">
+              <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e3e8ef">#</th>
+              <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e3e8ef">Code</th>
+              <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e3e8ef">Name</th>
+              <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e3e8ef">Unit</th>
+              <th style="padding:8px 10px;text-align:center;border-bottom:1px solid #e3e8ef">Image</th>
+              <th style="padding:8px 10px;text-align:center;border-bottom:1px solid #e3e8ef">File</th>
+            </tr>
+          </thead>
+          <tbody id="rpt-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <span id="rpt-count" style="font-size:11px;color:#888;margin-right:auto"></span>
+      <button class="btn btn-ghost" data-close="modal-report">Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="toasts"></div>
 
 <script>
 'use strict';
 
 // ── Config ────────────────────────────────────────────────────
-const BASE = window.location.origin;   // same host as the server
+const BASE = window.location.origin;
 
 // ── State ─────────────────────────────────────────────────────
 let _token = localStorage.getItem('admin_token') || '';
 let _role  = '';
 let _user  = '';
 
-// Data caches
 let premixData  = [];
 let mixingData  = [];
-let medDbData   = {};      // dict keyed by code
-let medDbArr    = [];      // flattened array for pagination
+let medDbData   = {};
+let medDbArr    = [];
 let medDbPage   = 0;
+let fileStems   = new Set();   // actual image files on server
 const MED_PAGE_SIZE = 50;
 
-// Edit state
 let premixEditIdx  = -1;
 let mixingEditIdx  = -1;
 let medDbEditCode  = null;
@@ -412,13 +521,24 @@ async function api(method, path, body) {
   return json;
 }
 
+async function apiUpload(path, file) {
+  const r = await fetch(BASE + path, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${_token}`, 'Content-Type': file.type || 'application/octet-stream' },
+    body: await file.arrayBuffer(),
+  });
+  const json = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(json.error || `HTTP ${r.status}`);
+  return json;
+}
+
 // ── Toast ─────────────────────────────────────────────────────
 function toast(msg, type = 'ok') {
   const t = document.createElement('div');
   t.className = `toast ${type}`;
   t.textContent = msg;
   document.getElementById('toasts').appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+  setTimeout(() => t.remove(), 3500);
 }
 
 // ── Modal helpers ─────────────────────────────────────────────
@@ -443,14 +563,21 @@ document.querySelectorAll('.nav-item[data-page]').forEach(n =>
 
 // ── Auth: apply role visibility ───────────────────────────────
 function applyRoleUI() {
-  const isEditor = _role === 'editor' || _role === 'admin';
-  const isAdmin  = _role === 'admin';
+  const isSA     = _role === 'super_admin';
+  const isEditor = _role === 'editor' || _role === 'admin' || isSA;
+  const isAdmin  = _role === 'admin'  || isSA;
+
   document.querySelectorAll('.editor-only').forEach(el =>
     el.style.display = isEditor ? (el.classList.contains('nav-item') ? 'flex' : '') : 'none');
   document.querySelectorAll('.admin-only').forEach(el =>
     el.style.display = isAdmin ? (el.classList.contains('nav-item') ? 'flex' : '') : 'none');
+  document.querySelectorAll('.super-admin-only').forEach(el =>
+    el.style.display = isSA ? (el.classList.contains('nav-item') ? 'flex' : '') : 'none');
+
   document.getElementById('hdr-user').textContent = _user;
-  document.getElementById('hdr-role').textContent = _role;
+  const roleEl = document.getElementById('hdr-role');
+  roleEl.textContent = _role;
+  roleEl.className   = `topbar-role role-chip-${_role}`;
 }
 
 // ── Login ─────────────────────────────────────────────────────
@@ -508,7 +635,7 @@ function showApp() {
   loadPremix();
   loadMixing();
   loadMedDb();
-  if (_role === 'admin') loadUsers();
+  if (_role === 'super_admin') loadUsers();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -525,7 +652,7 @@ function renderPremix() {
   const q = document.getElementById('premix-search').value.toLowerCase();
   const rows = premixData.filter(d => !q || d.name.toLowerCase().includes(q));
   document.getElementById('premix-sub').textContent = `${rows.length} of ${premixData.length} drugs`;
-  const isEditor = _role === 'editor' || _role === 'admin';
+  const isEditor = _role === 'editor' || _role === 'admin' || _role === 'super_admin';
   const tbody = document.getElementById('premix-tbody');
   tbody.innerHTML = rows.length ? '' : '<tr class="empty-row"><td colspan="7">No drugs found</td></tr>';
   rows.forEach((d, vi) => {
@@ -612,7 +739,7 @@ function renderMixing() {
   const q = document.getElementById('mixing-search').value.toLowerCase();
   const rows = mixingData.filter(d => !q || d.name.toLowerCase().includes(q));
   document.getElementById('mixing-sub').textContent = `${rows.length} of ${mixingData.length} protocols`;
-  const isEditor = _role === 'editor' || _role === 'admin';
+  const isEditor = _role === 'editor' || _role === 'admin' || _role === 'super_admin';
   const tbody = document.getElementById('mixing-tbody');
   tbody.innerHTML = rows.length ? '' : '<tr class="empty-row"><td colspan="5">No protocols found</td></tr>';
   rows.forEach(d => {
@@ -718,37 +845,54 @@ async function saveMixing() {
 // ══════════════════════════════════════════════════════════════
 async function loadMedDb() {
   try {
-    medDbData = await api('GET', '/api/medication-db');
+    const [db, files] = await Promise.all([
+      api('GET', '/api/medication-db'),
+      fetch(BASE + '/api/med-images-list').then(r => r.ok ? r.json() : []).catch(() => []),
+    ]);
+    medDbData = db;
+    fileStems = new Set(files);
     medDbArr  = Object.values(medDbData);
     medDbPage = 0;
     renderMedDb();
+    document.getElementById('meddb-sub').textContent =
+      `${medDbArr.length.toLocaleString()} items — ${fileStems.size} image files`;
   } catch (e) { toast('Failed to load medication DB: ' + e.message, 'err'); }
 }
 
+function _imgFilter() { return document.getElementById('meddb-filter-img').value; }
+
 function renderMedDb() {
-  const q = document.getElementById('meddb-search').value.toLowerCase();
-  const filtered = q
-    ? medDbArr.filter(d => d.code?.toLowerCase().includes(q) || d.name?.toLowerCase().includes(q))
-    : medDbArr;
+  const q       = document.getElementById('meddb-search').value.toLowerCase();
+  const imgF    = _imgFilter();
+  const isEditor = _role === 'editor' || _role === 'admin' || _role === 'super_admin';
+
+  let filtered = medDbArr.filter(d => {
+    if (q && !d.code?.toLowerCase().includes(q) && !d.name?.toLowerCase().includes(q)) return false;
+    if (imgF === 'yes' && !fileStems.has(d.code)) return false;
+    if (imgF === 'no'  &&  fileStems.has(d.code)) return false;
+    return true;
+  });
 
   const total = filtered.length;
   const pages = Math.ceil(total / MED_PAGE_SIZE) || 1;
   if (medDbPage >= pages) medDbPage = pages - 1;
 
   document.getElementById('meddb-sub').textContent =
-    `${total.toLocaleString()} of ${medDbArr.length.toLocaleString()} items`;
+    `${total.toLocaleString()} of ${medDbArr.length.toLocaleString()} items — ${fileStems.size} image files on server`;
 
   const slice = filtered.slice(medDbPage * MED_PAGE_SIZE, (medDbPage + 1) * MED_PAGE_SIZE);
-  const isEditor = _role === 'editor' || _role === 'admin';
   const tbody = document.getElementById('meddb-tbody');
-  tbody.innerHTML = slice.length ? '' : '<tr class="empty-row"><td colspan="5">No items found</td></tr>';
+  tbody.innerHTML = slice.length ? '' : '<tr class="empty-row"><td colspan="6">No items found</td></tr>';
+
   slice.forEach(d => {
+    const hasFile = fileStems.has(d.code);
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><code>${esc(d.code)}</code></td>
       <td>${esc(d.name)}</td>
       <td>${esc(d.base_uom || '—')}</td>
-      <td>${d.has_image ? '✅' : '—'}</td>
+      <td style="text-align:center">${d.has_image ? '<span class="badge badge-yes">✅ Yes</span>' : '<span class="badge badge-no">❌ No</span>'}</td>
+      <td style="text-align:center">${hasFile ? '<span class="badge badge-yes">📷 File exists</span>' : '<span class="badge badge-no">— No file</span>'}</td>
       ${isEditor ? `<td class="td-actions">
         <button class="btn btn-ghost btn-sm" onclick="editMedDb('${esc(d.code)}')">Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteMedDb('${esc(d.code)}')">Del</button>
@@ -779,13 +923,35 @@ function renderMedDb() {
 }
 
 document.getElementById('meddb-search').addEventListener('input', () => { medDbPage = 0; renderMedDb(); });
+document.getElementById('meddb-filter-img').addEventListener('change', () => { medDbPage = 0; renderMedDb(); });
 
+// ── Recheck Files ─────────────────────────────────────────────
+document.getElementById('btn-recheck-meddb').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-recheck-meddb');
+  btn.disabled = true;
+  btn.textContent = '⏳ Rechecking…';
+  try {
+    const res = await api('POST', '/api/medication-db/recheck', {});
+    // Reload fresh data after server updated has_image
+    await loadMedDb();
+    toast(`Recheck done — ${res.updated} updated (${res.has_image} with image / ${res.no_image} without)`);
+  } catch (e) {
+    toast('Recheck failed: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔄 Recheck Files';
+  }
+});
+
+// ── Add / Edit Med DB ─────────────────────────────────────────
 document.getElementById('btn-add-meddb').addEventListener('click', () => {
   medDbEditCode = null;
   document.getElementById('meddb-modal-title').textContent = 'Add Medication Item';
-  ['md-code','md-name','md-uom','md-img-path'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('md-has-image').value = 'false';
+  document.getElementById('md-code').value   = '';
   document.getElementById('md-code').readOnly = false;
+  document.getElementById('md-name').value   = '';
+  document.getElementById('md-uom').value    = '';
+  _setMdImagePreview(null, false);
   openModal('modal-meddb');
 });
 
@@ -794,30 +960,85 @@ function editMedDb(code) {
   const d = medDbData[code];
   if (!d) return;
   document.getElementById('meddb-modal-title').textContent = 'Edit Medication Item';
-  document.getElementById('md-code').value      = d.code;
-  document.getElementById('md-code').readOnly   = true;
-  document.getElementById('md-name').value      = d.name;
-  document.getElementById('md-uom').value       = d.base_uom || '';
-  document.getElementById('md-has-image').value = d.has_image ? 'true' : 'false';
-  document.getElementById('md-img-path').value  = d.image_path || '';
+  document.getElementById('md-code').value   = d.code;
+  document.getElementById('md-code').readOnly = true;
+  document.getElementById('md-name').value   = d.name;
+  document.getElementById('md-uom').value    = d.base_uom || '';
+  const hasFile = fileStems.has(code);
+  _setMdImagePreview(hasFile ? `/med-images/${code}.jpg` : null, hasFile);
   openModal('modal-meddb');
 }
+
+function _setMdImagePreview(url, hasFile) {
+  const box = document.getElementById('md-img-preview-box');
+  const display = document.getElementById('md-has-image-display');
+  const rmBtn   = document.getElementById('md-img-remove-btn');
+
+  if (hasFile && url) {
+    box.innerHTML = `<img src="${esc(url)}?t=${Date.now()}" onerror="this.parentElement.innerHTML='<div class=\\'img-placeholder\\'>File exists but preview failed</div>'">`;
+    display.value = '✅ Has image (file on server)';
+    display.style.color = '#2e7d32';
+    rmBtn.style.display = '';
+  } else {
+    box.innerHTML = '<div class="img-placeholder">No image file on server</div>';
+    display.value = '❌ No image';
+    display.style.color = '#c62828';
+    rmBtn.style.display = 'none';
+  }
+}
+
+// Upload image for a med item
+document.getElementById('md-img-upload-btn').addEventListener('click', async () => {
+  const code = document.getElementById('md-code').value.trim();
+  const file = document.getElementById('md-img-file').files[0];
+  if (!code) { toast('Enter item code first', 'err'); return; }
+  if (!file)  { toast('Select an image file first', 'err'); return; }
+
+  const btn = document.getElementById('md-img-upload-btn');
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    const ext = file.name.split('.').pop().toLowerCase() || 'jpg';
+    await apiUpload(`/api/med-images/${code}.${ext}`, file);
+    fileStems.add(code);
+    _setMdImagePreview(`/med-images/${code}.${ext}`, true);
+    // Update in-memory db
+    if (medDbData[code]) {
+      medDbData[code].has_image = true;
+      medDbData[code].itemimage_name = 'มีรูปภาพ';
+    }
+    toast(`Image uploaded for ${code}`);
+  } catch (e) {
+    toast('Upload failed: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = '⬆ Upload';
+    document.getElementById('md-img-file').value = '';
+  }
+});
+
+// Remove (delete) — just clears preview; actual file deletion would need a DELETE endpoint
+document.getElementById('md-img-remove-btn').addEventListener('click', () => {
+  toast('File removal not supported here — delete the file from the server directly', 'warn');
+});
 
 document.getElementById('md-save').addEventListener('click', async () => {
   const code = document.getElementById('md-code').value.trim();
   if (!code) { toast('Code is required', 'err'); return; }
-  const hasImg = document.getElementById('md-has-image').value === 'true';
-  const imgPath = document.getElementById('md-img-path').value.trim();
-  const entry = {
+  const hasFile = fileStems.has(code);
+  const name    = document.getElementById('md-name').value.trim();
+  const uom     = document.getElementById('md-uom').value.trim();
+  const entry   = {
+    // Preserve any extra fields from existing record
+    ...(medDbData[code] || {}),
+    // Always overwrite these fields
     code,
-    name:      document.getElementById('md-name').value.trim(),
-    base_uom:  document.getElementById('md-uom').value.trim(),
-    has_image: hasImg,
-    image_path: imgPath || (hasImg ? `images/${code}.jpg` : ''),
-    image_file: imgPath ? imgPath.split('/').pop() : '',
-    itemimage_name: hasImg ? 'มีรูปภาพ' : 'ไม่มีรูปภาพ',
-    files_status: hasImg ? 'YES' : 'NOT',
-    original_image_file: '',
+    name,
+    base_uom:            uom,
+    has_image:           hasFile,
+    itemimage_name:      hasFile ? 'มีรูปภาพ' : 'ไม่มีรูปภาพ',
+    files_status:        hasFile ? 'YES' : 'NOT',
+    image_path:          hasFile ? `images/${code}.jpg` : '',
+    image_file:          hasFile ? `${code}.jpg` : '',
+    original_image_file: medDbData[code]?.original_image_file || '',
   };
   medDbData[code] = entry;
   medDbArr = Object.values(medDbData);
@@ -840,8 +1061,96 @@ async function saveMedDb() {
   } catch (e) { toast('Save failed: ' + e.message, 'err'); }
 }
 
+// ── Report ─────────────────────────────────────────────────────
+document.getElementById('btn-report-meddb').addEventListener('click', () => {
+  // Populate unit filter
+  const units = [...new Set(medDbArr.map(d => d.base_uom).filter(Boolean))].sort();
+  const sel = document.getElementById('rpt-filter-unit');
+  sel.innerHTML = '<option value="all">All units</option>';
+  units.forEach(u => {
+    const o = document.createElement('option');
+    o.value = u; o.textContent = u;
+    sel.appendChild(o);
+  });
+  document.getElementById('rpt-filter-img').value = 'all';
+  document.getElementById('rpt-search').value = '';
+  renderReport();
+  openModal('modal-report');
+});
+
+document.getElementById('btn-rpt-apply').addEventListener('click', renderReport);
+document.getElementById('rpt-search').addEventListener('input', renderReport);
+document.getElementById('rpt-filter-img').addEventListener('change', renderReport);
+document.getElementById('rpt-filter-unit').addEventListener('change', renderReport);
+
+function _getReportData() {
+  const imgF  = document.getElementById('rpt-filter-img').value;
+  const unitF = document.getElementById('rpt-filter-unit').value;
+  const q     = document.getElementById('rpt-search').value.toLowerCase();
+  return medDbArr.filter(d => {
+    if (q && !d.code?.toLowerCase().includes(q) && !d.name?.toLowerCase().includes(q)) return false;
+    const hasFile = fileStems.has(d.code);
+    if (imgF === 'yes' && !hasFile) return false;
+    if (imgF === 'no'  &&  hasFile) return false;
+    if (unitF !== 'all' && (d.base_uom || '') !== unitF) return false;
+    return true;
+  });
+}
+
+function renderReport() {
+  const rows = _getReportData();
+  const total    = medDbArr.length;
+  const hasImg   = medDbArr.filter(d => fileStems.has(d.code)).length;
+  const noImg    = total - hasImg;
+  const filtered = rows.length;
+
+  document.getElementById('rpt-stats').innerHTML = `
+    <div class="stat-chip"><strong>${total.toLocaleString()}</strong>Total items</div>
+    <div class="stat-chip green"><strong>${hasImg.toLocaleString()}</strong>Has image</div>
+    <div class="stat-chip red"><strong>${noImg.toLocaleString()}</strong>No image</div>
+    <div class="stat-chip"><strong>${filtered.toLocaleString()}</strong>Filtered</div>`;
+
+  const tbody = document.getElementById('rpt-tbody');
+  tbody.innerHTML = '';
+  rows.slice(0, 500).forEach((d, i) => {
+    const hasFile = fileStems.has(d.code);
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid #f0f3f8';
+    tr.innerHTML = `
+      <td style="padding:6px 10px;color:#aaa">${i + 1}</td>
+      <td style="padding:6px 10px;font-family:monospace">${esc(d.code)}</td>
+      <td style="padding:6px 10px">${esc(d.name)}</td>
+      <td style="padding:6px 10px">${esc(d.base_uom || '—')}</td>
+      <td style="padding:6px 10px;text-align:center">${d.has_image ? '✅' : '❌'}</td>
+      <td style="padding:6px 10px;text-align:center">${hasFile ? '📷' : '—'}</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('rpt-count').textContent =
+    `Showing ${Math.min(rows.length, 500)} of ${rows.length} results${rows.length > 500 ? ' (download CSV for full list)' : ''}`;
+}
+
+document.getElementById('btn-rpt-csv').addEventListener('click', () => {
+  const rows = _getReportData();
+  const lines = ['Code,Name,Unit,Has Image (DB),File Exists'];
+  rows.forEach(d => {
+    lines.push([
+      `"${(d.code || '').replace(/"/g,'""')}"`,
+      `"${(d.name || '').replace(/"/g,'""')}"`,
+      `"${(d.base_uom || '').replace(/"/g,'""')}"`,
+      d.has_image ? 'Yes' : 'No',
+      fileStems.has(d.code) ? 'Yes' : 'No',
+    ].join(','));
+  });
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `medication-db-report-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
 // ══════════════════════════════════════════════════════════════
-// USERS (admin only)
+// USERS (super_admin only)
 // ══════════════════════════════════════════════════════════════
 async function loadUsers() {
   try {
@@ -855,7 +1164,7 @@ function renderUsers(list) {
   tbody.innerHTML = list.length ? '' : '<tr class="empty-row"><td colspan="3">No users</td></tr>';
   list.forEach(u => {
     const tr = document.createElement('tr');
-    const badgeCls = u.role === 'admin' ? 'badge-admin' : 'badge-user';
+    const badgeCls = `badge-${u.role}`;
     tr.innerHTML = `
       <td>${esc(u.username)}</td>
       <td><span class="badge ${badgeCls}">${u.role}</span></td>
@@ -886,10 +1195,9 @@ function editUser(username, role) {
   document.getElementById('user-modal-title').textContent = 'Edit Role — ' + username;
   document.getElementById('u-name').value = username;
   document.getElementById('u-name').readOnly = true;
-  // Hide password field when editing; use Change Password modal instead
   document.getElementById('u-pw-wrap').style.display = 'none';
   document.getElementById('u-edit-hint').style.display = '';
-  document.getElementById('u-role').value = role === 'admin' ? 'admin' : 'user';
+  document.getElementById('u-role').value = role;
   openModal('modal-user');
 }
 
@@ -984,7 +1292,6 @@ function pwStrength(pw, targetId) {
 (async () => {
   const ok = await tryAutoLogin();
   if (ok) showApp();
-  // else login screen is already visible
 })();
 </script>
 </body>
