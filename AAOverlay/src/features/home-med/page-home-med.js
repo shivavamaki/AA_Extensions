@@ -175,9 +175,11 @@ function _buildMedicinePhotoSlot(med) {
   const candidates = _medicineImageCandidates(med);
 
   if (candidates.length) {
+    // src is intentionally omitted here — _bindMedicineImageFallbacks sets it
+    // after attaching the error listener so fast-failing server URLs don't miss it.
     return `
       <div class="med-photo-slot has-image" data-fallback-icon="${escapeHtml(icon)}">
-        <img class="med-photo" src="${escapeHtml(candidates[0])}" data-img-index="0" data-img-candidates="${escapeHtml(encodeURIComponent(JSON.stringify(candidates)))}" alt="Medicine picture" />
+        <img class="med-photo" data-img-index="0" data-img-candidates="${escapeHtml(encodeURIComponent(JSON.stringify(candidates)))}" alt="Medicine picture" />
       </div>`;
   }
 
@@ -191,14 +193,16 @@ function _bindMedicineImageFallbacks(root) {
   if (!root) return;
 
   root.querySelectorAll("img.med-photo[data-img-candidates]").forEach((img) => {
-    img.addEventListener("error", () => {
-      let candidates = [];
-      try {
-        candidates = JSON.parse(decodeURIComponent(img.dataset.imgCandidates || "%5B%5D"));
-      } catch (_err) {
-        candidates = [];
-      }
+    let candidates = [];
+    try {
+      candidates = JSON.parse(decodeURIComponent(img.dataset.imgCandidates || "%5B%5D"));
+    } catch (_err) {
+      candidates = [];
+    }
 
+    if (!candidates.length) return;
+
+    img.addEventListener("error", () => {
       const nextIndex = Number(img.dataset.imgIndex || "0") + 1;
       if (nextIndex < candidates.length) {
         img.dataset.imgIndex = String(nextIndex);
@@ -214,6 +218,10 @@ function _bindMedicineImageFallbacks(root) {
       slot.classList.add("no-image");
       slot.innerHTML = _renderNoImageSlot(icon);
     });
+
+    // Set src AFTER listener is attached — prevents missing the error event for
+    // fast-failing URLs (e.g. connection-refused on the local pharmacy server).
+    img.src = candidates[0];
   });
 }
 
@@ -421,7 +429,7 @@ function _extractMedRows(html) {
     if (/cancelled/i.test(status)) return;
 
     const row = {
-      code: _cleanValue(readCell(cells, idx, ["code"])),
+      code: _cleanValue(readCell(cells, idx, ["code", "item code", "drug code", "รหัส", "รหัสยา", "item no", "no."])),
       drug: _cleanDrugName(readCell(cells, idx, ["order item", "drug", "medication"])),
       dosage: _cleanValue(readCell(cells, idx, ["dosage", "dose"])),
       route: _cleanValue(readCell(cells, idx, ["route"])),

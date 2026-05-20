@@ -4,10 +4,9 @@
  * features/home-med/parser-home-med.js
  * Robust patient parser for the Home Medication Sheet.
  *
- * Important: the discharge-medication dialog table does not contain patient
- * demographics. This parser only extracts fields that can be read reliably
- * from the page banner and intentionally avoids filling weak fields such as
- * physician/department/age when the banner text is ambiguous.
+ * Strategy: try targeted DOM-element queries first (same approach used by
+ * parser-patient.js which works for patient stickers), then fall back to
+ * regex-on-innerText for any fields that were not found.
  */
 (function () {
   const _g = typeof globalThis !== "undefined" ? globalThis
@@ -64,7 +63,6 @@
         const text = flatten(el?.innerText || el?.textContent || "");
         if (!text) continue;
 
-        // Common formats include: "Ward 4 / 401", "WARD 4 / W407", or only a room/bed code.
         const slashParts = text.split("/").map(norm).filter(Boolean);
         if (slashParts.length >= 2) return slashParts[slashParts.length - 1];
 
@@ -81,8 +79,6 @@
     function findName(lines, flat, hn) {
       if (!lines.length) return null;
 
-      // Common case: first line contains both name and HN, possibly with HN
-      // broken across lines: "Name ( 48-26-\n004323 )".
       const hnPattern = hn
         ? new RegExp(`\\(?\\s*${hn.replace(/-/g, "\\s*-\\s*")}\\s*\\)?`, "i")
         : null;
@@ -95,7 +91,6 @@
       let name = hnPattern ? candidate.replace(hnPattern, "") : candidate;
       name = name.replace(/\(\s*\)?/g, "").replace(/\s{2,}/g, " ").trim();
 
-      // Fallback from flattened text before HN.
       if ((!name || /^\d/.test(name)) && hn) {
         name = flat.split(hn)[0].replace(/[()]/g, "").trim();
       }
@@ -103,29 +98,84 @@
       return name || null;
     }
 
+    /* ── DOM-element based extractors (same approach as parser-patient.js) ── */
+
+    function _getBannerRoot(sel) {
+      const el = document.querySelector(sel);
+      if (!el) return null;
+      return el.querySelector(".main-banner") || el;
+    }
+
+    function _domHN(root) {
+      if (!root) return null;
+      for (const el of root.querySelectorAll("span.overme.ng-binding")) {
+        const t = norm(el.textContent);
+        if (/^\d{2}-\d{2}-\d{6}$/.test(t)) return t;
+      }
+      return null;
+    }
+
+    function _domName(root) {
+      if (!root) return null;
+      // Specific selector first (patient-emr-banner layout)
+      for (const el of root.querySelectorAll(".padding-left-8-imp.flex div.overme.ng-binding")) {
+        if (el.getAttribute("aria-hidden") === "true") continue;
+        const t = norm(el.textContent);
+        if (t && /[ก-๙A-Za-z]/.test(t) && !t.includes("/")) return t;
+      }
+      // Broader fallback
+      for (const el of root.querySelectorAll("div.overme.ng-binding")) {
+        if (el.getAttribute("aria-hidden") === "true") continue;
+        const t = norm(el.textContent);
+        if (t && /[ก-๙A-Za-z]/.test(t) && !t.includes("/") && !t.includes(":")) return t;
+      }
+      return null;
+    }
+
+    function _domRoom(root) {
+      if (!root) return null;
+      for (const span of root.querySelectorAll('span[ng-repeat*="bedoccupancy"]')) {
+        const t = norm(span.textContent);
+        if (!t) continue;
+        const i = t.indexOf("/");
+        const room = i !== -1 ? norm(t.slice(i + 1)) : t;
+        if (room) return room;
+      }
+      return null;
+    }
+
     /** @returns {PatientData|null} */
     function parseFromBanner() {
-      const banner = document.querySelector("patient-banner, patient-emr-banner");
-      if (!banner) return null;
+      const bannerEl = document.querySelector("patient-emr-banner, patient-banner");
+      if (!bannerEl) return null;
 
-      const raw = banner.innerText || banner.textContent || "";
+      // Try both banner types for DOM-element extraction
+      const emrRoot = _getBannerRoot("patient-emr-banner");
+      const inpRoot = _getBannerRoot("patient-banner");
+      const domRoot = emrRoot || inpRoot;
+
+      const raw = bannerEl.innerText || bannerEl.textContent || "";
       const lines = cleanLines(raw);
       const flat = flatten(raw);
-      const hn = normalizeHN(flat);
-      const visit = findVisitDateTime(lines, flat);
+
+      // DOM-element queries first, regex fallback for each field
+      const hn       = _domHN(domRoot)   || normalizeHN(flat);
+      const fullName = _domName(domRoot) || findName(lines, flat, hn);
+      const room     = _domRoom(domRoot) || findRoomFromSelector();
+      const visit    = findVisitDateTime(lines, flat);
 
       return {
-        fullName: findName(lines, flat, hn),
+        fullName,
         hn,
-        ageText: findAge(lines),
+        ageText:       findAge(lines),
         visitDateTime: visit.visitDateTime,
-        an: visit.an,
-        room: findRoomFromSelector(),
-        department: null,
-        doctor: null,
-        rights: null,
-        rawText: raw,
-        rawLines: lines,
+        an:            visit.an,
+        room,
+        department:    null,
+        doctor:        null,
+        rights:        null,
+        rawText:       raw,
+        rawLines:      lines,
       };
     }
 

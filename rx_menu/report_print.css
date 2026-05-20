@@ -97,8 +97,6 @@ body.landscape .page-wrap {
   min-height: 210mm;
 }
 
-body.hide-category .exp-table .c-cat { display: none; }
-body.hide-category .exp-table .c-name { width: 78mm; }
 
 .report-page {
   width: 100%;
@@ -201,11 +199,41 @@ body.hide-category .exp-table .c-name { width: 78mm; }
 .adr-table .c-date { width: 24mm; }
 
 .signature-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12mm;
-  margin-top: 8px;
+  display: flex;
+  gap: 6mm;
+  margin-top: 10px;
   font-size: calc(9px * var(--font-scale));
+}
+
+.sig-block {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4mm;
+  border: 1px solid #000;
+  padding: 3px 5px;
+  min-height: 22mm;
+}
+
+.sig-title {
+  font-weight: 700;
+  font-size: calc(8.5px * var(--font-scale));
+  white-space: nowrap;
+}
+
+.sig-box {
+  width: 20mm;
+  height: 18mm;
+  border: 1px solid #bbb;
+  flex-shrink: 0;
+}
+
+.sig-name {
+  flex: 1;
+  border-bottom: 1px solid #000;
+  align-self: flex-end;
+  margin-bottom: 2px;
+  min-width: 20mm;
 }
 
 .empty-state {
@@ -296,6 +324,7 @@ body:not(.compact) .report-table td {
 .exp-table .c-name { width: 56mm; }
 .exp-table .c-bin { width: 18mm; }
 .exp-table .c-note { width: 22mm; }
+.exp-table.no-cat .c-name { width: 78mm; }
 
 @media print {
   .exp-report.exp-break-by-group .group-section {
@@ -314,4 +343,5 @@ body:not(.compact) .report-table td {
     break-inside: avoid;
     page-break-inside: avoid;
   }
+  .sig-box { border-color: #000; }
 }

@@ -185,13 +185,17 @@ function groupRows(rows, mode) {
   });
 }
 
-function expBodyRows(rows) {
+function getCategoryVisible() {
+  return ($('categoryVisible')?.value || 'show') === 'show';
+}
+
+function expBodyRows(rows, showCat) {
   return rows.map((r, idx) => `
     <tr>
       ${td(r.no || idx + 1, 'num nowrap')}
       ${td(r.code, 'nowrap')}
       ${td(r.name)}
-      ${td(r.category || deriveExpCategory(r), 'nowrap')}
+      ${showCat ? td(r.category || deriveExpCategory(r), 'nowrap') : ''}
       ${td(r.storeBin, 'nowrap')}
       ${td(r.qty, 'qty nowrap')}
       ${td(r.uom, 'nowrap')}
@@ -199,23 +203,25 @@ function expBodyRows(rows) {
     </tr>`).join('');
 }
 
-function expTable(rows) {
-  const body = expBodyRows(rows);
+function expTable(rows, showCat = true) {
+  const body = expBodyRows(rows, showCat);
+  const cols = showCat ? 8 : 7;
+  const cls = `report-table exp-table${showCat ? '' : ' no-cat'}`;
   return `
-    <table class="report-table exp-table">
+    <table class="${cls}">
       <thead>
         <tr>
           ${th('No.', 'c-no')}
           ${th('Code', 'c-code')}
           ${th('Name', 'c-name')}
-          ${th('Category', 'c-cat')}
+          ${showCat ? th('Category', 'c-cat') : ''}
           ${th('StoreBin', 'c-bin')}
           ${th('Quality', 'c-qty')}
           ${th('UOM', 'c-uom')}
           ${th('Count note', 'c-note')}
         </tr>
       </thead>
-      <tbody>${body || `<tr><td colspan="8" class="center">No EXP data</td></tr>`}</tbody>
+      <tbody>${body || `<tr><td colspan="${cols}" class="center">No EXP data</td></tr>`}</tbody>
     </table>`;
 }
 
@@ -236,13 +242,14 @@ function renderExp(payload) {
   setControlTitle('EXP Report', `${rows.length}/${sourceRows.length} rows · ${grouped.length} groups · A4 ${orientation} · ${expPageBreakLabel(pageBreakMode)}`);
   setStatus(`${rows.length}/${sourceRows.length} rows / ${grouped.length} groups`);
 
+  const showCat = getCategoryVisible();
   const groupSections = grouped.map(([group, groupRows], index) => `
     <section class="group-section ${index === 0 ? 'first-group' : ''}">
       <div class="section-title group-title">
         <span>${escHtml(groupMode === 'category' ? 'Category' : 'StoreBin group')}: ${escHtml(group)}</span>
         <span>${groupRows.length} item${groupRows.length === 1 ? '' : 's'}</span>
       </div>
-      ${expTable(groupRows)}
+      ${expTable(groupRows, showCat)}
     </section>`).join('');
 
   return `
@@ -267,11 +274,19 @@ function renderExp(payload) {
         <div class="summary-box"><b>Print setup</b>${escHtml(expPageBreakLabel(pageBreakMode))}</div>
       </div>
 
-      ${groupSections || expTable([])}
+      ${groupSections || expTable([], showCat)}
 
       <footer class="signature-row">
-        <div>Assistant Pharmacist: ........................................</div>
-        <div>Pharmacist: ........................................</div>
+        <div class="sig-block">
+          <span class="sig-title">Assistant Pharmacist</span>
+          <div class="sig-box"></div>
+          <span class="sig-name"></span>
+        </div>
+        <div class="sig-block">
+          <span class="sig-title">Pharmacist</span>
+          <div class="sig-box"></div>
+          <span class="sig-name"></span>
+        </div>
       </footer>
     </section>`;
 }
@@ -346,8 +361,15 @@ function renderAdr(payload) {
       ${adrTable('Observe in visit = N / blank', nRows)}
 
       <footer class="signature-row">
-        <div>Pharmacist: ........................................</div>
-        <div>Date: ........................................</div>
+        <div class="sig-block">
+          <span class="sig-title">Pharmacist</span>
+          <div class="sig-box"></div>
+          <span class="sig-name"></span>
+        </div>
+        <div class="sig-block">
+          <span class="sig-title">Date</span>
+          <span class="sig-name"></span>
+        </div>
       </footer>
     </section>`;
 }
@@ -441,8 +463,8 @@ function applyControls() {
     applyOrientation(e.target.value);
   });
 
-  $('categoryVisible')?.addEventListener('change', (e) => {
-    document.body.classList.toggle('hide-category', e.target.value === 'hide');
+  $('categoryVisible')?.addEventListener('change', () => {
+    if (currentPayload) renderPayload(currentPayload);
   });
 
   $('groupMode')?.addEventListener('change', () => {
