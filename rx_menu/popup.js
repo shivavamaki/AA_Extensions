@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initIpdQueue();
   initIvSticker();
   initAuxSticker();
+  initVaccineSchedule();
   initReport();
   initReportToggles();
   initStockPickingReport();
@@ -427,6 +428,13 @@ function initAuxSticker() {
   document.getElementById('openAuxSticker')
     ?.addEventListener('click', () => {
       chrome.tabs.create({ url: chrome.runtime.getURL('aux_sticker.html') });
+    });
+}
+
+function initVaccineSchedule() {
+  document.getElementById('btnVaccineSchedule')
+    ?.addEventListener('click', () => {
+      chrome.tabs.create({ url: chrome.runtime.getURL('vaccine/index.html') });
     });
 }
 

@@ -66,7 +66,9 @@
         "knowledge/styles.css",
         "kpi/index.html",
         "kpi/app.js",
-        "kpi/styles.css"
+        "kpi/styles.css",
+        "vaccine/index.html",
+        "vaccine/app.js"
       ],
       "matches": [
         "<all_urls>"
