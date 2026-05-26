@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pharmacy Schedule Management</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="eyebrow">June 2026 · Pharmacy Schedule Management</div>
+        <h1>Rule-based Fair Shift Scheduler</h1>
+      </div>
+      <div class="top-actions">
+        <div class="mini-kpi"><strong id="fairnessScore">0</strong><span>Fairness</span></div>
+        <div class="mini-kpi"><strong id="staffCount">0</strong><span>Staff</span></div>
+        <div class="mini-kpi"><strong id="alertCount">0</strong><span>Alerts</span></div>
+        <button id="btnAuto" class="primary">Auto Allocate</button>
+        <button id="btnRegenerate">Refresh / Regenerate</button>
+        <button id="btnSaveState">Save state</button>
+        <button id="btnPrintTable">Print / Save table</button>
+        <button id="btnExport">Export CSV</button>
+        <a class="button-link" href="booking.html" target="_blank">Pharmacist booking</a>
+      </div>
+    </header>
+
+    <main class="main-fit">
+      <section class="card schedule-card">
+        <div class="section-title compact-title">
+          <div>
+            <h2>Allocated Schedule Grid</h2>
+            <span>First opening shows a blank table for REQ OFF / part-time availability. After Save state, click Auto Allocate. Admin changes are locked and marked ✎.</span>
+          </div>
+          <div class="legend">
+            <b class="legend-item req">REQ OFF</b>
+            <b class="legend-item pt">PT available</b>
+            <b class="legend-item admin">Admin changed</b>
+            <b class="legend-item night">Night</b>
+            <b class="legend-item weekend">Weekend</b>
+          </div>
+        </div>
+        <div id="scheduleGrid" class="table-wrap compact-table"></div>
+      </section>
+
+      <section class="lower-panel">
+        <nav class="tabs" aria-label="App sections">
+          <button class="tab-btn active" data-tab="setupTab">Setup & Rules</button>
+          <button class="tab-btn" data-tab="pharmacistTab">Pharmacist Management</button>
+          <button class="tab-btn" data-tab="shiftTab">Shift Management</button>
+          <button class="tab-btn" data-tab="coverageTab">Coverage</button>
+          <button class="tab-btn" data-tab="alertsTab">Alerts</button>
+        </nav>
+
+        <div class="tab-content active" id="setupTab">
+          <section class="card setup-grid-card">
+            <div class="setup-grid">
+              <label>
+                Work hour/month target
+                <select id="targetMode">
+                  <option value="manual">Manual same target for all</option>
+                  <option value="status">Status-adjusted target hours</option>
+                  <option value="equal">Equal target 202 hr/person</option>
+                </select>
+              </label>
+              <label id="manualTargetWrap">
+                Manual target hour/month
+                <input id="manualTarget" type="number" min="0" max="300" value="202" />
+              </label>
+              <label>
+                Min OFF/month
+                <input id="minOff" type="number" min="0" max="15" value="6" />
+              </label>
+              <label>
+                Max work streak
+                <input id="maxStreak" type="number" min="1" max="14" value="6" />
+              </label>
+              <div class="button-stack">
+                <button id="btnResetView">Back to Auto</button>
+                <button id="btnRegenerateSetup">Regenerate</button>
+              </div>
+            </div>
+            <div id="messageBox" class="message">Step 1: click cells or use Pharmacist booking page to fill REQ OFF first, then Save state to lock them. Step 2: click Auto Allocate to generate fair shifts. Step 3: admin may manually change shift; Refresh / Regenerate will keep REQ OFF and admin-changed cells.</div>
+            <div class="instruction-box">
+              <strong>App workflow</strong>
+              <ol>
+                <li>First opening: table is blank for admin to enter REQ OFF and part-time available days, or load bookings from the Pharmacist booking page.</li>
+                <li>Save state: REQ OFF becomes locked and protected from accidental close/change.</li>
+                <li>Auto Allocate: system fills reasonable shifts, balances shift burden, and keeps total work hours as equal as possible.</li>
+                <li>Admin manual change: click a cell after allocation and choose an available shift. Refresh / Regenerate will not touch REQ OFF or admin-changed cells.</li>
+              </ol>
+            </div>
+          </section>
+          <section class="card status-card">
+            <div class="section-title"><h2>Status Rules</h2><span>Rule effect used by auto allocation</span></div>
+            <div id="statusRules" class="rule-list horizontal-rules"></div>
+          </section>
+        </div>
+
+        <div class="tab-content" id="pharmacistTab">
+          <section class="card add-card">
+            <div class="add-row">
+              <input id="newName" placeholder="Name" />
+              <select id="newStatus"></select>
+              <input id="newTarget" type="number" value="202" placeholder="Target hour" />
+              <button id="btnAdd" class="primary">Add pharmacist</button>
+            </div>
+          </section>
+          <section class="card staff-card-panel">
+            <div class="section-title compact-title">
+              <h2>Pharmacist Parameters</h2>
+              <span>Edit name, status, target hour; changes re-run allocation.</span>
+            </div>
+            <div id="staffCards" class="staff-grid compact-staff"></div>
+          </section>
+        </div>
+
+        <div class="tab-content" id="shiftTab">
+          <section class="card add-card">
+            <div class="shift-add-row">
+              <input id="newShiftCode" placeholder="Shift code e.g. 9-16CHE" />
+              <input id="newShiftLabel" placeholder="Display label" />
+              <input id="newShiftHours" type="number" min="0" max="24" step="0.5" value="8" placeholder="Hours" />
+              <select id="newShiftType"></select>
+              <select id="newShiftDayGroup"></select>
+              <button id="btnAddShift" class="primary">Add shift</button>
+            </div>
+          </section>
+          <section class="card shift-card-panel">
+            <div class="section-title compact-title">
+              <h2>Shift Parameters</h2>
+              <span>Edit code, label, hours, type/group, and weekday/weekend availability. Office and Special are not required common coverage; Special counts work hours and is for admin manual selection.</span>
+            </div>
+            <div class="shift-table-head">
+              <span>Code</span><span>Label</span><span>Hours</span><span>Type / Group</span><span>Day group</span><span>Save</span><span>Delete</span>
+            </div>
+            <div id="shiftRows" class="shift-rows"></div>
+          </section>
+        </div>
+
+        <div class="tab-content" id="coverageTab">
+          <section class="kpi-grid compact-kpi">
+            <article class="kpi"><span>Mean hours</span><strong id="meanHours">0</strong></article>
+            <article class="kpi"><span>Max |diff|</span><strong id="maxDiff">0</strong></article>
+            <article class="kpi"><span>Req OFF / PT Avail / Admin</span><strong id="requestCount">0 / 0 / 0</strong></article>
+            <article class="kpi"><span>Mode</span><strong id="modeLabel">Auto</strong></article>
+          </section>
+          <section class="card coverage-card">
+            <h2>Daily Coverage Check</h2>
+            <div id="coverageGrid" class="coverage-grid compact-coverage"></div>
+          </section>
+        </div>
+
+        <div class="tab-content" id="alertsTab">
+          <section class="card alerts-card">
+            <h2>Alerts / Suggestions</h2>
+            <div id="alerts" class="alerts"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="shiftEditor" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+      <div class="modal-head">
+        <div>
+          <h2 id="editorTitle">Edit shift</h2>
+          <p id="editorHelper">Select available shift for this day.</p>
+        </div>
+        <button id="btnCloseEditor" class="icon-button" type="button">×</button>
+      </div>
+      <label>
+        Available shift for selected day
+        <select id="shiftSelect"></select>
+      </label>
+      <label>
+        Admin remark
+        <textarea id="shiftRemark" rows="3" placeholder="Changed by admin"></textarea>
+      </label>
+      <div class="modal-actions">
+        <button id="btnClearShift" type="button">Clear admin change</button>
+        <button id="btnSaveShift" class="primary" type="button">Save shift</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
