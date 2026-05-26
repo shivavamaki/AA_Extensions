@@ -1,0 +1,54 @@
+{
+  "date": "2026-05-18",
+  "createdAt": "2026-05-18T00:11:40.942842+00:00",
+  "updatedAt": "2026-05-18T00:17:38.428636+00:00",
+  "opdBrief": {
+    "schemaVersion": "1.0.0",
+    "appName": "pharmacy-kpi-data-system",
+    "type": "opd-brief",
+    "date": "2026-05-18",
+    "payloadVersion": 1,
+    "signature": "รัติยากร",
+    "checks": {
+      "shoes": true,
+      "trash": true,
+      "break": true,
+      "temp": false,
+      "tv": true,
+      "expiry": true,
+      "dehumid": true,
+      "coldbag": true,
+      "it": true,
+      "narc1": true,
+      "narc2": true
+    },
+    "issues": "ความชื้น 67",
+    "savedAt": "2026-05-18T00:17:38.566Z"
+  },
+  "ipdBrief": {
+    "schemaVersion": "1.0.0",
+    "appName": "pharmacy-kpi-data-system",
+    "type": "ipd-brief",
+    "date": "2026-05-18",
+    "payloadVersion": 1,
+    "signature": "ศิริพร",
+    "checks": {
+      "shoes": true,
+      "trash": true,
+      "bottles": true,
+      "temp": false,
+      "sink": true,
+      "fridge": true,
+      "dehumid": true,
+      "expiry": true,
+      "narc": true,
+      "std": false,
+      "it": true
+    },
+    "issues": "ความชื้นสูง 77% อุณหภูมิ 23 ํC\nSTD ผิด order เป็น Berodual จัด  sulbutamol ",
+    "savedAt": "2026-05-18T00:11:41.125Z"
+  },
+  "opdStat": null,
+  "ipdStat": null,
+  "medErrors": []
+}

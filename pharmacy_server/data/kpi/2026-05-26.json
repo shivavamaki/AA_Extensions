@@ -1,0 +1,54 @@
+{
+  "date": "2026-05-26",
+  "createdAt": "2026-05-26T00:19:27.084523+00:00",
+  "updatedAt": "2026-05-26T04:02:30.050648+00:00",
+  "opdBrief": {
+    "schemaVersion": "1.0.0",
+    "appName": "pharmacy-kpi-data-system",
+    "type": "opd-brief",
+    "date": "2026-05-26",
+    "payloadVersion": 1,
+    "signature": "อลิศรา",
+    "checks": {
+      "shoes": true,
+      "trash": true,
+      "break": true,
+      "temp": false,
+      "tv": true,
+      "expiry": true,
+      "dehumid": true,
+      "coldbag": true,
+      "it": true,
+      "narc1": true,
+      "narc2": true
+    },
+    "issues": "ความชื้น 71%/ปรับแอร์ลดอุณหภูมิ",
+    "savedAt": "2026-05-26T04:02:29.932Z"
+  },
+  "ipdBrief": {
+    "schemaVersion": "1.0.0",
+    "appName": "pharmacy-kpi-data-system",
+    "type": "ipd-brief",
+    "date": "2026-05-26",
+    "payloadVersion": 1,
+    "signature": "ศิริพร",
+    "checks": {
+      "shoes": true,
+      "trash": true,
+      "bottles": true,
+      "temp": false,
+      "sink": true,
+      "fridge": true,
+      "dehumid": true,
+      "expiry": true,
+      "narc": true,
+      "std": false,
+      "it": true
+    },
+    "issues": "ความชื้น สูง 73%   ,  มี STD ส่งไป ผิด lacation",
+    "savedAt": "2026-05-26T00:19:27.173Z"
+  },
+  "opdStat": null,
+  "ipdStat": null,
+  "medErrors": []
+}

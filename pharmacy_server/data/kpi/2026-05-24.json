@@ -1,0 +1,54 @@
+{
+  "date": "2026-05-24",
+  "createdAt": "2026-05-24T00:13:48.017428+00:00",
+  "updatedAt": "2026-05-24T01:21:26.295448+00:00",
+  "opdBrief": {
+    "schemaVersion": "1.0.0",
+    "appName": "pharmacy-kpi-data-system",
+    "type": "opd-brief",
+    "date": "2026-05-24",
+    "payloadVersion": 1,
+    "signature": "อลิศรา",
+    "checks": {
+      "shoes": true,
+      "trash": true,
+      "break": true,
+      "temp": true,
+      "tv": true,
+      "expiry": true,
+      "dehumid": true,
+      "coldbag": true,
+      "it": true,
+      "narc1": true,
+      "narc2": true
+    },
+    "issues": "",
+    "savedAt": "2026-05-24T01:21:26.302Z"
+  },
+  "ipdBrief": {
+    "schemaVersion": "1.0.0",
+    "appName": "pharmacy-kpi-data-system",
+    "type": "ipd-brief",
+    "date": "2026-05-24",
+    "payloadVersion": 1,
+    "signature": "รัติยากร",
+    "checks": {
+      "shoes": true,
+      "trash": true,
+      "bottles": true,
+      "temp": false,
+      "sink": true,
+      "fridge": true,
+      "dehumid": true,
+      "expiry": true,
+      "narc": true,
+      "std": true,
+      "it": true
+    },
+    "issues": "ความชื้น  78 %",
+    "savedAt": "2026-05-24T00:13:48.212Z"
+  },
+  "opdStat": null,
+  "ipdStat": null,
+  "medErrors": []
+}
