@@ -70,6 +70,23 @@
     .ws-section-toggle[aria-expanded="false"] .ws-chevron{transform:rotate(-90deg);}
     .ws-chevron{font-size:11px;transition:transform .2s ease;display:inline-block;}
     .ws-section-body[hidden]{display:none!important;}
+
+    /* ── Schedule auth modal ── */
+    .auth-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:9999;}
+    .auth-modal[hidden]{display:none!important;}
+    .auth-modal-box{background:linear-gradient(160deg,var(--blue-dark),#0d1b2a);border:1px solid var(--orange);border-radius:14px;padding:22px 20px 18px;width:260px;box-shadow:0 8px 32px rgba(0,0,0,.5);}
+    .auth-modal-title{font-size:15px;font-weight:700;color:var(--orange);margin-bottom:3px;}
+    .auth-modal-sub{font-size:11px;color:rgba(255,255,255,.5);margin-bottom:14px;}
+    .auth-modal-error{font-size:11px;color:#f87171;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);border-radius:6px;padding:6px 8px;margin-bottom:10px;}
+    .auth-label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:rgba(255,255,255,.6);font-weight:600;letter-spacing:.3px;margin-bottom:10px;}
+    .auth-input{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);border-radius:7px;color:var(--white);font-family:inherit;font-size:12px;padding:7px 9px;transition:border-color var(--transition);}
+    .auth-input:focus{outline:none;border-color:var(--orange);}
+    .auth-modal-btns{display:flex;gap:8px;margin-top:14px;}
+    .auth-btn-primary{flex:1;padding:8px;background:var(--orange);color:var(--white);border:none;border-radius:7px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:background var(--transition);}
+    .auth-btn-primary:hover:not(:disabled){background:var(--orange-dim);}
+    .auth-btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+    .auth-btn-cancel{padding:8px 12px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.15);border-radius:7px;font-family:inherit;font-size:12px;cursor:pointer;transition:background var(--transition);}
+    .auth-btn-cancel:hover{background:rgba(255,255,255,.12);}
   </style>
 </head>
 <body>
@@ -565,6 +582,25 @@
     </section>
 
   </main>
+
+  <!-- ── Schedule auth modal ── -->
+  <div id="scheduleAuthModal" class="auth-modal" hidden>
+    <div class="auth-modal-box">
+      <div class="auth-modal-title">📅 Shift Schedule</div>
+      <div class="auth-modal-sub">กรุณาเข้าสู่ระบบเพื่อใช้งาน (Editor / Admin)</div>
+      <div class="auth-modal-error" id="scheduleAuthError" hidden></div>
+      <label class="auth-label">Username
+        <input type="text" id="scheduleAuthUser" class="auth-input" autocomplete="username" spellcheck="false" />
+      </label>
+      <label class="auth-label">Password
+        <input type="password" id="scheduleAuthPass" class="auth-input" autocomplete="current-password" />
+      </label>
+      <div class="auth-modal-btns">
+        <button type="button" id="scheduleAuthSubmit" class="auth-btn-primary">Login</button>
+        <button type="button" id="scheduleAuthCancel" class="auth-btn-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
 
   <script src="popup.js"></script>
 </body>

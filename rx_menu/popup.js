@@ -2930,9 +2930,106 @@ function initKpiApp() {
   document.getElementById('btnKpiApp')?.addEventListener('click', () => chrome.tabs.create({ url: kpiUrl() }));
 }
 
+// ── Shift Schedule auth ───────────────────────────────────────────────────────
+const SCHEDULE_SERVER        = 'http://10.134.110.81:8765';
+const SCHEDULE_ALLOWED_ROLES = ['editor', 'admin', 'super_admin'];
+const SCHED_TOKEN_KEY        = 'scheduleAuthToken';
+
+async function _schedCheckToken(token) {
+  try {
+    const r = await fetch(`${SCHEDULE_SERVER}/api/auth/me`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+function _schedShowModal() {
+  document.getElementById('scheduleAuthUser').value = '';
+  document.getElementById('scheduleAuthPass').value = '';
+  const err = document.getElementById('scheduleAuthError');
+  err.hidden = true;
+  err.textContent = '';
+  document.getElementById('scheduleAuthModal').hidden = false;
+  setTimeout(() => document.getElementById('scheduleAuthUser').focus(), 50);
+}
+
+function _schedHideModal() {
+  document.getElementById('scheduleAuthModal').hidden = true;
+}
+
 function initShiftSchedule() {
-  document.getElementById('btnShiftSchedule')?.addEventListener('click', () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL('schedule/index.html') });
+  document.getElementById('btnShiftSchedule')?.addEventListener('click', async () => {
+    const stored = await chrome.storage.local.get(SCHED_TOKEN_KEY);
+    const token  = stored[SCHED_TOKEN_KEY];
+    if (token) {
+      const session = await _schedCheckToken(token);
+      if (session && SCHEDULE_ALLOWED_ROLES.includes(session.role)) {
+        chrome.tabs.create({ url: chrome.runtime.getURL('schedule/index.html') });
+        return;
+      }
+      await chrome.storage.local.remove(SCHED_TOKEN_KEY);
+    }
+    _schedShowModal();
+  });
+
+  document.getElementById('scheduleAuthCancel')
+    ?.addEventListener('click', _schedHideModal);
+
+  document.getElementById('scheduleAuthModal')
+    ?.addEventListener('click', e => { if (e.target === e.currentTarget) _schedHideModal(); });
+
+  ['scheduleAuthUser', 'scheduleAuthPass'].forEach(id => {
+    document.getElementById(id)
+      ?.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('scheduleAuthSubmit')?.click(); });
+  });
+
+  document.getElementById('scheduleAuthSubmit')?.addEventListener('click', async () => {
+    const username = document.getElementById('scheduleAuthUser').value.trim();
+    const password = document.getElementById('scheduleAuthPass').value;
+    const errEl    = document.getElementById('scheduleAuthError');
+    const btn      = document.getElementById('scheduleAuthSubmit');
+
+    if (!username || !password) {
+      errEl.textContent = 'กรุณากรอก Username และ Password';
+      errEl.hidden = false;
+      return;
+    }
+
+    btn.disabled    = true;
+    btn.textContent = 'Logging in…';
+    errEl.hidden    = true;
+
+    try {
+      const r    = await fetch(`${SCHEDULE_SERVER}/api/auth/login`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ username, password })
+      });
+      const data = await r.json();
+
+      if (!r.ok) {
+        errEl.textContent = data.error || 'Login failed';
+        errEl.hidden = false;
+        return;
+      }
+      if (!SCHEDULE_ALLOWED_ROLES.includes(data.role)) {
+        errEl.textContent = `Access denied — role "${data.role}" ไม่มีสิทธิ์เข้าถึง Shift Schedule`;
+        errEl.hidden = false;
+        return;
+      }
+
+      await chrome.storage.local.set({ [SCHED_TOKEN_KEY]: data.token });
+      _schedHideModal();
+      chrome.tabs.create({ url: chrome.runtime.getURL('schedule/index.html') });
+    } catch {
+      errEl.textContent = 'ไม่สามารถเชื่อมต่อ Server ได้ — ตรวจสอบว่าเปิด pharmacy_server แล้ว';
+      errEl.hidden = false;
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = 'Login';
+    }
   });
 }
 
