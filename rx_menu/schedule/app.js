@@ -629,7 +629,12 @@ function openShiftEditor(personId, dayIndex) {
   if (person.status === "parttime") {
     optionHtml += `<option value="PT_AVAILABLE" ${cell.normalized === "PT_AVAILABLE" ? "selected" : ""}>Part-time available only</option>`;
   }
-  optionHtml += options.map((shift) => `<option value="${shift}" ${cell.normalized === normalizeShift(shift) ? "selected" : ""}>${shiftTemplates[normalizeShift(shift)]?.label || shift} · ${shiftTemplates[normalizeShift(shift)]?.hours || 0} hr</option>`).join("");
+  const regularOptions = options.filter((shift) => !shiftTemplates[normalizeShift(shift)]?.special);
+  const specialOptions = options.filter((shift) => shiftTemplates[normalizeShift(shift)]?.special);
+  optionHtml += regularOptions.map((shift) => `<option value="${shift}" ${cell.normalized === normalizeShift(shift) ? "selected" : ""}>${shiftTemplates[normalizeShift(shift)]?.label || shift} · ${shiftTemplates[normalizeShift(shift)]?.hours || 0} hr</option>`).join("");
+  if (specialOptions.length) {
+    optionHtml += `<optgroup label="─── Special ───">${specialOptions.map((shift) => `<option value="${shift}" ${cell.normalized === normalizeShift(shift) ? "selected" : ""}>${shiftTemplates[normalizeShift(shift)]?.label || shift} · ${shiftTemplates[normalizeShift(shift)]?.hours || 0} hr</option>`).join("")}</optgroup>`;
+  }
   select.innerHTML = optionHtml;
   select.value = override?.shift || (cell.manual ? cell.normalized : cell.normalized === "PT_AVAILABLE" ? "PT_AVAILABLE" : cell.normalized === "REQ_OFF" ? "OFF" : cell.normalized);
   if (!select.value || !Array.from(select.options).some((opt) => opt.value === select.value)) select.value = "OFF";
@@ -698,13 +703,13 @@ function setMessage(text) {
 function markDirty() {
   isDirty = true;
   const btn = $("btnSaveState");
-  if (btn) btn.textContent = "Save state *";
+  if (btn) btn.textContent = "Save to database in server *";
 }
 
 function clearDirty() {
   isDirty = false;
   const btn = $("btnSaveState");
-  if (btn) btn.textContent = "Save state";
+  if (btn) btn.textContent = "Save to database in server";
 }
 
 function saveState() {
@@ -861,7 +866,13 @@ function renderScheduleGrid() {
   });
   html += `<th class="total-col">Total</th></tr></thead><tbody>`;
 
-  staff.forEach((p) => {
+  const ROLE_ORDER = ['hod', 'deputy', 'general', 'clinical', 'parttime'];
+  const sortedStaff = [...staff].sort((a, b) => {
+    const ai = ROLE_ORDER.indexOf(a.status);
+    const bi = ROLE_ORDER.indexOf(b.status);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+  sortedStaff.forEach((p) => {
     const row = lastResult.rows.find((r) => r.id === p.id);
     html += `<tr><td class="name-col"><div class="name-main">${p.name}</div><div class="name-sub">${statusProfiles[p.status].label} · target ${row?.target ?? 0} hr · req ${row?.requestedOff ?? 0}/5</div></td>`;
     dateMeta.forEach((d, i) => {

@@ -19,7 +19,7 @@
         <div class="mini-kpi"><strong id="alertCount">0</strong><span>Alerts</span></div>
         <button id="btnAuto" class="primary">Auto Allocate</button>
         <button id="btnRegenerate">Refresh / Regenerate</button>
-        <button id="btnSaveState">Save state</button>
+        <button id="btnSaveState">Save to database in server</button>
         <button id="btnPrintTable">Print / Save table</button>
         <button id="btnExport">Export CSV</button>
         <a class="button-link" href="booking.html" target="_blank">Pharmacist booking</a>
@@ -31,7 +31,7 @@
         <div class="section-title compact-title">
           <div>
             <h2>Allocated Schedule Grid</h2>
-            <span>First opening shows a blank table for REQ OFF / part-time availability. After Save state, click Auto Allocate. Admin changes are locked and marked ✎.</span>
+            <span>First opening shows a blank table for REQ OFF / part-time availability. After Save to database, click Auto Allocate. Admin changes are locked and marked ✎.</span>
           </div>
           <div class="legend">
             <b class="legend-item req">REQ OFF</b>
@@ -81,12 +81,12 @@
                 <button id="btnRegenerateSetup">Regenerate</button>
               </div>
             </div>
-            <div id="messageBox" class="message">Step 1: click cells or use Pharmacist booking page to fill REQ OFF first, then Save state to lock them. Step 2: click Auto Allocate to generate fair shifts. Step 3: admin may manually change shift; Refresh / Regenerate will keep REQ OFF and admin-changed cells.</div>
+            <div id="messageBox" class="message">Step 1: click cells or use Pharmacist booking page to fill REQ OFF first, then Save to database in server to lock them. Step 2: click Auto Allocate to generate fair shifts. Step 3: admin may manually change shift; Refresh / Regenerate will keep REQ OFF and admin-changed cells.</div>
             <div class="instruction-box">
               <strong>App workflow</strong>
               <ol>
                 <li>First opening: table is blank for admin to enter REQ OFF and part-time available days, or load bookings from the Pharmacist booking page.</li>
-                <li>Save state: REQ OFF becomes locked and protected from accidental close/change.</li>
+                <li>Save to database in server: REQ OFF becomes locked and protected from accidental close/change.</li>
                 <li>Auto Allocate: system fills reasonable shifts, balances shift burden, and keeps total work hours as equal as possible.</li>
                 <li>Admin manual change: click a cell after allocation and choose an available shift. Refresh / Regenerate will not touch REQ OFF or admin-changed cells.</li>
               </ol>
