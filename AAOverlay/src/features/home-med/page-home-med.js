@@ -623,6 +623,7 @@ function bindToolbar(patient) {
   if (btnPrint) {
     btnPrint.onclick = () => {
       applyPrintSettings(currentPrintSettingsFromControls());
+      _buildPrintHeader();
       window.print();
     };
   }
@@ -633,6 +634,7 @@ function bindToolbar(patient) {
     btnPdf.onclick = () => {
       document.title = buildFileName(patient);
       applyPrintSettings(currentPrintSettingsFromControls());
+      _buildPrintHeader();
       window.print();
     };
   }
@@ -650,13 +652,25 @@ async function renderFromMessage(msg) {
   bindToolbar(_patient);
 }
 
+function _cloneForPrintHeader(el) {
+  const clone = el.cloneNode(true);
+
+  // Original header blocks use .screen-only so they are hidden in print.
+  // When cloned into the repeating table <thead>, remove that class; otherwise
+  // the cloned header is also hidden and the print/PDF starts directly at table columns.
+  clone.classList.remove("screen-only");
+  clone.querySelectorAll(".screen-only").forEach((node) => node.classList.remove("screen-only"));
+
+  return clone;
+}
+
 function _buildPrintHeader() {
   const cell = document.getElementById("printHdrCell");
   if (!cell) return;
   cell.innerHTML = "";
   [".top-title", ".patient-card", ".section-title"].forEach((sel) => {
     const el = document.querySelector(sel);
-    if (el) cell.appendChild(el.cloneNode(true));
+    if (el) cell.appendChild(_cloneForPrintHeader(el));
   });
 }
 
