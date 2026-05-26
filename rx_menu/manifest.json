@@ -68,7 +68,13 @@
         "kpi/app.js",
         "kpi/styles.css",
         "vaccine/index.html",
-        "vaccine/app.js"
+        "vaccine/app.js",
+        "schedule/index.html",
+        "schedule/app.js",
+        "schedule/styles.css",
+        "schedule/booking.html",
+        "schedule/booking.js",
+        "schedule/booking.css"
       ],
       "matches": [
         "<all_urls>"

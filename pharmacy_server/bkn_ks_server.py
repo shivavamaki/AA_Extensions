@@ -64,6 +64,7 @@ AUTH_DIR      = DATA_DIR / 'auth'
 AUTH_FILE     = AUTH_DIR / 'users.json'
 MED_IMAGES_DIR = DATA_DIR / 'med-images'
 KS_FILES_DIR  = DATA_DIR / 'ks' / 'files'
+SCHEDULE_DIR  = DATA_DIR / 'schedule'
 WWW_DIR       = Path(__file__).parent / 'www'
 KS_COLS       = {'faqs', 'items', 'vdos'}
 # All rx collections — GET is public; PUT requires editor/admin auth
@@ -170,6 +171,27 @@ def load_rx(col):
 def save_rx(col, data):
     RX_DIR.mkdir(parents=True, exist_ok=True)
     rx_file(col).write_text(
+        json.dumps(data, ensure_ascii=False, indent=2),
+        encoding='utf-8'
+    )
+
+
+# ── Schedule helpers ──────────────────────────────────────────
+def schedule_file(name):
+    return SCHEDULE_DIR / f'{name}.json'
+
+def load_schedule(name):
+    p = schedule_file(name)
+    if not p.exists():
+        return None
+    try:
+        return json.loads(p.read_text(encoding='utf-8'))
+    except Exception:
+        return None
+
+def save_schedule(name, data):
+    SCHEDULE_DIR.mkdir(parents=True, exist_ok=True)
+    schedule_file(name).write_text(
         json.dumps(data, ensure_ascii=False, indent=2),
         encoding='utf-8'
     )
@@ -337,6 +359,10 @@ class Handler(BaseHTTPRequestHandler):
         if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'ks-files':
             return 'ks-file-upload', urllib.parse.unquote(parts[2]), None
 
+        # /api/schedule/state  or  /api/schedule/bookings
+        if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'schedule' and parts[2] in ('state', 'bookings'):
+            return 'schedule', parts[2], None
+
         # /api/auth/ACTION
         if len(parts) == 3 and parts[:2] == ['api', 'auth'] and parts[2] in ('login', 'logout', 'me'):
             return 'auth', parts[2], None
@@ -411,6 +437,9 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, load_ks(key))
         elif rtype == 'rx':
             self.send_json(200, load_rx(key))
+        elif rtype == 'schedule':
+            data = load_schedule(key)
+            self.send_json(200, data)
         elif rtype == 'med-images-list':
             stems = [p.stem for p in MED_IMAGES_DIR.iterdir() if p.is_file()]
             self.send_json(200, stems)
@@ -435,7 +464,7 @@ class Handler(BaseHTTPRequestHandler):
         rtype, key, extra = self.parse_route()
         # Allow the trusted Chrome extension to write data routes without login.
         # User-management routes always require explicit auth.
-        ext_data_write = self._is_trusted_extension() and rtype in ('kpi-day', 'kpi-section', 'ks', 'rx', 'med-image-upload', 'ks-file-upload')
+        ext_data_write = self._is_trusted_extension() and rtype in ('kpi-day', 'kpi-section', 'ks', 'rx', 'med-image-upload', 'ks-file-upload', 'schedule')
         if not ext_data_write:
             if not self._require('super_admin', 'admin', 'editor'): return
 
@@ -498,6 +527,12 @@ class Handler(BaseHTTPRequestHandler):
             save_rx(key, body)
             count = len(body) if isinstance(body, (list, dict)) else 0
             self.send_json(200, {'ok': True, 'count': count})
+
+        elif rtype == 'schedule':
+            if not isinstance(body, (dict, list)):
+                self.send_json(400, {'error': 'Body must be a JSON object or array'}); return
+            save_schedule(key, body)
+            self.send_json(200, {'ok': True})
 
         elif rtype == 'users':
             if not self._require('super_admin'): return
@@ -661,6 +696,7 @@ def main():
     AUTH_DIR.mkdir(parents=True, exist_ok=True)
     MED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
     KS_FILES_DIR.mkdir(parents=True, exist_ok=True)
+    SCHEDULE_DIR.mkdir(parents=True, exist_ok=True)
     WWW_DIR.mkdir(parents=True, exist_ok=True)
     for col in KS_COLS:
         p = ks_file(col)

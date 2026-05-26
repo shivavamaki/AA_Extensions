@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\bkn.pharmacy\\\\Documents\\\\AA_Extensions\\\\schedule\" -Recurse -Force | Select-Object Name, @{n='RelativePath';e={$_.FullName -replace [regex]::Escape\\('C:\\\\Users\\\\bkn.pharmacy\\\\Documents\\\\AA_Extensions\\\\schedule\\\\'\\)}} | Format-Table -AutoSize)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\bkn.pharmacy\\\\Documents\\\\AA_Extensions\\\\rx_menu\" -Recurse -Force | Select-Object Name, @{n='RelativePath';e={$_.FullName -replace [regex]::Escape\\('C:\\\\Users\\\\bkn.pharmacy\\\\Documents\\\\AA_Extensions\\\\rx_menu\\\\'\\)}} | Format-Table -AutoSize)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\bkn.pharmacy\\\\Documents\\\\AA_Extensions\\\\pharmacy_server\" -Recurse -Force | Select-Object Name, @{n='RelativePath';e={$_.FullName -replace [regex]::Escape\\('C:\\\\Users\\\\bkn.pharmacy\\\\Documents\\\\AA_Extensions\\\\pharmacy_server\\\\'\\)}} | Format-Table -AutoSize)",
+      "PowerShell(Get-Command git -ErrorAction SilentlyContinue; \\(Get-ChildItem \"C:\\\\Program Files\\\\Git\" -ErrorAction SilentlyContinue\\) | Select-Object Name; \\(Get-ChildItem \"C:\\\\Program Files \\(x86\\)\\\\Git\" -ErrorAction SilentlyContinue\\) | Select-Object Name)",
+      "Read(//c/Users/bkn.pharmacy/AppData/Local/Programs/Git/**)",
+      "Read(//c/Users/bkn.pharmacy/AppData/Local/**)",
+      "Read(//c/Users/**)",
+      "PowerShell($env:PATH)",
+      "Read(//c//**)"
+    ]
+  }
+}

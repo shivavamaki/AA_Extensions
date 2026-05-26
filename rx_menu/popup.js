@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initFormularyTab();
   initKnowledgeTab();
   initKpiApp();
+  initShiftSchedule();
   initWorkspaceSections();
 
   document.getElementById('btnAdminConsole')?.addEventListener('click', () => {
@@ -2927,6 +2928,12 @@ function kpiUrl() {
 
 function initKpiApp() {
   document.getElementById('btnKpiApp')?.addEventListener('click', () => chrome.tabs.create({ url: kpiUrl() }));
+}
+
+function initShiftSchedule() {
+  document.getElementById('btnShiftSchedule')?.addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('schedule/index.html') });
+  });
 }
 
 function knowledgeUrl(hash) {
