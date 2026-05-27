@@ -41,7 +41,8 @@
       "Bash(git status *)",
       "Bash(git check-ignore *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git add *)"
     ]
   }
 }
