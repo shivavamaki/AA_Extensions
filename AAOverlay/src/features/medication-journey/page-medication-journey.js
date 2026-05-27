@@ -1,6 +1,5 @@
-/* ── page-medication-journey.js ────────────────────────────────────────────
-   Renders the journey data into page-medication-journey.html.
-   No external dependencies — plain JS only.
+/* ── page-medication-journey.js ─────────────────────────────────────────────
+   ADR Drug Timeline — Gantt-style chart matching the ADR Timeline.png format.
 ──────────────────────────────────────────────────────────────────────────── */
 "use strict";
 
@@ -8,512 +7,341 @@
 let _journeyData  = null;
 let _editSnapshot = null;
 
-/* ── Event type metadata ───────────────────────────────────────────────── */
-const EVENT_META = {
-  start:    { icon: "🟢", label: "ยาเริ่มใช้",               color: "#2e7d32" },
-  continue: { icon: "🔵", label: "ยาต่อเนื่อง",              color: "#1565c0" },
-  change:   { icon: "🟡", label: "ยาปรับขนาด/วิธีใช้",      color: "#e65100" },
-  switch:   { icon: "🟣", label: "ยาฉีดเปลี่ยนเป็นยากิน",   color: "#7b1fa2" },
-  stop:     { icon: "🔴", label: "ยาหยุดใช้แล้ว",            color: "#c62828" },
-  prn:      { icon: "🩵", label: "ใช้เมื่อมีอาการ (PRN)",    color: "#00695c" },
-  diluent:  { icon: "⚗️", label: "สารน้ำเจือจาง",           color: "#546e7a" },
-  alert:    { icon: "⚠️", label: "มีข้อมูลแจ้งเตือน",       color: "#e65100" },
-};
-
-/* ── Utility ────────────────────────────────────────────────────────────── */
+/* ── Utilities ──────────────────────────────────────────────────────────── */
 function esc(str) {
   return String(str || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
+function deepClone(obj) { return JSON.parse(JSON.stringify(obj)); }
 
-function deepClone(obj) {
-  return JSON.parse(JSON.stringify(obj));
+/* ── Date helpers ───────────────────────────────────────────────────────── */
+function parseDate(str) {
+  if (!str || str === "unknown") return null;
+  let m = String(str).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(+m[1], +m[2]-1, +m[3]);
+  m = String(str).match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+  return null;
 }
-
+function dayStart(d)    { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function addDays(d, n)  { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+function diffDays(a, b) { return Math.round((dayStart(b) - dayStart(a)) / 86400000); }
 function fmtDate(dt) {
   if (!dt) return "";
-  const d = String(dt).slice(0, 10);
-  if (!d || d === "unknown") return dt || "";
-  const parts = d.split("-");
-  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-  return d;
+  const d = String(dt).slice(0,10), p = d.split("-");
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
+}
+function fmtDateRange(s, e) {
+  const sd = fmtDate(s), ed = fmtDate(e);
+  if (sd && ed) return `${sd} – ${ed}`;
+  return sd || ed || "";
+}
+const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+/* ── Collect all medications ────────────────────────────────────────────── */
+function getAllMeds(jd) {
+  return [
+    ...(jd.activeMedications  || []).map(m => Object.assign({},m,{_secType:"active"})),
+    ...(jd.stoppedMedications || []).map(m => Object.assign({},m,{_secType:"stopped"})),
+    ...(jd.prnMedications     || []).map(m => Object.assign({},m,{_secType:"prn"})),
+    ...(jd.diluentMedications || []).map(m => Object.assign({},m,{_secType:"diluent"})),
+  ];
 }
 
-function fmtDateRange(start, end) {
-  const s = fmtDate(start);
-  const e = fmtDate(end);
-  if (s && e) return `${s} – ${e}`;
-  return s || e || "";
+/* ── Calculate date range ───────────────────────────────────────────────── */
+function calcRange(meds, ctx) {
+  const dates = [];
+  const admit = parseDate(ctx && ctx.admitDate);
+  if (admit) dates.push(admit);
+  for (const m of meds) {
+    const s = parseDate(m.startDateTime), e = parseDate(m.endDateTime);
+    if (s) dates.push(s);
+    if (e) dates.push(e);
+  }
+  if (!dates.length) {
+    const t = dayStart(new Date());
+    return { start: addDays(t,-14), end: addDays(t,3), totalDays:17 };
+  }
+  const minTs = Math.min(...dates.map(d=>d.getTime()));
+  const maxTs = Math.max(...dates.map(d=>d.getTime()));
+  const start = dayStart(addDays(new Date(minTs),-1));
+  const end   = dayStart(addDays(new Date(maxTs), 3));
+  return { start, end, totalDays: Math.max(diffDays(start,end),1) };
+}
+
+function pct(n, total) { return (n/total*100).toFixed(3); }
+
+/* ── Bar color per medication type ──────────────────────────────────────── */
+function getMedColor(med) {
+  if (med.isCancelled || med._secType==="stopped") return "#90a4ae";
+  if (med._isIv)               return "#1565c0";
+  if (med._secType==="prn")    return "#00838f";
+  if (med._secType==="diluent")return "#78909c";
+  return "#388e3c";
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   VIEW MODE — render functions
+   GANTT CHART RENDERING
 ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Patient card ───────────────────────────────────────────────────────── */
-function buildPatientCard(ctx) {
-  const fields = [
-    { lbl: "ชื่อผู้ป่วย",  val: ctx.patientName    || "–" },
-    { lbl: "HN",           val: ctx.hn || ctx.patientId || "–" },
-    { lbl: "AN",           val: ctx.an || ctx.patientVisitId || "–" },
-    { lbl: "เพศ",          val: ctx.gender   || "–" },
-    { lbl: "วันเกิด",      val: ctx.dob      || "–" },
-    { lbl: "อายุ",         val: ctx.age      || "–" },
-    { lbl: "เตียง",        val: ctx.bed      || "–" },
-    { lbl: "แผนก",         val: ctx.dept     || "–" },
-    { lbl: "แพทย์",        val: ctx.doctor   || "–" },
-    { lbl: "วันรับไว้",    val: ctx.admitDate|| "–" },
-  ];
+/* ── Date header row ────────────────────────────────────────────────────── */
+function buildDateHeader(range) {
+  const { start, totalDays } = range;
+  const mid = addDays(start, Math.floor(totalDays/2));
+  const monthLabel = `${MONTH_SHORT[mid.getMonth()]} ${mid.getFullYear()} exposure timeline`;
 
-  const fieldHtml = fields.map(f =>
-    `<div class="mj-patient-field">
-       <div class="lbl">${esc(f.lbl)}</div>
-       <div class="val">${esc(f.val)}</div>
-     </div>`
-  ).join("");
-
-  return `<div class="mj-patient-card">${fieldHtml}</div>`;
-}
-
-/* ── Source bar ─────────────────────────────────────────────────────────── */
-function buildSourceBar(source) {
-  if (!source) return "";
-  const parts = [];
-  if (source.usedJasperXls)    parts.push(`<span class="mj-source-tag">📊 Jasper XLS</span>`);
-  if (source.usedHtmlFallback) parts.push(`<span class="mj-source-tag">🌐 HTML (หน้า EMR)</span>`);
-  if (source.usedMock)         parts.push(`<span class="mj-source-tag">🧪 ข้อมูลทดสอบ (Mock)</span>`);
-
-  parts.push(`<span>ยาทั้งหมด: <strong>${source.totalOrders || 0}</strong> รายการ</span>`);
-  parts.push(`<span>สร้างเมื่อ: <strong>${new Date().toLocaleString("th-TH")}</strong></span>`);
-
-  if (source.medicationReviewUrl) {
-    parts.push(`<a href="${esc(source.medicationReviewUrl)}" target="_blank" style="color:#1565c0;font-weight:600;font-size:11px">เปิดรายงาน Jasper ↗</a>`);
+  let ticks = "";
+  for (let i = 0; i <= totalDays; i++) {
+    const d = addDays(start, i);
+    ticks += `<div class="mj-day-tick" style="left:${pct(i,totalDays)}%">${d.getDate()}</div>`;
   }
-
-  return `<div class="mj-source-bar">${parts.join(" · ")}</div>`;
-}
-
-/* ── Section wrapper ────────────────────────────────────────────────────── */
-function buildSection(id, themeClass, icon, title, count, bodyHtml, defaultOpen) {
-  const collapsed = defaultOpen ? "" : " collapsed";
-  return `<div class="mj-section ${themeClass}${collapsed}" id="${id}">
-  <div class="mj-section-header" data-section="${id}">
-    <span>${icon}</span>
-    <span>${esc(title)}</span>
-    <span class="mj-badge" style="margin-left:4px;background:rgba(0,0,0,.07);color:inherit">${count}</span>
-    <span class="mj-section-toggle">▾</span>
-  </div>
-  <div class="mj-section-body">${bodyHtml}</div>
+  return `<div class="mj-date-hdr">
+  <div class="mj-month-label">${esc(monthLabel)}</div>
+  <div class="mj-days-row">${ticks}</div>
 </div>`;
 }
 
-/* ── Event card ─────────────────────────────────────────────────────────── */
-function buildEventCard(ev, idx) {
-  const meta    = EVENT_META[ev.type] || EVENT_META.start;
-  const rawType = ev.type || "start";
+/* ── Single Gantt row ───────────────────────────────────────────────────── */
+function buildGanttRow(med, range, vlineHtml) {
+  const { start, totalDays } = range;
+  const sDate = parseDate(med.startDateTime);
 
-  const metaItems = [];
-  if (ev.startDateTime) metaItems.push(`📅 ${esc(fmtDate(ev.startDateTime))}`);
-  if (ev.endDateTime)   metaItems.push(`→ ${esc(fmtDate(ev.endDateTime))}`);
-  if (ev.careprovider || ev.orderBy) metaItems.push(`👨‍⚕️ ${esc(ev.careprovider || ev.orderBy)}`);
-  if (ev.orderNumber)   metaItems.push(`#${esc(ev.orderNumber)}`);
-
-  const detailId = `mj-detail-${idx}`;
-  const raw      = ev._raw || {};
-  const detailLines = [];
-  if (raw.code)             detailLines.push(`รหัสยา: ${esc(raw.code)}`);
-  if (raw.duration)         detailLines.push(`ระยะเวลา: ${esc(raw.duration)}`);
-  if (raw.quantity)         detailLines.push(`จำนวน: ${esc(raw.quantity)}`);
-  if (raw.instruction)      detailLines.push(`คำแนะนำ: ${esc(raw.instruction)}`);
-  if (raw.infusionRate)     detailLines.push(`อัตราหยด: ${esc(raw.infusionRate)}`);
-  if (raw.infusionDuration) detailLines.push(`เวลาหยด: ${esc(raw.infusionDuration)}`);
-  if (raw.comments)         detailLines.push(`หมายเหตุ: ${esc(raw.comments)}`);
-  if (raw.orderType)        detailLines.push(`ประเภทคำสั่ง: ${esc(raw.orderType)}`);
-  if (raw.priority)         detailLines.push(`ลำดับความสำคัญ: ${esc(raw.priority)}`);
-  if (ev.pharmacistNote)    detailLines.push(`บันทึกเภสัช: ${esc(ev.pharmacistNote)}`);
-  if (ev.alerts && ev.alerts.length) detailLines.push(`แจ้งเตือน: ${ev.alerts.map(esc).join(", ")}`);
-
-  const detailHtml = detailLines.length > 0
-    ? detailLines.map(l => `<div>${l}</div>`).join("")
-    : "<div>ไม่มีข้อมูลเพิ่มเติม</div>";
-
-  return `<div class="mj-event">
-  <div class="mj-event-icon mj-icon-${rawType}">${meta.icon}</div>
-  <div class="mj-event-main">
-    <div class="mj-event-friendly mj-friendly-${rawType}">${esc(ev.patientFriendlyText || meta.label)}</div>
-    <div class="mj-event-drug">${esc(ev.drugName)}</div>
-    <div class="mj-event-dose">${esc(ev.displayDose || "")}</div>
-    <div class="mj-event-meta">${metaItems.join(" &nbsp;·&nbsp; ")}</div>
-    <span class="mj-detail-toggle" data-target="${detailId}">▸ รายละเอียด</span>
-    <div class="mj-detail-panel" id="${detailId}">${detailHtml}</div>
-  </div>
-</div>`;
-}
-
-/* ── Timeline section ───────────────────────────────────────────────────── */
-function buildTimelineSection(timeline) {
-  if (!timeline || timeline.length === 0) {
-    return buildSection("mj-sec-timeline", "mj-section-timeline", "📅", "Timeline การใช้ยา", 0,
-      `<div class="mj-empty">ไม่มีข้อมูล Timeline</div>`, true);
-  }
-
-  let bodyHtml = "";
-  let eventIdx = 0;
-  for (const group of timeline) {
-    const dateLabel = group.date && group.date !== "unknown"
-      ? fmtDate(group.date)
-      : "วันที่ไม่ระบุ";
-    bodyHtml += `<div class="mj-timeline-date">📅 ${esc(dateLabel)}</div>`;
-    for (const ev of (group.events || [])) {
-      bodyHtml += buildEventCard(ev, eventIdx++);
-    }
-  }
-
-  const totalEvents = timeline.reduce((acc, g) => acc + (g.events ? g.events.length : 0), 0);
-  return buildSection("mj-sec-timeline", "mj-section-timeline", "📅", "Timeline การใช้ยา",
-    totalEvents, bodyHtml, true);
-}
-
-/* ── Med list row ────────────────────────────────────────────────────────── */
-function buildMedRow(order) {
+  /* Drug column */
   const badges = [];
-  if (order._isIv)       badges.push(`<span class="mj-badge mj-badge-iv">IV</span>`);
-  if (order._isOral)     badges.push(`<span class="mj-badge mj-badge-oral">Oral</span>`);
-  if (order.isPrn)       badges.push(`<span class="mj-badge mj-badge-prn">PRN</span>`);
-  if (order.isStatOrder) badges.push(`<span class="mj-badge mj-badge-stat">STAT</span>`);
+  if (med._isIv)    badges.push(`<span class="mj-drug-bdg mj-bdg-iv">IV</span>`);
+  if (med._secType==="prn")    badges.push(`<span class="mj-drug-bdg mj-bdg-prn">PRN</span>`);
+  if (med._secType==="stopped"||med.isCancelled) badges.push(`<span class="mj-drug-bdg mj-bdg-stopped">หยุดใช้</span>`);
+  if (med._secType==="diluent")badges.push(`<span class="mj-drug-bdg mj-bdg-diluent">สารน้ำ</span>`);
 
-  const noteHtml = order.pharmacistNote
-    ? `<div class="mj-med-note">📝 ${esc(order.pharmacistNote)}</div>` : "";
+  const drugCol = `<div class="mj-drug-col">
+    <div class="mj-dn">${esc(med.drugName||"–")} ${badges.join("")}</div>
+    <div class="mj-dd">${esc(med.displayDose||"")}</div>
+    <div class="mj-ddate">${esc(fmtDateRange(med.startDateTime,med.endDateTime))}</div>
+  </div>`;
 
-  return `<div class="mj-med-row">
-  <div class="mj-med-info">
-    <div class="mj-med-name">${esc(order.drugName)} ${badges.join(" ")}</div>
-    <div class="mj-med-sig">${esc(order.displayDose || "")}</div>
-    <div class="mj-med-dates">${esc(fmtDateRange(order.startDateTime, order.endDateTime))}</div>
-    ${noteHtml}
+  if (!sDate) {
+    return `<div class="mj-gantt-row">${drugCol}<div class="mj-bars-col">${vlineHtml}</div></div>`;
+  }
+
+  const isStopped = med._secType==="stopped" || med.isCancelled;
+  const eDate = parseDate(med.endDateTime) || (isStopped ? sDate : new Date());
+  const sOff  = Math.max(0, Math.min(totalDays, diffDays(start, sDate)));
+  const eOff  = Math.max(sOff+0.3, Math.min(totalDays, diffDays(start, eDate)));
+  const lp    = pct(sOff, totalDays);
+  const wp    = pct(eOff-sOff, totalDays);
+  const color = getMedColor(med);
+  const alpha = isStopped ? "0.55" : "1";
+
+  const barLabel = med.pharmacistNote
+    ? `<span class="mj-bar-lbl">${esc(med.pharmacistNote)}</span>` : "";
+  const stopX = isStopped
+    ? `<div class="mj-stop-x" style="left:calc(${lp}% + ${wp}% - 5px)">✕</div>` : "";
+
+  const barCol = `<div class="mj-bars-col">
+    ${vlineHtml}
+    <div class="mj-bar" style="left:${lp}%;width:${wp}%;background:${color};opacity:${alpha}">${barLabel}</div>
+    ${stopX}
+  </div>`;
+
+  return `<div class="mj-gantt-row">${drugCol}${barCol}</div>`;
+}
+
+/* ── ADR event callout (header banner) ──────────────────────────────────── */
+function buildAlertCallout(alerts, ctx) {
+  if (!alerts || !alerts.length) return "";
+  const first   = alerts[0];
+  const dateStr = fmtDate(first.startDateTime);
+  const detail  = (first.alerts||[]).join("; ") || first.drugName || "";
+  return `<div class="mj-adr-callout">
+  <div class="mj-adr-inner">
+    <div class="mj-adr-label">ADR / Rash event</div>
+    <div class="mj-adr-detail">${esc(detail)}</div>
   </div>
+  ${dateStr ? `<div class="mj-adr-onset">Rash onset: <strong>${esc(dateStr)}</strong></div>` : ""}
 </div>`;
 }
 
-/* ── Active medications section ─────────────────────────────────────────── */
-function buildActiveSection(active) {
-  const bodyHtml = active.length > 0
-    ? active.map(buildMedRow).join("")
-    : `<div class="mj-empty">ไม่มียาที่ใช้อยู่</div>`;
-  return buildSection("mj-sec-active", "mj-section-active", "✅", "ยาที่ใช้อยู่",
-    active.length, bodyHtml, true);
-}
+/* ── Full chart ─────────────────────────────────────────────────────────── */
+function buildGanttChart(journeyData) {
+  const ctx    = journeyData.patientContext || {};
+  const alerts = journeyData.alerts || [];
+  const meds   = getAllMeds(journeyData);
+  if (!meds.length) return `<div class="mj-empty-gantt">ไม่มีข้อมูลยา</div>`;
 
-/* ── Stopped medications section ────────────────────────────────────────── */
-function buildStoppedSection(stopped) {
-  const bodyHtml = stopped.length > 0
-    ? stopped.map(order => {
-        const why = order.isCancelled ? "ยกเลิก" : "หยุดใช้";
-        const noteHtml = order.pharmacistNote
-          ? `<div class="mj-med-note">📝 ${esc(order.pharmacistNote)}</div>` : "";
-        return `<div class="mj-med-row">
-  <div class="mj-med-info">
-    <div class="mj-med-name">${esc(order.drugName)} <span class="mj-badge mj-badge-stopped">${esc(why)}</span></div>
-    <div class="mj-med-sig">${esc(order.displayDose || "")}</div>
-    <div class="mj-med-dates">${esc(fmtDateRange(order.startDateTime, order.endDateTime))}</div>
-    ${noteHtml}
-  </div>
-</div>`;
-      }).join("")
-    : `<div class="mj-empty">ไม่มียาที่หยุดใช้</div>`;
-  return buildSection("mj-sec-stopped", "mj-section-stopped", "🛑", "ยาที่หยุดใช้แล้ว",
-    stopped.length, bodyHtml, false);
-}
+  const range = calcRange(meds, ctx);
+  const { start, totalDays } = range;
 
-/* ── PRN medications section ────────────────────────────────────────────── */
-function buildPrnSection(prn) {
-  const bodyHtml = prn.length > 0
-    ? prn.map(buildMedRow).join("")
-    : `<div class="mj-empty">ไม่มียา PRN</div>`;
-  return buildSection("mj-sec-prn", "mj-section-prn", "🔔", "ยาใช้เมื่อมีอาการ (PRN)",
-    prn.length, bodyHtml, false);
-}
+  /* Vertical ADR event line */
+  let vlineHtml = "";
+  if (alerts.length) {
+    const ad = parseDate(alerts[0].startDateTime);
+    if (ad) {
+      const off = diffDays(start, ad);
+      if (off >= 0 && off <= totalDays) {
+        const lp = pct(off, totalDays);
+        vlineHtml = `<div class="mj-vline" style="left:${lp}%"><span class="mj-vline-tip">onset</span></div>`;
+      }
+    }
+  }
 
-/* ── Diluent section ────────────────────────────────────────────────────── */
-function buildDiluentSection(diluents) {
-  if (diluents.length === 0) return "";
-  const bodyHtml = diluents.map(buildMedRow).join("");
-  return buildSection("mj-sec-diluent", "mj-section-diluent", "⚗️", "สารน้ำเจือจาง",
-    diluents.length, bodyHtml, false);
-}
+  const dateHdr = buildDateHeader(range);
+  const rows    = meds.map(m => buildGanttRow(m, range, vlineHtml)).join("");
 
-/* ── Alerts section ─────────────────────────────────────────────────────── */
-function buildAlertsSection(alerts) {
-  if (!alerts || alerts.length === 0) return "";
-  const bodyHtml = alerts.map(ev => {
-    const alertList = (ev.alerts || []).map(a => `<div class="mj-alert-text">${esc(a)}</div>`).join("");
-    return `<div class="mj-alert-item">
-  <span class="mj-alert-icon">⚠️</span>
-  <div>
-    <div class="mj-alert-text" style="margin-bottom:2px">${esc(ev.drugName)}</div>
-    ${alertList}
-    <div style="font-size:10px;color:#9e9e9e;margin-top:3px">
-      ${ev.orderNumber ? `#${esc(ev.orderNumber)} · ` : ""}${esc(fmtDate(ev.startDateTime))}
+  return `<div class="mj-gantt-scroll">
+  <div class="mj-gantt">
+    <div class="mj-gantt-hdr-row">
+      <div class="mj-drug-col mj-drug-col-hdr">Medication / Order evidence</div>
+      <div class="mj-dates-hdr-col">${dateHdr}</div>
     </div>
+    ${rows}
   </div>
 </div>`;
-  }).join("");
-  return buildSection("mj-sec-alerts", "mj-section-alerts", "⚠️", "แจ้งเตือน",
-    alerts.length, bodyHtml, true);
 }
 
-/* ── Export JSON ─────────────────────────────────────────────────────────── */
+/* ── Export / copy helpers ──────────────────────────────────────────────── */
 function exportJourneyJson(journeyData) {
-  const blob  = new Blob([JSON.stringify(journeyData, null, 2)], { type: "application/json" });
-  const url   = URL.createObjectURL(blob);
-  const a     = document.createElement("a");
-  const now   = new Date();
-  const pad2  = n => String(n).padStart(2, "0");
-  const dateStr = `${now.getFullYear()}${pad2(now.getMonth()+1)}${pad2(now.getDate())}`;
-  a.href     = url;
-  a.download = `medication-journey-${dateStr}.json`;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(function () {
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 1000);
+  const blob = new Blob([JSON.stringify(journeyData,null,2)],{type:"application/json"});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  const now  = new Date(), p2 = n => String(n).padStart(2,"0");
+  a.href = url;
+  a.download = `adr-timeline-${now.getFullYear()}${p2(now.getMonth()+1)}${p2(now.getDate())}.json`;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); },1000);
 }
 
-/* ── Copy summary ────────────────────────────────────────────────────────── */
 function copySummaryText(journeyData) {
-  const ctx   = journeyData.patientContext || {};
-  const lines = [];
-
-  lines.push("=== Medication Journey Summary ===");
-  lines.push(`ผู้ป่วย: ${ctx.patientName || "–"}`);
-  lines.push(`HN: ${ctx.hn || ctx.patientId || "–"}  AN: ${ctx.an || ctx.patientVisitId || "–"}`);
-  lines.push(`แพทย์: ${ctx.doctor || "–"}  แผนก: ${ctx.dept || "–"}`);
-  lines.push("");
-
-  const active = journeyData.activeMedications || [];
-  if (active.length > 0) {
-    lines.push("--- ยาที่ใช้อยู่ ---");
-    for (const m of active) {
-      lines.push(`• ${m.drugName}  ${m.displayDose || ""}`);
-      if (m.pharmacistNote) lines.push(`  📝 ${m.pharmacistNote}`);
-    }
-    lines.push("");
+  const ctx = journeyData.patientContext || {};
+  const lines = [
+    "=== ADR Drug Timeline ===",
+    `ผู้ป่วย: ${ctx.patientName||"–"}  HN: ${ctx.hn||"–"}  AN: ${ctx.an||"–"}`,
+    `แพทย์: ${ctx.doctor||"–"}  แผนก: ${ctx.dept||"–"}`,
+    "",
+  ];
+  for (const m of getAllMeds(journeyData)) {
+    lines.push(`• ${m.drugName}  ${m.displayDose||""}  ${fmtDateRange(m.startDateTime,m.endDateTime)}`);
+    if (m.pharmacistNote) lines.push(`  📝 ${m.pharmacistNote}`);
   }
-
-  const stopped = journeyData.stoppedMedications || [];
-  if (stopped.length > 0) {
-    lines.push("--- ยาที่หยุดใช้ ---");
-    for (const m of stopped) {
-      const why = m.isCancelled ? "(ยกเลิก)" : "(หยุดใช้)";
-      lines.push(`• ${m.drugName}  ${why}`);
-      if (m.pharmacistNote) lines.push(`  📝 ${m.pharmacistNote}`);
-    }
-    lines.push("");
-  }
-
-  const prn = journeyData.prnMedications || [];
-  if (prn.length > 0) {
-    lines.push("--- ยา PRN ---");
-    for (const m of prn) {
-      lines.push(`• ${m.drugName}  ${m.displayDose || ""}`);
-    }
-    lines.push("");
-  }
-
-  const keyTypes  = ["start", "switch", "stop", "change", "alert"];
-  const keyEvents = (journeyData.allEvents || []).filter(e => keyTypes.includes(e.type));
-  if (keyEvents.length > 0) {
-    lines.push("--- เหตุการณ์สำคัญ ---");
-    for (const ev of keyEvents) {
-      const meta = EVENT_META[ev.type] || {};
-      lines.push(`[${fmtDate(ev.startDateTime)}] ${meta.label || ev.type}: ${ev.drugName}`);
-    }
-    lines.push("");
-  }
-
-  lines.push(`สร้างเมื่อ: ${new Date().toLocaleString("th-TH")}`);
-
+  lines.push("", `สร้างเมื่อ: ${new Date().toLocaleString("th-TH")}`);
   const text = lines.join("\n");
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).catch(function () { _fallbackCopy(text); });
-  } else {
-    _fallbackCopy(text);
-  }
+    navigator.clipboard.writeText(text).catch(()=>_fallbackCopy(text));
+  } else { _fallbackCopy(text); }
 }
 
 function _fallbackCopy(text) {
   const ta = document.createElement("textarea");
-  ta.value = text;
-  ta.style.position = "fixed";
-  ta.style.top = "-9999px";
-  document.body.appendChild(ta);
-  ta.select();
-  document.execCommand("copy");
-  document.body.removeChild(ta);
+  ta.value = text; ta.style.position="fixed"; ta.style.top="-9999px";
+  document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
 }
 
-/* ── Wire up view-mode interactivity ────────────────────────────────────── */
+/* ── Wire view-mode interactivity ───────────────────────────────────────── */
 function wireInteractivity(journeyData) {
-  document.querySelectorAll(".mj-section-header[data-section]").forEach(function (hdr) {
-    hdr.addEventListener("click", function () {
-      const sec    = document.getElementById(hdr.dataset.section);
-      const toggle = hdr.querySelector(".mj-section-toggle");
-      if (!sec) return;
-      sec.classList.toggle("collapsed");
-      if (toggle) toggle.textContent = sec.classList.contains("collapsed") ? "▸" : "▾";
-    });
+  const $  = id => document.getElementById(id);
+  const on = (id, fn) => { const el=$( id); if(el) el.addEventListener("click",fn); };
+
+  on("mj-print-btn",  ()=>window.print());
+  on("mj-export-btn", ()=>exportJourneyJson(journeyData));
+  on("mj-copy-btn",   ()=>{
+    copySummaryText(journeyData);
+    const btn = $("mj-copy-btn");
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = "✓ คัดลอกแล้ว";
+    setTimeout(()=>{ btn.textContent=orig; }, 2000);
   });
-
-  document.querySelectorAll(".mj-detail-toggle").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      const panel = document.getElementById(btn.dataset.target);
-      if (!panel) return;
-      panel.classList.toggle("open");
-      btn.textContent = panel.classList.contains("open") ? "▾ ซ่อนรายละเอียด" : "▸ รายละเอียด";
-    });
+  on("mj-edit-btn", ()=>{
+    _editSnapshot = deepClone(_journeyData);
+    renderEditPage();
   });
-
-  const printBtn  = document.getElementById("mj-print-btn");
-  const exportBtn = document.getElementById("mj-export-btn");
-  const copyBtn   = document.getElementById("mj-copy-btn");
-  const editBtn   = document.getElementById("mj-edit-btn");
-
-  if (printBtn)  printBtn.addEventListener("click",  function () { window.print(); });
-  if (exportBtn) exportBtn.addEventListener("click", function () { exportJourneyJson(journeyData); });
-  if (copyBtn) {
-    copyBtn.addEventListener("click", function () {
-      copySummaryText(journeyData);
-      const orig = copyBtn.textContent;
-      copyBtn.textContent = "✓ คัดลอกแล้ว";
-      setTimeout(function () { copyBtn.textContent = orig; }, 2000);
-    });
-  }
-  if (editBtn) {
-    editBtn.addEventListener("click", function () {
-      _editSnapshot = deepClone(_journeyData);
-      renderEditPage();
-    });
-  }
 }
 
-/* ── renderMedicationJourney (view mode) ────────────────────────────────── */
+/* ── renderMedicationJourney ────────────────────────────────────────────── */
 function renderMedicationJourney(journeyData) {
   _journeyData = journeyData;
-
   const root = document.getElementById("mj-root");
   if (!root) return;
 
-  const ctx     = journeyData.patientContext || {};
-  const source  = journeyData.source         || {};
-  const hn      = ctx.hn || ctx.patientId || "";
-  const name    = ctx.patientName || "";
-  const titleSub = [name, hn].filter(Boolean).join(" · ");
-
-  const headerHtml = `<div class="mj-header">
-  <div>
-    <h1>💊 Medication Journey</h1>
-    ${titleSub ? `<div style="font-size:13px;margin-top:4px;opacity:.85">${esc(titleSub)}</div>` : ""}
-  </div>
-  <div class="mj-actions">
-    <button id="mj-edit-btn"   class="mj-btn mj-btn-edit">✏️ แก้ไข</button>
-    <button id="mj-print-btn"  class="mj-btn mj-btn-print">🖨️ พิมพ์</button>
-    <button id="mj-export-btn" class="mj-btn mj-btn-export">⬇️ Export JSON</button>
-    <button id="mj-copy-btn"   class="mj-btn mj-btn-copy">📋 คัดลอกสรุป</button>
-  </div>
-</div>`;
-
-  const patientCard     = buildPatientCard(ctx);
-  const sourceBar       = buildSourceBar(source);
-  const activeSection   = buildActiveSection(journeyData.activeMedications   || []);
-  const timelineSection = buildTimelineSection(journeyData.timeline           || []);
-  const stoppedSection  = buildStoppedSection(journeyData.stoppedMedications  || []);
-  const prnSection      = buildPrnSection(journeyData.prnMedications          || []);
-  const diluentSection  = buildDiluentSection(journeyData.diluentMedications  || []);
-  const alertsSection   = buildAlertsSection(journeyData.alerts               || []);
+  const ctx    = journeyData.patientContext || {};
+  const alerts = journeyData.alerts || [];
+  const name   = ctx.patientName || "";
+  const hn     = ctx.hn || ctx.patientId || "";
+  const admit  = ctx.admitDate ? `ที่จ่ายยา ${fmtDate(ctx.admitDate)}` : "";
+  const sub    = [name, hn ? `HN ${hn}` : "", ctx.bed ? `เตียง ${ctx.bed}` : ""].filter(Boolean).join(" · ");
 
   root.innerHTML = `<div class="mj-page">
-${headerHtml}
-${patientCard}
-${sourceBar}
-${alertsSection}
-${activeSection}
-${timelineSection}
-${stoppedSection}
-${prnSection}
-${diluentSection}
+<div class="mj-header">
+  <div class="mj-header-left">
+    <div class="mj-page-title">ADR Drug Timeline</div>
+    ${admit ? `<div class="mj-page-sub">${esc(admit)}</div>` : ""}
+    ${sub   ? `<div class="mj-page-sub">${esc(sub)}</div>`   : ""}
+  </div>
+  ${buildAlertCallout(alerts, ctx)}
+  <div class="mj-header-actions">
+    <button id="mj-edit-btn"   class="mj-btn mj-btn-edit">✏️ แก้ไข</button>
+    <button id="mj-print-btn"  class="mj-btn mj-btn-print">🖨️ พิมพ์</button>
+    <button id="mj-export-btn" class="mj-btn mj-btn-export">⬇️ JSON</button>
+    <button id="mj-copy-btn"   class="mj-btn mj-btn-copy">📋 คัดลอก</button>
+  </div>
+</div>
+${buildGanttChart(journeyData)}
 </div>`;
 
   wireInteractivity(journeyData);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   EDIT MODE — render functions
+   EDIT MODE
 ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Edit: patient card ─────────────────────────────────────────────────── */
 function buildPatientCardEdit(ctx) {
   const defs = [
-    ["patientName", "ชื่อผู้ป่วย"],
-    ["hn",          "HN"],
-    ["an",          "AN"],
-    ["gender",      "เพศ"],
-    ["dob",         "วันเกิด"],
-    ["age",         "อายุ"],
-    ["bed",         "เตียง"],
-    ["dept",        "แผนก"],
-    ["doctor",      "แพทย์"],
-    ["admitDate",   "วันรับไว้"],
+    ["patientName","ชื่อผู้ป่วย"],["hn","HN"],["an","AN"],
+    ["gender","เพศ"],["dob","วันเกิด"],["age","อายุ"],
+    ["bed","เตียง"],["dept","แผนก"],["doctor","แพทย์"],["admitDate","วันรับไว้"],
   ];
-  const fields = defs.map(([k, lbl]) =>
+  const fields = defs.map(([k,lbl]) =>
     `<div class="mj-patient-field">
       <div class="lbl">${esc(lbl)}</div>
-      <input class="mj-edit-input" data-ctx="${esc(k)}" value="${esc(ctx[k] || "")}" />
+      <input class="mj-edit-input" data-ctx="${esc(k)}" value="${esc(ctx[k]||"")}">
     </div>`
   ).join("");
   return `<div class="mj-patient-card" id="mj-patient-card-edit">${fields}</div>`;
 }
 
-/* ── Edit: single medication row ────────────────────────────────────────── */
 function buildMedRowEdit(order) {
   return `<div class="mj-edit-row">
   <div class="mj-edit-grid">
     <label class="mj-edit-label">ชื่อยา
-      <input class="mj-edit-input" data-prop="drugName" value="${esc(order.drugName || "")}" placeholder="ชื่อยา">
+      <input class="mj-edit-input" data-prop="drugName" value="${esc(order.drugName||"")}" placeholder="ชื่อยา">
     </label>
     <label class="mj-edit-label">ขนาด / วิธีใช้
-      <input class="mj-edit-input" data-prop="displayDose" value="${esc(order.displayDose || "")}" placeholder="เช่น 500mg oral TID">
+      <input class="mj-edit-input" data-prop="displayDose" value="${esc(order.displayDose||"")}" placeholder="เช่น 500mg oral TID">
     </label>
     <label class="mj-edit-label">วันเริ่ม
-      <input class="mj-edit-input" data-prop="startDateTime" value="${esc(order.startDateTime || "")}" placeholder="YYYY-MM-DD">
+      <input class="mj-edit-input" data-prop="startDateTime" value="${esc(order.startDateTime||"")}" placeholder="YYYY-MM-DD">
     </label>
     <label class="mj-edit-label">วันสิ้นสุด
-      <input class="mj-edit-input" data-prop="endDateTime" value="${esc(order.endDateTime || "")}" placeholder="YYYY-MM-DD">
+      <input class="mj-edit-input" data-prop="endDateTime" value="${esc(order.endDateTime||"")}" placeholder="YYYY-MM-DD">
     </label>
-    <label class="mj-edit-label mj-edit-label-full">บันทึกเภสัชกร
-      <textarea class="mj-edit-input mj-edit-note" data-prop="pharmacistNote">${esc(order.pharmacistNote || "")}</textarea>
+    <label class="mj-edit-label mj-edit-label-full">Annotation บนแถบ / บันทึกเภสัชกร
+      <textarea class="mj-edit-input mj-edit-note" data-prop="pharmacistNote">${esc(order.pharmacistNote||"")}</textarea>
     </label>
   </div>
   <button class="mj-btn mj-btn-del" onclick="this.closest('.mj-edit-row').remove()">🗑️ ลบ</button>
 </div>`;
 }
 
-/* ── Edit: medication section ───────────────────────────────────────────── */
 function buildMedSectionEdit(secId, icon, title, themeClass, orders) {
-  const rows = (orders || []).map(o => buildMedRowEdit(o)).join("");
-  const bodyContent = rows || `<div class="mj-empty">ไม่มีรายการ — คลิก "เพิ่มยา" เพื่อเพิ่ม</div>`;
+  const rows = (orders||[]).map(o=>buildMedRowEdit(o)).join("");
   return `<div class="mj-section ${themeClass}">
-  <div class="mj-section-header" style="cursor:default;user-select:none">
-    <span>${icon}</span>
-    <span>${esc(title)}</span>
+  <div class="mj-section-header" style="cursor:default">
+    <span>${icon}</span><span>${esc(title)}</span>
     <span class="mj-badge" style="margin-left:4px;background:rgba(0,0,0,.07);color:inherit">${(orders||[]).length}</span>
   </div>
   <div class="mj-section-body" id="${secId}-edit-body">
-    ${bodyContent}
+    ${rows||'<div class="mj-empty">ไม่มีรายการ</div>'}
   </div>
   <div class="mj-edit-add-row">
     <button class="mj-btn mj-btn-add" onclick="mjAddMedRow('${secId}-edit-body')">➕ เพิ่มยา</button>
@@ -521,8 +349,7 @@ function buildMedSectionEdit(secId, icon, title, themeClass, orders) {
 </div>`;
 }
 
-/* ── Global helper called from inline onclick ───────────────────────────── */
-window.mjAddMedRow = function (bodyId) {
+window.mjAddMedRow = function(bodyId) {
   const body = document.getElementById(bodyId);
   if (!body) return;
   const empty = body.querySelector(".mj-empty");
@@ -532,27 +359,24 @@ window.mjAddMedRow = function (bodyId) {
   body.appendChild(div.firstElementChild);
 };
 
-/* ── Read medication rows from edit DOM ─────────────────────────────────── */
 function readEditSection(bodyId) {
   const body = document.getElementById(bodyId);
   if (!body) return null;
-  return Array.from(body.querySelectorAll(".mj-edit-row")).map(function (row) {
+  return Array.from(body.querySelectorAll(".mj-edit-row")).map(row => {
     const o = {};
-    row.querySelectorAll("[data-prop]").forEach(function (el) {
-      o[el.dataset.prop] = (el.tagName === "TEXTAREA" ? el.value : el.value).trim();
+    row.querySelectorAll("[data-prop]").forEach(el => {
+      o[el.dataset.prop] = (el.tagName==="TEXTAREA" ? el.value : el.value).trim();
     });
     return o;
-  }).filter(function (o) { return (o.drugName || "").trim() !== ""; });
+  }).filter(o => (o.drugName||"").trim());
 }
 
-/* ── Save edit changes back to _journeyData ─────────────────────────────── */
 function saveEdits() {
   const ctx = _journeyData.patientContext || {};
-  document.querySelectorAll("#mj-patient-card-edit [data-ctx]").forEach(function (input) {
-    ctx[input.dataset.ctx] = input.value.trim();
+  document.querySelectorAll("#mj-patient-card-edit [data-ctx]").forEach(inp => {
+    ctx[inp.dataset.ctx] = inp.value.trim();
   });
   _journeyData.patientContext = ctx;
-
   const active  = readEditSection("mj-sec-active-edit-body");
   const stopped = readEditSection("mj-sec-stopped-edit-body");
   const prn     = readEditSection("mj-sec-prn-edit-body");
@@ -561,60 +385,39 @@ function saveEdits() {
   if (prn     !== null) _journeyData.prnMedications     = prn;
 }
 
-/* ── renderEditPage ─────────────────────────────────────────────────────── */
 function renderEditPage() {
   const root = document.getElementById("mj-root");
   if (!root) return;
-
   const ctx = _journeyData.patientContext || {};
-
   root.innerHTML = `<div class="mj-page mj-page-edit">
 <div class="mj-header mj-header-edit">
-  <div>
-    <h1>✏️ แก้ไข Medication Journey</h1>
-    <div style="font-size:12px;opacity:.82;margin-top:3px">โหมดแก้ไข — กด "บันทึก" เพื่อนำการเปลี่ยนแปลงไปใช้</div>
+  <div class="mj-header-left">
+    <div class="mj-page-title">✏️ แก้ไข ADR Drug Timeline</div>
+    <div class="mj-page-sub" style="opacity:.8">กด "บันทึก" เพื่อนำการเปลี่ยนแปลงไปใช้</div>
   </div>
-  <div class="mj-actions">
+  <div class="mj-header-actions">
     <button id="mj-save-btn"   class="mj-btn mj-btn-save">💾 บันทึก</button>
     <button id="mj-cancel-btn" class="mj-btn mj-btn-cancel">✕ ยกเลิก</button>
   </div>
 </div>
 ${buildPatientCardEdit(ctx)}
-${buildMedSectionEdit("mj-sec-active",  "✅", "ยาที่ใช้อยู่",           "mj-section-active",  _journeyData.activeMedications  || [])}
-${buildMedSectionEdit("mj-sec-stopped", "🛑", "ยาที่หยุดใช้แล้ว",        "mj-section-stopped", _journeyData.stoppedMedications || [])}
-${buildMedSectionEdit("mj-sec-prn",     "🔔", "ยาใช้เมื่อมีอาการ (PRN)", "mj-section-prn",     _journeyData.prnMedications     || [])}
+${buildMedSectionEdit("mj-sec-active", "✅","ยาที่ใช้อยู่","mj-section-active",_journeyData.activeMedications||[])}
+${buildMedSectionEdit("mj-sec-stopped","🛑","ยาที่หยุดใช้แล้ว","mj-section-stopped",_journeyData.stoppedMedications||[])}
+${buildMedSectionEdit("mj-sec-prn",    "🔔","ยาใช้เมื่อมีอาการ (PRN)","mj-section-prn",_journeyData.prnMedications||[])}
 </div>`;
-
-  document.getElementById("mj-save-btn").addEventListener("click", function () {
-    saveEdits();
-    renderMedicationJourney(_journeyData);
-  });
-  document.getElementById("mj-cancel-btn").addEventListener("click", function () {
-    _journeyData = _editSnapshot;
-    renderMedicationJourney(_journeyData);
-  });
+  document.getElementById("mj-save-btn").addEventListener("click", ()=>{ saveEdits(); renderMedicationJourney(_journeyData); });
+  document.getElementById("mj-cancel-btn").addEventListener("click", ()=>{ _journeyData=_editSnapshot; renderMedicationJourney(_journeyData); });
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   BOOTSTRAP — load data from session storage or live message
-═══════════════════════════════════════════════════════════════════════════ */
+/* ── Bootstrap ──────────────────────────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", async function () {
   const key = "payload_medicationJourney";
-
   try {
-    const result  = await new Promise(function (resolve) {
-      chrome.storage.session.get(key, resolve);
-    });
+    const result  = await new Promise(r => chrome.storage.session.get(key,r));
     const payload = result && result[key];
-    if (payload && payload.journey) {
-      renderMedicationJourney(payload.journey);
-      return;
-    }
-  } catch (_) { /* storage not available */ }
-
-  chrome.runtime.onMessage.addListener(function (msg) {
-    if (msg && msg.journey) {
-      renderMedicationJourney(msg.journey);
-    }
+    if (payload && payload.journey) { renderMedicationJourney(payload.journey); return; }
+  } catch(_) {}
+  chrome.runtime.onMessage.addListener(function(msg) {
+    if (msg && msg.journey) renderMedicationJourney(msg.journey);
   });
 });

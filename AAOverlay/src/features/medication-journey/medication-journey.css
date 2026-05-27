@@ -1,4 +1,4 @@
-/* ── medication-journey.css ────────────────────────────────────────────── */
+/* ── medication-journey.css — ADR Drug Timeline (Gantt format) ──────────── */
 
 body {
   font-family: "Segoe UI", Arial, Sarabun, sans-serif;
@@ -10,485 +10,413 @@ body {
 }
 
 .mj-page {
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 16px 20px 32px;
   box-sizing: border-box;
 }
 
-/* ── Header ─────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════
+   HEADER
+════════════════════════════════════════════════════════════ */
 .mj-header {
-  background: linear-gradient(135deg, #0d47a1, #1565c0);
-  color: #fff;
-  padding: 18px 24px;
-  border-radius: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
   margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
 }
 
-.mj-header h1 {
-  font-size: 20px;
-  margin: 0;
-  font-weight: 700;
-  letter-spacing: 0.2px;
+.mj-header-left {
+  flex: 1;
+  min-width: 200px;
 }
 
-.mj-header .mj-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+.mj-page-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: #1a237e;
+  letter-spacing: -.2px;
+  line-height: 1.2;
 }
 
-/* ── Buttons ─────────────────────────────────────────────────────────────── */
-.mj-btn {
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: none;
+.mj-page-sub {
   font-size: 12px;
-  font-weight: 600;
+  color: #607d8b;
+  margin-top: 3px;
+}
+
+/* ADR callout box */
+.mj-adr-callout {
+  background: #fce4ec;
+  border: 1.5px solid #e91e63;
+  border-radius: 8px;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+  max-width: 340px;
+}
+
+.mj-adr-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mj-adr-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #880e4f;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+
+.mj-adr-detail {
+  font-size: 11px;
+  color: #880e4f;
+  line-height: 1.4;
+}
+
+.mj-adr-onset {
+  font-size: 12px;
+  font-weight: 700;
+  color: #c62828;
+  border-top: 1px solid rgba(233,30,99,.25);
+  padding-top: 4px;
+  margin-top: 2px;
+}
+
+/* Header action buttons */
+.mj-header-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  padding-top: 2px;
+}
+
+.mj-btn {
+  padding: 5px 13px;
+  border-radius: 16px;
+  border: 1px solid transparent;
+  font-size: 11px;
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
   transition: opacity .15s;
   line-height: 1.4;
+  font-family: inherit;
 }
-.mj-btn:hover { opacity: .82; }
+.mj-btn:hover { opacity: .78; }
 
-.mj-btn-print {
-  background: #fff;
-  color: #0d47a1;
+.mj-btn-edit   { background:#e8f5e9; color:#2e7d32; border-color:#a5d6a7; }
+.mj-btn-print  { background:#e3f2fd; color:#1565c0; border-color:#90caf9; }
+.mj-btn-export { background:#f3e5f5; color:#7b1fa2; border-color:#ce93d8; }
+.mj-btn-copy   { background:#fff8e1; color:#e65100; border-color:#ffcc80; }
+
+/* ════════════════════════════════════════════════════════════
+   GANTT CHART
+════════════════════════════════════════════════════════════ */
+.mj-empty-gantt {
+  text-align: center;
+  padding: 40px;
+  color: #bdbdbd;
+  font-style: italic;
 }
 
-.mj-btn-export {
-  background: rgba(255,255,255,.2);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,.4);
-}
-
-.mj-btn-copy {
-  background: rgba(255,255,255,.2);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,.4);
-}
-
-/* ── Patient card ────────────────────────────────────────────────────────── */
-.mj-patient-card {
+.mj-gantt-scroll {
+  overflow-x: auto;
   background: #fff;
   border-radius: 8px;
-  padding: 14px 18px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  box-shadow: 0 1px 6px rgba(0,0,0,.1);
+}
+
+.mj-gantt {
+  min-width: 700px;
+  width: 100%;
+}
+
+/* ── Gantt header row ─────────────────────────────────────── */
+.mj-gantt-hdr-row {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 8px 16px;
+  grid-template-columns: 220px 1fr;
+  background: #f5f7fa;
+  border-bottom: 2px solid #c5cae9;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
-.mj-patient-field .lbl {
-  font-size: 9px;
-  font-weight: 700;
-  color: #90a4ae;
+.mj-drug-col-hdr {
+  font-size: 10px;
+  font-weight: 800;
+  color: #3949ab;
   text-transform: uppercase;
   letter-spacing: .4px;
-  margin-bottom: 2px;
-}
-
-.mj-patient-field .val {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1a237e;
-}
-
-/* ── Source bar ──────────────────────────────────────────────────────────── */
-.mj-source-bar {
-  font-size: 11px;
-  color: #607d8b;
-  background: #e8f0fe;
-  border-radius: 6px;
-  padding: 7px 12px;
-  margin-bottom: 16px;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.mj-source-tag {
-  font-weight: 700;
-  color: #1565c0;
-}
-
-/* ── Sections ────────────────────────────────────────────────────────────── */
-.mj-section {
-  background: #fff;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.08);
-  overflow: hidden;
-}
-
-.mj-section-header {
-  padding: 10px 16px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .4px;
+  padding: 8px 10px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid #f0f0f0;
-  cursor: pointer;
-  user-select: none;
+  border-right: 1px solid #c5cae9;
 }
 
-.mj-section-header .mj-section-toggle {
-  margin-left: auto;
-  font-size: 13px;
-  opacity: .6;
+.mj-dates-hdr-col {
+  min-height: 52px;
 }
 
-.mj-section-body {
-  padding: 0;
+.mj-date-hdr {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.mj-section.collapsed .mj-section-body {
-  display: none;
-}
-
-/* Section header themes */
-.mj-section-active   .mj-section-header { background: #e8f5e9; color: #2e7d32; }
-.mj-section-timeline .mj-section-header { background: #e8eaf6; color: #3949ab; }
-.mj-section-stopped  .mj-section-header { background: #ffebee; color: #c62828; }
-.mj-section-prn      .mj-section-header { background: #e0f2f1; color: #00695c; }
-.mj-section-alerts   .mj-section-header { background: #fff8e1; color: #e65100; }
-.mj-section-diluent  .mj-section-header { background: #f5f5f5; color: #546e7a; }
-
-/* ── Timeline ────────────────────────────────────────────────────────────── */
-.mj-timeline-date {
-  padding: 8px 16px;
-  background: #f8f9ff;
+.mj-month-label {
   font-size: 11px;
   font-weight: 700;
   color: #3949ab;
+  padding: 5px 8px;
   border-bottom: 1px solid #e8eaf6;
-  letter-spacing: .3px;
+  background: #e8eaf6;
+  letter-spacing: .2px;
 }
 
-/* ── Event rows ──────────────────────────────────────────────────────────── */
-.mj-event {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 16px;
-  border-bottom: 1px solid #f5f5f5;
-}
-.mj-event:last-child { border-bottom: none; }
-
-.mj-event-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-/* Icon backgrounds per event type */
-.mj-icon-start    { background: #e8f5e9; }
-.mj-icon-continue { background: #e3f2fd; }
-.mj-icon-change   { background: #fff8e1; }
-.mj-icon-switch   { background: #f3e5f5; }
-.mj-icon-stop     { background: #ffebee; }
-.mj-icon-prn      { background: #e0f2f1; }
-.mj-icon-diluent  { background: #f5f5f5; }
-.mj-icon-alert    { background: #fff3e0; }
-
-.mj-event-main {
+.mj-days-row {
+  position: relative;
   flex: 1;
-  min-width: 0;
+  min-height: 22px;
+  overflow: hidden;
 }
 
-.mj-event-friendly {
-  font-size: 12px;
-  font-weight: 700;
-  margin-bottom: 1px;
-}
-
-.mj-friendly-start    { color: #2e7d32; }
-.mj-friendly-continue { color: #1565c0; }
-.mj-friendly-change   { color: #e65100; }
-.mj-friendly-switch   { color: #7b1fa2; }
-.mj-friendly-stop     { color: #c62828; }
-.mj-friendly-prn      { color: #00695c; }
-.mj-friendly-diluent  { color: #546e7a; }
-.mj-friendly-alert    { color: #e65100; }
-
-.mj-event-drug {
-  font-size: 13px;
-  font-weight: 700;
-  color: #1a237e;
-  margin: 2px 0;
-}
-
-.mj-event-dose {
-  font-size: 12px;
-  color: #455a64;
-  margin-bottom: 4px;
-}
-
-.mj-event-meta {
-  font-size: 10px;
-  color: #9e9e9e;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.mj-detail-toggle {
-  font-size: 10px;
-  color: #90a4ae;
-  cursor: pointer;
+.mj-day-tick {
+  position: absolute;
+  font-size: 9px;
+  color: #78909c;
+  transform: translateX(-50%);
+  top: 4px;
+  pointer-events: none;
   user-select: none;
-  margin-top: 4px;
-  display: inline-block;
 }
-.mj-detail-toggle:hover { color: #607d8b; }
 
-.mj-detail-panel {
-  display: none;
-  margin-top: 6px;
-  background: #fafafa;
-  border-radius: 4px;
-  padding: 8px 10px;
-  font-size: 11px;
-  color: #546e7a;
-  border-left: 3px solid #e0e0e0;
+/* ── Medication rows ──────────────────────────────────────── */
+.mj-gantt-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  border-bottom: 1px solid #f0f0f0;
+  min-height: 50px;
 }
-.mj-detail-panel.open { display: block; }
+.mj-gantt-row:last-child { border-bottom: none; }
+.mj-gantt-row:nth-child(even) { background: #fafbff; }
+.mj-gantt-row:hover { background: #f0f4ff; }
 
-/* ── Medication list rows ────────────────────────────────────────────────── */
-.mj-med-row {
+/* ── Drug column ──────────────────────────────────────────── */
+.mj-drug-col {
+  padding: 7px 10px;
+  border-right: 1px solid #e0e0e0;
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 16px;
-  border-bottom: 1px solid #f5f5f5;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
 }
-.mj-med-row:last-child { border-bottom: none; }
 
-.mj-med-info { flex: 1; min-width: 0; }
-
-.mj-med-name {
-  font-size: 13px;
+.mj-dn {
+  font-size: 11px;
   font-weight: 700;
   color: #1a237e;
-  margin-bottom: 2px;
+  line-height: 1.3;
 }
 
-.mj-med-sig {
-  font-size: 12px;
-  color: #455a64;
-  margin-bottom: 2px;
-}
-
-.mj-med-dates {
+.mj-dd {
   font-size: 10px;
-  color: #9e9e9e;
+  color: #546e7a;
+  line-height: 1.3;
 }
 
-/* ── Badges ──────────────────────────────────────────────────────────────── */
-.mj-badge {
+.mj-ddate {
+  font-size: 9px;
+  color: #b0bec5;
+}
+
+/* Drug badges */
+.mj-drug-bdg {
   display: inline-flex;
-  padding: 1px 7px;
-  border-radius: 10px;
-  font-size: 10px;
+  padding: 0 5px;
+  border-radius: 8px;
+  font-size: 9px;
   font-weight: 700;
   vertical-align: middle;
+  line-height: 1.6;
+}
+.mj-bdg-iv      { background:#e3f2fd; color:#1565c0; }
+.mj-bdg-prn     { background:#e0f2f1; color:#00695c; }
+.mj-bdg-stopped { background:#ffebee; color:#c62828; }
+.mj-bdg-diluent { background:#f5f5f5; color:#546e7a; }
+
+/* ── Bars column ──────────────────────────────────────────── */
+.mj-bars-col {
+  position: relative;
+  overflow: hidden;
 }
 
-.mj-badge-iv      { background: #e3f2fd; color: #1565c0; }
-.mj-badge-oral    { background: #e8f5e9; color: #2e7d32; }
-.mj-badge-prn     { background: #e0f2f1; color: #00695c; }
-.mj-badge-stopped { background: #ffebee; color: #c62828; }
-.mj-badge-stat    { background: #fff3e0; color: #e65100; }
-
-/* ── Empty state ─────────────────────────────────────────────────────────── */
-.mj-empty {
-  text-align: center;
-  padding: 20px;
-  color: #bdbdbd;
-  font-style: italic;
-  font-size: 12px;
+/* Subtle column grid lines via background */
+.mj-bars-col::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent calc(100% / 30 - 0.5px),
+    rgba(0,0,0,.04) calc(100% / 30 - 0.5px),
+    rgba(0,0,0,.04) calc(100% / 30)
+  );
+  pointer-events: none;
+  z-index: 0;
 }
 
-/* ── Alert items ─────────────────────────────────────────────────────────── */
-.mj-alert-item {
+/* ── Horizontal bar ───────────────────────────────────────── */
+.mj-bar {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 16px;
+  border-radius: 3px;
   display: flex;
-  gap: 8px;
-  padding: 10px 16px;
-  border-bottom: 1px solid #fff3e0;
-  align-items: flex-start;
-}
-.mj-alert-item:last-child { border-bottom: none; }
-
-.mj-alert-icon {
-  font-size: 16px;
-  margin-top: 1px;
+  align-items: center;
+  overflow: hidden;
+  min-width: 3px;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0,0,0,.15);
 }
 
-.mj-alert-text {
-  font-size: 12px;
-  color: #e65100;
+.mj-bar-lbl {
+  font-size: 9px;
+  color: #fff;
+  padding: 0 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0,0,0,.3);
 }
 
-/* ── Pharmacist note (view mode) ────────────────────────────────────────── */
-.mj-med-note {
-  font-size: 11px;
-  color: #2e7d32;
-  margin-top: 3px;
-  font-style: italic;
+/* ── Stop X marker ────────────────────────────────────────── */
+.mj-stop-x {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #c62828;
+  font-size: 12px;
+  font-weight: 900;
+  z-index: 3;
+  pointer-events: none;
 }
 
-/* ── Edit button ─────────────────────────────────────────────────────────── */
-.mj-btn-edit {
-  background: rgba(255,255,255,.18);
-  color: #fff;
-  border: 1.5px solid rgba(255,255,255,.55);
+/* ── Vertical ADR event line ──────────────────────────────── */
+.mj-vline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  border-left: 2px dashed #c62828;
+  z-index: 5;
+  pointer-events: none;
 }
 
-/* ── Edit mode header ────────────────────────────────────────────────────── */
-.mj-header-edit {
-  background: linear-gradient(135deg, #4a148c, #6a1b9a);
-}
-
-.mj-btn-save {
-  background: #fff;
-  color: #4a148c;
+.mj-vline-tip {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  font-size: 8px;
   font-weight: 700;
+  color: #c62828;
+  white-space: nowrap;
+  background: rgba(255,255,255,.85);
+  padding: 0 3px;
+  border-radius: 2px;
 }
 
-.mj-btn-cancel {
-  background: rgba(255,255,255,.18);
-  color: #fff;
-  border: 1.5px solid rgba(255,255,255,.45);
-}
+/* ════════════════════════════════════════════════════════════
+   EDIT MODE (purple theme)
+════════════════════════════════════════════════════════════ */
+.mj-header-edit { background: linear-gradient(135deg,#4a148c,#6a1b9a); padding:16px 20px; border-radius:8px; margin-bottom:16px; }
+.mj-header-edit .mj-page-title { color:#fff; font-size:18px; }
+.mj-header-edit .mj-page-sub   { color:rgba(255,255,255,.78); }
 
-/* ── Edit rows ───────────────────────────────────────────────────────────── */
+.mj-btn-save   { background:#fff; color:#4a148c; border-color:#9c27b0; font-weight:700; }
+.mj-btn-cancel { background:rgba(255,255,255,.15); color:#fff; border-color:rgba(255,255,255,.4); }
+
+/* Patient card (edit mode) */
+.mj-patient-card {
+  background:#fff; border-radius:8px; padding:14px 18px; margin-bottom:16px;
+  box-shadow:0 1px 4px rgba(0,0,0,.08);
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:8px 16px;
+}
+.mj-patient-field .lbl {
+  font-size:9px; font-weight:700; color:#90a4ae;
+  text-transform:uppercase; letter-spacing:.4px; margin-bottom:2px;
+}
+.mj-patient-field .val { font-size:13px; font-weight:600; color:#1a237e; }
+
+/* Sections (used in edit mode) */
+.mj-section { background:#fff; border-radius:8px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.08); overflow:hidden; }
+.mj-section-header {
+  padding:10px 16px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;
+  display:flex; align-items:center; gap:8px; border-bottom:1px solid #f0f0f0;
+}
+.mj-section-body { padding:0; }
+.mj-badge { display:inline-flex; padding:1px 7px; border-radius:10px; font-size:10px; font-weight:700; vertical-align:middle; }
+.mj-empty { text-align:center; padding:18px; color:#bdbdbd; font-style:italic; font-size:12px; }
+
+.mj-section-active   .mj-section-header { background:#e8f5e9; color:#2e7d32; }
+.mj-section-stopped  .mj-section-header { background:#ffebee; color:#c62828; }
+.mj-section-prn      .mj-section-header { background:#e0f2f1; color:#00695c; }
+
+/* Edit rows */
 .mj-edit-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
+  display:flex; align-items:flex-start; gap:10px;
+  padding:12px 16px; border-bottom:1px solid #f0f0f0; background:#fafafa;
 }
-.mj-edit-row:last-child { border-bottom: none; }
+.mj-edit-row:last-child { border-bottom:none; }
 
 .mj-edit-grid {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 12px;
+  flex:1; display:grid; grid-template-columns:1fr 1fr; gap:8px 12px;
 }
 
 .mj-edit-label {
-  display: flex;
-  flex-direction: column;
-  font-size: 10px;
-  font-weight: 700;
-  color: #90a4ae;
-  text-transform: uppercase;
-  letter-spacing: .3px;
-  gap: 3px;
+  display:flex; flex-direction:column; font-size:10px; font-weight:700;
+  color:#90a4ae; text-transform:uppercase; letter-spacing:.3px; gap:3px;
 }
-
-.mj-edit-label-full {
-  grid-column: 1 / -1;
-}
+.mj-edit-label-full { grid-column:1/-1; }
 
 .mj-edit-input {
-  font-size: 13px;
-  font-family: "Segoe UI", Arial, sans-serif;
-  color: #1a237e;
-  background: #fff;
-  border: 1px solid #c5cae9;
-  border-radius: 5px;
-  padding: 5px 8px;
-  outline: none;
-  width: 100%;
-  box-sizing: border-box;
-  transition: border-color .15s;
+  font-size:13px; font-family:inherit; color:#1a237e;
+  background:#fff; border:1px solid #c5cae9; border-radius:5px;
+  padding:5px 8px; outline:none; width:100%; box-sizing:border-box; transition:border-color .15s;
 }
-.mj-edit-input:focus { border-color: #3f51b5; box-shadow: 0 0 0 2px rgba(63,81,181,.12); }
+.mj-edit-input:focus { border-color:#3f51b5; box-shadow:0 0 0 2px rgba(63,81,181,.12); }
 
-.mj-edit-note {
-  resize: vertical;
-  min-height: 52px;
-  line-height: 1.5;
-}
+.mj-edit-note { resize:vertical; min-height:48px; line-height:1.5; }
 
-/* ── Add / Delete buttons ────────────────────────────────────────────────── */
-.mj-btn-del {
-  background: #ffebee;
-  color: #c62828;
-  border: 1px solid #ef9a9a;
-  flex-shrink: 0;
-  margin-top: 2px;
-  padding: 5px 10px;
-  border-radius: 6px;
-  font-size: 11px;
-}
-.mj-btn-del:hover { background: #ffcdd2; opacity: 1; }
+.mj-edit-add-row { padding:8px 16px; border-top:1px dashed #e0e0e0; background:#f5f5f5; }
 
-.mj-edit-add-row {
-  padding: 8px 16px;
-  border-top: 1px dashed #e0e0e0;
-  background: #f5f5f5;
-}
+.mj-btn-del { background:#ffebee; color:#c62828; border:1px solid #ef9a9a; flex-shrink:0; margin-top:2px; padding:5px 10px; border-radius:6px; font-size:11px; }
+.mj-btn-del:hover { background:#ffcdd2; opacity:1; }
+.mj-btn-add { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; border-radius:6px; font-size:12px; padding:5px 12px; }
+.mj-btn-add:hover { background:#c8e6c9; opacity:1; }
 
-.mj-btn-add {
-  background: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #a5d6a7;
-  border-radius: 6px;
-  font-size: 12px;
-  padding: 5px 12px;
-}
-.mj-btn-add:hover { background: #c8e6c9; opacity: 1; }
-
-/* ── Patient card in edit mode uses input fields ─────────────────────────── */
-#mj-patient-card-edit .mj-patient-field .mj-edit-input {
-  font-weight: 600;
-}
-
-/* ── Print ───────────────────────────────────────────────────────────────── */
-@page { size: A4; margin: 15mm; }
+/* ════════════════════════════════════════════════════════════
+   PRINT
+════════════════════════════════════════════════════════════ */
+@page { size: A3 landscape; margin: 10mm; }
 
 @media print {
-  body { background: #fff; }
-
-  .mj-actions { display: none !important; }
-  .mj-btn     { display: none !important; }
-  .mj-detail-toggle { display: none !important; }
-
-  .mj-event {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .mj-section.collapsed .mj-section-body {
-    display: block !important;
-  }
-
-  .mj-header {
-    border-radius: 0;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
+  body { background:#fff; }
+  .mj-header-actions { display:none !important; }
+  .mj-gantt-scroll { box-shadow:none; overflow:visible; }
+  .mj-gantt { min-width:unset; }
+  .mj-gantt-hdr-row { position:static; }
+  .mj-page { padding:0; max-width:none; }
+  .mj-adr-callout { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .mj-bar { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 }
