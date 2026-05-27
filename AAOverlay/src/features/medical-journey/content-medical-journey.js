@@ -177,19 +177,21 @@
       const dosage = c(10), route = c(11), frequency = c(12);
       const sig = [dosage, route, frequency].filter(v => v && v.trim()).join(" · ");
       orders.push({
-        name:      _norm(nameEl.textContent),
-        date:      c(4),
-        orderNo:   c(5),
-        status:    c(8),
-        priority:  c(9),
+        code:        c(0),
+        name:        _norm(nameEl.textContent),
+        date:        c(4),
+        orderNo:     c(5),
+        status:      c(8),
+        priority:    c(9),
         sig,
         dosage,
         route,
         frequency,
-        duration:  c(13),
-        quantity:  c(14),
-        startDate: c(25),
-        endDate:   c(26),
+        duration:    c(13),
+        quantity:    c(14),
+        careprovider:c(19),
+        startDate:   c(25),
+        endDate:     c(26),
         orderType,
         cancelled: tr.classList.contains("cancel-order"),
         stat:      c(9).toUpperCase() === "STAT",
@@ -330,6 +332,55 @@
 
 .mj-empty { font-size: 11px; color: #9e9e9e; font-style: italic; text-align: center; padding: 16px 0; }
 `;
+
+  // ── Home Medication Sheet ──────────────────────────────────────────
+  function _buildHomeMedTableHTML(orders) {
+    const active = (orders || []).filter(o => !o.cancelled);
+    const rows = active.map(o => {
+      return `<tr>
+        <td>${_esc(o.code || '')}</td>
+        <td>${_esc(o.name)}</td>
+        <td>Ordered</td>
+        <td>${_esc(o.dosage)}</td>
+        <td>${_esc(o.route)}</td>
+        <td>${_esc(o.frequency)}</td>
+        <td>${_esc(o.duration)}</td>
+        <td>${_esc(o.quantity)}</td>
+        <td></td>
+        <td>${_esc(o.careprovider || '')}</td>
+      </tr>`;
+    }).join('');
+    return `<table>
+      <thead><tr>
+        <th>Code</th><th>Order Item</th><th>Status</th>
+        <th>Dosage</th><th>Route</th><th>Frequency</th>
+        <th>Duration</th><th>Quantity</th><th>Comments</th><th>Careprovider</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  function _openHomeMedSheet(patient, orders) {
+    const msgType = (window.CoreMessages?.MSG?.LOAD_MED_TABLE) || 'LOAD_MED_TABLE';
+    const pt = patient || {};
+    const patientData = {
+      fullName:      pt.name || null,
+      hn:            pt.hn || null,
+      an:            pt.an || null,
+      room:          pt.bed || null,
+      department:    pt.dept || null,
+      doctor:        pt.doctor || null,
+      visitDateTime: pt.admitDate || null,
+      ageText:       pt.age || null,
+      rawText:       '',
+      rawLines:      [],
+    };
+    const tableHTML = _buildHomeMedTableHTML(orders);
+    chrome.runtime.sendMessage(
+      { type: msgType, patientData, tableHTML },
+      () => void chrome.runtime.lastError
+    );
+  }
 
   // ── PDF export ─────────────────────────────────────────────────────
   function _buildPdfHtml(patient, allergies, orders) {
@@ -566,6 +617,7 @@ ${groupHtmlBlocks || `<div style="color:#9e9e9e;font-style:italic;text-align:cen
         </div>
         <div class="mj-actions">
           <button class="mj-icon-btn mj-pdf-btn" id="arcus-mj-btn-pdf" title="Save to PDF">🖨 PDF</button>
+          <button class="mj-icon-btn mj-pdf-btn" id="arcus-mj-btn-homed" title="Print Home Medication Sheet">🏠 Home Med</button>
           <button class="mj-icon-btn" id="arcus-mj-btn-refresh" title="Refresh">↻</button>
           <button class="mj-icon-btn" id="arcus-mj-btn-copy" title="Copy to clipboard">⎘</button>
           <button class="mj-icon-btn" id="arcus-mj-btn-min" title="Minimize">−</button>
@@ -595,6 +647,9 @@ ${groupHtmlBlocks || `<div style="color:#9e9e9e;font-style:italic;text-align:cen
     });
     document.getElementById("arcus-mj-btn-pdf").addEventListener("click", () => {
       _savePdf(patient, allergies, orders);
+    });
+    document.getElementById("arcus-mj-btn-homed").addEventListener("click", () => {
+      _openHomeMedSheet(patient, orders);
     });
   }
 
