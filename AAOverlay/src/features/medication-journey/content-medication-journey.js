@@ -131,96 +131,54 @@
     }
   }
 
-  /* ── Button injection ────────────────────────────────────────────────── */
+  /* ── Button injection (fixed floating, always visible) ──────────────── */
   function _injectButton() {
     if (document.getElementById("arcus-medj-btn2")) return;
-
-    /* Only inject on the orders page */
-    if (!window.location.href.includes("emr/emrview/emr/orders") &&
-        !window.location.hash.includes("emr/orders")) {
-      return;
-    }
-
-    /* Find toolbar */
-    const toolbarSelectors = [
-      "div[class*='groupbylist']",
-      "div.groupbylist",
-      ".order-toolbar",
-      ".toolbar-container",
-      "[ng-controller*='order'] .btn-toolbar",
-      ".md-toolbar-tools",
-      ".layout-row.layout-align-start-center",
-    ];
-
-    let toolbar = null;
-    for (const sel of toolbarSelectors) {
-      toolbar = document.querySelector(sel);
-      if (toolbar) break;
-    }
-    if (!toolbar) return;
+    if (!document.body) return;
 
     const btn = document.createElement("button");
     btn.id          = "arcus-medj-btn2";
     btn.textContent = "💊 Medication Journey";
     Object.assign(btn.style, {
+      position:     "fixed",
+      bottom:       "72px",
+      right:        "16px",
+      zIndex:       "2147483646",
       background:   "#e8f5e9",
       border:       "1.5px solid #4caf50",
       color:        "#1b5e20",
       borderRadius: "20px",
-      padding:      "5px 14px",
+      padding:      "7px 16px",
       fontSize:     "12px",
       fontWeight:   "700",
       cursor:       "pointer",
-      marginLeft:   "8px",
       fontFamily:   "Segoe UI, Arial, sans-serif",
       whiteSpace:   "nowrap",
       lineHeight:   "1.4",
-      transition:   "background .15s",
+      boxShadow:    "0 2px 8px rgba(0,0,0,.18)",
+      transition:   "background .15s, box-shadow .15s",
     });
     btn.title = "แสดง Medication Journey";
-    btn.addEventListener("mouseenter", function () { btn.style.background = "#c8e6c9"; });
-    btn.addEventListener("mouseleave", function () { btn.style.background = "#e8f5e9"; });
+    btn.addEventListener("mouseenter", function () {
+      btn.style.background  = "#c8e6c9";
+      btn.style.boxShadow   = "0 4px 14px rgba(0,0,0,.24)";
+    });
+    btn.addEventListener("mouseleave", function () {
+      btn.style.background  = "#e8f5e9";
+      btn.style.boxShadow   = "0 2px 8px rgba(0,0,0,.18)";
+    });
     btn.addEventListener("click", _onMedicationJourneyClick);
 
-    toolbar.appendChild(btn);
+    document.body.appendChild(btn);
   }
 
-  /* ── SPA navigation handling ─────────────────────────────────────────── */
-  function _removeButton() {
-    const existing = document.getElementById("arcus-medj-btn2");
-    if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
-  }
-
-  function _onNavChange() {
-    _removeButton();
-    /* Small delay to let Angular render the new page */
-    setTimeout(_injectButton, 600);
-  }
-
-  /* Patch pushState / replaceState */
-  (function () {
-    const _push    = history.pushState.bind(history);
-    const _replace = history.replaceState.bind(history);
-    history.pushState = function () {
-      _push.apply(history, arguments);
-      _onNavChange();
-    };
-    history.replaceState = function () {
-      _replace.apply(history, arguments);
-      _onNavChange();
-    };
-  })();
-
-  window.addEventListener("hashchange", _onNavChange);
-  window.addEventListener("popstate",   _onNavChange);
-
-  /* MutationObserver to catch Angular-driven DOM changes */
+  /* Re-inject if Angular removes the button from the DOM */
   const _observer = new MutationObserver(function () {
     if (!document.getElementById("arcus-medj-btn2")) {
       _injectButton();
     }
   });
-  _observer.observe(document.body, { childList: true, subtree: true });
+  _observer.observe(document.body, { childList: true });
 
   /* Initial injection */
   _injectButton();
