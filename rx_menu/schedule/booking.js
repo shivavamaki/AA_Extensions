@@ -1,6 +1,6 @@
 const BOOKING_STORAGE_KEY = "pharmacyMonthlyBookingsV1";
 
-const pharmacists = [
+let pharmacists = [
   { id: "P01", name: "เกษราภรณ์", status: "hod" },
   { id: "P02", name: "อัปสร", status: "general" },
   { id: "P03", name: "ปิยะธิดา", status: "general" },
@@ -192,21 +192,38 @@ function init() {
   ensureMonth(selectedMonth);
   renderCalendar();
   renderSummary();
-  if (!localStorage.getItem(BOOKING_STORAGE_KEY)) {
-    fetch('http://10.134.110.81:8765/api/schedule/bookings')
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data && typeof data === 'object' && !Array.isArray(data)) {
-          bookings = data;
-          localStorage.setItem(BOOKING_STORAGE_KEY, JSON.stringify(bookings));
-          ensureMonth(selectedMonth);
-          renderCalendar();
-          renderSummary();
-          setStatus("Bookings loaded from server.");
-        }
-      })
-      .catch(() => {});
-  }
+
+  const loadBookingsFromServer = () => {
+    if (!localStorage.getItem(BOOKING_STORAGE_KEY)) {
+      fetch('http://10.134.110.81:8765/api/schedule/bookings')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data && typeof data === 'object' && !Array.isArray(data)) {
+            bookings = data;
+            localStorage.setItem(BOOKING_STORAGE_KEY, JSON.stringify(bookings));
+            ensureMonth(selectedMonth);
+            renderCalendar();
+            renderSummary();
+            setStatus("Bookings loaded from server.");
+          }
+        })
+        .catch(() => {});
+    }
+  };
+
+  fetch('http://10.134.110.81:8765/api/schedule/state')
+    .then(r => r.ok ? r.json() : null)
+    .then(state => {
+      if (state && Array.isArray(state.staff) && state.staff.length > 0) {
+        pharmacists = state.staff.map(p => ({ id: p.id, name: p.name, status: p.status }));
+        if (!pharmacists.find(p => p.id === selectedPersonId)) selectedPersonId = pharmacists.find(p => p.status !== 'hod')?.id || pharmacists[0].id;
+        renderControls();
+        renderCalendar();
+        renderSummary();
+      }
+    })
+    .catch(() => {})
+    .finally(loadBookingsFromServer);
   $("personSelect").addEventListener("change", (e) => { selectedPersonId = e.target.value; renderCalendar(); });
   $("monthSelect").addEventListener("change", (e) => { selectedMonth = e.target.value; ensureMonth(selectedMonth); renderCalendar(); renderSummary(); });
   $("btnSave").addEventListener("click", saveBookings);
