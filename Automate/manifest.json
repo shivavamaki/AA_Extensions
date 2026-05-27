@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Arcus Toolkit",
   "version": "4.2.0",
-  "version_name": "2026.05.27 - add medical journey",
+  "version_name": "2026.05.27 - move medical journey to AAOverlay",
   "description": "Auto Dispense and IP Fill automation for Arcus Pharmacy Management System.",
   "permissions": [
     "activeTab",
@@ -32,8 +32,7 @@
         "content/automation.js",
         "content/boot.js",
         "content/ipfill_panel.js",
-        "content/drug-image.js",
-        "content/medical-journey.js"
+        "content/drug-image.js"
       ],
       "css": [
         "styles.css"
