@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy",
-  "version": "2.3",
-  "version_name": "2026.05.27 - server-side report fetch, manual collapse",
+  "version": "2.4",
+  "version_name": "2026.05.27 - fix MRD send-button URL scope",
   "description": "BKN Hospital Pharmacy Department — Quick links, clinical tools, IV/auxiliary label printing, IPD queue, and knowledge hub.",
   "permissions": [
     "activeTab",

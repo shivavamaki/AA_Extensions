@@ -93,12 +93,28 @@
 
   const SEND_BTN_CLASS = 'bknExt_sendBtn';
 
+  function isMrdPage() {
+    const h = location.hash || '';
+    return h.includes('/mrd/') || location.href.includes('/mrd/');
+  }
+
   if (HOST === 'arcusair.bdms.co.th') {
-    initMrdPage();
+    if (isMrdPage()) initMrdPage();
+    // Re-evaluate on SPA hash navigation
+    window.addEventListener('hashchange', () => {
+      if (isMrdPage()) {
+        setTimeout(initMrdPage, 600);
+      } else {
+        // Clean up any stray buttons if navigating away from MRD page
+        document.querySelectorAll('.' + SEND_BTN_CLASS)
+          .forEach(b => b.parentNode && b.parentNode.removeChild(b));
+      }
+    });
     // Dispense workbench button is injected via MutationObserver below (SPA navigation)
   }
 
   function initMrdPage() {
+    if (!isMrdPage()) return;
     waitForElement(MRD_TABLE_SEL, () => {
       scrollLoadAll(MRD_TABLE_SEL).then(() => {
         injectSendButtons();
@@ -147,6 +163,7 @@
   }
 
   function injectSendButtons() {
+    if (!isMrdPage()) return;
     const table = document.querySelector(MRD_TABLE_SEL);
     if (!table) return;
 
