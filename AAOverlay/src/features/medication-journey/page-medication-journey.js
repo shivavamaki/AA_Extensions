@@ -4,6 +4,10 @@
 ──────────────────────────────────────────────────────────────────────────── */
 "use strict";
 
+/* ── Mutable state ──────────────────────────────────────────────────────── */
+let _journeyData  = null;
+let _editSnapshot = null;
+
 /* ── Event type metadata ───────────────────────────────────────────────── */
 const EVENT_META = {
   start:    { icon: "🟢", label: "ยาเริ่มใช้",               color: "#2e7d32" },
@@ -26,11 +30,14 @@ function esc(str) {
     .replace(/'/g, "&#39;");
 }
 
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
 function fmtDate(dt) {
   if (!dt) return "";
   const d = String(dt).slice(0, 10);
   if (!d || d === "unknown") return dt || "";
-  /* Convert YYYY-MM-DD to DD/MM/YYYY for display */
   const parts = d.split("-");
   if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
   return d;
@@ -42,6 +49,10 @@ function fmtDateRange(start, end) {
   if (s && e) return `${s} – ${e}`;
   return s || e || "";
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VIEW MODE — render functions
+═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Patient card ───────────────────────────────────────────────────────── */
 function buildPatientCard(ctx) {
@@ -114,16 +125,16 @@ function buildEventCard(ev, idx) {
   const detailId = `mj-detail-${idx}`;
   const raw      = ev._raw || {};
   const detailLines = [];
-  if (raw.code)              detailLines.push(`รหัสยา: ${esc(raw.code)}`);
-  if (raw.duration)          detailLines.push(`ระยะเวลา: ${esc(raw.duration)}`);
-  if (raw.quantity)          detailLines.push(`จำนวน: ${esc(raw.quantity)}`);
-  if (raw.instruction)       detailLines.push(`คำแนะนำ: ${esc(raw.instruction)}`);
-  if (raw.infusionRate)      detailLines.push(`อัตราหยด: ${esc(raw.infusionRate)}`);
-  if (raw.infusionDuration)  detailLines.push(`เวลาหยด: ${esc(raw.infusionDuration)}`);
-  if (raw.comments)          detailLines.push(`หมายเหตุ: ${esc(raw.comments)}`);
-  if (raw.orderType)         detailLines.push(`ประเภทคำสั่ง: ${esc(raw.orderType)}`);
-  if (raw.priority)          detailLines.push(`ลำดับความสำคัญ: ${esc(raw.priority)}`);
-  if (ev.pharmacistNote)     detailLines.push(`บันทึกเภสัช: ${esc(ev.pharmacistNote)}`);
+  if (raw.code)             detailLines.push(`รหัสยา: ${esc(raw.code)}`);
+  if (raw.duration)         detailLines.push(`ระยะเวลา: ${esc(raw.duration)}`);
+  if (raw.quantity)         detailLines.push(`จำนวน: ${esc(raw.quantity)}`);
+  if (raw.instruction)      detailLines.push(`คำแนะนำ: ${esc(raw.instruction)}`);
+  if (raw.infusionRate)     detailLines.push(`อัตราหยด: ${esc(raw.infusionRate)}`);
+  if (raw.infusionDuration) detailLines.push(`เวลาหยด: ${esc(raw.infusionDuration)}`);
+  if (raw.comments)         detailLines.push(`หมายเหตุ: ${esc(raw.comments)}`);
+  if (raw.orderType)        detailLines.push(`ประเภทคำสั่ง: ${esc(raw.orderType)}`);
+  if (raw.priority)         detailLines.push(`ลำดับความสำคัญ: ${esc(raw.priority)}`);
+  if (ev.pharmacistNote)    detailLines.push(`บันทึกเภสัช: ${esc(ev.pharmacistNote)}`);
   if (ev.alerts && ev.alerts.length) detailLines.push(`แจ้งเตือน: ${ev.alerts.map(esc).join(", ")}`);
 
   const detailHtml = detailLines.length > 0
@@ -170,16 +181,20 @@ function buildTimelineSection(timeline) {
 /* ── Med list row ────────────────────────────────────────────────────────── */
 function buildMedRow(order) {
   const badges = [];
-  if (order._isIv)    badges.push(`<span class="mj-badge mj-badge-iv">IV</span>`);
-  if (order._isOral)  badges.push(`<span class="mj-badge mj-badge-oral">Oral</span>`);
-  if (order.isPrn)    badges.push(`<span class="mj-badge mj-badge-prn">PRN</span>`);
+  if (order._isIv)       badges.push(`<span class="mj-badge mj-badge-iv">IV</span>`);
+  if (order._isOral)     badges.push(`<span class="mj-badge mj-badge-oral">Oral</span>`);
+  if (order.isPrn)       badges.push(`<span class="mj-badge mj-badge-prn">PRN</span>`);
   if (order.isStatOrder) badges.push(`<span class="mj-badge mj-badge-stat">STAT</span>`);
+
+  const noteHtml = order.pharmacistNote
+    ? `<div class="mj-med-note">📝 ${esc(order.pharmacistNote)}</div>` : "";
 
   return `<div class="mj-med-row">
   <div class="mj-med-info">
     <div class="mj-med-name">${esc(order.drugName)} ${badges.join(" ")}</div>
     <div class="mj-med-sig">${esc(order.displayDose || "")}</div>
     <div class="mj-med-dates">${esc(fmtDateRange(order.startDateTime, order.endDateTime))}</div>
+    ${noteHtml}
   </div>
 </div>`;
 }
@@ -198,11 +213,14 @@ function buildStoppedSection(stopped) {
   const bodyHtml = stopped.length > 0
     ? stopped.map(order => {
         const why = order.isCancelled ? "ยกเลิก" : "หยุดใช้";
+        const noteHtml = order.pharmacistNote
+          ? `<div class="mj-med-note">📝 ${esc(order.pharmacistNote)}</div>` : "";
         return `<div class="mj-med-row">
   <div class="mj-med-info">
     <div class="mj-med-name">${esc(order.drugName)} <span class="mj-badge mj-badge-stopped">${esc(why)}</span></div>
     <div class="mj-med-sig">${esc(order.displayDose || "")}</div>
     <div class="mj-med-dates">${esc(fmtDateRange(order.startDateTime, order.endDateTime))}</div>
+    ${noteHtml}
   </div>
 </div>`;
       }).join("")
@@ -282,6 +300,7 @@ function copySummaryText(journeyData) {
     lines.push("--- ยาที่ใช้อยู่ ---");
     for (const m of active) {
       lines.push(`• ${m.drugName}  ${m.displayDose || ""}`);
+      if (m.pharmacistNote) lines.push(`  📝 ${m.pharmacistNote}`);
     }
     lines.push("");
   }
@@ -292,6 +311,7 @@ function copySummaryText(journeyData) {
     for (const m of stopped) {
       const why = m.isCancelled ? "(ยกเลิก)" : "(หยุดใช้)";
       lines.push(`• ${m.drugName}  ${why}`);
+      if (m.pharmacistNote) lines.push(`  📝 ${m.pharmacistNote}`);
     }
     lines.push("");
   }
@@ -305,8 +325,7 @@ function copySummaryText(journeyData) {
     lines.push("");
   }
 
-  /* Key timeline events */
-  const keyTypes = ["start", "switch", "stop", "change", "alert"];
+  const keyTypes  = ["start", "switch", "stop", "change", "alert"];
   const keyEvents = (journeyData.allEvents || []).filter(e => keyTypes.includes(e.type));
   if (keyEvents.length > 0) {
     lines.push("--- เหตุการณ์สำคัญ ---");
@@ -321,28 +340,25 @@ function copySummaryText(journeyData) {
 
   const text = lines.join("\n");
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).catch(function () {
-      _fallbackCopy(text);
-    });
+    navigator.clipboard.writeText(text).catch(function () { _fallbackCopy(text); });
   } else {
     _fallbackCopy(text);
   }
 }
 
 function _fallbackCopy(text) {
-  const ta      = document.createElement("textarea");
-  ta.value      = text;
+  const ta = document.createElement("textarea");
+  ta.value = text;
   ta.style.position = "fixed";
-  ta.style.top  = "-9999px";
+  ta.style.top = "-9999px";
   document.body.appendChild(ta);
   ta.select();
   document.execCommand("copy");
   document.body.removeChild(ta);
 }
 
-/* ── Wire up interactivity ──────────────────────────────────────────────── */
+/* ── Wire up view-mode interactivity ────────────────────────────────────── */
 function wireInteractivity(journeyData) {
-  /* Section collapse toggles */
   document.querySelectorAll(".mj-section-header[data-section]").forEach(function (hdr) {
     hdr.addEventListener("click", function () {
       const sec    = document.getElementById(hdr.dataset.section);
@@ -353,7 +369,6 @@ function wireInteractivity(journeyData) {
     });
   });
 
-  /* Detail panel toggles */
   document.querySelectorAll(".mj-detail-toggle").forEach(function (btn) {
     btn.addEventListener("click", function () {
       const panel = document.getElementById(btn.dataset.target);
@@ -363,16 +378,13 @@ function wireInteractivity(journeyData) {
     });
   });
 
-  /* Print */
-  const printBtn = document.getElementById("mj-print-btn");
-  if (printBtn) printBtn.addEventListener("click", function () { window.print(); });
-
-  /* Export JSON */
+  const printBtn  = document.getElementById("mj-print-btn");
   const exportBtn = document.getElementById("mj-export-btn");
-  if (exportBtn) exportBtn.addEventListener("click", function () { exportJourneyJson(journeyData); });
+  const copyBtn   = document.getElementById("mj-copy-btn");
+  const editBtn   = document.getElementById("mj-edit-btn");
 
-  /* Copy summary */
-  const copyBtn = document.getElementById("mj-copy-btn");
+  if (printBtn)  printBtn.addEventListener("click",  function () { window.print(); });
+  if (exportBtn) exportBtn.addEventListener("click", function () { exportJourneyJson(journeyData); });
   if (copyBtn) {
     copyBtn.addEventListener("click", function () {
       copySummaryText(journeyData);
@@ -381,10 +393,18 @@ function wireInteractivity(journeyData) {
       setTimeout(function () { copyBtn.textContent = orig; }, 2000);
     });
   }
+  if (editBtn) {
+    editBtn.addEventListener("click", function () {
+      _editSnapshot = deepClone(_journeyData);
+      renderEditPage();
+    });
+  }
 }
 
-/* ── renderMedicationJourney ─────────────────────────────────────────────── */
+/* ── renderMedicationJourney (view mode) ────────────────────────────────── */
 function renderMedicationJourney(journeyData) {
+  _journeyData = journeyData;
+
   const root = document.getElementById("mj-root");
   if (!root) return;
 
@@ -400,22 +420,23 @@ function renderMedicationJourney(journeyData) {
     ${titleSub ? `<div style="font-size:13px;margin-top:4px;opacity:.85">${esc(titleSub)}</div>` : ""}
   </div>
   <div class="mj-actions">
+    <button id="mj-edit-btn"   class="mj-btn mj-btn-edit">✏️ แก้ไข</button>
     <button id="mj-print-btn"  class="mj-btn mj-btn-print">🖨️ พิมพ์</button>
     <button id="mj-export-btn" class="mj-btn mj-btn-export">⬇️ Export JSON</button>
     <button id="mj-copy-btn"   class="mj-btn mj-btn-copy">📋 คัดลอกสรุป</button>
   </div>
 </div>`;
 
-  const patientCard  = buildPatientCard(ctx);
-  const sourceBar    = buildSourceBar(source);
-  const activeSection  = buildActiveSection(journeyData.activeMedications  || []);
-  const timelineSection = buildTimelineSection(journeyData.timeline         || []);
-  const stoppedSection  = buildStoppedSection(journeyData.stoppedMedications || []);
-  const prnSection      = buildPrnSection(journeyData.prnMedications        || []);
-  const diluentSection  = buildDiluentSection(journeyData.diluentMedications || []);
-  const alertsSection   = buildAlertsSection(journeyData.alerts             || []);
+  const patientCard     = buildPatientCard(ctx);
+  const sourceBar       = buildSourceBar(source);
+  const activeSection   = buildActiveSection(journeyData.activeMedications   || []);
+  const timelineSection = buildTimelineSection(journeyData.timeline           || []);
+  const stoppedSection  = buildStoppedSection(journeyData.stoppedMedications  || []);
+  const prnSection      = buildPrnSection(journeyData.prnMedications          || []);
+  const diluentSection  = buildDiluentSection(journeyData.diluentMedications  || []);
+  const alertsSection   = buildAlertsSection(journeyData.alerts               || []);
 
-  const pageHtml = `<div class="mj-page">
+  root.innerHTML = `<div class="mj-page">
 ${headerHtml}
 ${patientCard}
 ${sourceBar}
@@ -427,15 +448,159 @@ ${prnSection}
 ${diluentSection}
 </div>`;
 
-  root.innerHTML = pageHtml;
   wireInteractivity(journeyData);
 }
 
-/* ── Data loading ───────────────────────────────────────────────────────── */
-document.addEventListener("DOMContentLoaded", async function () {
-  const key    = "payload_medicationJourney";
+/* ═══════════════════════════════════════════════════════════════════════════
+   EDIT MODE — render functions
+═══════════════════════════════════════════════════════════════════════════ */
 
-  /* Try session storage first (set by openOrReuseTab before tab creation) */
+/* ── Edit: patient card ─────────────────────────────────────────────────── */
+function buildPatientCardEdit(ctx) {
+  const defs = [
+    ["patientName", "ชื่อผู้ป่วย"],
+    ["hn",          "HN"],
+    ["an",          "AN"],
+    ["gender",      "เพศ"],
+    ["dob",         "วันเกิด"],
+    ["age",         "อายุ"],
+    ["bed",         "เตียง"],
+    ["dept",        "แผนก"],
+    ["doctor",      "แพทย์"],
+    ["admitDate",   "วันรับไว้"],
+  ];
+  const fields = defs.map(([k, lbl]) =>
+    `<div class="mj-patient-field">
+      <div class="lbl">${esc(lbl)}</div>
+      <input class="mj-edit-input" data-ctx="${esc(k)}" value="${esc(ctx[k] || "")}" />
+    </div>`
+  ).join("");
+  return `<div class="mj-patient-card" id="mj-patient-card-edit">${fields}</div>`;
+}
+
+/* ── Edit: single medication row ────────────────────────────────────────── */
+function buildMedRowEdit(order) {
+  return `<div class="mj-edit-row">
+  <div class="mj-edit-grid">
+    <label class="mj-edit-label">ชื่อยา
+      <input class="mj-edit-input" data-prop="drugName" value="${esc(order.drugName || "")}" placeholder="ชื่อยา">
+    </label>
+    <label class="mj-edit-label">ขนาด / วิธีใช้
+      <input class="mj-edit-input" data-prop="displayDose" value="${esc(order.displayDose || "")}" placeholder="เช่น 500mg oral TID">
+    </label>
+    <label class="mj-edit-label">วันเริ่ม
+      <input class="mj-edit-input" data-prop="startDateTime" value="${esc(order.startDateTime || "")}" placeholder="YYYY-MM-DD">
+    </label>
+    <label class="mj-edit-label">วันสิ้นสุด
+      <input class="mj-edit-input" data-prop="endDateTime" value="${esc(order.endDateTime || "")}" placeholder="YYYY-MM-DD">
+    </label>
+    <label class="mj-edit-label mj-edit-label-full">บันทึกเภสัชกร
+      <textarea class="mj-edit-input mj-edit-note" data-prop="pharmacistNote">${esc(order.pharmacistNote || "")}</textarea>
+    </label>
+  </div>
+  <button class="mj-btn mj-btn-del" onclick="this.closest('.mj-edit-row').remove()">🗑️ ลบ</button>
+</div>`;
+}
+
+/* ── Edit: medication section ───────────────────────────────────────────── */
+function buildMedSectionEdit(secId, icon, title, themeClass, orders) {
+  const rows = (orders || []).map(o => buildMedRowEdit(o)).join("");
+  const bodyContent = rows || `<div class="mj-empty">ไม่มีรายการ — คลิก "เพิ่มยา" เพื่อเพิ่ม</div>`;
+  return `<div class="mj-section ${themeClass}">
+  <div class="mj-section-header" style="cursor:default;user-select:none">
+    <span>${icon}</span>
+    <span>${esc(title)}</span>
+    <span class="mj-badge" style="margin-left:4px;background:rgba(0,0,0,.07);color:inherit">${(orders||[]).length}</span>
+  </div>
+  <div class="mj-section-body" id="${secId}-edit-body">
+    ${bodyContent}
+  </div>
+  <div class="mj-edit-add-row">
+    <button class="mj-btn mj-btn-add" onclick="mjAddMedRow('${secId}-edit-body')">➕ เพิ่มยา</button>
+  </div>
+</div>`;
+}
+
+/* ── Global helper called from inline onclick ───────────────────────────── */
+window.mjAddMedRow = function (bodyId) {
+  const body = document.getElementById(bodyId);
+  if (!body) return;
+  const empty = body.querySelector(".mj-empty");
+  if (empty) empty.remove();
+  const div = document.createElement("div");
+  div.innerHTML = buildMedRowEdit({});
+  body.appendChild(div.firstElementChild);
+};
+
+/* ── Read medication rows from edit DOM ─────────────────────────────────── */
+function readEditSection(bodyId) {
+  const body = document.getElementById(bodyId);
+  if (!body) return null;
+  return Array.from(body.querySelectorAll(".mj-edit-row")).map(function (row) {
+    const o = {};
+    row.querySelectorAll("[data-prop]").forEach(function (el) {
+      o[el.dataset.prop] = (el.tagName === "TEXTAREA" ? el.value : el.value).trim();
+    });
+    return o;
+  }).filter(function (o) { return (o.drugName || "").trim() !== ""; });
+}
+
+/* ── Save edit changes back to _journeyData ─────────────────────────────── */
+function saveEdits() {
+  const ctx = _journeyData.patientContext || {};
+  document.querySelectorAll("#mj-patient-card-edit [data-ctx]").forEach(function (input) {
+    ctx[input.dataset.ctx] = input.value.trim();
+  });
+  _journeyData.patientContext = ctx;
+
+  const active  = readEditSection("mj-sec-active-edit-body");
+  const stopped = readEditSection("mj-sec-stopped-edit-body");
+  const prn     = readEditSection("mj-sec-prn-edit-body");
+  if (active  !== null) _journeyData.activeMedications  = active;
+  if (stopped !== null) _journeyData.stoppedMedications = stopped;
+  if (prn     !== null) _journeyData.prnMedications     = prn;
+}
+
+/* ── renderEditPage ─────────────────────────────────────────────────────── */
+function renderEditPage() {
+  const root = document.getElementById("mj-root");
+  if (!root) return;
+
+  const ctx = _journeyData.patientContext || {};
+
+  root.innerHTML = `<div class="mj-page mj-page-edit">
+<div class="mj-header mj-header-edit">
+  <div>
+    <h1>✏️ แก้ไข Medication Journey</h1>
+    <div style="font-size:12px;opacity:.82;margin-top:3px">โหมดแก้ไข — กด "บันทึก" เพื่อนำการเปลี่ยนแปลงไปใช้</div>
+  </div>
+  <div class="mj-actions">
+    <button id="mj-save-btn"   class="mj-btn mj-btn-save">💾 บันทึก</button>
+    <button id="mj-cancel-btn" class="mj-btn mj-btn-cancel">✕ ยกเลิก</button>
+  </div>
+</div>
+${buildPatientCardEdit(ctx)}
+${buildMedSectionEdit("mj-sec-active",  "✅", "ยาที่ใช้อยู่",           "mj-section-active",  _journeyData.activeMedications  || [])}
+${buildMedSectionEdit("mj-sec-stopped", "🛑", "ยาที่หยุดใช้แล้ว",        "mj-section-stopped", _journeyData.stoppedMedications || [])}
+${buildMedSectionEdit("mj-sec-prn",     "🔔", "ยาใช้เมื่อมีอาการ (PRN)", "mj-section-prn",     _journeyData.prnMedications     || [])}
+</div>`;
+
+  document.getElementById("mj-save-btn").addEventListener("click", function () {
+    saveEdits();
+    renderMedicationJourney(_journeyData);
+  });
+  document.getElementById("mj-cancel-btn").addEventListener("click", function () {
+    _journeyData = _editSnapshot;
+    renderMedicationJourney(_journeyData);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BOOTSTRAP — load data from session storage or live message
+═══════════════════════════════════════════════════════════════════════════ */
+document.addEventListener("DOMContentLoaded", async function () {
+  const key = "payload_medicationJourney";
+
   try {
     const result  = await new Promise(function (resolve) {
       chrome.storage.session.get(key, resolve);
@@ -445,9 +610,8 @@ document.addEventListener("DOMContentLoaded", async function () {
       renderMedicationJourney(payload.journey);
       return;
     }
-  } catch (_) { /* storage not available yet */ }
+  } catch (_) { /* storage not available */ }
 
-  /* Also listen for a live message from the background (tab already open case) */
   chrome.runtime.onMessage.addListener(function (msg) {
     if (msg && msg.journey) {
       renderMedicationJourney(msg.journey);

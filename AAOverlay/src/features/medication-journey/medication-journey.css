@@ -347,6 +347,126 @@ body {
   font-weight: 600;
 }
 
+/* ── Pharmacist note (view mode) ────────────────────────────────────────── */
+.mj-med-note {
+  font-size: 11px;
+  color: #2e7d32;
+  margin-top: 3px;
+  font-style: italic;
+}
+
+/* ── Edit button ─────────────────────────────────────────────────────────── */
+.mj-btn-edit {
+  background: rgba(255,255,255,.18);
+  color: #fff;
+  border: 1.5px solid rgba(255,255,255,.55);
+}
+
+/* ── Edit mode header ────────────────────────────────────────────────────── */
+.mj-header-edit {
+  background: linear-gradient(135deg, #4a148c, #6a1b9a);
+}
+
+.mj-btn-save {
+  background: #fff;
+  color: #4a148c;
+  font-weight: 700;
+}
+
+.mj-btn-cancel {
+  background: rgba(255,255,255,.18);
+  color: #fff;
+  border: 1.5px solid rgba(255,255,255,.45);
+}
+
+/* ── Edit rows ───────────────────────────────────────────────────────────── */
+.mj-edit-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+.mj-edit-row:last-child { border-bottom: none; }
+
+.mj-edit-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+
+.mj-edit-label {
+  display: flex;
+  flex-direction: column;
+  font-size: 10px;
+  font-weight: 700;
+  color: #90a4ae;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  gap: 3px;
+}
+
+.mj-edit-label-full {
+  grid-column: 1 / -1;
+}
+
+.mj-edit-input {
+  font-size: 13px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #1a237e;
+  background: #fff;
+  border: 1px solid #c5cae9;
+  border-radius: 5px;
+  padding: 5px 8px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color .15s;
+}
+.mj-edit-input:focus { border-color: #3f51b5; box-shadow: 0 0 0 2px rgba(63,81,181,.12); }
+
+.mj-edit-note {
+  resize: vertical;
+  min-height: 52px;
+  line-height: 1.5;
+}
+
+/* ── Add / Delete buttons ────────────────────────────────────────────────── */
+.mj-btn-del {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+  flex-shrink: 0;
+  margin-top: 2px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+.mj-btn-del:hover { background: #ffcdd2; opacity: 1; }
+
+.mj-edit-add-row {
+  padding: 8px 16px;
+  border-top: 1px dashed #e0e0e0;
+  background: #f5f5f5;
+}
+
+.mj-btn-add {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 5px 12px;
+}
+.mj-btn-add:hover { background: #c8e6c9; opacity: 1; }
+
+/* ── Patient card in edit mode uses input fields ─────────────────────────── */
+#mj-patient-card-edit .mj-patient-field .mj-edit-input {
+  font-weight: 600;
+}
+
 /* ── Print ───────────────────────────────────────────────────────────────── */
 @page { size: A4; margin: 15mm; }
 
