@@ -9,7 +9,13 @@
       "Read(//c/Users/bkn.pharmacy/AppData/Local/**)",
       "Read(//c/Users/**)",
       "PowerShell($env:PATH)",
-      "Read(//c//**)"
+      "Read(//c//**)",
+      "Bash(\"C:\\\\Users\\\\bkn.pharmacy\\\\AppData\\\\Local\\\\Programs\\\\Git\\\\cmd\\\\git.exe\" add *)",
+      "Bash(\"C:\\\\Users\\\\bkn.pharmacy\\\\AppData\\\\Local\\\\Programs\\\\Git\\\\cmd\\\\git.exe\" status *)",
+      "Bash('C:\\\\Users\\\\bkn.pharmacy\\\\AppData\\\\Local\\\\Programs\\\\Git\\\\cmd\\\\git.exe' commit -m ' *)",
+      "Bash(\"C:\\\\Users\\\\bkn.pharmacy\\\\AppData\\\\Local\\\\Programs\\\\Git\\\\cmd\\\\git.exe\" push *)",
+      "Bash(dir /s /b \"C:\\\\Users\\\\bkn.pharmacy\\\\Documents\\\\AA_Extensions\\\\AAOverlay\")",
+      "Bash(\"C:\\\\Users\\\\bkn.pharmacy\\\\AppData\\\\Local\\\\Programs\\\\Git\\\\cmd\\\\git.exe\" rm *)"
     ]
   }
 }
