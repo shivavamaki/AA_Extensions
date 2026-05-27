@@ -21,6 +21,8 @@
     getRowSnapshots,
     findRowBySnapshot,
     getSelectedRowFilterLabel,
+    getSelectedRowFilters,
+    matchesRowFilter,
     isVisible,
     textOf,
     sleep,
@@ -86,7 +88,7 @@
 
     return rows.filter((row) => {
       const statusText = normalizeStatus(getCellText(row, 8));
-      return statusText === wanted && isValidAutoIdentity(row);
+      return statusText === wanted && isValidAutoIdentity(row) && matchesRowFilter(textOf(row), getSelectedRowFilters(), row);
     });
   }
 
