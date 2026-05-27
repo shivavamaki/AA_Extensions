@@ -78,8 +78,8 @@ let shiftTemplates = {
   OFF: { label: "OFF", hours: 0, type: "OFF", dayGroup: "system", system: true },
   REQ_OFF: { label: "REQ OFF", hours: 0, type: "OFF", dayGroup: "system", system: true },
   PT_AVAILABLE: { label: "PT Available", hours: 0, type: "available", dayGroup: "system", system: true },
-  "C1": { label: "C1", hours: 9, type: "Clinic", dayGroup: "weekday" },
-  "C2": { label: "C2", hours: 9, type: "Clinic", dayGroup: "weekday" },
+  "C1": { label: "C1", hours: 9, type: "Clinic", dayGroup: "both" },
+  "C2": { label: "C2", hours: 9, type: "Clinic", dayGroup: "both" },
   "8-16 Office": { label: "8-16 Office", hours: 8, type: "Office", dayGroup: "weekday", optional: true },
   "9-18IV": { label: "9-18IV", hours: 9, type: "IPD", dayGroup: "both" },
   "7-15I": { label: "7-15I", hours: 8, type: "IPD", dayGroup: "both" },
@@ -88,7 +88,7 @@ let shiftTemplates = {
   "9-17D": { label: "9-17D", hours: 8, type: "IPD", dayGroup: "both" },
   "11-21I": { label: "11-21I", hours: 10, type: "IPD", dayGroup: "both" },
   "7-15O": { label: "7-15O", hours: 8, type: "OPD", dayGroup: "weekday" },
-  "7-16O": { label: "7-16O", hours: 9, type: "OPD", dayGroup: "weekend" },
+  "7-16O": { label: "7-16O", hours: 9, type: "OPD", dayGroup: "both" },
   "10-20M": { label: "10-20M", hours: 10, type: "OPD", dayGroup: "both" },
   "9-18O": { label: "9-18O", hours: 9, type: "OPD", dayGroup: "both" },
   "20-7O": { label: "20-7O", hours: 11, type: "Night", dayGroup: "both" },
@@ -121,9 +121,10 @@ function shiftAllowedOnDay(code, date) {
 }
 
 function getCoverageShiftsForDay(date) {
+  const weekdayRequired = ["C1", "C2", "7-15O", "9-18O", "10-20M", "9-18IV", "7-15I", "10-20HM", "9-17D", "11-21I", "9-20F2", "20-7O", "20-7I"];
   const required = date.weekend
-    ? ["7-16O", "9-18O", "10-20M", "7-15I", "8-16HM", "9-17D", "11-21I", "9-20F2", "20-7O", "20-7I"]
-    : ["C1", "C2", "7-15O", "9-18O", "10-20M", "9-18IV", "7-15I", "10-20HM", "9-17D", "11-21I", "9-20F2", "20-7O", "20-7I"];
+    ? weekdayRequired.map((s) => (s === "7-15O" ? "7-16O" : s))
+    : weekdayRequired;
   const optional = date.weekend ? [] : ["8-16 Office"];
   const available = Object.keys(shiftTemplates).filter((code) => {
     const shift = shiftTemplates[normalizeShift(code)];
@@ -155,6 +156,7 @@ let allocationRun = 0;
 let allocationStarted = false;
 let reqOffLocked = false;
 let isDirty = false;
+let lockedDays = new Set();
 const STORAGE_KEY = "pharmacyScheduleStateV5_BOOKING";
 const BOOKING_STORAGE_KEY = "pharmacyMonthlyBookingsV1";
 const SCHEDULE_MONTH_KEY = "2026-06";
@@ -373,6 +375,15 @@ function createRuleBasedSchedule() {
     });
   });
 
+  if (allocationStarted && lockedDays.size > 0) {
+    lockedDays.forEach((dayIndex) => {
+      staff.forEach((p) => {
+        const existing = lastSchedule[p.id]?.[dayIndex];
+        if (existing) rows[p.id][dayIndex] = { ...existing };
+      });
+    });
+  }
+
   const coverage = (date) => getCoverageShiftsForDay(date);
 
   const hours = Object.fromEntries(staff.map((p) => [p.id, 0]));
@@ -397,6 +408,7 @@ function createRuleBasedSchedule() {
   }
 
   function canAssign(person, dayIndex, shift) {
+    if (lockedDays.has(dayIndex)) return false;
     const profile = statusProfiles[person.status] ?? statusProfiles.general;
     const shiftType = getShiftType(shift);
     const date = dateMeta[dayIndex];
@@ -714,7 +726,7 @@ function clearDirty() {
 
 function saveState() {
   const state = {
-    staff, requests, parttimeAvailability, adminOverrides, shiftTemplates, allocationRun, allocationStarted, reqOffLocked,
+    staff, requests, parttimeAvailability, adminOverrides, shiftTemplates, allocationRun, allocationStarted, reqOffLocked, lockedDays: [...lockedDays],
     settings: {
       targetMode: $("targetMode")?.value,
       manualTarget: $("manualTarget")?.value,
@@ -743,6 +755,7 @@ function applyState(state) {
   if (Number.isFinite(state.allocationRun)) allocationRun = state.allocationRun;
   if (typeof state.allocationStarted === "boolean") allocationStarted = state.allocationStarted;
   if (typeof state.reqOffLocked === "boolean") reqOffLocked = state.reqOffLocked;
+  if (Array.isArray(state.lockedDays)) lockedDays = new Set(state.lockedDays);
   const settings = state.settings || {};
   if ($("targetMode") && settings.targetMode) $("targetMode").value = settings.targetMode;
   if ($("manualTarget") && settings.manualTarget) $("manualTarget").value = settings.manualTarget;
@@ -848,6 +861,13 @@ function renderStaffCards() {
   });
 }
 
+function toggleDayLock(dayIndex) {
+  if (lockedDays.has(dayIndex)) lockedDays.delete(dayIndex);
+  else lockedDays.add(dayIndex);
+  markDirty();
+  render();
+}
+
 function cellClass(cell, isWeekend) {
   if (cell.manual) return isNight(cell) ? "cell-admin cell-night" : "cell-admin";
   if (cell.requested) return "cell-req";
@@ -862,7 +882,8 @@ function renderScheduleGrid() {
   let html = `<table><thead><tr><th class="name-col">Name / status</th>`;
   dateMeta.forEach((d, i) => {
     const missing = allocationStarted ? getRequiredCoverageShiftsForDay(d).filter((shift) => !dayHasShift(lastSchedule, i, shift)) : [];
-    html += `<th class="${d.weekend ? "weekend" : ""} ${missing.length ? "day-missing" : ""}" title="${missing.length ? `Missing: ${missing.join(", ")}` : "All required shifts filled"}"><div>${d.dow}</div><strong>${d.day}</strong>${missing.length ? `<em>!</em>` : ""}</th>`;
+    const locked = lockedDays.has(i);
+    html += `<th class="${d.weekend ? "weekend" : ""} ${missing.length ? "day-missing" : ""} ${locked ? "day-col-locked" : ""}" title="${missing.length ? `Missing: ${missing.join(", ")}` : "All required shifts filled"}"><div>${d.dow}</div><strong>${d.day}</strong><button class="day-lock-btn${locked ? " locked" : ""}" data-day="${i}" title="${locked ? "Unlock day – allow regeneration" : "Lock day – freeze all shifts"}">${locked ? "🔒" : "🔓"}</button>${missing.length ? `<em>!</em>` : ""}</th>`;
   });
   html += `<th class="total-col">Total</th></tr></thead><tbody>`;
 
@@ -885,6 +906,13 @@ function renderScheduleGrid() {
   });
   html += `</tbody></table>`;
   $("scheduleGrid").innerHTML = html;
+
+  document.querySelectorAll(".day-lock-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleDayLock(Number(btn.dataset.day));
+    });
+  });
 
   document.querySelectorAll(".cell-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
