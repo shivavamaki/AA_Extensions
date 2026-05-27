@@ -6,6 +6,7 @@
 /* ── Mutable state ──────────────────────────────────────────────────────── */
 let _journeyData  = null;
 let _editSnapshot = null;
+let _currentRange = null;
 
 /* ── Utilities ──────────────────────────────────────────────────────────── */
 function esc(str) {
@@ -27,6 +28,17 @@ function parseDate(str) {
 function dayStart(d)    { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
 function addDays(d, n)  { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
 function diffDays(a, b) { return Math.round((dayStart(b) - dayStart(a)) / 86400000); }
+
+/* Fractional day offset including time component ("YYYY-MM-DDTHH:MM") */
+function diffDaysFrac(start, dtStr) {
+  const base = parseDate(dtStr);
+  if (!base) return null;
+  const days = diffDays(start, base);
+  const m = String(dtStr).match(/T(\d{2}):(\d{2})/);
+  if (m) return days + (parseInt(m[1]) * 60 + parseInt(m[2])) / 1440;
+  return days;
+}
+
 function fmtDate(dt) {
   if (!dt) return "";
   const d = String(dt).slice(0,10), p = d.split("-");
@@ -81,6 +93,28 @@ function getMedColor(med) {
   return "#388e3c";
 }
 
+/* ── Build admin-times lookup from journey.adminTimes ───────────────────── */
+function buildAdminTimesMap(journeyData) {
+  const map = {};
+  if (!Array.isArray(journeyData.adminTimes)) return map;
+  for (const at of journeyData.adminTimes) {
+    map[(at.drugName || "").toLowerCase().trim()] = at.adminDatetimes || [];
+  }
+  return map;
+}
+
+function findAdminTimes(med, atMap) {
+  const name = (med.drugName || "").toLowerCase().trim();
+  if (atMap[name]) return atMap[name];
+  /* Fuzzy: match on first meaningful word */
+  const firstWord = name.replace(/\d.*$/, "").trim().split(/\s+/)[0];
+  if (firstWord.length < 3) return [];
+  for (const [k, v] of Object.entries(atMap)) {
+    if (k.startsWith(firstWord) || firstWord.startsWith(k.split(/\s+/)[0])) return v;
+  }
+  return [];
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    GANTT CHART RENDERING
 ═══════════════════════════════════════════════════════════════════════════ */
@@ -103,7 +137,7 @@ function buildDateHeader(range) {
 }
 
 /* ── Single Gantt row ───────────────────────────────────────────────────── */
-function buildGanttRow(med, range, vlineHtml) {
+function buildGanttRow(med, range, vlineHtml, atMap) {
   const { start, totalDays } = range;
   const sDate = parseDate(med.startDateTime);
 
@@ -133,6 +167,17 @@ function buildGanttRow(med, range, vlineHtml) {
   const color = getMedColor(med);
   const alpha = isStopped ? "0.55" : "1";
 
+  /* Admin-time ticks for oral medications */
+  let ticksHtml = "";
+  if (med._isOral && atMap) {
+    const times = findAdminTimes(med, atMap);
+    for (const dtStr of times) {
+      const frac = diffDaysFrac(start, dtStr);
+      if (frac === null || frac < 0 || frac > totalDays) continue;
+      ticksHtml += `<div class="mj-admin-tick" style="left:${pct(frac,totalDays)}%"></div>`;
+    }
+  }
+
   const barLabel = med.pharmacistNote
     ? `<span class="mj-bar-lbl">${esc(med.pharmacistNote)}</span>` : "";
   const stopX = isStopped
@@ -142,51 +187,90 @@ function buildGanttRow(med, range, vlineHtml) {
     ${vlineHtml}
     <div class="mj-bar" style="left:${lp}%;width:${wp}%;background:${color};opacity:${alpha}">${barLabel}</div>
     ${stopX}
+    ${ticksHtml}
   </div>`;
 
   return `<div class="mj-gantt-row">${drugCol}${barCol}</div>`;
 }
 
-/* ── ADR event callout (header banner) ──────────────────────────────────── */
-function buildAlertCallout(alerts, ctx) {
-  if (!alerts || !alerts.length) return "";
-  const first   = alerts[0];
-  const dateStr = fmtDate(first.startDateTime);
-  const detail  = (first.alerts||[]).join("; ") || first.drugName || "";
-  return `<div class="mj-adr-callout">
-  <div class="mj-adr-inner">
-    <div class="mj-adr-label">ADR / Rash event</div>
-    <div class="mj-adr-detail">${esc(detail)}</div>
+/* ── ADR callout with inline editable form ──────────────────────────────── */
+function buildAdrCalloutWithForm(adrEvent) {
+  const ae      = adrEvent || {};
+  const dateVal = ae.date    || "";
+  const sympVal = ae.symptoms|| "";
+  const detsVal = ae.details || "";
+
+  const SYMP_OPTS = [
+    ["Rash",            "Rash (ผื่น)"],
+    ["Urticaria",       "Urticaria (ลมพิษ)"],
+    ["Angioedema",      "Angioedema"],
+    ["Anaphylaxis",     "Anaphylaxis"],
+    ["SJS",             "SJS"],
+    ["TEN",             "TEN"],
+    ["DRESS",           "DRESS"],
+    ["Fever",           "Fever (ไข้)"],
+    ["Nausea/Vomiting", "Nausea/Vomiting"],
+    ["Other",           "Other (อื่นๆ)"],
+  ];
+
+  const opts = SYMP_OPTS.map(([val, lbl]) =>
+    `<option value="${esc(val)}"${sympVal===val?" selected":""}>${esc(lbl)}</option>`
+  ).join("");
+
+  const onsetSummary = dateVal
+    ? `ADR onset: <strong>${esc(fmtDate(dateVal))}</strong>${sympVal ? ` — ${esc(sympVal)}` : ""}`
+    : "";
+
+  return `<div class="mj-adr-callout" id="mj-adr-callout">
+  <div class="mj-adr-label">⚠️ ADR Event</div>
+  <div class="mj-adr-form-row">
+    <label class="mj-adr-field-label">วันที่พบ ADR
+      <input type="date" id="mj-adr-date" class="mj-adr-input" value="${esc(dateVal)}">
+    </label>
+    <label class="mj-adr-field-label">อาการ
+      <select id="mj-adr-symptoms" class="mj-adr-input">
+        <option value="">-- เลือก --</option>
+        ${opts}
+      </select>
+    </label>
   </div>
-  ${dateStr ? `<div class="mj-adr-onset">Rash onset: <strong>${esc(dateStr)}</strong></div>` : ""}
+  <input type="text" id="mj-adr-details" class="mj-adr-input mj-adr-details-input"
+    placeholder="รายละเอียดเพิ่มเติม..." value="${esc(detsVal)}">
+  <div class="mj-adr-onset" id="mj-adr-onset-summary"${onsetSummary?"":" style=\"display:none\""}>
+    ${onsetSummary}
+  </div>
 </div>`;
 }
 
 /* ── Full chart ─────────────────────────────────────────────────────────── */
 function buildGanttChart(journeyData) {
-  const ctx    = journeyData.patientContext || {};
-  const alerts = journeyData.alerts || [];
-  const meds   = getAllMeds(journeyData);
+  const ctx  = journeyData.patientContext || {};
+  const meds = getAllMeds(journeyData);
   if (!meds.length) return `<div class="mj-empty-gantt">ไม่มีข้อมูลยา</div>`;
 
   const range = calcRange(meds, ctx);
+  _currentRange = range; /* store for dynamic ADR vline updates */
   const { start, totalDays } = range;
 
-  /* Vertical ADR event line */
-  let vlineHtml = "";
-  if (alerts.length) {
-    const ad = parseDate(alerts[0].startDateTime);
-    if (ad) {
-      const off = diffDays(start, ad);
-      if (off >= 0 && off <= totalDays) {
-        const lp = pct(off, totalDays);
-        vlineHtml = `<div class="mj-vline" style="left:${lp}%"><span class="mj-vline-tip">onset</span></div>`;
-      }
+  /* Vertical ADR event line — always rendered, show/hide via JS */
+  const ae = journeyData.adrEvent || {};
+  let vlineLp   = "0";
+  let vlineShow = "none";
+  if (ae.date) {
+    const ad  = parseDate(ae.date);
+    const off = ad ? diffDays(start, ad) : -1;
+    if (off >= 0 && off <= totalDays) {
+      vlineLp   = pct(off, totalDays);
+      vlineShow = "block";
     }
   }
+  const vlineHtml = `<div class="mj-vline" style="left:${vlineLp}%;display:${vlineShow}">
+    <span class="mj-vline-tip">onset</span>
+  </div>`;
 
+  const atMap   = buildAdminTimesMap(journeyData);
   const dateHdr = buildDateHeader(range);
-  const rows    = meds.map(m => buildGanttRow(m, range, vlineHtml)).join("");
+  const rows    = meds.map(m => buildGanttRow(m, range, vlineHtml, atMap)).join("");
 
   return `<div class="mj-gantt-scroll">
   <div class="mj-gantt">
@@ -213,12 +297,15 @@ function exportJourneyJson(journeyData) {
 
 function copySummaryText(journeyData) {
   const ctx = journeyData.patientContext || {};
+  const ae  = journeyData.adrEvent || {};
   const lines = [
     "=== ADR Drug Timeline ===",
     `ผู้ป่วย: ${ctx.patientName||"–"}  HN: ${ctx.hn||"–"}  AN: ${ctx.an||"–"}`,
     `แพทย์: ${ctx.doctor||"–"}  แผนก: ${ctx.dept||"–"}`,
-    "",
   ];
+  if (ae.date) lines.push(`ADR onset: ${fmtDate(ae.date)}${ae.symptoms?" — "+ae.symptoms:""}`);
+  if (ae.details) lines.push(`รายละเอียด: ${ae.details}`);
+  lines.push("");
   for (const m of getAllMeds(journeyData)) {
     lines.push(`• ${m.drugName}  ${m.displayDose||""}  ${fmtDateRange(m.startDateTime,m.endDateTime)}`);
     if (m.pharmacistNote) lines.push(`  📝 ${m.pharmacistNote}`);
@@ -239,7 +326,7 @@ function _fallbackCopy(text) {
 /* ── Wire view-mode interactivity ───────────────────────────────────────── */
 function wireInteractivity(journeyData) {
   const $  = id => document.getElementById(id);
-  const on = (id, fn) => { const el=$( id); if(el) el.addEventListener("click",fn); };
+  const on = (id, fn) => { const el=$(id); if(el) el.addEventListener("click",fn); };
 
   on("mj-print-btn",  ()=>window.print());
   on("mj-export-btn", ()=>exportJourneyJson(journeyData));
@@ -255,6 +342,51 @@ function wireInteractivity(journeyData) {
     _editSnapshot = deepClone(_journeyData);
     renderEditPage();
   });
+
+  /* ── ADR event form ───────────────────────────────────────────────────── */
+  const adrDateEl = $("mj-adr-date");
+  const adrSympEl = $("mj-adr-symptoms");
+  const adrDetsEl = $("mj-adr-details");
+
+  function _syncAdrEvent() {
+    const date    = adrDateEl ? adrDateEl.value           : "";
+    const symp    = adrSympEl ? adrSympEl.value           : "";
+    const details = adrDetsEl ? adrDetsEl.value.trim()    : "";
+
+    _journeyData.adrEvent = { date, symptoms: symp, details };
+
+    /* Update onset summary line */
+    const summary = $("mj-adr-onset-summary");
+    if (summary) {
+      if (date) {
+        summary.style.display = "";
+        summary.innerHTML = `ADR onset: <strong>${esc(fmtDate(date))}</strong>${symp ? ` — ${esc(symp)}` : ""}`;
+      } else {
+        summary.style.display = "none";
+        summary.innerHTML = "";
+      }
+    }
+
+    /* Update all vline positions */
+    if (date && _currentRange) {
+      const ad  = parseDate(date);
+      const off = ad ? diffDays(_currentRange.start, ad) : -1;
+      document.querySelectorAll(".mj-vline").forEach(el => {
+        if (off >= 0 && off <= _currentRange.totalDays) {
+          el.style.left    = pct(off, _currentRange.totalDays) + "%";
+          el.style.display = "block";
+        } else {
+          el.style.display = "none";
+        }
+      });
+    } else {
+      document.querySelectorAll(".mj-vline").forEach(el => { el.style.display = "none"; });
+    }
+  }
+
+  if (adrDateEl) adrDateEl.addEventListener("change", _syncAdrEvent);
+  if (adrSympEl) adrSympEl.addEventListener("change", _syncAdrEvent);
+  if (adrDetsEl) adrDetsEl.addEventListener("input",  _syncAdrEvent);
 }
 
 /* ── renderMedicationJourney ────────────────────────────────────────────── */
@@ -263,21 +395,20 @@ function renderMedicationJourney(journeyData) {
   const root = document.getElementById("mj-root");
   if (!root) return;
 
-  const ctx    = journeyData.patientContext || {};
-  const alerts = journeyData.alerts || [];
-  const name   = ctx.patientName || "";
-  const hn     = ctx.hn || ctx.patientId || "";
-  const admit  = ctx.admitDate ? `ที่จ่ายยา ${fmtDate(ctx.admitDate)}` : "";
-  const sub    = [name, hn ? `HN ${hn}` : "", ctx.bed ? `เตียง ${ctx.bed}` : ""].filter(Boolean).join(" · ");
+  const ctx   = journeyData.patientContext || {};
+  const name  = ctx.patientName || "";
+  const hn    = ctx.hn || ctx.patientId || "";
+  const admit = ctx.admitDate ? `ที่จ่ายยา ${fmtDate(ctx.admitDate)}` : "";
+  const sub   = [name, hn ? `HN ${hn}` : "", ctx.bed ? `เตียง ${ctx.bed}` : ""].filter(Boolean).join(" · ");
 
   root.innerHTML = `<div class="mj-page">
 <div class="mj-header">
   <div class="mj-header-left">
-    <div class="mj-page-title">ADR Drug Timeline</div>
+    <div class="mj-page-title">ADR Timeline</div>
     ${admit ? `<div class="mj-page-sub">${esc(admit)}</div>` : ""}
     ${sub   ? `<div class="mj-page-sub">${esc(sub)}</div>`   : ""}
   </div>
-  ${buildAlertCallout(alerts, ctx)}
+  ${buildAdrCalloutWithForm(journeyData.adrEvent)}
   <div class="mj-header-actions">
     <button id="mj-edit-btn"   class="mj-btn mj-btn-edit">✏️ แก้ไข</button>
     <button id="mj-print-btn"  class="mj-btn mj-btn-print">🖨️ พิมพ์</button>
@@ -392,7 +523,7 @@ function renderEditPage() {
   root.innerHTML = `<div class="mj-page mj-page-edit">
 <div class="mj-header mj-header-edit">
   <div class="mj-header-left">
-    <div class="mj-page-title">✏️ แก้ไข ADR Drug Timeline</div>
+    <div class="mj-page-title">✏️ แก้ไข ADR Timeline</div>
     <div class="mj-page-sub" style="opacity:.8">กด "บันทึก" เพื่อนำการเปลี่ยนแปลงไปใช้</div>
   </div>
   <div class="mj-header-actions">

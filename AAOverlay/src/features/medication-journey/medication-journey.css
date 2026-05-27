@@ -46,7 +46,7 @@ body {
   margin-top: 3px;
 }
 
-/* ADR callout box */
+/* ADR callout box (with inline event form) */
 .mj-adr-callout {
   background: #fce4ec;
   border: 1.5px solid #e91e63;
@@ -54,15 +54,9 @@ body {
   padding: 8px 14px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 200px;
-  max-width: 340px;
-}
-
-.mj-adr-inner {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  gap: 5px;
+  min-width: 220px;
+  max-width: 360px;
 }
 
 .mj-adr-label {
@@ -73,14 +67,50 @@ body {
   letter-spacing: .4px;
 }
 
-.mj-adr-detail {
-  font-size: 11px;
+.mj-adr-form-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mj-adr-field-label {
+  display: flex;
+  flex-direction: column;
+  font-size: 9px;
+  font-weight: 700;
   color: #880e4f;
-  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  gap: 2px;
+  flex: 1;
+  min-width: 80px;
+}
+
+.mj-adr-input {
+  font-size: 11px;
+  font-family: inherit;
+  color: #880e4f;
+  background: rgba(255,255,255,.72);
+  border: 1px solid rgba(233,30,99,.35);
+  border-radius: 4px;
+  padding: 3px 6px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color .15s, background .15s;
+}
+.mj-adr-input:focus {
+  border-color: #e91e63;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(233,30,99,.15);
+}
+
+.mj-adr-details-input {
+  margin-top: 2px;
 }
 
 .mj-adr-onset {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #c62828;
   border-top: 1px solid rgba(233,30,99,.25);
@@ -334,6 +364,20 @@ body {
   background: rgba(255,255,255,.85);
   padding: 0 3px;
   border-radius: 2px;
+}
+
+/* ── Oral medication administration time ticks ────────────────────────── */
+.mj-admin-tick {
+  position: absolute;
+  top: 15%;
+  height: 70%;
+  width: 2px;
+  background: rgba(255, 193, 7, 0.9);
+  transform: translateX(-50%);
+  z-index: 4;
+  pointer-events: none;
+  border-radius: 1px;
+  box-shadow: 0 0 2px rgba(0,0,0,.25);
 }
 
 /* ════════════════════════════════════════════════════════════

@@ -476,4 +476,103 @@
     return orders;
   };
 
+
+  /* ── parseEmarCrosstabAdminTimes ─────────────────────────────────────── */
+  NS.parseEmarCrosstabAdminTimes = function parseEmarCrosstabAdminTimes(sheets) {
+    /* Returns [{ drugName, adminDatetimes: ["2026-05-20T14:00", ...] }] */
+
+    function _parseEmarDt(str) {
+      if (!str) return null;
+      str = String(str).trim();
+      /* "DD/MM/YYYY HH:MM" */
+      let m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[T\s]+(\d{2}:\d{2}))?/);
+      if (m) {
+        const base = `${m[3]}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;
+        return m[4] ? `${base}T${m[4]}` : base;
+      }
+      /* "YYYY-MM-DD HH:MM" or "YYYY-MM-DDTHH:MM" */
+      m = str.match(/^(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2})/);
+      if (m) return `${m[1]}T${m[2]}`;
+      /* "YYYY-MM-DD" alone */
+      m = str.match(/^(\d{4}-\d{2}-\d{2})$/);
+      if (m) return m[1];
+      return null;
+    }
+
+    const adminMap = {}; /* drugName -> Set<datetimeStr> */
+
+    for (const sh of sheets) {
+      if (!sh.rows || sh.rows.length < 2) continue;
+      const header = sh.rows[0] || [];
+
+      /* ── Strategy 1: crosstab — col 0 = drug, remaining cols = datetime slots ── */
+      const dtCols = [];
+      for (let c = 1; c < header.length; c++) {
+        const dt = _parseEmarDt(String(header[c] || "").trim());
+        if (dt) dtCols.push({ col: c, dt });
+      }
+
+      if (dtCols.length > 0) {
+        for (let r = 1; r < sh.rows.length; r++) {
+          const row  = sh.rows[r] || [];
+          const drug = String(row[0] || "").trim();
+          if (!drug) continue;
+          if (!adminMap[drug]) adminMap[drug] = new Set();
+          for (const { col, dt } of dtCols) {
+            const cell = String(row[col] || "").trim();
+            /* Non-empty, not a dash/zero/N = administered */
+            if (cell && cell !== "-" && cell !== "–" && cell !== "0" &&
+                cell.toLowerCase() !== "n" && cell.toLowerCase() !== "no" &&
+                cell.toLowerCase() !== "not given" && cell.toLowerCase() !== "refused") {
+              adminMap[drug].add(dt);
+            }
+          }
+        }
+        continue; /* skip strategy 2 for this sheet */
+      }
+
+      /* ── Strategy 2: flat table — Drug | Date | Time | Status | ... ── */
+      const fi = {};
+      for (let c = 0; c < header.length; c++) {
+        const h = String(header[c] || "").trim().toLowerCase();
+        if (fi.drug    === undefined && /drug|item|order|med|ยา/.test(h))          fi.drug    = c;
+        if (fi.date    === undefined && /^date$|วันที่/.test(h))                    fi.date    = c;
+        if (fi.time    === undefined && /^time$|เวลา/.test(h))                      fi.time    = c;
+        if (fi.dt      === undefined && /datetime|date.*time|actual.*time/.test(h)) fi.dt      = c;
+        if (fi.status  === undefined && /status|given|administer|actual/.test(h))   fi.status  = c;
+      }
+      if (fi.drug === undefined) continue;
+
+      for (let r = 1; r < sh.rows.length; r++) {
+        const row  = sh.rows[r] || [];
+        const drug = String(row[fi.drug] || "").trim();
+        if (!drug) continue;
+
+        if (fi.status !== undefined) {
+          const st = String(row[fi.status] || "").trim().toLowerCase();
+          if (!st || st === "not given" || st === "refused" || st === "n" || st === "missed") continue;
+        }
+
+        let dtStr = "";
+        if (fi.dt !== undefined) {
+          dtStr = String(row[fi.dt] || "").trim();
+        } else {
+          dtStr = String(row[fi.date !== undefined ? fi.date : 0] || "").trim();
+          if (fi.time !== undefined) dtStr += " " + String(row[fi.time] || "").trim();
+        }
+
+        const dt = _parseEmarDt(dtStr);
+        if (dt) {
+          if (!adminMap[drug]) adminMap[drug] = new Set();
+          adminMap[drug].add(dt);
+        }
+      }
+    }
+
+    return Object.entries(adminMap).map(([drugName, dtSet]) => ({
+      drugName,
+      adminDatetimes: Array.from(dtSet).sort(),
+    }));
+  };
+
 })();

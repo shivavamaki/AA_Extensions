@@ -115,16 +115,33 @@
       }
 
       /* Step 7: Create journey */
-      _showStatus("⏳ กำลังสร้าง Medication Journey...", "info");
+      _showStatus("⏳ กำลังสร้าง ADR Timeline...", "info");
       const journey = NS.createMedicationJourney(orders, context);
       journey.source.medicationReviewUrl = jasperUrl;
       journey.source.usedJasperXls       = usedJasper;
       journey.source.usedHtmlFallback    = usedHtmlFb;
       journey.source.usedMock            = usedMock;
 
+      /* Step 7.5: Fetch eMAR crosstab for oral administration times */
+      if (canFetchJasper) {
+        try {
+          _showStatus("⏳ กำลังดึงข้อมูลการบริหารยา (eMAR)...", "info");
+          const emarUrl = NS.buildEmarCrosstabUrl(context);
+          const emarBuf = await NS.fetchMedicationReviewXls(emarUrl);
+          if (emarBuf) {
+            const emarSheets = NS.parseBiff8ToSheets(emarBuf);
+            const adminTimes = NS.parseEmarCrosstabAdminTimes(emarSheets);
+            if (adminTimes.length > 0) {
+              journey.adminTimes           = adminTimes;
+              journey.source.emarCrosstabUrl = emarUrl;
+            }
+          }
+        } catch (_) { /* silent fallback — admin ticks simply won't appear */ }
+      }
+
       /* Step 8: Open page */
       NS.openMedicationJourneyPage(journey);
-      _showStatus("✓ เปิด Medication Journey แล้ว!", "ok");
+      _showStatus("✓ เปิด ADR Timeline แล้ว!", "ok");
 
     } catch (err) {
       _showStatus("ข้อผิดพลาด: " + String(err.message || err), "err");
@@ -147,7 +164,7 @@
 
     const btn = document.createElement("button");
     btn.id          = "arcus-medj-btn2";
-    btn.textContent = "💊 Medication Journey";
+    btn.textContent = "📊 ADR Timeline";
     Object.assign(btn.style, {
       background:   "#e8f5e9",
       border:       "1.5px solid #4caf50",

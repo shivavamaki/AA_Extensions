@@ -316,6 +316,66 @@
     return `${base}?${params.toString()}`;
   };
 
+  /* ── buildEmarCrosstabUrl ───────────────────────────────────────────── */
+  NS.buildEmarCrosstabUrl = function buildEmarCrosstabUrl(context, options) {
+    options = options || {};
+    const output = options.output || "xls";
+
+    const now = new Date();
+    const bkk = new Date(now.getTime() + 7 * 3600 * 1000);
+    const pad2 = n => String(n).padStart(2, "0");
+    const endDateThai = options.endDateThai ||
+      `${bkk.getUTCFullYear()}-${pad2(bkk.getUTCMonth() + 1)}-${pad2(bkk.getUTCDate())}`;
+
+    let startDateThai = options.startDateThai;
+    if (!startDateThai && context.admitDate) {
+      const a = String(context.admitDate);
+      let m = a.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) {
+        startDateThai = `${m[1]}-${m[2]}-${m[3]}`;
+      } else {
+        m = a.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (m) startDateThai = `${m[3]}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;
+      }
+    }
+    if (!startDateThai) {
+      const s = new Date(bkk.getTime() - 30 * 24 * 3600 * 1000);
+      startDateThai = `${s.getUTCFullYear()}-${pad2(s.getUTCMonth() + 1)}-${pad2(s.getUTCDate())}`;
+    }
+
+    const { fromdate, todate } = NS.thaiDateRangeToUtcIso(startDateThai, endDateThai);
+
+    let pp = context._pp || "";
+    if (!pp && context.loginuid) {
+      pp = `u=${context.loginuid}&r=${context.roleuid || ""}&o=${context.parentorguid || context.organisationuid || ""}`;
+    }
+
+    const base = "https://aa-report.bdms.co.th/jasperserver/flow.html";
+    const params = new URLSearchParams();
+    params.set("_flowId",            "viewReportFlow");
+    params.set("output",             output);
+    params.set("reportUnit",         "/BDMS/Pharmacy/emarprint_crosstab");
+    params.set("userTimezone",       "Asia/bangkok");
+    params.set("decorate",           "no");
+    params.set("patientuid",         context.patientuid         || "");
+    params.set("patientvisituid",    context.patientvisituid    || "");
+    params.set("searchcriteria",     "");
+    params.set("searchstring",       "Active,");
+    params.set("agreementuid",       "");
+    params.set("isduplicate",        "false");
+    params.set("fromdate",           fromdate);
+    params.set("todate",             todate);
+    params.set("loginuid",           context.loginuid           || "");
+    params.set("organisationuid",    context.organisationuid    || "");
+    params.set("parentorguid",       context.parentorguid       || "");
+    params.set("userLocale",         "th");
+    params.set("reporttemplateuid",  "5e13186f47364912677b34cf");
+    params.set("logindepartmentuid", context.logindepartmentuid || "");
+    params.set("pp",                 pp);
+
+    return `${base}?${params.toString()}`;
+  };
+
   /* ── normalizeMedicationOrders ───────────────────────────────────────── */
   NS.normalizeMedicationOrders = function normalizeMedicationOrders(rawOrders) {
     if (!Array.isArray(rawOrders)) return [];
