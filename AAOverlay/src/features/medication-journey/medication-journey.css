@@ -1,0 +1,374 @@
+/* ── medication-journey.css ────────────────────────────────────────────── */
+
+body {
+  font-family: "Segoe UI", Arial, Sarabun, sans-serif;
+  font-size: 13px;
+  background: #f0f4f8;
+  color: #1a1a2e;
+  margin: 0;
+  padding: 0;
+}
+
+.mj-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.mj-header {
+  background: linear-gradient(135deg, #0d47a1, #1565c0);
+  color: #fff;
+  padding: 18px 24px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.mj-header h1 {
+  font-size: 20px;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.mj-header .mj-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.mj-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity .15s;
+  line-height: 1.4;
+}
+.mj-btn:hover { opacity: .82; }
+
+.mj-btn-print {
+  background: #fff;
+  color: #0d47a1;
+}
+
+.mj-btn-export {
+  background: rgba(255,255,255,.2);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.4);
+}
+
+.mj-btn-copy {
+  background: rgba(255,255,255,.2);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.4);
+}
+
+/* ── Patient card ────────────────────────────────────────────────────────── */
+.mj-patient-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px 16px;
+}
+
+.mj-patient-field .lbl {
+  font-size: 9px;
+  font-weight: 700;
+  color: #90a4ae;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  margin-bottom: 2px;
+}
+
+.mj-patient-field .val {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a237e;
+}
+
+/* ── Source bar ──────────────────────────────────────────────────────────── */
+.mj-source-bar {
+  font-size: 11px;
+  color: #607d8b;
+  background: #e8f0fe;
+  border-radius: 6px;
+  padding: 7px 12px;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.mj-source-tag {
+  font-weight: 700;
+  color: #1565c0;
+}
+
+/* ── Sections ────────────────────────────────────────────────────────────── */
+.mj-section {
+  background: #fff;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  overflow: hidden;
+}
+
+.mj-section-header {
+  padding: 10px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mj-section-header .mj-section-toggle {
+  margin-left: auto;
+  font-size: 13px;
+  opacity: .6;
+}
+
+.mj-section-body {
+  padding: 0;
+}
+
+.mj-section.collapsed .mj-section-body {
+  display: none;
+}
+
+/* Section header themes */
+.mj-section-active   .mj-section-header { background: #e8f5e9; color: #2e7d32; }
+.mj-section-timeline .mj-section-header { background: #e8eaf6; color: #3949ab; }
+.mj-section-stopped  .mj-section-header { background: #ffebee; color: #c62828; }
+.mj-section-prn      .mj-section-header { background: #e0f2f1; color: #00695c; }
+.mj-section-alerts   .mj-section-header { background: #fff8e1; color: #e65100; }
+.mj-section-diluent  .mj-section-header { background: #f5f5f5; color: #546e7a; }
+
+/* ── Timeline ────────────────────────────────────────────────────────────── */
+.mj-timeline-date {
+  padding: 8px 16px;
+  background: #f8f9ff;
+  font-size: 11px;
+  font-weight: 700;
+  color: #3949ab;
+  border-bottom: 1px solid #e8eaf6;
+  letter-spacing: .3px;
+}
+
+/* ── Event rows ──────────────────────────────────────────────────────────── */
+.mj-event {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f5f5f5;
+}
+.mj-event:last-child { border-bottom: none; }
+
+.mj-event-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Icon backgrounds per event type */
+.mj-icon-start    { background: #e8f5e9; }
+.mj-icon-continue { background: #e3f2fd; }
+.mj-icon-change   { background: #fff8e1; }
+.mj-icon-switch   { background: #f3e5f5; }
+.mj-icon-stop     { background: #ffebee; }
+.mj-icon-prn      { background: #e0f2f1; }
+.mj-icon-diluent  { background: #f5f5f5; }
+.mj-icon-alert    { background: #fff3e0; }
+
+.mj-event-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.mj-event-friendly {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 1px;
+}
+
+.mj-friendly-start    { color: #2e7d32; }
+.mj-friendly-continue { color: #1565c0; }
+.mj-friendly-change   { color: #e65100; }
+.mj-friendly-switch   { color: #7b1fa2; }
+.mj-friendly-stop     { color: #c62828; }
+.mj-friendly-prn      { color: #00695c; }
+.mj-friendly-diluent  { color: #546e7a; }
+.mj-friendly-alert    { color: #e65100; }
+
+.mj-event-drug {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a237e;
+  margin: 2px 0;
+}
+
+.mj-event-dose {
+  font-size: 12px;
+  color: #455a64;
+  margin-bottom: 4px;
+}
+
+.mj-event-meta {
+  font-size: 10px;
+  color: #9e9e9e;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mj-detail-toggle {
+  font-size: 10px;
+  color: #90a4ae;
+  cursor: pointer;
+  user-select: none;
+  margin-top: 4px;
+  display: inline-block;
+}
+.mj-detail-toggle:hover { color: #607d8b; }
+
+.mj-detail-panel {
+  display: none;
+  margin-top: 6px;
+  background: #fafafa;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #546e7a;
+  border-left: 3px solid #e0e0e0;
+}
+.mj-detail-panel.open { display: block; }
+
+/* ── Medication list rows ────────────────────────────────────────────────── */
+.mj-med-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f5f5f5;
+}
+.mj-med-row:last-child { border-bottom: none; }
+
+.mj-med-info { flex: 1; min-width: 0; }
+
+.mj-med-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a237e;
+  margin-bottom: 2px;
+}
+
+.mj-med-sig {
+  font-size: 12px;
+  color: #455a64;
+  margin-bottom: 2px;
+}
+
+.mj-med-dates {
+  font-size: 10px;
+  color: #9e9e9e;
+}
+
+/* ── Badges ──────────────────────────────────────────────────────────────── */
+.mj-badge {
+  display: inline-flex;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.mj-badge-iv      { background: #e3f2fd; color: #1565c0; }
+.mj-badge-oral    { background: #e8f5e9; color: #2e7d32; }
+.mj-badge-prn     { background: #e0f2f1; color: #00695c; }
+.mj-badge-stopped { background: #ffebee; color: #c62828; }
+.mj-badge-stat    { background: #fff3e0; color: #e65100; }
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.mj-empty {
+  text-align: center;
+  padding: 20px;
+  color: #bdbdbd;
+  font-style: italic;
+  font-size: 12px;
+}
+
+/* ── Alert items ─────────────────────────────────────────────────────────── */
+.mj-alert-item {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #fff3e0;
+  align-items: flex-start;
+}
+.mj-alert-item:last-child { border-bottom: none; }
+
+.mj-alert-icon {
+  font-size: 16px;
+  margin-top: 1px;
+}
+
+.mj-alert-text {
+  font-size: 12px;
+  color: #e65100;
+  font-weight: 600;
+}
+
+/* ── Print ───────────────────────────────────────────────────────────────── */
+@page { size: A4; margin: 15mm; }
+
+@media print {
+  body { background: #fff; }
+
+  .mj-actions { display: none !important; }
+  .mj-btn     { display: none !important; }
+  .mj-detail-toggle { display: none !important; }
+
+  .mj-event {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .mj-section.collapsed .mj-section-body {
+    display: block !important;
+  }
+
+  .mj-header {
+    border-radius: 0;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

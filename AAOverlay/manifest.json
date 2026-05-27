@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Discharge Process Checklist",
-  "version": "2.4.0",
-  "version_name": "2026.05.27 - add medical journey",
+  "version": "2.5.0",
+  "version_name": "2026.05.27 - medication journey rework",
   "description": "BKN Hospital — discharge process tools overlaid into Arcusair: home med sheet, medication stickers, patient stickers, med reconciliation, and allergy cards.",
   "permissions": [
     "tabs",
@@ -11,7 +11,8 @@
   ],
   "host_permissions": [
     "https://arcusair.bdms.co.th/*",
-    "https://translate.googleapis.com/*"
+    "https://translate.googleapis.com/*",
+    "https://aa-report.bdms.co.th/*"
   ],
   "background": {
     "service_worker": "src/background/index.js"
@@ -37,7 +38,10 @@
         "src/features/patient-sticker/parser-patient.js",
         "src/features/patient-sticker/content-patient-sticker.js",
         "src/features/med-sticker/content-pomlist.js",
-        "src/features/medical-journey/content-medical-journey.js"
+        "src/features/medication-journey/medication-journey-core.js",
+        "src/features/medication-journey/medication-journey-parser-html.js",
+        "src/features/medication-journey/medication-journey-jasper.js",
+        "src/features/medication-journey/content-medication-journey.js"
       ],
       "css": [
         "src/styles/overlay.css"
@@ -76,7 +80,10 @@
         "src/features/patient-sticker/page-unreceivable.js",
         "src/features/patient-sticker/bkh-logo.png",
         "src/assets/bkn_med_database/medication_by_code.json",
-        "src/assets/bkn_med_database/images/*"
+        "src/assets/bkn_med_database/images/*",
+        "src/features/medication-journey/page-medication-journey.html",
+        "src/features/medication-journey/page-medication-journey.js",
+        "src/features/medication-journey/medication-journey.css"
       ],
       "matches": [
         "<all_urls>"
