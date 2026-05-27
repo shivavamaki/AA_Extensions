@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy",
-  "version": "2.2",
-  "version_name": "2026.05.17 - fix host permissions, narrow content_script matches",
+  "version": "2.3",
+  "version_name": "2026.05.27 - server-side report fetch, manual collapse",
   "description": "BKN Hospital Pharmacy Department — Quick links, clinical tools, IV/auxiliary label printing, IPD queue, and knowledge hub.",
   "permissions": [
     "activeTab",

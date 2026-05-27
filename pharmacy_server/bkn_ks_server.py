@@ -49,7 +49,9 @@ import re
 import secrets
 import sys
 import socket
+import urllib.error
 import urllib.parse
+import urllib.request
 from datetime import datetime, timezone
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
@@ -64,8 +66,9 @@ AUTH_DIR      = DATA_DIR / 'auth'
 AUTH_FILE     = AUTH_DIR / 'users.json'
 MED_IMAGES_DIR = DATA_DIR / 'med-images'
 KS_FILES_DIR  = DATA_DIR / 'ks' / 'files'
-SCHEDULE_DIR  = DATA_DIR / 'schedule'
-WWW_DIR       = Path(__file__).parent / 'www'
+SCHEDULE_DIR      = DATA_DIR / 'schedule'
+TEMP_REPORTS_DIR  = DATA_DIR / 'temp-reports'
+WWW_DIR           = Path(__file__).parent / 'www'
 KS_COLS       = {'faqs', 'items', 'vdos'}
 # All rx collections — GET is public; PUT requires editor/admin auth
 RX_COLS       = {'premix-drugs', 'mixing-protocols', 'medication-db', 'iv-drugs', 'iv-staff'}
@@ -363,6 +366,10 @@ class Handler(BaseHTTPRequestHandler):
         if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'schedule' and parts[2] in ('state', 'bookings'):
             return 'schedule', parts[2], None
 
+        # /api/report/fetch
+        if parts == ['api', 'report', 'fetch']:
+            return 'report-fetch', None, None
+
         # /api/auth/ACTION
         if len(parts) == 3 and parts[:2] == ['api', 'auth'] and parts[2] in ('login', 'logout', 'me'):
             return 'auth', parts[2], None
@@ -620,6 +627,45 @@ class Handler(BaseHTTPRequestHandler):
             _save_users(users)
             self.send_json(201, {'ok': True, 'username': uname, 'role': role}); return
 
+        # ── Jasper report server-side fetch (trusted extension only) ─
+        if rtype == 'report-fetch':
+            url = body.get('url', '').strip()
+            report_id = re.sub(r'[^A-Za-z0-9_-]', '', body.get('report', 'report') or 'report')[:30]
+            if not url.startswith('https://aa-report.bdms.co.th/'):
+                self.send_json(400, {'error': 'URL must be from aa-report.bdms.co.th'}); return
+            try:
+                req = urllib.request.Request(url, headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125',
+                    'Accept': 'application/vnd.ms-excel, application/octet-stream, */*',
+                })
+                with urllib.request.urlopen(req, timeout=30) as r:
+                    data = r.read()
+            except urllib.error.URLError as e:
+                self.send_json(502, {'error': f'Cannot reach report server: {getattr(e, "reason", str(e))}'}); return
+            except Exception as e:
+                self.send_json(500, {'error': f'Fetch error: {str(e)}'}); return
+            first_200 = data[:200].lower()
+            is_html = b'<!doctype' in first_200 or b'<html' in first_200
+            is_ole2 = data[:4] == b'\xd0\xcf\x11\xe0'
+            if is_html and not is_ole2:
+                self.send_json(401, {'error': 'Jasper returned a login page — the report URL requires an active browser session. Use Manual ▾ to open the URL in your browser, download the XLS, then upload it.'}); return
+            if len(data) < 512:
+                self.send_json(502, {'error': f'Server returned only {len(data)} bytes — may require browser session.'}); return
+            TEMP_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+            ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+            try:
+                (TEMP_REPORTS_DIR / f'{report_id}_{ts}.xls').write_bytes(data)
+            except Exception:
+                pass
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/octet-stream')
+            self.send_header('Content-Disposition', f'attachment; filename="{report_id}_{ts}.xls"')
+            self.send_header('Content-Length', str(len(data)))
+            self._cors()
+            self.end_headers()
+            self.wfile.write(data)
+            return
+
         # ── KPI med errors (editor/admin/super_admin) ─────────
         if not self._require('super_admin', 'admin', 'editor'): return
         if rtype == 'kpi-med-errors':
@@ -697,6 +743,7 @@ def main():
     MED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
     KS_FILES_DIR.mkdir(parents=True, exist_ok=True)
     SCHEDULE_DIR.mkdir(parents=True, exist_ok=True)
+    TEMP_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     WWW_DIR.mkdir(parents=True, exist_ok=True)
     for col in KS_COLS:
         p = ks_file(col)

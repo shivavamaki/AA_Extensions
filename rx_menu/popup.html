@@ -71,6 +71,11 @@
     .ws-chevron{font-size:11px;transition:transform .2s ease;display:inline-block;}
     .ws-section-body[hidden]{display:none!important;}
 
+    /* ── Report: server fetch button + manual collapse ── */
+    .rpt-manual-details{margin-top:6px;border-top:1px solid rgba(0,0,0,.06);padding-top:6px;}
+    .rpt-manual-details>summary{font-size:10px;color:var(--text-soft);cursor:pointer;padding:2px 0;user-select:none;list-style:none;display:inline-block;}
+    .rpt-manual-details>summary::-webkit-details-marker{display:none;}
+
     /* ── Schedule auth modal ── */
     .auth-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:9999;}
     .auth-modal[hidden]{display:none!important;}
@@ -270,18 +275,24 @@
       </div>
 
       <div class="rpt-btn-row" style="margin-bottom:8px">
-        <button class="rpt-btn rpt-btn-primary" id="btnQueueGenUrl">🔗 Generate URL</button>
-        <button class="rpt-btn rpt-btn-teal" id="btnQueueOpenXls" style="display:none">⬇ Open / Download XLS</button>
+        <button class="rpt-btn rpt-btn-primary" id="btnQueueFetch">📥 Fetch from Server</button>
       </div>
-      <div id="queueUrlWrap" style="display:none;margin-bottom:6px">
-        <div class="rpt-url-label">Report URL — click to open in new tab:</div>
-        <div id="queueUrlBox" class="rpt-url-box" title="Click to open in new tab"></div>
-      </div>
-      <div class="rpt-divider"></div>
-      <div class="rpt-file-row">
-        <label class="rpt-label" style="white-space:nowrap;margin-right:8px">📂 Load XLS file</label>
-        <input type="file" id="queueFileInput" accept=".xls,.xlsx" class="rpt-file-input">
-      </div>
+      <details class="rpt-manual-details">
+        <summary>Manual ▾</summary>
+        <div class="rpt-btn-row" style="margin-top:6px">
+          <button class="rpt-btn rpt-btn-primary" id="btnQueueGenUrl">🔗 Generate URL</button>
+          <button class="rpt-btn rpt-btn-teal" id="btnQueueOpenXls" style="display:none">⬇ Open / Download XLS</button>
+        </div>
+        <div id="queueUrlWrap" style="display:none;margin-bottom:6px">
+          <div class="rpt-url-label">Report URL — click to open in new tab:</div>
+          <div id="queueUrlBox" class="rpt-url-box" title="Click to open in new tab"></div>
+        </div>
+        <div class="rpt-divider"></div>
+        <div class="rpt-file-row">
+          <label class="rpt-label" style="white-space:nowrap;margin-right:8px">📂 Load XLS file</label>
+          <input type="file" id="queueFileInput" accept=".xls,.xlsx" class="rpt-file-input">
+        </div>
+      </details>
 
       <div id="queueStatus" class="queue-status"></div>
 
@@ -339,18 +350,24 @@
             </div>
           </div>
           <div class="rpt-btn-row">
-            <button class="rpt-btn rpt-btn-primary" id="rpt-btn-genurl">🔗 Generate URL</button>
-            <button class="rpt-btn rpt-btn-teal" id="rpt-btn-dlxls" style="display:none">⬇ Open / Download XLS</button>
+            <button class="rpt-btn rpt-btn-primary" id="rpt-btn-fetch">📥 Fetch from Server</button>
           </div>
-          <div id="rpt-url-wrap" style="display:none">
-            <div class="rpt-url-label">Generated report URL — click to open:</div>
-            <div id="rpt-url-box" class="rpt-url-box" title="Click to open in new tab"></div>
-          </div>
-          <div class="rpt-divider"></div>
-          <div class="rpt-file-row">
-            <label class="rpt-label" style="white-space:nowrap;margin-right:8px">📂 Load XLS file</label>
-            <input type="file" id="rpt-file-input" accept=".xls,.xlsx" class="rpt-file-input">
-          </div>
+          <details class="rpt-manual-details">
+            <summary>Manual ▾</summary>
+            <div class="rpt-btn-row" style="margin-top:6px">
+              <button class="rpt-btn rpt-btn-primary" id="rpt-btn-genurl">🔗 Generate URL</button>
+              <button class="rpt-btn rpt-btn-teal" id="rpt-btn-dlxls" style="display:none">⬇ Open / Download XLS</button>
+            </div>
+            <div id="rpt-url-wrap" style="display:none">
+              <div class="rpt-url-label">Generated report URL — click to open:</div>
+              <div id="rpt-url-box" class="rpt-url-box" title="Click to open in new tab"></div>
+            </div>
+            <div class="rpt-divider"></div>
+            <div class="rpt-file-row">
+              <label class="rpt-label" style="white-space:nowrap;margin-right:8px">📂 Load XLS file</label>
+              <input type="file" id="rpt-file-input" accept=".xls,.xlsx" class="rpt-file-input">
+            </div>
+          </details>
           <div id="rpt-status" class="rpt-status"></div>
           <div class="rpt-btn-row" id="rpt-pdf-btns" style="display:none">
             <button class="rpt-btn rpt-btn-orange" id="rpt-btn-pdf1">📄 PDF Summary</button>
@@ -391,18 +408,24 @@
             </div>
           </div>
           <div class="rpt-btn-row">
-            <button class="rpt-btn rpt-btn-primary" id="stk917-btn-genurl">🔗 Generate URL</button>
-            <button class="rpt-btn rpt-btn-teal" id="stk917-btn-dlxls" style="display:none">⬇ Open / Download XLS</button>
+            <button class="rpt-btn rpt-btn-primary" id="stk917-btn-fetch">📥 Fetch from Server</button>
           </div>
-          <div id="stk917-url-wrap" style="display:none">
-            <div class="rpt-url-label">Generated report URL — click to open:</div>
-            <div id="stk917-url-box" class="rpt-url-box" title="Click to open in new tab"></div>
-          </div>
-          <div class="rpt-divider"></div>
-          <div class="rpt-file-row">
-            <label class="rpt-label" style="white-space:nowrap;margin-right:8px">📂 Load XLS file</label>
-            <input type="file" id="stk917-file-input" accept=".xls,.xlsx" class="rpt-file-input">
-          </div>
+          <details class="rpt-manual-details">
+            <summary>Manual ▾</summary>
+            <div class="rpt-btn-row" style="margin-top:6px">
+              <button class="rpt-btn rpt-btn-primary" id="stk917-btn-genurl">🔗 Generate URL</button>
+              <button class="rpt-btn rpt-btn-teal" id="stk917-btn-dlxls" style="display:none">⬇ Open / Download XLS</button>
+            </div>
+            <div id="stk917-url-wrap" style="display:none">
+              <div class="rpt-url-label">Generated report URL — click to open:</div>
+              <div id="stk917-url-box" class="rpt-url-box" title="Click to open in new tab"></div>
+            </div>
+            <div class="rpt-divider"></div>
+            <div class="rpt-file-row">
+              <label class="rpt-label" style="white-space:nowrap;margin-right:8px">📂 Load XLS file</label>
+              <input type="file" id="stk917-file-input" accept=".xls,.xlsx" class="rpt-file-input">
+            </div>
+          </details>
           <div id="stk917-status" class="rpt-status"></div>
           <div class="rpt-btn-row" id="stk917-pdf-btns" style="display:none">
             <button class="rpt-btn rpt-btn-orange" id="stk917-btn-pdf">📄 Sticker PDF</button>
@@ -447,18 +470,24 @@
           </div>
           <div class="rpt-note" style="margin:8px 0 10px;color:#4a6284;font-size:12px;">EXP grouping/filtering is now controlled on the print page (StoreBin / Category).</div>
           <div class="rpt-btn-row">
-            <button class="rpt-btn rpt-btn-primary" id="exp174-btn-genurl">🔗 Generate URL</button>
-            <button class="rpt-btn rpt-btn-teal" id="exp174-btn-dlxls" style="display:none">⬇ Open / Download XLS</button>
+            <button class="rpt-btn rpt-btn-primary" id="exp174-btn-fetch">📥 Fetch from Server</button>
           </div>
-          <div id="exp174-url-wrap" style="display:none">
-            <div class="rpt-url-label">Generated report URL — click to open:</div>
-            <div id="exp174-url-box" class="rpt-url-box" title="Click to open in new tab"></div>
-          </div>
-          <div class="rpt-divider"></div>
-          <div class="rpt-file-row">
-            <label class="rpt-label" style="white-space:nowrap;margin-right:8px">📂 Load EXP XLS file</label>
-            <input type="file" id="exp174-file-input" accept=".xls,.xlsx" class="rpt-file-input">
-          </div>
+          <details class="rpt-manual-details">
+            <summary>Manual ▾</summary>
+            <div class="rpt-btn-row" style="margin-top:6px">
+              <button class="rpt-btn rpt-btn-primary" id="exp174-btn-genurl">🔗 Generate URL</button>
+              <button class="rpt-btn rpt-btn-teal" id="exp174-btn-dlxls" style="display:none">⬇ Open / Download XLS</button>
+            </div>
+            <div id="exp174-url-wrap" style="display:none">
+              <div class="rpt-url-label">Generated report URL — click to open:</div>
+              <div id="exp174-url-box" class="rpt-url-box" title="Click to open in new tab"></div>
+            </div>
+            <div class="rpt-divider"></div>
+            <div class="rpt-file-row">
+              <label class="rpt-label" style="white-space:nowrap;margin-right:8px">📂 Load EXP XLS file</label>
+              <input type="file" id="exp174-file-input" accept=".xls,.xlsx" class="rpt-file-input">
+            </div>
+          </details>
           <div id="exp174-status" class="rpt-status"></div>
           <div class="rpt-btn-row" id="exp174-pdf-btns" style="display:none">
             <button class="rpt-btn rpt-btn-orange" id="exp174-btn-pdf">📄 PDF A4 Checklist</button>
@@ -498,18 +527,24 @@
           </div>
           <div class="rpt-note" style="margin:8px 0 10px;color:#4a6284;font-size:12px;">Default range: first day of current month → today.</div>
           <div class="rpt-btn-row">
-            <button class="rpt-btn rpt-btn-primary" id="adr256-btn-genurl">🔗 Generate URL</button>
-            <button class="rpt-btn rpt-btn-teal" id="adr256-btn-dlxls" style="display:none">⬇ Open / Download XLS</button>
+            <button class="rpt-btn rpt-btn-primary" id="adr256-btn-fetch">📥 Fetch from Server</button>
           </div>
-          <div id="adr256-url-wrap" style="display:none">
-            <div class="rpt-url-label">Generated report URL — click to open:</div>
-            <div id="adr256-url-box" class="rpt-url-box" title="Click to open in new tab"></div>
-          </div>
-          <div class="rpt-divider"></div>
-          <div class="rpt-file-row">
-            <label class="rpt-label" style="white-space:nowrap;margin-right:8px">📂 Load ADR XLS file</label>
-            <input type="file" id="adr256-file-input" accept=".xls,.xlsx" class="rpt-file-input">
-          </div>
+          <details class="rpt-manual-details">
+            <summary>Manual ▾</summary>
+            <div class="rpt-btn-row" style="margin-top:6px">
+              <button class="rpt-btn rpt-btn-primary" id="adr256-btn-genurl">🔗 Generate URL</button>
+              <button class="rpt-btn rpt-btn-teal" id="adr256-btn-dlxls" style="display:none">⬇ Open / Download XLS</button>
+            </div>
+            <div id="adr256-url-wrap" style="display:none">
+              <div class="rpt-url-label">Generated report URL — click to open:</div>
+              <div id="adr256-url-box" class="rpt-url-box" title="Click to open in new tab"></div>
+            </div>
+            <div class="rpt-divider"></div>
+            <div class="rpt-file-row">
+              <label class="rpt-label" style="white-space:nowrap;margin-right:8px">📂 Load ADR XLS file</label>
+              <input type="file" id="adr256-file-input" accept=".xls,.xlsx" class="rpt-file-input">
+            </div>
+          </details>
           <div id="adr256-status" class="rpt-status"></div>
           <div class="rpt-btn-row" id="adr256-pdf-btns" style="display:none">
             <button class="rpt-btn rpt-btn-orange" id="adr256-btn-pdf">📄 Open Print Report</button>

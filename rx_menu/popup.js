@@ -19,6 +19,47 @@
 
 const STORAGE_KEY_ROWS = 'ipdQueue_rows';
 const STORAGE_KEY_SENT = 'ipdQueue_sent';
+const REPORT_SERVER    = 'http://10.134.110.81:8765';
+
+// ── Report server-side fetch utilities ────────────────────────────────────────
+function parseXlsBuffer(buffer) {
+  if (!buffer || buffer.byteLength < 4) throw new Error('Empty response from server.');
+  const head = new Uint8Array(buffer, 0, Math.min(8, buffer.byteLength));
+  const isOle2 = head[0] === 0xD0 && head[1] === 0xCF && head[2] === 0x11 && head[3] === 0xE0;
+  const isZip  = head[0] === 0x50 && head[1] === 0x4B;
+  if (isZip) throw new Error('Server returned .xlsx — Jasper output must use .xls format.');
+  if (isOle2) return parseBiff8(buffer);
+  const text = new TextDecoder('utf-8').decode(new Uint8Array(buffer));
+  if (/<html/i.test(text.slice(0, 500))) {
+    throw new Error('Jasper returned a login page. Use Manual ▾ to open the URL in your browser, download the XLS, then upload it.');
+  }
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(text, 'text/html');
+  const tables = Array.from(doc.querySelectorAll('table'));
+  if (!tables.length) throw new Error('Unrecognised file format returned by server.');
+  return tables.map((tbl, idx) => ({
+    name: `Sheet${idx + 1}`,
+    rows: Array.from(tbl.querySelectorAll('tr'))
+      .map(tr => Array.from(tr.querySelectorAll('td,th'))
+        .flatMap(td => Array(parseInt(td.getAttribute('colspan') || '1', 10))
+          .fill((td.innerText || td.textContent || '').trim())))
+      .filter(r => r.some(c => c !== ''))
+  }));
+}
+
+async function fetchReportBytes(jasperUrl, reportId) {
+  const resp = await fetch(`${REPORT_SERVER}/api/report/fetch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: jasperUrl, report: reportId }),
+  });
+  if (!resp.ok) {
+    let msg = `Server error ${resp.status}`;
+    try { const j = await resp.json(); msg = j.error || msg; } catch (_) {}
+    throw new Error(msg);
+  }
+  return resp.arrayBuffer();
+}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Init
@@ -97,23 +138,36 @@ function initIpdQueue() {
   btnOpen?.addEventListener('click', () => chrome.tabs.create({ url: IPD_QUEUE_URL }));
 
   // File input
+  async function processQueueSheets(sheets, source) {
+    const rows = parseIPDQueueXls(sheets);
+    const sentData = await chrome.storage.local.get(STORAGE_KEY_SENT);
+    const sent = new Set(sentData[STORAGE_KEY_SENT] || []);
+    await chrome.storage.local.set({ [STORAGE_KEY_ROWS]: rows });
+    renderQueueTable(rows, document.getElementById('queueTableBody'), document.getElementById('queueCount'), sent);
+    setStatus(document.getElementById('queueStatus'), `✓ ${rows.length} คน${source ? ` จาก ${source}` : ''}`, 'ok');
+  }
+
   document.getElementById('queueFileInput')?.addEventListener('change', async function (ev) {
     const file = (ev?.target?.files && ev.target.files[0]) || (this?.files && this.files[0]);
     if (!file) return;
-    const statusEl = document.getElementById('queueStatus');
-    setStatus(statusEl, '⏳ Reading file…', 'loading');
+    setStatus(document.getElementById('queueStatus'), '⏳ Reading file…', 'loading');
     try {
       const sheets = await readXlsFile(file);
-      const rows = parseIPDQueueXls(sheets);
-      const sentData = await chrome.storage.local.get(STORAGE_KEY_SENT);
-      const sent = new Set(sentData[STORAGE_KEY_SENT] || []);
-      await chrome.storage.local.set({ [STORAGE_KEY_ROWS]: rows });
-      const tbody  = document.getElementById('queueTableBody');
-      const countEl = document.getElementById('queueCount');
-      renderQueueTable(rows, tbody, countEl, sent);
-      setStatus(statusEl, `✓ ${rows.length} คน จาก ${file.name}`, 'ok');
+      await processQueueSheets(sheets, file.name);
     } catch (e) {
       setStatus(document.getElementById('queueStatus'), `✗ ${e.message}`, 'err');
+    }
+  });
+
+  document.getElementById('btnQueueFetch')?.addEventListener('click', async () => {
+    const statusEl = document.getElementById('queueStatus');
+    setStatus(statusEl, '⏳ Fetching from server…', 'loading');
+    try {
+      const buf = await fetchReportBytes(IPD_QUEUE_URL, 'RT_COMMON_288');
+      const sheets = parseXlsBuffer(buf);
+      await processQueueSheets(sheets);
+    } catch (e) {
+      setStatus(statusEl, `✗ ${e.message}`, 'err');
     }
   });
 
@@ -974,97 +1028,88 @@ function initReport() {
     rptStatus(`✅ URL ready for ${from} → ${to}. Click the link to open & download XLS.`, 'ok');
   });
 
+  function processRpt257Sheets(sheets) {
+    rptSummaryRows = [];
+    rptDetailRows = [];
+    rptFromLabel = '';
+    rptToLabel = '';
+
+    sheets.forEach(({ rows: raw }) => {
+      raw = Array.isArray(raw) ? raw.filter(Array.isArray) : [];
+      if (!raw.length) return;
+      let hdrIdx = -1;
+      let hdrRow = [];
+
+      for (let i = 0; i < Math.min(raw.length, 12); i++) {
+        const r = raw[i].map(c => String(c).trim().toLowerCase());
+        if (r.some(c => c === 'item code' || c === 'item name' || c === 'bed no.' || c === 'hn')) {
+          hdrIdx = i;
+          hdrRow = raw[i].map(c => String(c).trim());
+          break;
+        }
+      }
+
+      if (hdrIdx === -1) return;
+
+      for (let i = 0; i < hdrIdx; i++) {
+        const joined = raw[i].map(x => String(x || '')).join(' ');
+        const m = joined.match(/from\s+(\S+).*?to\s+(\S+)/i);
+        if (m) { rptFromLabel = m[1]; rptToLabel = m[2]; }
+      }
+
+      let currentWard = '';
+      raw.slice(hdrIdx + 1).forEach(r => {
+        const nonEmpty = r.filter(c => String(c).trim() !== '');
+        if (nonEmpty.length === 0) return;
+
+        if (nonEmpty.length === 1) {
+          const label = String(nonEmpty[0] ?? '').trim();
+          if (/^ward\s/i.test(label)) { currentWard = label; }
+          else if (/^(ICU|CCU|NICU|LR)\b/i.test(label)) { currentWard = label.match(/^([A-Z]+)/i)[1].toUpperCase(); }
+          else { currentWard = ''; }
+          return;
+        }
+
+        const obj = { _ward: currentWard };
+        hdrRow.forEach((h, i) => { obj[h] = String(r[i] ?? '').trim(); });
+
+        if (!obj._ward) {
+          const bed = obj['BED NO.'] || obj['BED NO'] || '';
+          const bedMatch = bed.match(/^([A-Z]+)\d/i);
+          if (bedMatch) { obj._ward = bedMatch[1].toUpperCase(); }
+          else if (/^\d{3}$/.test(bed)) { obj._ward = 'Ward ' + String(bed || '').charAt(0); }
+        }
+        rptDetailRows.push(obj);
+      });
+    });
+
+    rptSummaryRows = buildSummaryFromDetail(rptDetailRows);
+    renderRptPreview();
+    const pdfBtns = document.getElementById('rpt-pdf-btns');
+    if (pdfBtns) pdfBtns.style.display = 'flex';
+    rptStatus(`✅ Parsed: ${rptDetailRows.length} detail rows · ${rptSummaryRows.length} summary items.`, 'ok');
+  }
+
   document.getElementById('rpt-file-input')?.addEventListener('change', async function (ev) {
     const file = (ev?.target?.files && ev.target.files[0]) || (this?.files && this.files[0]);
     if (!file) return;
     rptStatus('⏳ Reading file…', 'loading');
-
     let sheets;
+    try { sheets = await readXlsFile(file); }
+    catch (e) { rptStatus('❌ ' + e.message, 'err'); return; }
+    try { processRpt257Sheets(sheets); }
+    catch (err) { console.error('[RT257 parse]', err); rptStatus('❌ Parse error: ' + err.message, 'err'); }
+  });
+
+  document.getElementById('rpt-btn-fetch')?.addEventListener('click', async () => {
+    const from = document.getElementById('rpt-from').value;
+    const to = document.getElementById('rpt-to').value;
+    if (!from || !to) { rptStatus('⚠ Please select both From and To dates.', 'warn'); return; }
+    if (from > to) { rptStatus('⚠ From date must be before To date.', 'warn'); return; }
+    rptStatus('⏳ Fetching report from server…', 'loading');
     try {
-      sheets = await readXlsFile(file);
-    } catch (e) {
-      rptStatus('❌ ' + e.message, 'err');
-      return;
-    }
-
-    try {
-      rptSummaryRows = [];
-      rptDetailRows = [];
-      rptFromLabel = '';
-      rptToLabel = '';
-
-      sheets.forEach(({ rows: raw }) => {
-        raw = Array.isArray(raw) ? raw.filter(Array.isArray) : [];
-        if (!raw.length) return;
-        let hdrIdx = -1;
-        let hdrRow = [];
-
-        for (let i = 0; i < Math.min(raw.length, 12); i++) {
-          const r = raw[i].map(c => String(c).trim().toLowerCase());
-          if (r.some(c => c === 'item code' || c === 'item name' || c === 'bed no.' || c === 'hn')) {
-            hdrIdx = i;
-            hdrRow = raw[i].map(c => String(c).trim());
-            break;
-          }
-        }
-
-        if (hdrIdx === -1) return;
-
-        for (let i = 0; i < hdrIdx; i++) {
-          const joined = raw[i].map(x => String(x || '')).join(' ');
-          const m = joined.match(/from\s+(\S+).*?to\s+(\S+)/i);
-          if (m) {
-            rptFromLabel = m[1];
-            rptToLabel = m[2];
-          }
-        }
-
-        let currentWard = '';
-
-        raw.slice(hdrIdx + 1).forEach(r => {
-          const nonEmpty = r.filter(c => String(c).trim() !== '');
-          if (nonEmpty.length === 0) return;
-
-          if (nonEmpty.length === 1) {
-            const label = String(nonEmpty[0] ?? '').trim();
-            if (/^ward\s/i.test(label)) {
-              currentWard = label;
-            } else if (/^(ICU|CCU|NICU|LR)\b/i.test(label)) {
-              currentWard = label.match(/^([A-Z]+)/i)[1].toUpperCase();
-            } else {
-              currentWard = '';
-            }
-            return;
-          }
-
-          const obj = { _ward: currentWard };
-          hdrRow.forEach((h, i) => { obj[h] = String(r[i] ?? '').trim(); });
-
-          if (!obj._ward) {
-            const bed = obj['BED NO.'] || obj['BED NO'] || '';
-            const bedMatch = bed.match(/^([A-Z]+)\d/i);
-            if (bedMatch) {
-              obj._ward = bedMatch[1].toUpperCase();
-            } else if (/^\d{3}$/.test(bed)) {
-              obj._ward = 'Ward ' + String(bed || '').charAt(0);
-            }
-          }
-
-          rptDetailRows.push(obj);
-        });
-      });
-
-      rptSummaryRows = buildSummaryFromDetail(rptDetailRows);
-      renderRptPreview();
-
-      const pdfBtns = document.getElementById('rpt-pdf-btns');
-      if (pdfBtns) pdfBtns.style.display = 'flex';
-
-      rptStatus(`✅ Parsed: ${rptDetailRows.length} detail rows · ${rptSummaryRows.length} summary items.`, 'ok');
-    } catch (err) {
-      console.error('[RT257 parse]', err);
-      rptStatus('❌ Parse error: ' + err.message, 'err');
-    }
+      processRpt257Sheets(parseXlsBuffer(await fetchReportBytes(buildRt257Url(from, to), 'RT_COMMON_257')));
+    } catch (e) { rptStatus('❌ ' + e.message, 'err'); }
   });
 
   document.getElementById('rpt-btn-pdf2')?.addEventListener('click', async () => {
@@ -1464,30 +1509,34 @@ function initStockPickingReport() {
     rpt917Status(`✅ URL ready for ${from} → ${to}. Click to open/download XLS.`, 'ok');
   });
 
+  function processStk917Sheets(sheets) {
+    stk917Rows = parseStockPickingSheets(sheets);
+    renderStockPickingPreview();
+    const btns = document.getElementById('stk917-pdf-btns');
+    if (btns) btns.style.display = 'flex';
+    rpt917Status(`✅ Parsed ${stk917Rows.length} rows (filtered target codes, qty > 0).`, 'ok');
+  }
+
   document.getElementById('stk917-file-input')?.addEventListener('change', async function (ev) {
     const file = (ev?.target?.files && ev.target.files[0]) || (this?.files && this.files[0]);
     if (!file) return;
-
     rpt917Status('⏳ Reading file…', 'loading');
-
     let sheets;
-    try {
-      sheets = await readXlsFile(file);
-    } catch (e) {
-      rpt917Status('❌ ' + e.message, 'err');
-      return;
-    }
+    try { sheets = await readXlsFile(file); }
+    catch (e) { rpt917Status('❌ ' + e.message, 'err'); return; }
+    try { processStk917Sheets(sheets); }
+    catch (e) { console.error('[RT917 parse]', e); rpt917Status('❌ Parse error: ' + e.message, 'err'); }
+  });
 
+  document.getElementById('stk917-btn-fetch')?.addEventListener('click', async () => {
+    const from = document.getElementById('stk917-from').value;
+    const to = document.getElementById('stk917-to').value;
+    if (!from || !to) { rpt917Status('⚠ Please select both From and To dates.', 'warn'); return; }
+    if (from > to) { rpt917Status('⚠ From date must be before To date.', 'warn'); return; }
+    rpt917Status('⏳ Fetching report from server…', 'loading');
     try {
-      stk917Rows = parseStockPickingSheets(sheets);
-      renderStockPickingPreview();
-      const btns = document.getElementById('stk917-pdf-btns');
-      if (btns) btns.style.display = 'flex';
-      rpt917Status(`✅ Parsed ${stk917Rows.length} rows (filtered target codes, qty > 0).`, 'ok');
-    } catch (e) {
-      console.error('[RT917 parse]', e);
-      rpt917Status('❌ Parse error: ' + e.message, 'err');
-    }
+      processStk917Sheets(parseXlsBuffer(await fetchReportBytes(buildStk917Url(from, to), 'RT_COMMON_917')));
+    } catch (e) { rpt917Status('❌ ' + e.message, 'err'); }
   });
 
   document.getElementById('stk917-btn-pdf')?.addEventListener('click', async () => {
@@ -1924,29 +1973,34 @@ function initAdrReport() {
     adr256Status(`✅ URL ready for ${from} → ${to}. Click to open/download XLS.`, 'ok');
   });
 
+  function processAdr256Sheets(sheets) {
+    adr256Rows = parseAdr256Sheets(sheets);
+    renderAdr256Preview();
+    const btns = document.getElementById('adr256-pdf-btns');
+    if (btns) btns.style.display = adr256Rows.length ? 'flex' : 'none';
+    adr256Status(`✅ Parsed ${adr256Rows.length} ADR rows.`, adr256Rows.length ? 'ok' : 'warn');
+  }
+
   document.getElementById('adr256-file-input')?.addEventListener('change', async function (ev) {
     const file = (ev?.target?.files && ev.target.files[0]) || (this?.files && this.files[0]);
     if (!file) return;
-
     adr256Status('⏳ Reading ADR XLS file…', 'loading');
     let sheets;
-    try {
-      sheets = await readXlsFile(file);
-    } catch (e) {
-      adr256Status('❌ ' + e.message, 'err');
-      return;
-    }
+    try { sheets = await readXlsFile(file); }
+    catch (e) { adr256Status('❌ ' + e.message, 'err'); return; }
+    try { processAdr256Sheets(sheets); }
+    catch (e) { console.error('[RT256 parse]', e); adr256Status('❌ Parse error: ' + e.message, 'err'); }
+  });
 
+  document.getElementById('adr256-btn-fetch')?.addEventListener('click', async () => {
+    const from = fromEl?.value || '';
+    const to = toEl?.value || '';
+    if (!from || !to) { adr256Status('⚠ Please select both dates.', 'warn'); return; }
+    if (from > to) { adr256Status('⚠ Start date must be before End date.', 'warn'); return; }
+    adr256Status('⏳ Fetching report from server…', 'loading');
     try {
-      adr256Rows = parseAdr256Sheets(sheets);
-      renderAdr256Preview();
-      const btns = document.getElementById('adr256-pdf-btns');
-      if (btns) btns.style.display = adr256Rows.length ? 'flex' : 'none';
-      adr256Status(`✅ Parsed ${adr256Rows.length} ADR rows.`, adr256Rows.length ? 'ok' : 'warn');
-    } catch (e) {
-      console.error('[RT256 parse]', e);
-      adr256Status('❌ Parse error: ' + e.message, 'err');
-    }
+      processAdr256Sheets(parseXlsBuffer(await fetchReportBytes(buildAdr256Url(from, to), 'RT_COMMON_256')));
+    } catch (e) { adr256Status('❌ ' + e.message, 'err'); }
   });
 
   document.getElementById('adr256-btn-pdf')?.addEventListener('click', () => {
@@ -2374,34 +2428,37 @@ function initExpReport() {
     exp174Status(`✅ URL ready for ${floor.label} · report date ${date}.`, 'ok');
   });
 
+  function processExp174Sheets(sheets) {
+    const floorKey = floorEl?.value || 'floor1';
+    const date = dateEl?.value || '';
+    exp174AllRows = parseExp174Sheets(sheets, floorKey, date);
+    exp174Rows = filterExp174Rows(exp174AllRows);
+    renumberExp174Rows(exp174Rows);
+    renderExp174Preview();
+    const btns = document.getElementById('exp174-pdf-btns');
+    if (btns) btns.style.display = exp174Rows.length ? 'flex' : 'none';
+    exp174Status(`✅ Parsed ${exp174Rows.length} EXP rows.`, exp174Rows.length ? 'ok' : 'warn');
+  }
+
   document.getElementById('exp174-file-input')?.addEventListener('change', async function (ev) {
     const file = (ev?.target?.files && ev.target.files[0]) || (this?.files && this.files[0]);
     if (!file) return;
-
     exp174Status('⏳ Reading file…', 'loading');
-
     let sheets;
-    try {
-      sheets = await readXlsFile(file);
-    } catch (e) {
-      exp174Status('❌ ' + e.message, 'err');
-      return;
-    }
+    try { sheets = await readXlsFile(file); }
+    catch (e) { exp174Status('❌ ' + e.message, 'err'); return; }
+    try { processExp174Sheets(sheets); }
+    catch (e) { console.error('[RT174 parse]', e); exp174Status('❌ Parse error: ' + e.message, 'err'); }
+  });
 
+  document.getElementById('exp174-btn-fetch')?.addEventListener('click', async () => {
+    const date = dateEl?.value || '';
+    const floorKey = floorEl?.value || 'floor1';
+    if (!date) { exp174Status('⚠ Please select report date.', 'warn'); return; }
+    exp174Status('⏳ Fetching report from server…', 'loading');
     try {
-      const floorKey = floorEl?.value || 'floor1';
-      const date = dateEl?.value || '';
-      exp174AllRows = parseExp174Sheets(sheets, floorKey, date);
-      exp174Rows = filterExp174Rows(exp174AllRows);
-      renumberExp174Rows(exp174Rows);
-      renderExp174Preview();
-      const btns = document.getElementById('exp174-pdf-btns');
-      if (btns) btns.style.display = exp174Rows.length ? 'flex' : 'none';
-      exp174Status(`✅ Parsed ${exp174Rows.length} EXP rows.`, exp174Rows.length ? 'ok' : 'warn');
-    } catch (e) {
-      console.error('[RT174 parse]', e);
-      exp174Status('❌ Parse error: ' + e.message, 'err');
-    }
+      processExp174Sheets(parseXlsBuffer(await fetchReportBytes(buildExp174Url(date, floorKey), 'RT_COMMON_174')));
+    } catch (e) { exp174Status('❌ ' + e.message, 'err'); }
   });
 
   document.getElementById('exp174-btn-pdf')?.addEventListener('click', () => {
