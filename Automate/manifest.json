@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Arcus Toolkit",
-  "version": "4.1.0",
-  "version_name": "2026.05.19 - add drug image downloader",
+  "version": "4.2.0",
+  "version_name": "2026.05.27 - add medical journey",
   "description": "Auto Dispense and IP Fill automation for Arcus Pharmacy Management System.",
   "permissions": [
     "activeTab",
@@ -32,7 +32,8 @@
         "content/automation.js",
         "content/boot.js",
         "content/ipfill_panel.js",
-        "content/drug-image.js"
+        "content/drug-image.js",
+        "content/medical-journey.js"
       ],
       "css": [
         "styles.css"
