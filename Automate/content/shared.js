@@ -765,11 +765,11 @@
   function getOpdRowTypeFromEl(el) {
     if (!el) return "unknown";
     try {
-      const spans = Array.from(el.querySelectorAll("span.ng-binding"));
-      for (const span of spans) {
-        const t = ((span.innerText || span.textContent) || "").trim();
-        if (t === "Stat") return "stat";
-        if (t === "Routine") return "routine";
+      const nodes = Array.from(el.querySelectorAll("span.ng-binding, td.ng-binding, div.ng-binding, .ng-binding"));
+      for (const node of nodes) {
+        const t = ((node.innerText || node.textContent) || "").trim().toLowerCase();
+        if (t === "stat") return "stat";
+        if (t === "routine") return "routine";
       }
     } catch (_) {}
     return "unknown";
@@ -780,16 +780,25 @@
       "body > div.full-height.ng-scope.layout-row > div > md-toolbar > div > div",
       "md-toolbar .font-size-14-imp.ng-binding",
       "md-toolbar [class*='ng-binding'][class*='font-size']",
+      "md-toolbar .md-toolbar-tools",
+      "md-toolbar > *",
+      "md-toolbar",
     ];
     for (const sel of selectors) {
       try {
-        const el = document.querySelector(sel);
-        if (!el) continue;
-        const txt = ((el.innerText || el.textContent) || "").toUpperCase();
-        if (txt.includes("OUTPATIENT PHARMACY") || txt.includes("OUTPATIENT") || txt.includes("PHARMACY FLOOR 2")) return "outpatient";
-        if (txt.includes("INPATIENT PHARMACY") || txt.includes("INPATIENT")) return "inpatient";
+        const nodes = document.querySelectorAll(sel);
+        for (const el of nodes) {
+          const txt = ((el.innerText || el.textContent) || "").toUpperCase();
+          if (txt.includes("OUTPATIENT PHARMACY") || txt.includes("OUTPATIENT") || txt.includes("PHARMACY FLOOR 2")) return "outpatient";
+          if (txt.includes("INPATIENT PHARMACY") || txt.includes("INPATIENT")) return "inpatient";
+        }
       } catch (_) {}
     }
+    try {
+      const href = location.href.toLowerCase();
+      if (href.includes("outpatient") || href.includes("opd")) return "outpatient";
+      if (href.includes("inpatient") || href.includes("ipd")) return "inpatient";
+    } catch (_) {}
     return null;
   }
 

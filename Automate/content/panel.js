@@ -306,7 +306,7 @@
     pharmacyTypeSelect?.addEventListener("change", () => {
       state.settings.pharmacyType = pharmacyTypeSelect.value || "auto";
       updateLocationLabel(panel);
-      renderOrderTypeSection(panel);
+      renderOrderTypeSection(panel, state.settings.rowFilters);
       const type = pharmacyTypeSelect.value;
       const label = type === "outpatient"
         ? "Outpatient: order O* or E*"
