@@ -151,30 +151,29 @@
 
   // ── Styles ─────────────────────────────────────────────────────────
   const MJ_CSS = `
-/* Medical Journey tab button */
+/* Medical Journey button */
 #arcus-mj-tab-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 0 16px;
-  height: 100%;
-  min-height: 40px;
-  border: none;
-  background: transparent;
+  padding: 5px 12px;
+  border: 1px solid #90caf9;
+  border-radius: 16px;
+  background: #e3f2fd;
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  color: #455a64;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1565c0;
   cursor: pointer;
   white-space: nowrap;
-  border-bottom: 3px solid transparent;
-  transition: color .15s, border-color .15s, background .15s;
   outline: none;
-  vertical-align: top;
   box-sizing: border-box;
+  transition: background .15s, border-color .15s, box-shadow .15s;
+  margin-left: 6px;
+  flex-shrink: 0;
 }
-#arcus-mj-tab-btn:hover { color: #1565c0; background: rgba(21,101,192,.06); }
-#arcus-mj-tab-btn.mj-active { color: #1565c0; border-bottom-color: #1565c0; font-weight: 600; }
+#arcus-mj-tab-btn:hover { background: #bbdefb; border-color: #1565c0; }
+#arcus-mj-tab-btn.mj-active { background: #1565c0; color: #fff; border-color: #1565c0; box-shadow: 0 1px 4px rgba(21,101,192,.3); }
 
 /* Medical Journey panel */
 #arcus-mj-panel {
@@ -388,9 +387,18 @@
   }
 
   // ── Tab button injection ───────────────────────────────────────────
+  function _findToolbar() {
+    // Try exact selector first, then fall back to class-only (ID number may vary)
+    return document.querySelector(
+      "#tab-content-76 > div > div > div > div > div.groupbylist.layout-wrap.layout-align-start-center.layout-row.flex"
+    ) || document.querySelector(
+      "div.groupbylist.layout-wrap.layout-align-start-center.layout-row.flex"
+    );
+  }
+
   function _injectTabButton() {
     if (document.getElementById("arcus-mj-tab-btn")) return;
-    const wrapper = document.querySelector("md-pagination-wrapper");
+    const wrapper = _findToolbar();
     if (!wrapper) return;
 
     _injectStyle("arcus-mj-css", MJ_CSS);
