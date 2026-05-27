@@ -15,7 +15,26 @@
       "Bash('C:\\\\Users\\\\bkn.pharmacy\\\\AppData\\\\Local\\\\Programs\\\\Git\\\\cmd\\\\git.exe' commit -m ' *)",
       "Bash(\"C:\\\\Users\\\\bkn.pharmacy\\\\AppData\\\\Local\\\\Programs\\\\Git\\\\cmd\\\\git.exe\" push *)",
       "Bash(dir /s /b \"C:\\\\Users\\\\bkn.pharmacy\\\\Documents\\\\AA_Extensions\\\\AAOverlay\")",
-      "Bash(\"C:\\\\Users\\\\bkn.pharmacy\\\\AppData\\\\Local\\\\Programs\\\\Git\\\\cmd\\\\git.exe\" rm *)"
+      "Bash(\"C:\\\\Users\\\\bkn.pharmacy\\\\AppData\\\\Local\\\\Programs\\\\Git\\\\cmd\\\\git.exe\" rm *)",
+      "Bash(Get-ChildItem \"C:\\\\Users\\\\bkn.pharmacy\\\\Documents\\\\AA_Extensions\\\\pharmacy_server\\\\data\\\\med-images\")",
+      "Bash(Measure-Object)",
+      "Bash(Select-Object -ExpandProperty Count)",
+      "PowerShell(\\(Get-ChildItem \"C:\\\\Users\\\\bkn.pharmacy\\\\Documents\\\\AA_Extensions\\\\pharmacy_server\\\\data\\\\med-images\"\\).Count)",
+      "Bash(\"C:\\\\Users\\\\bkn.pharmacy\\\\AppData\\\\Local\\\\Programs\\\\Git\\\\cmd\\\\git.exe\" log *)",
+      "Bash(\"C:\\\\Users\\\\bkn.pharmacy\\\\AppData\\\\Local\\\\Programs\\\\Git\\\\cmd\\\\git.exe\" show *)",
+      "Bash(\"C:\\\\Users\\\\bkn.pharmacy\\\\AppData\\\\Local\\\\Programs\\\\Git\\\\cmd\\\\git.exe\" diff *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(grep -oE '\\\\.[a-zA-Z]+$')",
+      "Bash(\"C:\\\\Users\\\\bkn.pharmacy\\\\AppData\\\\Local\\\\Programs\\\\Git\\\\cmd\\\\git.exe\" -C \"C:\\\\Users\\\\bkn.pharmacy\\\\Documents\\\\AA_Extensions\\\\pharmacy_server\" diff --name-only --diff-filter=D 7b24b3b^..7b24b3b -- \"data/med-images/\")",
+      "Bash(python3 -c ' *)",
+      "Bash(Measure-Object -Line)",
+      "PowerShell(\\(Get-ChildItem \"C:\\\\Users\\\\bkn.pharmacy\\\\Documents\\\\AA_Extensions\\\\pharmacy_server\\\\data\\\\med-images\" -File\\).Count)",
+      "PowerShell(net use 2>&1)",
+      "PowerShell(cmd /c \"net use\")",
+      "Bash(ls /mnt/c/Users/bkn.pharmacy/Documents/AA_Extensions/AAOverlay/src/features/)",
+      "Read(//mnt/c/Users/bkn.pharmacy/Documents/AA_Extensions/AAOverlay/src/**)",
+      "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\bkn.pharmacy\\\\Documents\\\\AA_Extensions\\\\AAOverlay\\\\src\\\\features\\\\medication-journey\")",
+      "Bash(\"C:\\\\Users\\\\bkn.pharmacy\\\\AppData\\\\Local\\\\Programs\\\\Git\\\\cmd\\\\git.exe\" -C \"C:\\\\Users\\\\bkn.pharmacy\\\\Documents\\\\AA_Extensions\" status --short)"
     ]
   }
 }

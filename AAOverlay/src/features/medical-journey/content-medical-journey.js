@@ -617,7 +617,6 @@ ${groupHtmlBlocks || `<div style="color:#9e9e9e;font-style:italic;text-align:cen
         </div>
         <div class="mj-actions">
           <button class="mj-icon-btn mj-pdf-btn" id="arcus-mj-btn-pdf" title="Save to PDF">🖨 PDF</button>
-          <button class="mj-icon-btn mj-pdf-btn" id="arcus-mj-btn-homed" title="Print Home Medication Sheet">🏠 Home Med</button>
           <button class="mj-icon-btn" id="arcus-mj-btn-refresh" title="Refresh">↻</button>
           <button class="mj-icon-btn" id="arcus-mj-btn-copy" title="Copy to clipboard">⎘</button>
           <button class="mj-icon-btn" id="arcus-mj-btn-min" title="Minimize">−</button>
@@ -625,7 +624,12 @@ ${groupHtmlBlocks || `<div style="color:#9e9e9e;font-style:italic;text-align:cen
         </div>
       </div>
       ${ptChips ? `<div id="arcus-mj-patient-strip">${ptChips}</div>` : ""}
-      <div id="arcus-mj-body">${allergyHtml}${journeyHtml}</div>`;
+      <div id="arcus-mj-body">
+        <div style="padding:6px 8px 4px;border-bottom:1px solid #e0e0e0">
+          <button id="arcus-mj-btn-homed" style="width:100%;padding:7px 12px;background:#e8f5e9;border:1px solid #4caf50;border-radius:6px;color:#1b5e20;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">🏠 Print Home Medication Sheet</button>
+        </div>
+        ${allergyHtml}${journeyHtml}
+      </div>`;
 
     document.body.appendChild(panel);
     _makeDraggable(panel, document.getElementById("arcus-mj-header"));
