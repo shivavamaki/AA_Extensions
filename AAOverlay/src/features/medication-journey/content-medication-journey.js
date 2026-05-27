@@ -132,7 +132,7 @@
   }
 
   /* ── Button injection ────────────────────────────────────────────────── */
-  const ANCHOR_SEL = "#incusOrderID > md-tabs > md-tabs-wrapper > md-tabs-canvas > md-pagination-wrapper > md-tab-item:nth-child(8)";
+  const ANCHOR_SEL = "#paprint";
 
   function _isOrdersPage() {
     return (window.location.hash || "").includes("/emr/emrview/emr/orders");
