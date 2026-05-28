@@ -1,0 +1,32 @@
+{
+  "date": "2026-05-28",
+  "createdAt": "2026-05-28T00:47:06.326067+00:00",
+  "updatedAt": "2026-05-28T00:47:06.356883+00:00",
+  "opdBrief": null,
+  "ipdBrief": {
+    "schemaVersion": "1.0.0",
+    "appName": "pharmacy-kpi-data-system",
+    "type": "ipd-brief",
+    "date": "2026-05-28",
+    "payloadVersion": 1,
+    "signature": "ทัศนีย์ วงศ์คำพระ",
+    "checks": {
+      "shoes": true,
+      "trash": true,
+      "bottles": true,
+      "temp": true,
+      "sink": true,
+      "fridge": true,
+      "dehumid": true,
+      "expiry": true,
+      "narc": true,
+      "std": true,
+      "it": true
+    },
+    "issues": "",
+    "savedAt": "2026-05-28T00:47:06.386Z"
+  },
+  "opdStat": null,
+  "ipdStat": null,
+  "medErrors": []
+}

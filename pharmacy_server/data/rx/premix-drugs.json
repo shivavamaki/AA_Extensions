@@ -310,5 +310,21 @@
     "label1": "หลังเปิดใช้ เก็บได้ 180 วัน",
     "w1": "ยาใช้ภายนอก ห้ามรับประทาน",
     "w2": null
+  },
+  {
+    "no": 40,
+    "name": "Acidic Phosphate Solution 100 mL",
+    "shelf": 365,
+    "label1": null,
+    "w1": null,
+    "w2": null
+  },
+  {
+    "no": 41,
+    "name": "Acidic Phosphate Solution ______mL",
+    "shelf": 365,
+    "label1": null,
+    "w1": null,
+    "w2": null
   }
 ]

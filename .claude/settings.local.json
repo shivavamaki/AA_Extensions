@@ -42,7 +42,9 @@
       "Bash(git check-ignore *)",
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(Get-ChildItem \"\\\\\\\\10.134.10.5\\\\BKNinfo\\\\24 Pharmacy\\\\EXT\" -Depth 0)",
+      "Bash(Select-Object Name, LastWriteTime, Attributes)"
     ]
   }
 }
