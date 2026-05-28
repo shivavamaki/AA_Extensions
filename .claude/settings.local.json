@@ -53,7 +53,11 @@
       "Bash(git -C \"//10.134.10.5/BKNinfo/24 Pharmacy/EXT\" status --short)",
       "Bash(git -C \"//10.134.10.5/BKNinfo/24 Pharmacy/EXT\" ls-files pharmacy_server/data/)",
       "Read(///10.134.10.5/BKNinfo/24 Pharmacy/**)",
-      "Bash(powershell -ExecutionPolicy Bypass -File pharmacy_server/protect-data.ps1)"
+      "Bash(powershell -ExecutionPolicy Bypass -File pharmacy_server/protect-data.ps1)",
+      "Bash(Get-ChildItem -Path \"\\\\\\\\10.134.10.5\\\\BKNinfo\\\\24 Pharmacy\\\\EXT\\\\AAOverlay\" -Recurse -Force)",
+      "Bash(Select-Object -Property FullName, Name)",
+      "Bash(Format-List)",
+      "Bash(find \"\\\\\\\\10.134.10.5\\\\BKNinfo\\\\24 Pharmacy\\\\EXT\\\\AAOverlay\" -type f \\\\\\( -name \"*.json\" -o -name \"*.css\" \\\\\\))"
     ]
   }
 }
