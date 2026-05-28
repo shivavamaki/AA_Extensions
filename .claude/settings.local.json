@@ -44,7 +44,16 @@
       "Bash(git push *)",
       "Bash(git add *)",
       "Bash(Get-ChildItem \"\\\\\\\\10.134.10.5\\\\BKNinfo\\\\24 Pharmacy\\\\EXT\" -Depth 0)",
-      "Bash(Select-Object Name, LastWriteTime, Attributes)"
+      "Bash(Select-Object Name, LastWriteTime, Attributes)",
+      "Bash(dir \"\\\\\\\\10.134.10.5\\\\BKNinfo\\\\24 Pharmacy\\\\EXT\\\\pharmacy_server\\\\data\" /b /a)",
+      "Bash(find \"\\\\\\\\\\\\\\\\10.134.10.5\\\\\\\\BKNinfo\\\\\\\\24 Pharmacy\\\\\\\\EXT\\\\\\\\pharmacy_server\" -maxdepth 4 -name \"*.js\" -o -name \"*.json\" -o -name \"*.ts\" -o -name \"*.py\" | head -60 2>&1)",
+      "Read(///10.134.10.5/BKNinfo/24 Pharmacy/EXT/**)",
+      "Bash(find \"\\\\\\\\\\\\\\\\10.134.10.5\\\\\\\\BKNinfo\\\\\\\\24 Pharmacy\\\\\\\\EXT\\\\\\\\pharmacy_server\" -maxdepth 2 -name \"*.py\" -o -name \"*.sh\" -o -name \"*.bat\" -o -name \"*.ps1\" -o -name \".gitignore\" -o -name \"*.yml\" -o -name \"*.yaml\" -o -name \"Dockerfile\" -o -name \"requirements*.txt\" 2>&1)",
+      "Bash(git -C \"//10.134.10.5/BKNinfo/24 Pharmacy/EXT\" log --oneline -10)",
+      "Bash(git -C \"//10.134.10.5/BKNinfo/24 Pharmacy/EXT\" status --short)",
+      "Bash(git -C \"//10.134.10.5/BKNinfo/24 Pharmacy/EXT\" ls-files pharmacy_server/data/)",
+      "Read(///10.134.10.5/BKNinfo/24 Pharmacy/**)",
+      "Bash(powershell -ExecutionPolicy Bypass -File pharmacy_server/protect-data.ps1)"
     ]
   }
 }

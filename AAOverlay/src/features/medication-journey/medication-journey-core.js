@@ -111,6 +111,53 @@
       }
     } catch (_) { /* ignore Angular errors */ }
 
+    /* ── Level 2b: Angular $rootScope.$stateParams (UI Router) ─────────── */
+    try {
+      if (window.angular) {
+        const rootEl  = document.documentElement;
+        const rootSc  = window.angular.element(rootEl).scope();
+        const $root   = rootSc && rootSc.$root;
+        if ($root) {
+          /* $stateParams lives on $root in UI Router */
+          const sp = $root.$stateParams || {};
+          _assignIfTruthy(ctx, "patientuid",        sp.patientuid || sp.patientUid || sp.PatientUID || sp.PatientUid
+                                                 || sp.patientid  || sp.PatientID  || sp.patient_id || sp.pid);
+          _assignIfTruthy(ctx, "patientvisituid",   sp.patientvisituid   || sp.patientVisitUid  || sp.visituid);
+          _assignIfTruthy(ctx, "patientId",         sp.patientId         || sp.hn               || sp.patientid);
+          _assignIfTruthy(ctx, "patientVisitId",    sp.patientVisitId    || sp.an               || sp.patientvisitid);
+          _assignIfTruthy(ctx, "loginuid",          sp.loginuid          || sp.loginUid         || sp.userid);
+          _assignIfTruthy(ctx, "roleuid",           sp.roleuid           || sp.roleUid);
+          _assignIfTruthy(ctx, "organisationuid",   sp.organisationuid   || sp.orguid           || sp.organisationUid);
+          _assignIfTruthy(ctx, "parentorguid",      sp.parentorguid      || sp.parentOrguid);
+          _assignIfTruthy(ctx, "logindepartmentuid",sp.logindepartmentuid|| sp.deptuid);
+          _assignIfTruthy(ctx, "_pp",               sp.pp);
+
+          /* Also check $root properties directly (some apps put context on root scope) */
+          const rootCandidates = [
+            $root.patient, $root.patientData, $root.patientInfo, $root.patientContext,
+            $root.PatientContext, $root.currentPatient, $root.selectedPatient,
+            $root.emrContext, $root.EmrContext, $root.patientVisitContext,
+            $root.session, $root.loginUser, $root.currentUser,
+            $root.vm && $root.vm.patient, $root.vm && $root.vm.user,
+          ];
+          for (const o of rootCandidates) {
+            if (!o || typeof o !== "object") continue;
+            _assignIfTruthy(ctx, "patientuid",        o.patientuid || o.patientUid || o.PatientUID || o.PatientUid
+                                                   || o.patientid  || o.PatientID  || o.patient_id || o.pid || o.puid || o.uid);
+            _assignIfTruthy(ctx, "patientvisituid",   o.patientvisituid   || o.patientVisitUid   || o.visitUid   || o.visituid);
+            _assignIfTruthy(ctx, "patientId",         o.patientId         || o.hn                || o.patientid);
+            _assignIfTruthy(ctx, "patientVisitId",    o.patientVisitId    || o.an                || o.patientvisitid);
+            _assignIfTruthy(ctx, "patientName",       o.patientName       || o.name              || o.fullName);
+            _assignIfTruthy(ctx, "loginuid",          o.loginuid          || o.loginUid          || o.userId);
+            _assignIfTruthy(ctx, "roleuid",           o.roleuid           || o.roleUid);
+            _assignIfTruthy(ctx, "organisationuid",   o.organisationuid   || o.orgUid            || o.organisationUid);
+            _assignIfTruthy(ctx, "parentorguid",      o.parentorguid      || o.parentOrguid      || o.parentOrgUid);
+            _assignIfTruthy(ctx, "logindepartmentuid",o.logindepartmentuid|| o.deptUid           || o.departmentUid);
+          }
+        }
+      }
+    } catch (_) { /* ignore */ }
+
     /* ── Level 3: LocalStorage scan ─────────────────────────────────────── */
     try {
       for (let i = 0; i < localStorage.length; i++) {
@@ -210,6 +257,16 @@
           }
         }
       }
+      /* Pharmacist name from toolbar menu button */
+      if (!ctx.pharmacistName) {
+        const pharmEl = document.querySelector(
+          "body > div.full-height.ng-scope.layout-row > div > md-toolbar > div > md-menu:nth-child(9) > button > span"
+        );
+        if (pharmEl) {
+          const t = _safeText(pharmEl);
+          if (t) ctx.pharmacistName = t;
+        }
+      }
     } catch (_) { /* ignore DOM errors */ }
 
     /* ── Level 5: Jasper links on page ──────────────────────────────────── */
@@ -227,7 +284,8 @@
           _assignIfTruthy(ctx, "roleuid",           p.get("roleuid"));
           _assignIfTruthy(ctx, "parentorguid",      p.get("parentorguid"));
           _assignIfTruthy(ctx, "_pp",               p.get("pp"));
-          break;
+          /* Stop only when all three critical UIDs are found */
+          if (ctx.patientuid && ctx.patientvisituid && ctx.loginuid) break;
         } catch (_) { /* bad URL */ }
       }
     } catch (_) { /* ignore */ }
@@ -239,6 +297,27 @@
     if (!ctx.patientVisitId && ctx.an)  ctx.patientVisitId = ctx.an;
 
     return ctx;
+  };
+
+  /* ── extractAngularContextFromPage ──────────────────────────────────────
+     Injects a <script> into the page (MAIN world) so it can read window.angular
+     and $rootScope, then sends the data back via postMessage.
+     Returns a Promise<{ stateParams, userCtx, patientCtx, _raw }>.
+  ─────────────────────────────────────────────────────────────────────────── */
+  NS.extractAngularContextFromPage = function extractAngularContextFromPage() {
+    return new Promise(function (resolve) {
+      try {
+        chrome.runtime.sendMessage({ type: "MJ_EXTRACT_ANGULAR_CTX" }, function (resp) {
+          if (chrome.runtime.lastError || !resp || !resp.ok) {
+            resolve({});
+          } else {
+            resolve(resp.data || {});
+          }
+        });
+      } catch (_) {
+        resolve({});
+      }
+    });
   };
 
   /* ── thaiDateRangeToUtcIso ───────────────────────────────────────────── */
@@ -638,5 +717,30 @@
       orderBy: "Dr. Smith", categoryType: "MEDICINE",
     },
   ];
+
+  /* ── debugContext (call from console to diagnose extraction) ──────────── */
+  NS.debugContext = function debugContext() {
+    const ctx = NS.extractArcusPatientContext();
+    const ok  = ctx.patientuid && ctx.patientvisituid && ctx.loginuid;
+    console.group("[MedicationJourney] extractArcusPatientContext");
+    console.log("patientuid       :", ctx.patientuid        || "⚠️ MISSING");
+    console.log("patientvisituid  :", ctx.patientvisituid   || "⚠️ MISSING");
+    console.log("loginuid         :", ctx.loginuid          || "⚠️ MISSING");
+    console.log("patientName      :", ctx.patientName       || "(empty)");
+    console.log("hn               :", ctx.hn                || "(empty)");
+    console.log("canFetchJasper   :", ok ? "✅ YES" : "❌ NO — will use mock data");
+    console.log("full context     :", ctx);
+    if (!ok) {
+      console.warn("Jasper fetch will be skipped. Check $stateParams or Jasper links on this page.");
+      if (window.angular) {
+        try {
+          const sp = window.angular.element(document.documentElement).scope().$root.$stateParams;
+          console.log("$root.$stateParams:", sp);
+        } catch (_) { console.log("$root.$stateParams: (unavailable)"); }
+      }
+    }
+    console.groupEnd();
+    return ctx;
+  };
 
 })();

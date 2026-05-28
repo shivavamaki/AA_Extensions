@@ -1,0 +1,13 @@
+# ── Merge strategy: local production data always wins ────────────────────────
+# If a git pull ever tries to merge these files, the LOCAL version is kept.
+# Requires: git config merge.ours.driver true  (run once per machine)
+#
+# Production-written (server creates/updates these — remote must NEVER win)
+data/auth/*.json      merge=ours
+data/kpi/*.json       merge=ours
+data/schedule/*.json  merge=ours
+
+# Reference data (developers update these via git — but local edits still win
+# to avoid accidental rollback of manual on-server corrections)
+data/ks/*.json        merge=ours
+data/rx/*.json        merge=ours

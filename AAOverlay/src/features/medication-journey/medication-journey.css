@@ -366,6 +366,22 @@ body {
   border-radius: 2px;
 }
 
+/* ── Stat / once dot marker ───────────────────────────────────────────── */
+.mj-stat-dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  z-index: 2;
+  box-shadow: 0 1px 4px rgba(0,0,0,.25);
+  border: 2px solid rgba(255,255,255,.75);
+  pointer-events: none;
+}
+
+.mj-bdg-stat { background:#fff3e0; color:#e65100; }
+
 /* ── Oral medication administration time ticks ────────────────────────── */
 .mj-admin-tick {
   position: absolute;
@@ -379,6 +395,264 @@ body {
   border-radius: 1px;
   box-shadow: 0 0 2px rgba(0,0,0,.25);
 }
+
+/* ── Custom medication badge ──────────────────────────────── */
+.mj-bdg-custom { background:#f3e5f5; color:#7b1fa2; }
+
+/* ── Floating popup (click-event + note edit) ─────────────── */
+.mj-float-popup {
+  position: fixed;
+  z-index: 99999;
+  background: #fff;
+  border: 1.5px solid #c5cae9;
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.22);
+  min-width: 230px;
+  max-width: 290px;
+  font-family: "Segoe UI", Arial, Sarabun, sans-serif;
+  font-size: 12px;
+}
+.mj-fpop-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #3949ab;
+  margin-bottom: 8px;
+}
+
+/* ── Date range bar ──────────────────────────────────────── */
+.mj-range-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #f5f7fa;
+  border: 1px solid #e8eaf6;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.mj-range-lbl { font-size: 11px; font-weight: 700; color: #3949ab; white-space: nowrap; }
+.mj-range-input {
+  font-size: 11px; font-family: inherit; color: #1a237e;
+  border: 1px solid #c5cae9; border-radius: 5px; padding: 3px 6px;
+  outline: none; background: #fff;
+}
+.mj-range-input:focus { border-color: #3f51b5; }
+.mj-range-sep { font-weight: 700; color: #90a4ae; }
+
+/* ── Row control buttons (remove / edit) ─────────────────── */
+.mj-row-ctrl {
+  display: none;
+  gap: 3px;
+  margin-bottom: 3px;
+}
+.mj-gantt-row:hover .mj-row-ctrl { display: flex; }
+.mj-row-del, .mj-row-edit {
+  border: 1px solid;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 10px;
+  padding: 1px 6px;
+  font-family: inherit;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.mj-row-del  { background:#ffebee; color:#c62828; border-color:#ef9a9a; }
+.mj-row-edit { background:#e3f2fd; color:#1565c0; border-color:#90caf9; }
+
+/* ── Row event dot (per-drug events) ─────────────────────── */
+.mj-row-evt-dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2.5px solid;
+  background: #fff;
+  z-index: 4;
+  cursor: pointer;
+}
+.mj-row-evt-dot:hover .mj-cevt-lbl { display: block; }
+.mj-row-evt-dot:hover .mj-cevt-del  { display: flex; }
+
+/* ── Add drug row at bottom ───────────────────────────────── */
+.mj-add-drug-row {
+  background: #fafbff;
+  border-top: 1px dashed #c5cae9;
+  min-height: 36px;
+}
+
+/* ── Drug column note button + preview ───────────────────── */
+.mj-note-btn {
+  display: none;
+  border: none;
+  background: #f3e5f5;
+  color: #7b1fa2;
+  cursor: pointer;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-top: 3px;
+  font-weight: 700;
+  font-family: inherit;
+  transition: background .12s;
+}
+.mj-note-btn:hover { background: #e1bee7; }
+.mj-gantt-row:hover .mj-note-btn { display: inline-block; }
+.mj-note-preview {
+  font-size: 9px;
+  color: #7b1fa2;
+  font-style: italic;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+/* ── Bars column clickable cursor ────────────────────────── */
+.mj-bars-col { cursor: crosshair; }
+.mj-bar, .mj-cevt-dot, .mj-vline { cursor: default; }
+
+/* ── Custom medication bar delete button ──────────────────── */
+.mj-cmed-del-btn {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(198,40,40,.85);
+  color: #fff;
+  border: none;
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  padding: 0;
+  line-height: 1;
+}
+.mj-gantt-row:hover .mj-cmed-del-btn { display: flex; }
+
+/* ════════════════════════════════════════════════════════════
+   CUSTOM EVENTS ROW
+════════════════════════════════════════════════════════════ */
+.mj-cevt-row {
+  background: #fffde7;
+  border-bottom: 2px dashed #ffe082;
+  min-height: 46px;
+}
+.mj-cevt-hdr {
+  font-size: 9px;
+  font-weight: 800;
+  color: #e65100;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  justify-content: center;
+}
+.mj-cevt-bars {
+  min-height: 46px;
+}
+
+/* ── Custom event dot ──────────────────────────────────────── */
+.mj-cevt-dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 3px solid;          /* color set inline */
+  background: #fff;
+  z-index: 3;
+  cursor: pointer;
+}
+.mj-cevt-dot:hover .mj-cevt-lbl { display: block; }
+.mj-cevt-dot:hover .mj-cevt-del  { display: flex; }
+
+.mj-cevt-lbl {
+  display: block;
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 9px;
+  font-weight: 700;
+  background: rgba(255,255,255,.92);
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  padding: 1px 5px;
+  pointer-events: none;
+  z-index: 6;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mj-cevt-del {
+  display: none;
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #c62828;
+  color: #fff;
+  border: none;
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  z-index: 7;
+  padding: 0;
+  line-height: 1;
+}
+
+/* ════════════════════════════════════════════════════════════
+   ADD PANEL (events + medications)
+════════════════════════════════════════════════════════════ */
+.mj-add-panel {
+  background: #fff;
+  border: 1.5px solid #c5cae9;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.1);
+}
+.mj-add-panel-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #3949ab;
+  margin-bottom: 10px;
+}
+.mj-add-panel-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.mj-add-panel-lbl {
+  display: flex;
+  flex-direction: column;
+  font-size: 9px;
+  font-weight: 700;
+  color: #90a4ae;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  gap: 3px;
+  flex: 1;
+  min-width: 110px;
+}
+.mj-add-panel-full { flex: 100%; }
+.mj-add-panel-btns { display: flex; gap: 8px; }
 
 /* ════════════════════════════════════════════════════════════
    EDIT MODE (purple theme)

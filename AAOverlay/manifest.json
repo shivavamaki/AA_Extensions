@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Discharge Process Checklist",
-  "version": "2.5.0",
-  "version_name": "2026.05.27 - medication journey rework",
+  "version": "2.7.0",
+  "version_name": "2026.05.28 - guaranteed patientuid via XHR tap + expanded scope walk + partial-context Jasper fallback",
   "description": "BKN Hospital — discharge process tools overlaid into Arcusair: home med sheet, medication stickers, patient stickers, med reconciliation, and allergy cards.",
   "permissions": [
     "tabs",
