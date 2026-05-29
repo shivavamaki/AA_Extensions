@@ -30,6 +30,15 @@ API:
   PUT    /api/iv-staff                      — replace pharmacy staff list
   GET    /api/medication-db                 — BKN medication DB keyed by item code
 
+  GET    /api/patients/{puid}                                — full patient profile
+  PUT    /api/patients/{puid}                                — replace patient profile
+  GET    /api/patients/{puid}/context                        — patient context only
+  PUT    /api/patients/{puid}/context                        — merge into context
+  GET    /api/patients/{puid}/adr-timeline                   — ADR timeline data
+  PUT    /api/patients/{puid}/adr-timeline                   — replace ADR timeline
+  GET    /api/patients/{puid}/medication-cache/{visituid}    — cached meds for visit
+  PUT    /api/patients/{puid}/medication-cache/{visituid}    — store cached meds
+
 Data layout:
   data/kpi/YYYY-MM-DD.json    — one file per day
   data/ks/faqs.json
@@ -40,6 +49,7 @@ Data layout:
   data/rx/iv-drugs.json
   data/rx/iv-staff.json
   data/rx/medication-db.json
+  data/patients/{patientuid}.json   — one file per patient (context, ADR, med cache)
 """
 
 import hashlib
@@ -68,11 +78,18 @@ MED_IMAGES_DIR = DATA_DIR / 'med-images'
 KS_FILES_DIR  = DATA_DIR / 'ks' / 'files'
 SCHEDULE_DIR      = DATA_DIR / 'schedule'
 TEMP_REPORTS_DIR  = DATA_DIR / 'temp-reports'
+PATIENTS_DIR      = DATA_DIR / 'patients'
 WWW_DIR           = Path(__file__).parent / 'www'
 KS_COLS       = {'faqs', 'items', 'vdos'}
 # All rx collections — GET is public; PUT requires editor/admin auth
 RX_COLS       = {'premix-drugs', 'mixing-protocols', 'medication-db', 'iv-drugs', 'iv-staff'}
-# Requests from this Chrome extension may read/write data without login
+# Requests from these Chrome extensions may read/write data without login.
+# Multiple IDs supported during the rx_menu → BKN Pharmacy Portal migration.
+TRUSTED_EXTENSION_ORIGINS = {
+    'chrome-extension://eeglifkmgelepjmnnldknacamedmckbj',  # rx_menu (legacy)
+    'chrome-extension://nffpegfadeflicpjedmhlgpgpjhkgmgg',  # AAOverlay (legacy)
+}
+# Backward-compat single-origin variable (still referenced by older code paths)
 EXTENSION_ORIGIN = 'chrome-extension://eeglifkmgelepjmnnldknacamedmckbj'
 # medication-db is a dict; all others are arrays
 RX_DICT_COLS  = {'medication-db'}
@@ -200,6 +217,67 @@ def save_schedule(name, data):
     )
 
 
+# ── Patient profile helpers (cross-feature data sharing) ─────────────
+# One JSON file per patientuid under data/patients/{uid}.json
+# Shape: {
+#   patientuid, updatedAt,
+#   context: { hn, patientName, bed, dept, doctor, ... },
+#   adrTimeline: { customEvents, customMedications, adrEvent },
+#   medicationCache: { "<patientvisituid>": { fetchedAt, orders, adminTimes } }
+# }
+_PUID_RE = re.compile(r'^[a-zA-Z0-9_-]{1,64}$')
+
+def _safe_puid(puid):
+    if not puid or not _PUID_RE.match(puid):
+        return None
+    return puid
+
+def patient_file(puid):
+    return PATIENTS_DIR / f'{puid}.json'
+
+def load_patient(puid):
+    p = patient_file(puid)
+    if not p.exists():
+        return None
+    try:
+        return json.loads(p.read_text(encoding='utf-8'))
+    except Exception:
+        return None
+
+def save_patient(puid, data):
+    PATIENTS_DIR.mkdir(parents=True, exist_ok=True)
+    data['updatedAt'] = _now_iso()
+    data['patientuid'] = puid
+    patient_file(puid).write_text(
+        json.dumps(data, ensure_ascii=False, indent=2),
+        encoding='utf-8'
+    )
+
+def _empty_patient(puid):
+    return {
+        'patientuid': puid,
+        'createdAt': _now_iso(),
+        'updatedAt': _now_iso(),
+        'context': {},
+        'adrTimeline': {
+            'customEvents': [],
+            'customMedications': [],
+            'adrEvent': None,
+        },
+        'medicationCache': {},
+    }
+
+def load_or_create_patient(puid):
+    doc = load_patient(puid)
+    if doc is None:
+        doc = _empty_patient(puid)
+    # Backfill missing keys for older saved docs
+    doc.setdefault('context', {})
+    doc.setdefault('adrTimeline', {'customEvents': [], 'customMedications': [], 'adrEvent': None})
+    doc.setdefault('medicationCache', {})
+    return doc
+
+
 # ── Auth helpers ───────────────────────────────────────────────
 # In-memory sessions: token → {username, role}
 _sessions = {}
@@ -258,7 +336,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _is_trusted_extension(self):
         origin = self.headers.get('Origin', '')
-        if origin == EXTENSION_ORIGIN:
+        if origin in TRUSTED_EXTENSION_ORIGINS:
             return True
         # Also trust requests from the local machine (background service worker
         # sends the extension origin, but if the extension ID ever changes the
@@ -370,6 +448,27 @@ class Handler(BaseHTTPRequestHandler):
         if parts == ['api', 'report', 'fetch']:
             return 'report-fetch', None, None
 
+        # /api/patients/{puid}                              -> 'patient', puid, None
+        # /api/patients/{puid}/context                      -> 'patient-context', puid, None
+        # /api/patients/{puid}/adr-timeline                 -> 'patient-adr', puid, None
+        # /api/patients/{puid}/medication-cache/{visituid}  -> 'patient-medcache', puid, visituid
+        if len(parts) >= 3 and parts[0] == 'api' and parts[1] == 'patients':
+            puid = urllib.parse.unquote(parts[2])
+            if not _safe_puid(puid):
+                return None, None, None
+            if len(parts) == 3:
+                return 'patient', puid, None
+            sub = parts[3]
+            if sub == 'context' and len(parts) == 4:
+                return 'patient-context', puid, None
+            if sub == 'adr-timeline' and len(parts) == 4:
+                return 'patient-adr', puid, None
+            if sub == 'medication-cache' and len(parts) == 5:
+                visituid = urllib.parse.unquote(parts[4])
+                if not _safe_puid(visituid):
+                    return None, None, None
+                return 'patient-medcache', puid, visituid
+
         # /api/auth/ACTION
         if len(parts) == 3 and parts[:2] == ['api', 'auth'] and parts[2] in ('login', 'logout', 'me'):
             return 'auth', parts[2], None
@@ -450,6 +549,18 @@ class Handler(BaseHTTPRequestHandler):
         elif rtype == 'med-images-list':
             stems = [p.stem for p in MED_IMAGES_DIR.iterdir() if p.is_file()]
             self.send_json(200, stems)
+        elif rtype == 'patient':
+            self.send_json(200, load_or_create_patient(key))
+        elif rtype == 'patient-context':
+            doc = load_or_create_patient(key)
+            self.send_json(200, doc.get('context') or {})
+        elif rtype == 'patient-adr':
+            doc = load_or_create_patient(key)
+            self.send_json(200, doc.get('adrTimeline') or {})
+        elif rtype == 'patient-medcache':
+            doc = load_or_create_patient(key)
+            entry = (doc.get('medicationCache') or {}).get(item_id)
+            self.send_json(200, entry)
         else:
             self.send_json(404, {'error': 'Not found'})
 
@@ -471,7 +582,11 @@ class Handler(BaseHTTPRequestHandler):
         rtype, key, extra = self.parse_route()
         # Allow the trusted Chrome extension to write data routes without login.
         # User-management routes always require explicit auth.
-        ext_data_write = self._is_trusted_extension() and rtype in ('kpi-day', 'kpi-section', 'ks', 'rx', 'med-image-upload', 'ks-file-upload', 'schedule')
+        ext_data_write = self._is_trusted_extension() and rtype in (
+            'kpi-day', 'kpi-section', 'ks', 'rx',
+            'med-image-upload', 'ks-file-upload', 'schedule',
+            'patient', 'patient-context', 'patient-adr', 'patient-medcache',
+        )
         if not ext_data_write:
             if not self._require('super_admin', 'admin', 'editor'): return
 
@@ -539,6 +654,49 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(body, (dict, list)):
                 self.send_json(400, {'error': 'Body must be a JSON object or array'}); return
             save_schedule(key, body)
+            self.send_json(200, {'ok': True})
+
+        elif rtype == 'patient':
+            if not isinstance(body, dict):
+                self.send_json(400, {'error': 'Body must be a JSON object'}); return
+            doc = load_or_create_patient(key)
+            # Replace top-level fields except patientuid/createdAt
+            for k, v in body.items():
+                if k in ('patientuid', 'createdAt'): continue
+                doc[k] = v
+            save_patient(key, doc)
+            self.send_json(200, {'ok': True})
+
+        elif rtype == 'patient-context':
+            if not isinstance(body, dict):
+                self.send_json(400, {'error': 'Body must be a JSON object'}); return
+            doc = load_or_create_patient(key)
+            # Merge so other features' context fields are preserved
+            ctx = doc.get('context') or {}
+            for k, v in body.items():
+                if v is not None and v != '':
+                    ctx[k] = v
+            doc['context'] = ctx
+            save_patient(key, doc)
+            self.send_json(200, {'ok': True})
+
+        elif rtype == 'patient-adr':
+            if not isinstance(body, dict):
+                self.send_json(400, {'error': 'Body must be a JSON object'}); return
+            doc = load_or_create_patient(key)
+            doc['adrTimeline'] = body
+            save_patient(key, doc)
+            self.send_json(200, {'ok': True})
+
+        elif rtype == 'patient-medcache':
+            if not isinstance(body, dict):
+                self.send_json(400, {'error': 'Body must be a JSON object'}); return
+            doc = load_or_create_patient(key)
+            cache = doc.get('medicationCache') or {}
+            body.setdefault('fetchedAt', _now_iso())
+            cache[item_id] = body
+            doc['medicationCache'] = cache
+            save_patient(key, doc)
             self.send_json(200, {'ok': True})
 
         elif rtype == 'users':
@@ -744,6 +902,7 @@ def main():
     KS_FILES_DIR.mkdir(parents=True, exist_ok=True)
     SCHEDULE_DIR.mkdir(parents=True, exist_ok=True)
     TEMP_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    PATIENTS_DIR.mkdir(parents=True, exist_ok=True)
     WWW_DIR.mkdir(parents=True, exist_ok=True)
     for col in KS_COLS:
         p = ks_file(col)
