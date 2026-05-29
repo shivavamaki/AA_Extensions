@@ -38,7 +38,9 @@ body {
 }
 .brand { min-width: 260px; }
 .brand h1 { margin: 2px 0 0; font-size: 20px; line-height: 1.1; }
-.eyebrow { color: #cbd5e1; font-size: 12px; }
+.eyebrow { color: #cbd5e1; font-size: 12px; display: flex; gap: 8px; align-items: center; }
+.month-picker { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.25); border-radius: 8px; padding: 2px 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.month-picker option { color: #0f172a; background: #fff; }
 .top-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .mini-kpi { min-width: 68px; border-radius: 14px; padding: 7px 9px; background: rgba(255,255,255,0.10); text-align: center; }
 .mini-kpi strong { display: block; font-size: 18px; line-height: 1; }
@@ -76,6 +78,9 @@ th.total-col, td.total-col { width: 45px; min-width: 45px; max-width: 45px; }
 .weekend { background: var(--pink) !important; }
 .cell-btn { width: 100%; min-width: 0; padding: 4px 2px; border-radius: 7px; font-size: clamp(8px, 0.55vw, 10px); line-height: 1.05; box-shadow: none !important; overflow: hidden; text-overflow: ellipsis; }
 .cell-off { background: var(--rose); color: #e11d48; border-color: #ffe4e6; }
+.cell-blank { background: #ffffff; color: #cbd5e1; border-color: #e2e8f0; min-height: 22px; }
+.cell-blank:hover { background: #f8fafc; border-color: #94a3b8; }
+.cell-note-dot { display: inline-block; margin-left: 2px; font-size: 9px; line-height: 1; vertical-align: middle; color: #4338ca; }
 .cell-req { background: var(--violet); color: #6d28d9; border-color: #ddd6fe; }
 .cell-pt { background: var(--green); color: #047857; border-color: #bbf7d0; }
 .cell-admin { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; box-shadow: inset 0 0 0 1px #93c5fd !important; }
@@ -189,6 +194,41 @@ input, select { width: 100%; margin-top: 4px; padding: 7px 9px; border-radius: 1
 .icon-button { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 20px; line-height: 1; }
 textarea { width: 100%; margin-top: 4px; padding: 9px; border-radius: 10px; border: 1px solid var(--line); font: inherit; resize: vertical; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+/* Override-role checkbox row inside the shift editor modal */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  color: #92400e;
+  cursor: pointer;
+  font-weight: 600;
+  user-select: none;
+  transition: background .15s, border-color .15s;
+}
+.checkbox-label:hover { background: #fef3c7; border-color: #fbbf24; }
+.checkbox-label input[type="checkbox"] {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #d97706;
+}
+.checkbox-label .checkbox-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.checkbox-label .checkbox-text strong { font-size: 13px; font-weight: 700; color: #92400e; }
+.checkbox-label .checkbox-text em    { font-size: 11px; font-style: normal; color: #b45309; font-weight: 500; }
 
 @media (max-height: 760px) {
   .main-fit { grid-template-rows: minmax(430px, 78vh) auto; }

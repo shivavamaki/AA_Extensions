@@ -3119,74 +3119,96 @@ function loadKsPreview() {
   loadKsVdosPreview();
 }
 
-function loadKsFaqPreview() {
+/* Pharmacy-server fetch helper for the three KS collections.
+   No localStorage caching — always pull fresh so other workstations'
+   additions appear immediately. */
+const KS_SERVER = REPORT_SERVER; // both already point to the pharmacy server
+async function ksFetchCollection(col) {
+  try {
+    const r = await fetch(`${KS_SERVER}/api/${col}`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    return Array.isArray(data) ? data : [];
+  } catch { return null; }
+}
+
+async function loadKsFaqPreview() {
   const el = document.getElementById('ksFaqList');
   if (!el) return;
-  try {
-    const faqs = JSON.parse(localStorage.getItem('bkn_ks.faqs.v1')) || [];
-    if (!faqs.length) {
-      el.innerHTML = '<div class="formula-empty">ยังไม่มีข้อมูล — เปิด Knowledge App เพื่อดูเพิ่มเติม</div>';
-      return;
-    }
-    el.innerHTML = faqs.slice(0, 3).map(f => `
-      <div class="ks-preview-item" data-ks-open="faqs">
-        <span class="ks-preview-icon">💬</span>
-        <div class="ks-preview-text">
-          <div class="ks-preview-title">${escKs(f.question)}</div>
-        </div>
-      </div>`).join('');
-    el.querySelectorAll('[data-ks-open]').forEach(item => {
-      item.addEventListener('click', () => chrome.tabs.create({ url: knowledgeUrl('faqs') }));
-    });
-  } catch { el.innerHTML = '<div class="formula-empty">เปิด Knowledge App เพื่อดู FAQs</div>'; }
+  el.innerHTML = '<div class="formula-empty">⏳ กำลังโหลด...</div>';
+  const faqs = await ksFetchCollection('faqs');
+  if (faqs === null) {
+    el.innerHTML = '<div class="formula-empty">⚠ ไม่สามารถเชื่อมต่อ Pharmacy server</div>';
+    return;
+  }
+  if (!faqs.length) {
+    el.innerHTML = '<div class="formula-empty">ยังไม่มีข้อมูล — เปิด Knowledge App เพื่อเพิ่ม FAQ</div>';
+    return;
+  }
+  el.innerHTML = faqs.slice(0, 3).map(f => `
+    <div class="ks-preview-item" data-ks-open="faqs">
+      <span class="ks-preview-icon">💬</span>
+      <div class="ks-preview-text">
+        <div class="ks-preview-title">${escKs(f.question)}</div>
+      </div>
+    </div>`).join('');
+  el.querySelectorAll('[data-ks-open]').forEach(item => {
+    item.addEventListener('click', () => chrome.tabs.create({ url: knowledgeUrl('faqs') }));
+  });
 }
 
-function loadKsItemsPreview() {
+async function loadKsItemsPreview() {
   const el = document.getElementById('ksItemsList');
   if (!el) return;
-  try {
-    const items = JSON.parse(localStorage.getItem('bkn_ks.items.v1')) || [];
-    if (!items.length) {
-      el.innerHTML = '<div class="formula-empty">ยังไม่มีรายการยาใหม่</div>';
-      return;
-    }
-    const sorted = [...items].sort((a, b) => new Date(b.addedDate) - new Date(a.addedDate));
-    el.innerHTML = sorted.slice(0, 3).map(i => `
-      <div class="ks-preview-item" data-ks-open="items">
-        <span class="ks-preview-icon">💊</span>
-        <div class="ks-preview-text">
-          <div class="ks-preview-title">${escKs(i.name)}</div>
-          ${i.generic ? `<div class="ks-preview-sub">${escKs(i.generic)}</div>` : ''}
-        </div>
-      </div>`).join('');
-    el.querySelectorAll('[data-ks-open]').forEach(item => {
-      item.addEventListener('click', () => chrome.tabs.create({ url: knowledgeUrl('items') }));
-    });
-  } catch { el.innerHTML = '<div class="formula-empty">เปิด Knowledge App เพื่อดูรายการ</div>'; }
+  el.innerHTML = '<div class="formula-empty">⏳ กำลังโหลด...</div>';
+  const items = await ksFetchCollection('items');
+  if (items === null) {
+    el.innerHTML = '<div class="formula-empty">⚠ ไม่สามารถเชื่อมต่อ Pharmacy server</div>';
+    return;
+  }
+  if (!items.length) {
+    el.innerHTML = '<div class="formula-empty">ยังไม่มีรายการยาใหม่</div>';
+    return;
+  }
+  const sorted = [...items].sort((a, b) => new Date(b.addedDate) - new Date(a.addedDate));
+  el.innerHTML = sorted.slice(0, 3).map(i => `
+    <div class="ks-preview-item" data-ks-open="items">
+      <span class="ks-preview-icon">💊</span>
+      <div class="ks-preview-text">
+        <div class="ks-preview-title">${escKs(i.name)}</div>
+        ${i.generic ? `<div class="ks-preview-sub">${escKs(i.generic)}</div>` : ''}
+      </div>
+    </div>`).join('');
+  el.querySelectorAll('[data-ks-open]').forEach(item => {
+    item.addEventListener('click', () => chrome.tabs.create({ url: knowledgeUrl('items') }));
+  });
 }
 
-function loadKsVdosPreview() {
+async function loadKsVdosPreview() {
   const el = document.getElementById('ksVdosList');
   if (!el) return;
-  try {
-    const vdos = JSON.parse(localStorage.getItem('bkn_ks.vdos.v1')) || [];
-    if (!vdos.length) {
-      el.innerHTML = '<div class="formula-empty">ยังไม่มีวิดีโอ</div>';
-      return;
-    }
-    const sorted = [...vdos].sort((a, b) => new Date(b.addedDate) - new Date(a.addedDate));
-    el.innerHTML = sorted.slice(0, 3).map(v => `
-      <div class="ks-preview-item" data-ks-open="vdos">
-        <span class="ks-preview-icon">🎬</span>
-        <div class="ks-preview-text">
-          <div class="ks-preview-title">${escKs(v.title)}</div>
-          ${v.duration ? `<div class="ks-preview-sub">${escKs(v.duration)}</div>` : ''}
-        </div>
-      </div>`).join('');
-    el.querySelectorAll('[data-ks-open]').forEach(item => {
-      item.addEventListener('click', () => chrome.tabs.create({ url: knowledgeUrl('vdos') }));
-    });
-  } catch { el.innerHTML = '<div class="formula-empty">เปิด Knowledge App เพื่อดูวิดีโอ</div>'; }
+  el.innerHTML = '<div class="formula-empty">⏳ กำลังโหลด...</div>';
+  const vdos = await ksFetchCollection('vdos');
+  if (vdos === null) {
+    el.innerHTML = '<div class="formula-empty">⚠ ไม่สามารถเชื่อมต่อ Pharmacy server</div>';
+    return;
+  }
+  if (!vdos.length) {
+    el.innerHTML = '<div class="formula-empty">ยังไม่มีวิดีโอ</div>';
+    return;
+  }
+  const sorted = [...vdos].sort((a, b) => new Date(b.addedDate) - new Date(a.addedDate));
+  el.innerHTML = sorted.slice(0, 3).map(v => `
+    <div class="ks-preview-item" data-ks-open="vdos">
+      <span class="ks-preview-icon">🎬</span>
+      <div class="ks-preview-text">
+        <div class="ks-preview-title">${escKs(v.title)}</div>
+        ${v.duration ? `<div class="ks-preview-sub">${escKs(v.duration)}</div>` : ''}
+      </div>
+    </div>`).join('');
+  el.querySelectorAll('[data-ks-open]').forEach(item => {
+    item.addEventListener('click', () => chrome.tabs.create({ url: knowledgeUrl('vdos') }));
+  });
 }
 
 function escKs(v) {

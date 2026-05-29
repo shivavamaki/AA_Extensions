@@ -1,0 +1,383 @@
+{
+  "staff": [
+    {
+      "id": "P01",
+      "name": "เกษราภรณ์",
+      "target": 168,
+      "status": "deputy",
+      "skills": [
+        "D",
+        "M",
+        "H"
+      ]
+    },
+    {
+      "id": "P02",
+      "name": "อัปสร",
+      "target": 202,
+      "status": "general",
+      "skills": [
+        "D",
+        "M",
+        "H",
+        "V"
+      ]
+    },
+    {
+      "id": "P03",
+      "name": "ปิยะธิดา",
+      "target": 205,
+      "status": "general",
+      "skills": [
+        "D",
+        "M",
+        "O",
+        "V"
+      ]
+    },
+    {
+      "id": "P04",
+      "name": "ภัทรานิษฐ์",
+      "target": 202,
+      "status": "clinical",
+      "skills": [
+        "D",
+        "O",
+        "H",
+        "Che"
+      ]
+    },
+    {
+      "id": "P05",
+      "name": "สุชีรา",
+      "target": 202,
+      "status": "general",
+      "skills": [
+        "D",
+        "M",
+        "V"
+      ]
+    },
+    {
+      "id": "P06",
+      "name": "อคิราภ์",
+      "target": 205,
+      "status": "general",
+      "skills": [
+        "D",
+        "O",
+        "H",
+        "V"
+      ]
+    },
+    {
+      "id": "P07",
+      "name": "ชนินาถ",
+      "target": 201,
+      "status": "general",
+      "skills": [
+        "D",
+        "M",
+        "O",
+        "V"
+      ]
+    },
+    {
+      "id": "P08",
+      "name": "ปัทมพร",
+      "target": 201,
+      "status": "general",
+      "skills": [
+        "D",
+        "O",
+        "V"
+      ]
+    },
+    {
+      "id": "P09",
+      "name": "เบญศ์",
+      "target": 202,
+      "status": "general",
+      "skills": [
+        "D",
+        "O",
+        "H"
+      ]
+    },
+    {
+      "id": "P10",
+      "name": "ปุณยพร",
+      "target": 202,
+      "status": "general",
+      "skills": [
+        "D",
+        "M",
+        "V"
+      ]
+    },
+    {
+      "id": "P11",
+      "name": "เปรมวนันท์",
+      "target": 202,
+      "status": "clinical",
+      "skills": [
+        "D",
+        "O",
+        "H"
+      ]
+    },
+    {
+      "id": "P12",
+      "name": "เมราวี",
+      "target": 201,
+      "status": "general",
+      "skills": [
+        "D",
+        "M",
+        "O"
+      ]
+    },
+    {
+      "id": "P13",
+      "name": "พิจารณ",
+      "target": 201,
+      "status": "general",
+      "skills": [
+        "D",
+        "O",
+        "V"
+      ]
+    },
+    {
+      "id": "P14",
+      "name": "ศิวาวุธ",
+      "target": 204,
+      "status": "clinical",
+      "skills": [
+        "C2",
+        "O"
+      ]
+    },
+    {
+      "id": "P15",
+      "name": "อนัญญา",
+      "target": 202,
+      "status": "clinical",
+      "skills": [
+        "C1",
+        "D",
+        "M"
+      ]
+    },
+    {
+      "id": "P16",
+      "name": "นาตยา",
+      "target": 203,
+      "status": "clinical",
+      "skills": [
+        "C1",
+        "D",
+        "O"
+      ]
+    },
+    {
+      "id": "P17",
+      "name": "ชนาภา",
+      "target": 203,
+      "status": "clinical",
+      "skills": [
+        "C1",
+        "D",
+        "O"
+      ]
+    },
+    {
+      "id": "P18",
+      "name": "ธัญธิตา",
+      "target": 204,
+      "status": "clinical",
+      "skills": [
+        "C1",
+        "D",
+        "O"
+      ]
+    },
+    {
+      "id": "P19",
+      "name": "อุดมชัย",
+      "target": 201,
+      "status": "general",
+      "skills": [
+        "C2",
+        "D",
+        "O"
+      ]
+    },
+    {
+      "id": "P20",
+      "name": "ภาณนี",
+      "target": 201,
+      "status": "general",
+      "skills": [
+        "C2",
+        "D",
+        "V"
+      ]
+    }
+  ],
+  "requests": {},
+  "parttimeAvailability": {},
+  "adminOverrides": {},
+  "shiftTemplates": {
+    "OFF": {
+      "label": "OFF",
+      "hours": 0,
+      "type": "OFF",
+      "dayGroup": "system",
+      "system": true
+    },
+    "REQ_OFF": {
+      "label": "REQ OFF",
+      "hours": 0,
+      "type": "OFF",
+      "dayGroup": "system",
+      "system": true
+    },
+    "PT_AVAILABLE": {
+      "label": "PT Available",
+      "hours": 0,
+      "type": "available",
+      "dayGroup": "system",
+      "system": true
+    },
+    "C1": {
+      "label": "C1",
+      "hours": 9,
+      "type": "Clinic",
+      "dayGroup": "both"
+    },
+    "C2": {
+      "label": "C2",
+      "hours": 9,
+      "type": "Clinic",
+      "dayGroup": "both"
+    },
+    "8-16 Office": {
+      "label": "8-16 Office",
+      "hours": 8,
+      "type": "Office",
+      "dayGroup": "weekday",
+      "optional": true
+    },
+    "9-18IV": {
+      "label": "9-18IV",
+      "hours": 9,
+      "type": "IPD",
+      "dayGroup": "both"
+    },
+    "7-15I": {
+      "label": "7-15I",
+      "hours": 8,
+      "type": "IPD",
+      "dayGroup": "both"
+    },
+    "10-20HM": {
+      "label": "10-20HM",
+      "hours": 10,
+      "type": "IPD",
+      "dayGroup": "both"
+    },
+    "8-16HM": {
+      "label": "8-16HM",
+      "hours": 8,
+      "type": "IPD",
+      "dayGroup": "weekend"
+    },
+    "9-17D": {
+      "label": "9-17D",
+      "hours": 8,
+      "type": "IPD",
+      "dayGroup": "both"
+    },
+    "11-21I": {
+      "label": "11-21I",
+      "hours": 10,
+      "type": "IPD",
+      "dayGroup": "both"
+    },
+    "7-15O": {
+      "label": "7-15O",
+      "hours": 8,
+      "type": "OPD",
+      "dayGroup": "weekday"
+    },
+    "7-16O": {
+      "label": "7-16O",
+      "hours": 9,
+      "type": "OPD",
+      "dayGroup": "both"
+    },
+    "10-20M": {
+      "label": "10-20M",
+      "hours": 10,
+      "type": "OPD",
+      "dayGroup": "both"
+    },
+    "9-18O": {
+      "label": "9-18O",
+      "hours": 9,
+      "type": "OPD",
+      "dayGroup": "both"
+    },
+    "20-7O": {
+      "label": "20-7O",
+      "hours": 11,
+      "type": "Night",
+      "dayGroup": "both"
+    },
+    "20-7I": {
+      "label": "20-7I",
+      "hours": 11,
+      "type": "Night",
+      "dayGroup": "both"
+    },
+    "9-20F2": {
+      "label": "9-20F2",
+      "hours": 11,
+      "type": "Floor2",
+      "dayGroup": "both"
+    },
+    "9-16CHE": {
+      "label": "9-16CHE",
+      "hours": 7,
+      "type": "Special",
+      "dayGroup": "both",
+      "special": true,
+      "optional": true
+    },
+    "T": {
+      "label": "T",
+      "hours": 8,
+      "type": "Special",
+      "dayGroup": "both",
+      "special": true,
+      "optional": true
+    }
+  },
+  "allocationRun": 0,
+  "allocationStarted": false,
+  "reqOffLocked": true,
+  "lockedDays": [],
+  "settings": {
+    "targetMode": "manual",
+    "manualTarget": "202",
+    "minOff": "6",
+    "maxStreak": "6"
+  },
+  "month": "2026-07",
+  "bookingRules": {
+    "maxDays": 6,
+    "maxSat": 1,
+    "maxSun": 1
+  }
+}

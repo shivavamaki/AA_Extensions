@@ -1,31 +1,36 @@
+/* No per-month night or weekend caps — set to Infinity so canAssign never
+   blocks on those soft limits. Only hard rules apply (canNight / canWeekend,
+   role matrix, max consecutive nights, max work streak). */
+const NO_CAP = Infinity;
+
 const statusProfiles = {
   general: {
     label: "General Pharmacy",
     targetFactor: 1,
     canNight: true,
     canWeekend: true,
-    maxNight: 6,
-    maxWeekend: 6,
+    maxNight: NO_CAP,
+    maxWeekend: NO_CAP,
     shiftPreference: ["Clinic", "OPD", "IPD", "Night", "Floor2", "Special"],
     description: "Can fill all required operational shifts except Office. Special is allowed only by admin manual assignment."
   },
   clinical: {
     label: "Clinical Pharmacy",
     targetFactor: 1,
-    canNight: false,
-    canWeekend: false,
-    maxNight: 0,
-    maxWeekend: 1,
-    shiftPreference: ["Clinic"],
-    description: "Must fill Clinic shifts first. If C1/C2 are already filled that day, can cover other non-night shifts."
+    canNight: true,
+    canWeekend: true,
+    maxNight: NO_CAP,
+    maxWeekend: NO_CAP,
+    shiftPreference: ["Clinic", "Night"],
+    description: "Must fill Clinic shifts first. If C1/C2 are already filled that day, can cover other shifts (Night and weekend allowed)."
   },
   hod: {
     label: "HOD",
     targetFactor: 0,
     canNight: false,
     canWeekend: false,
-    maxNight: 0,
-    maxWeekend: 0,
+    maxNight: NO_CAP,
+    maxWeekend: NO_CAP,
     shiftPreference: ["Office", "Special"],
     description: "Can only fill Office and Special shifts; excluded from common required shift allocation."
   },
@@ -34,8 +39,8 @@ const statusProfiles = {
     targetFactor: 0.85,
     canNight: false,
     canWeekend: true,
-    maxNight: 0,
-    maxWeekend: 2,
+    maxNight: NO_CAP,
+    maxWeekend: NO_CAP,
     shiftPreference: ["Office", "OPD", "IPD", "Clinic", "Floor2"],
     description: "Default office shift 08:00-16:00. Can cover other non-night shifts only if manpower is not enough."
   },
@@ -44,10 +49,10 @@ const statusProfiles = {
     targetFactor: 0.45,
     canNight: false,
     canWeekend: true,
-    maxNight: 0,
-    maxWeekend: 8,
-    shiftPreference: ["OPD", "IPD", "Office", "Floor2", "Special"],
-    description: "Can be allocated only on self-booked available days. Night shift is not allowed."
+    maxNight: NO_CAP,
+    maxWeekend: NO_CAP,
+    shiftPreference: ["OPD", "IPD", "Clinic", "Floor2"],
+    description: "Can be allocated only on self-booked available days. Not allowed: Office, Night, Special."
   }
 };
 
@@ -88,7 +93,7 @@ let shiftTemplates = {
   "9-17D": { label: "9-17D", hours: 8, type: "IPD", dayGroup: "both" },
   "11-21I": { label: "11-21I", hours: 10, type: "IPD", dayGroup: "both" },
   "7-15O": { label: "7-15O", hours: 8, type: "OPD", dayGroup: "weekday" },
-  "7-16O": { label: "7-16O", hours: 9, type: "OPD", dayGroup: "both" },
+  "7-16O": { label: "7-16O", hours: 9, type: "OPD", dayGroup: "weekend" },
   "10-20M": { label: "10-20M", hours: 10, type: "OPD", dayGroup: "both" },
   "9-18O": { label: "9-18O", hours: 9, type: "OPD", dayGroup: "both" },
   "20-7O": { label: "20-7O", hours: 11, type: "Night", dayGroup: "both" },
@@ -98,11 +103,18 @@ let shiftTemplates = {
   "T": { label: "T", hours: 8, type: "Special", dayGroup: "both", special: true, optional: true }
 };
 
-const dateMeta = Array.from({ length: 30 }, (_, i) => {
-  const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const dow = weekdays[i % 7];
-  return { day: i + 1, dow, weekend: dow === "Sat" || dow === "Sun", saturday: dow === "Sat", sunday: dow === "Sun" };
-});
+/* dateMeta is rebuilt whenever the selected month changes */
+const DOW_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+function buildDateMeta(monthKey) {
+  const [y, m] = monthKey.split("-").map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  return Array.from({ length: daysInMonth }, (_, i) => {
+    const d = new Date(y, m - 1, i + 1);
+    const dow = DOW_NAMES[d.getDay()];
+    return { day: i + 1, dow, weekend: dow === "Sat" || dow === "Sun", saturday: dow === "Sat", sunday: dow === "Sun" };
+  });
+}
+let dateMeta = buildDateMeta(typeof currentMonthKey !== "undefined" ? currentMonthKey : "2026-06");
 
 const SHIFT_TYPE_OPTIONS = ["Clinic", "Office", "IPD", "OPD", "Night", "Floor2", "OFF", "Special"];
 const SHIFT_DAY_GROUP_OPTIONS = ["weekday", "weekend", "both"];
@@ -157,9 +169,20 @@ let allocationStarted = false;
 let reqOffLocked = false;
 let isDirty = false;
 let lockedDays = new Set();
-const STORAGE_KEY = "pharmacyScheduleStateV5_BOOKING";
+/* bookingNotes[personId][dayIndex] = "preferred shift / reason text" */
+let bookingNotes = {};
+const STORAGE_KEY_BASE = "pharmacyScheduleStateV5_BOOKING";
 const BOOKING_STORAGE_KEY = "pharmacyMonthlyBookingsV1";
-const SCHEDULE_MONTH_KEY = "2026-06";
+const SCHEDULE_MONTH_STORAGE_KEY = "pharmacyScheduleSelectedMonthV1";
+function _currentMonthKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+let SCHEDULE_MONTH_KEY = localStorage.getItem(SCHEDULE_MONTH_STORAGE_KEY) || _currentMonthKey();
+/* Month-scoped storage key so each month has its own saved schedule */
+function storageKey() { return `${STORAGE_KEY_BASE}_${SCHEDULE_MONTH_KEY}`; }
+/* Re-sync dateMeta in case stored month differs from initial default */
+dateMeta = buildDateMeta(SCHEDULE_MONTH_KEY);
 
 const $ = (id) => document.getElementById(id);
 
@@ -209,6 +232,13 @@ function normalizeShift(code) {
 
 function makeOffCell(requested = false) {
   return { code: requested ? "REQ OFF" : "OFF", normalized: requested ? "REQ_OFF" : "OFF", requested, ptAvailable: false, locked: requested };
+}
+
+/* Placeholder cell for un-allocated slots during REQ OFF setup mode.
+   Displays empty in the grid. Treated as OFF for scheduling math
+   (zero hours, not a working shift) but distinguishable in the renderer. */
+function makeBlankCell() {
+  return { code: "", normalized: "OFF", requested: false, ptAvailable: false, locked: false, blank: true };
 }
 
 function makePartTimeAvailableCell() {
@@ -276,10 +306,10 @@ function buildRequestOffSchedule() {
   const rows = {};
   staff.forEach((p) => {
     rows[p.id] = dateMeta.map((_, dayIndex) => {
-      if (p.status === "hod") return makeOffCell(false);
+      if (p.status === "hod") return makeBlankCell();
       if (requests[p.id]?.includes(dayIndex)) return makeOffCell(true);
-      if (p.status === "parttime") return parttimeAvailability[p.id]?.includes(dayIndex) ? makePartTimeAvailableCell() : makeOffCell(false);
-      return makeOffCell(false);
+      if (p.status === "parttime") return parttimeAvailability[p.id]?.includes(dayIndex) ? makePartTimeAvailableCell() : makeBlankCell();
+      return makeBlankCell();
     });
   });
   return rows;
@@ -339,14 +369,15 @@ function roleCanFillShift(person, shift, dayIndex, rows) {
   if (person.status === "hod") return type === "Office" || type === "Special";
   if (person.status === "general") return type !== "Office";
   if (person.status === "clinical") {
-    if (type === "Night" || type === "Office") return false;
+    if (type === "Office") return false;
     if (type === "Clinic") return true;
+    if (type === "Night")  return true;
     return clinicalShiftsAlreadyFilled(rows, dayIndex);
   }
   if (person.status === "deputy") return type !== "Night";
   if (person.status === "parttime") {
     const available = (parttimeAvailability[person.id] || []).includes(dayIndex);
-    return available && type !== "Night" && type !== "Office";
+    return available && type !== "Night" && type !== "Office" && type !== "Special";
   }
   return type !== "Office";
 }
@@ -355,6 +386,7 @@ function createRuleBasedSchedule() {
   const target = targetHours();
   const minOffPerMonth = Number($("minOff").value) || 0;
   const maxConsecutiveWork = Number($("maxStreak").value) || 6;
+  const maxConsecutiveNights = Math.max(1, Number($("maxConsecNights")?.value) || 2);
   const rows = {};
 
   staff.forEach((p) => {
@@ -389,12 +421,18 @@ function createRuleBasedSchedule() {
   const hours = Object.fromEntries(staff.map((p) => [p.id, 0]));
   const weekends = Object.fromEntries(staff.map((p) => [p.id, 0]));
   const nights = Object.fromEntries(staff.map((p) => [p.id, 0]));
+  /* Per-type counters for fair distribution after role priorities are met */
+  const typeCounts = Object.fromEntries(staff.map((p) => [p.id, {}]));
 
   Object.entries(rows).forEach(([id, cells]) => {
     cells.forEach((c, i) => {
       hours[id] += getHours(c);
       if (dateMeta[i].weekend && !["OFF", "REQ_OFF", "PT_AVAILABLE"].includes(c.normalized)) weekends[id] += 1;
       if (isNight(c)) nights[id] += 1;
+      const t = shiftTemplates[c.normalized]?.type;
+      if (t && !["OFF", "available", "system"].includes(t)) {
+        typeCounts[id][t] = (typeCounts[id][t] || 0) + 1;
+      }
     });
   });
 
@@ -407,7 +445,16 @@ function createRuleBasedSchedule() {
     return count;
   }
 
-  function canAssign(person, dayIndex, shift) {
+  function consecutiveNightsBefore(id, dayIndex) {
+    let count = 0;
+    for (let i = dayIndex - 1; i >= 0; i--) {
+      if (!isNight(rows[id][i])) break;
+      count += 1;
+    }
+    return count;
+  }
+
+  function canAssign(person, dayIndex, shift, relax = {}) {
     if (lockedDays.has(dayIndex)) return false;
     const profile = statusProfiles[person.status] ?? statusProfiles.general;
     const shiftType = getShiftType(shift);
@@ -421,61 +468,132 @@ function createRuleBasedSchedule() {
     if (person.status === "parttime" && cell.normalized !== "PT_AVAILABLE") return false;
     if (isNight(shift) && !profile.canNight) return false;
     if (date.weekend && !profile.canWeekend) return false;
-    if (isNight(shift) && nights[person.id] >= profile.maxNight) return false;
-    if (date.weekend && weekends[person.id] >= profile.maxWeekend) return false;
+    /* Hard caps — cannot be relaxed even on backfill (safety-critical) */
+    if (isNight(shift) && consecutiveNightsBefore(person.id, dayIndex) >= maxConsecutiveNights) return false;
+    /* Soft caps — relaxed on backfill pass when required coverage still empty */
+    if (!relax.nightsCap   && isNight(shift) && nights[person.id]   >= profile.maxNight)   return false;
+    if (!relax.weekendsCap && date.weekend   && weekends[person.id] >= profile.maxWeekend) return false;
     const prev = rows[person.id][dayIndex - 1];
     if (prev && isNight(prev) && !isNight(shift)) return false;
-    if (consecutiveBefore(person.id, dayIndex) >= maxConsecutiveWork) return false;
-    const currentOff = rows[person.id].filter((c) => c.normalized === "OFF" || c.normalized === "REQ_OFF").length;
-    const remainingDays = 30 - dayIndex - 1;
-    if (person.status !== "parttime" && currentOff <= minOffPerMonth && remainingDays < minOffPerMonth) return false;
+    if (!relax.streak && consecutiveBefore(person.id, dayIndex) >= maxConsecutiveWork) return false;
+    if (!relax.minOff) {
+      const currentOff = rows[person.id].filter((c) => c.normalized === "OFF" || c.normalized === "REQ_OFF").length;
+      const remainingDays = dateMeta.length - dayIndex - 1;
+      if (person.status !== "parttime" && currentOff <= minOffPerMonth && remainingDays < minOffPerMonth) return false;
+    }
     return true;
   }
 
+  /* Status penalty + rotation helpers (used in both scoring passes) */
+  function statusPenalty(person, shiftType, weekend) {
+    const isOffice = shiftType === "Office";
+    const isClinicalCore = shiftType === "Clinic";
+    if (person.status === "hod") return 999;
+    if (person.status === "clinical")  return isClinicalCore ? -45 : 12;
+    if (person.status === "deputy")    return isOffice ? -25 : 18;
+    if (person.status === "parttime" && !weekend) return 8;
+    return 0;
+  }
+  function rotate(person, dayIndex) {
+    return ((Number(person.id.replace("P", "")) || 0) * 17 + dayIndex * 7 + allocationRun * 13) % 11;
+  }
+
+  /* Score a candidate for a given shift on a given day.
+     `fairness` mode amplifies the per-type-count penalty so once role
+     priorities (Clinic/Night) are taken, remaining shifts spread evenly. */
+  function score(person, dayIndex, shift, date, fairness) {
+    const shiftType = getShiftType(shift);
+    const profile = statusProfiles[person.status] ?? statusProfiles.general;
+    const preference = profile.shiftPreference.includes(shiftType) ? 16 : -30;
+    const targetGap = (target[person.id] - hours[person.id]) * 1.25;
+    const burden = weekends[person.id] * (date.weekend ? 5 : 2)
+                 + nights[person.id]   * (isNight(shift) ? 8 : 3);
+    /* Per-type fairness: how many of this shift type does this person already
+       have? Lower is better. Weight is small in priority pass, large in
+       fairness pass so remaining IPD/OPD/Floor2/Special spread evenly. */
+    const typeCount = typeCounts[person.id][shiftType] || 0;
+    const typePenalty = typeCount * (fairness ? 22 : 4);
+    return targetGap + preference - burden - statusPenalty(person, shiftType, date.weekend)
+         - typePenalty + rotate(person, dayIndex);
+  }
+
+  /* Place a candidate into a cell + update all counters */
+  function place(picked, dayIndex, shift, date) {
+    const normalized = normalizeShift(shift);
+    rows[picked.id][dayIndex] = { code: shift, normalized, requested: false, ptAvailable: false, locked: false };
+    hours[picked.id] += shiftTemplates[normalized]?.hours ?? 0;
+    if (date.weekend) weekends[picked.id] += 1;
+    if (isNight(shift)) nights[picked.id] += 1;
+    const t = shiftTemplates[normalized]?.type;
+    if (t && !["OFF", "available", "system"].includes(t)) {
+      typeCounts[picked.id][t] = (typeCounts[picked.id][t] || 0) + 1;
+    }
+  }
+
+  /* ── Pass 1 — Role-priority shifts (Clinic + Night first) ──────────────
+     Clinical pharmacists go to Clinic, qualified staff cover Night.
+     These types have the strongest role bias, so we assign them before
+     the general-purpose shifts to lock in role-driven coverage. */
+  const ROLE_PRIORITY_TYPES = new Set(["Clinic", "Night"]);
   dateMeta.forEach((date, dayIndex) => {
-    coverage(date).forEach((shift) => {
-      if (dayHasShift(rows, dayIndex, shift)) return;
-      const shiftType = getShiftType(shift);
-      const isOffice = shiftType === "Office";
-      const isClinicalCore = shiftType === "Clinic";
-      const candidates = staff
-        .filter((p) => canAssign(p, dayIndex, shift))
-        .sort((a, b) => {
-          const profileA = statusProfiles[a.status] ?? statusProfiles.general;
-          const profileB = statusProfiles[b.status] ?? statusProfiles.general;
-          const preferenceA = profileA.shiftPreference.includes(shiftType) ? 16 : -30;
-          const preferenceB = profileB.shiftPreference.includes(shiftType) ? 16 : -30;
-          const targetGapA = (target[a.id] - hours[a.id]) * 1.25;
-          const targetGapB = (target[b.id] - hours[b.id]) * 1.25;
-          const burdenA = weekends[a.id] * (date.weekend ? 5 : 2) + nights[a.id] * (isNight(shift) ? 8 : 3);
-          const burdenB = weekends[b.id] * (date.weekend ? 5 : 2) + nights[b.id] * (isNight(shift) ? 8 : 3);
-          const statusPenaltyA =
-            a.status === "hod" ? 999 :
-            a.status === "clinical" && isClinicalCore ? -45 :
-            a.status === "clinical" && !isClinicalCore ? 12 :
-            a.status === "deputy" && isOffice ? -25 :
-            a.status === "deputy" && !isOffice ? 18 :
-            a.status === "parttime" && !date.weekend ? 8 : 0;
-          const statusPenaltyB =
-            b.status === "hod" ? 999 :
-            b.status === "clinical" && isClinicalCore ? -45 :
-            b.status === "clinical" && !isClinicalCore ? 12 :
-            b.status === "deputy" && isOffice ? -25 :
-            b.status === "deputy" && !isOffice ? 18 :
-            b.status === "parttime" && !date.weekend ? 8 : 0;
-          const rotateA = ((Number(a.id.replace("P", "")) || 0) * 17 + dayIndex * 7 + allocationRun * 13) % 11;
-          const rotateB = ((Number(b.id.replace("P", "")) || 0) * 17 + dayIndex * 7 + allocationRun * 13) % 11;
-          return (targetGapB + preferenceB - burdenB - statusPenaltyB + rotateB) - (targetGapA + preferenceA - burdenA - statusPenaltyA + rotateA);
-        });
-      const picked = candidates[0];
-      if (!picked) return;
-      const normalized = normalizeShift(shift);
-      rows[picked.id][dayIndex] = { code: shift, normalized, requested: false, ptAvailable: false, locked: false };
-      hours[picked.id] += shiftTemplates[normalized]?.hours ?? 0;
-      if (date.weekend) weekends[picked.id] += 1;
-      if (isNight(shift)) nights[picked.id] += 1;
-    });
+    coverage(date)
+      .filter((shift) => ROLE_PRIORITY_TYPES.has(getShiftType(shift)))
+      .forEach((shift) => {
+        if (dayHasShift(rows, dayIndex, shift)) return;
+        const candidates = staff
+          .filter((p) => canAssign(p, dayIndex, shift))
+          .sort((a, b) => score(b, dayIndex, shift, date, false) - score(a, dayIndex, shift, date, false));
+        const picked = candidates[0];
+        if (!picked) return;
+        place(picked, dayIndex, shift, date);
+      });
   });
+
+  /* ── Pass 2 — Fair-distribution shifts (IPD, OPD, Office, Floor2, Special) ──
+     Now allocate remaining shifts with strong per-type fairness.
+     Equal-count distribution is the primary goal here. */
+  dateMeta.forEach((date, dayIndex) => {
+    coverage(date)
+      .filter((shift) => !ROLE_PRIORITY_TYPES.has(getShiftType(shift)))
+      .forEach((shift) => {
+        if (dayHasShift(rows, dayIndex, shift)) return;
+        const candidates = staff
+          .filter((p) => canAssign(p, dayIndex, shift))
+          .sort((a, b) => score(b, dayIndex, shift, date, true) - score(a, dayIndex, shift, date, true));
+        const picked = candidates[0];
+        if (!picked) return;
+        place(picked, dayIndex, shift, date);
+      });
+  });
+
+  /* ── Backfill pass — focus on filling missing REQUIRED shifts ──────────
+     Iterate any still-missing required shifts and relax soft caps in stages
+     (streak → weekends cap → minOff → nights cap). The hard rules
+     (consecutiveNights, night→day, locked, manual, requested, role)
+     remain strict. */
+  function tryFill(relax) {
+    dateMeta.forEach((date, dayIndex) => {
+      getRequiredCoverageShiftsForDay(date).forEach((shift) => {
+        if (dayHasShift(rows, dayIndex, shift)) return;
+        const candidates = staff.filter((p) => canAssign(p, dayIndex, shift, relax));
+        if (!candidates.length) return;
+        /* Combine target gap + type-count fairness so backfill stays even */
+        candidates.sort((a, b) => {
+          const ta = getShiftType(shift);
+          const ca = (typeCounts[a.id][ta] || 0), cb = (typeCounts[b.id][ta] || 0);
+          const gapA = target[a.id] - hours[a.id], gapB = target[b.id] - hours[b.id];
+          return (gapB - cb * 8) - (gapA - ca * 8);
+        });
+        const picked = candidates[0];
+        place(picked, dayIndex, shift, date);
+      });
+    });
+  }
+  /* Progressive relaxation stages */
+  tryFill({ streak: true });
+  tryFill({ streak: true, weekendsCap: true });
+  tryFill({ streak: true, weekendsCap: true, minOff: true });
+  tryFill({ streak: true, weekendsCap: true, minOff: true, nightsCap: true });
 
   return rows;
 }
@@ -495,14 +613,27 @@ function evaluate(schedule) {
     const weekend = cells.filter((c, i) => dateMeta[i].weekend && !["OFF", "REQ_OFF", "PT_AVAILABLE"].includes(c.normalized)).length;
     let maxStreak = 0;
     let streak = 0;
+    let maxNightStreak = 0;
+    let nightStreak = 0;
+    const typeBreakdown = {};
     cells.forEach((c) => {
       if (["OFF", "REQ_OFF", "PT_AVAILABLE"].includes(c.normalized)) streak = 0;
       else {
         streak += 1;
         maxStreak = Math.max(maxStreak, streak);
       }
+      if (isNight(c)) {
+        nightStreak += 1;
+        maxNightStreak = Math.max(maxNightStreak, nightStreak);
+      } else {
+        nightStreak = 0;
+      }
+      const t = shiftTemplates[c.normalized]?.type;
+      if (t && !["OFF", "available", "system"].includes(t)) {
+        typeBreakdown[t] = (typeBreakdown[t] || 0) + 1;
+      }
     });
-    return { ...p, total, target: target[p.id] ?? p.target, diff: total - (target[p.id] ?? p.target), off, requestedOff, requestedSat, requestedSun, ptAvailable, adminChanged, night, weekend, maxStreak };
+    return { ...p, total, target: target[p.id] ?? p.target, diff: total - (target[p.id] ?? p.target), off, requestedOff, requestedSat, requestedSun, ptAvailable, adminChanged, night, weekend, maxStreak, maxNightStreak, typeBreakdown };
   });
 
   const totalDiff = rows.reduce((sum, r) => sum + Math.abs(r.diff), 0);
@@ -518,7 +649,25 @@ function evaluate(schedule) {
     if (r.requestedSun > 1) violations.push(`${r.name}: requested Sunday OFF exceeds 1 day`);
     if (r.status === "parttime" && r.ptAvailable === 0 && r.total > 0) violations.push(`${r.name}: Part time assigned without self-booked availability`);
     if (!profile.canNight && r.night > 0) violations.push(`${r.name}: ${profile.label} should not take night shift`);
-    if (r.weekend > profile.maxWeekend) violations.push(`${r.name}: weekend shift exceeds ${profile.label} limit`);
+    if (Number.isFinite(profile.maxWeekend) && r.weekend > profile.maxWeekend) violations.push(`${r.name}: weekend shift exceeds ${profile.label} limit`);
+    const maxConsecNights = Math.max(1, Number($("maxConsecNights")?.value) || 2);
+    if (r.maxNightStreak > maxConsecNights) violations.push(`${r.name}: ${r.maxNightStreak} nights in a row exceeds max ${maxConsecNights}`);
+  });
+
+  /* Fair-distribution check: for each non-priority shift type (IPD/OPD/Floor2/Office/Special),
+     compute the spread among eligible regular pharmacists. Spread > 3 flags as unfair. */
+  const NON_PRIORITY_TYPES = ["IPD", "OPD", "Floor2", "Office", "Special"];
+  NON_PRIORITY_TYPES.forEach((t) => {
+    const counts = rows
+      .filter((r) => r.status !== "hod" && (r.typeBreakdown[t] !== undefined))
+      .map((r) => ({ name: r.name, n: r.typeBreakdown[t] || 0 }));
+    if (counts.length < 2) return;
+    const max = Math.max(...counts.map((c) => c.n));
+    const min = Math.min(...counts.map((c) => c.n));
+    if (max - min > 3) {
+      const top = counts.find((c) => c.n === max), low = counts.find((c) => c.n === min);
+      violations.push(`Unfair ${t} distribution: ${top.name} ${max} vs ${low.name} ${min} (spread ${max - min})`);
+    }
   });
 
   Object.entries(schedule).forEach(([id, cells]) => {
@@ -603,22 +752,23 @@ function toggleCell(personId, dayIndex) {
   render();
 }
 
-function getDailyShiftOptions(dayIndex, person) {
+function getDailyShiftOptions(dayIndex, person, overrideRoleLimits = false) {
   const day = dateMeta[dayIndex];
   let shifts = [...getCoverageShiftsForDay(day), ...Object.keys(shiftTemplates).filter((code) => shiftTemplates[code]?.special && shiftAllowedOnDay(code, day))];
-  const current = lastSchedule[person.id]?.[dayIndex];
-  const currentNormalized = current?.manual ? current.normalized : null;
   const typeAllowed = (shift) => {
     const normalized = normalizeShift(shift);
     const type = getShiftType(shift);
     if (normalized === "REQ_OFF") return false;
     const prev = lastSchedule[person.id]?.[dayIndex - 1];
     if (prev && isNight(prev) && type !== "Night" && normalized !== "OFF") return false;
-    if (!roleCanFillShift(person, normalized, dayIndex, lastSchedule) && normalized !== "OFF" && normalized !== "PT_AVAILABLE") return false;
-    if (type === "Night" && !(statusProfiles[person.status] || statusProfiles.general).canNight) return false;
+    /* Role / status checks bypassed when admin enables override */
+    if (!overrideRoleLimits) {
+      if (!roleCanFillShift(person, normalized, dayIndex, lastSchedule) && normalized !== "OFF" && normalized !== "PT_AVAILABLE") return false;
+      if (type === "Night" && !(statusProfiles[person.status] || statusProfiles.general).canNight) return false;
+    }
     return shiftAllowedOnDay(normalized, day);
   };
-  shifts = shifts.filter(typeAllowed).filter((shift) => !dayHasShift(lastSchedule, dayIndex, shift, person.id) || normalizeShift(shift) === currentNormalized);
+  shifts = shifts.filter(typeAllowed);
   return shifts;
 }
 
@@ -634,22 +784,56 @@ function openShiftEditor(personId, dayIndex) {
   const day = dateMeta[dayIndex];
   const cell = lastSchedule[personId]?.[dayIndex] || makeOffCell(false);
   const override = getOverride(personId, dayIndex);
-  const options = getDailyShiftOptions(dayIndex, person);
+  if ($("overrideRole")) $("overrideRole").checked = false;
   const select = $("shiftSelect");
   const ptAvailable = (parttimeAvailability[personId] || []).includes(dayIndex);
-  let optionHtml = `<option value="OFF">OFF / No operational shift</option>`;
-  if (person.status === "parttime") {
-    optionHtml += `<option value="PT_AVAILABLE" ${cell.normalized === "PT_AVAILABLE" ? "selected" : ""}>Part-time available only</option>`;
+
+  function _holderOf(shift) {
+    const norm = normalizeShift(shift);
+    if (!isOperationalShiftCode(norm)) return null;
+    const holders = staff
+      .filter((p) => p.id !== personId)
+      .filter((p) => normalizeShift(lastSchedule[p.id]?.[dayIndex]?.normalized) === norm)
+      .map((p) => p.name);
+    return holders.length ? holders.join(", ") : null;
   }
-  const regularOptions = options.filter((shift) => !shiftTemplates[normalizeShift(shift)]?.special);
-  const specialOptions = options.filter((shift) => shiftTemplates[normalizeShift(shift)]?.special);
-  optionHtml += regularOptions.map((shift) => `<option value="${shift}" ${cell.normalized === normalizeShift(shift) ? "selected" : ""}>${shiftTemplates[normalizeShift(shift)]?.label || shift} · ${shiftTemplates[normalizeShift(shift)]?.hours || 0} hr</option>`).join("");
-  if (specialOptions.length) {
-    optionHtml += `<optgroup label="─── Special ───">${specialOptions.map((shift) => `<option value="${shift}" ${cell.normalized === normalizeShift(shift) ? "selected" : ""}>${shiftTemplates[normalizeShift(shift)]?.label || shift} · ${shiftTemplates[normalizeShift(shift)]?.hours || 0} hr</option>`).join("")}</optgroup>`;
+  function _renderOpt(shift) {
+    const norm = normalizeShift(shift);
+    const label = shiftTemplates[norm]?.label || shift;
+    const hours = shiftTemplates[norm]?.hours || 0;
+    const holder = _holderOf(shift);
+    const suffix = holder ? ` ⚠️ currently ${holder}` : "";
+    return `<option value="${shift}" ${cell.normalized === norm ? "selected" : ""}>${label} · ${hours} hr${suffix}</option>`;
   }
-  select.innerHTML = optionHtml;
-  select.value = override?.shift || (cell.manual ? cell.normalized : cell.normalized === "PT_AVAILABLE" ? "PT_AVAILABLE" : cell.normalized === "REQ_OFF" ? "OFF" : cell.normalized);
-  if (!select.value || !Array.from(select.options).some((opt) => opt.value === select.value)) select.value = "OFF";
+
+  /* Rebuildable option list — re-runs when admin toggles "Override role limits" */
+  function _rebuildShiftOptions() {
+    const overrideOn = $("overrideRole")?.checked || false;
+    const options = getDailyShiftOptions(dayIndex, person, overrideOn);
+    let optionHtml = `<option value="OFF">OFF / No operational shift</option>`;
+    if (person.status === "parttime") {
+      optionHtml += `<option value="PT_AVAILABLE" ${cell.normalized === "PT_AVAILABLE" ? "selected" : ""}>Part-time available only</option>`;
+    }
+    const regularOptions = options.filter((shift) => !shiftTemplates[normalizeShift(shift)]?.special);
+    const specialOptions = options.filter((shift) =>  shiftTemplates[normalizeShift(shift)]?.special);
+    optionHtml += regularOptions.map(_renderOpt).join("");
+    if (specialOptions.length) {
+      optionHtml += `<optgroup label="─── Special ───">${specialOptions.map(_renderOpt).join("")}</optgroup>`;
+    }
+    select.innerHTML = optionHtml;
+    select.value = override?.shift || (cell.manual ? cell.normalized : cell.normalized === "PT_AVAILABLE" ? "PT_AVAILABLE" : cell.normalized === "REQ_OFF" ? "OFF" : cell.normalized);
+    if (!select.value || !Array.from(select.options).some((opt) => opt.value === select.value)) select.value = "OFF";
+  }
+  _rebuildShiftOptions();
+  /* Replace the checkbox node to detach any previous listener, then bind fresh.
+     This keeps `_rebuildShiftOptions`'s closure scoped to the current open. */
+  const oldCb = $("overrideRole");
+  if (oldCb) {
+    const newCb = oldCb.cloneNode(true);
+    newCb.checked = false;
+    oldCb.parentNode.replaceChild(newCb, oldCb);
+    newCb.addEventListener("change", _rebuildShiftOptions);
+  }
   $("shiftRemark").value = override?.remark || (cell.manual ? cell.remark || "Changed by admin" : "Changed by admin");
   $("editorTitle").textContent = `${person.name} · Day ${day.day} (${day.dow})`;
   const helper = person.status === "parttime" && !ptAvailable
@@ -671,16 +855,19 @@ function saveAdminShift() {
   const shift = $("shiftSelect").value;
   const remark = $("shiftRemark").value.trim() || "Changed by admin";
   if (shift === "OFF") {
-    removeOverride(personId, dayIndex);
-    setMessage(`Set OFF / cleared operational shift: ${person?.name} day ${dayIndex + 1}`);
+    /* Store OFF as an explicit admin override so the auto-allocator
+       skips this cell (manual:true, locked:true) instead of refilling it. */
+    setOverride(personId, dayIndex, "OFF", remark);
+    setMessage(`Set OFF (locked) by admin: ${person?.name} day ${dayIndex + 1}. ${remark}`);
   } else if (person?.status === "parttime" && shift === "PT_AVAILABLE") {
     const current = parttimeAvailability[personId] || [];
     if (!current.includes(dayIndex)) parttimeAvailability[personId] = [...current, dayIndex].sort((a, b) => a - b);
     removeOverride(personId, dayIndex);
     setMessage(`Marked part-time available: ${person.name} day ${dayIndex + 1}`);
   } else {
-    if (!roleCanFillShift(person, shift, dayIndex, lastSchedule)) {
-      setMessage(`${person?.name || "Selected pharmacist"} cannot fill ${shift} by role/shift restriction.`);
+    const overrideRoleOn = $("overrideRole")?.checked || false;
+    if (!overrideRoleOn && !roleCanFillShift(person, shift, dayIndex, lastSchedule)) {
+      setMessage(`${person?.name || "Selected pharmacist"} cannot fill ${shift} by role/shift restriction. Tick "Override role limits" to bypass.`);
       return;
     }
     const duplicateNames = staff
@@ -688,7 +875,8 @@ function saveAdminShift() {
       .map((p) => p.name);
     setOverride(personId, dayIndex, shift, remark);
     const duplicateText = duplicateNames.length ? ` Duplicate ${normalizeShift(shift)} was cleared from: ${duplicateNames.join(", ")}.` : "";
-    setMessage(`Admin changed shift: ${person?.name} day ${dayIndex + 1} → ${shift}. Remark saved.${duplicateText}`);
+    const overrideText  = overrideRoleOn ? " (⚠️ role limit override)" : "";
+    setMessage(`Admin changed shift: ${person?.name} day ${dayIndex + 1} → ${shift}${overrideText}. Remark saved.${duplicateText}`);
   }
   viewMode = "auto";
   markDirty();
@@ -731,13 +919,15 @@ function saveState() {
       targetMode: $("targetMode")?.value,
       manualTarget: $("manualTarget")?.value,
       minOff: $("minOff")?.value,
-      maxStreak: $("maxStreak")?.value
+      maxStreak: $("maxStreak")?.value,
+      maxConsecNights: $("maxConsecNights")?.value
     }
   };
   if (!allocationStarted) reqOffLocked = true;
   state.reqOffLocked = reqOffLocked;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  fetch('http://10.134.110.81:8765/api/schedule/state', {
+  state.month = SCHEDULE_MONTH_KEY;
+  localStorage.setItem(storageKey(), JSON.stringify(state));
+  fetch(`http://10.134.110.81:8765/api/schedule/state?month=${encodeURIComponent(SCHEDULE_MONTH_KEY)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(state)
@@ -761,18 +951,19 @@ function applyState(state) {
   if ($("manualTarget") && settings.manualTarget) $("manualTarget").value = settings.manualTarget;
   if ($("minOff") && settings.minOff) $("minOff").value = settings.minOff;
   if ($("maxStreak") && settings.maxStreak) $("maxStreak").value = settings.maxStreak;
+  if ($("maxConsecNights") && settings.maxConsecNights) $("maxConsecNights").value = settings.maxConsecNights;
 }
 
 function loadState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey());
     if (!raw) {
-      fetch('http://10.134.110.81:8765/api/schedule/state')
+      fetch(`http://10.134.110.81:8765/api/schedule/state?month=${encodeURIComponent(SCHEDULE_MONTH_KEY)}`)
         .then(r => r.ok ? r.json() : null)
         .then(state => {
           if (state && typeof state === 'object') {
             applyState(state);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            localStorage.setItem(storageKey(), JSON.stringify(state));
             clearDirty();
             render();
             setTimeout(() => setMessage("Loaded saved state from server."), 0);
@@ -797,10 +988,11 @@ function renderStatusOptions(select, selected) {
 }
 
 function renderStatusRules() {
+  const fmtCap = (v) => Number.isFinite(v) ? v : "—";
   $("statusRules").innerHTML = Object.entries(statusProfiles).map(([key, s]) => `
     <div class="rule-item">
       <strong>${s.label}</strong>
-      <div>Target factor ${s.targetFactor} · Max night ${s.maxNight} · Max weekend ${s.maxWeekend}</div>
+      <div>Target factor ${s.targetFactor} · Night ${s.canNight ? "✅" : "❌"} · Weekend ${s.canWeekend ? "✅" : "❌"} · Max night/mo ${fmtCap(s.maxNight)} · Max weekend/mo ${fmtCap(s.maxWeekend)}</div>
       <div>${s.description}</div>
     </div>
   `).join("");
@@ -869,6 +1061,7 @@ function toggleDayLock(dayIndex) {
 }
 
 function cellClass(cell, isWeekend) {
+  if (cell.blank) return "cell-blank";
   if (cell.manual) return isNight(cell) ? "cell-admin cell-night" : "cell-admin";
   if (cell.requested) return "cell-req";
   if (cell.ptAvailable) return "cell-pt";
@@ -897,10 +1090,18 @@ function renderScheduleGrid() {
     const row = lastResult.rows.find((r) => r.id === p.id);
     html += `<tr><td class="name-col"><div class="name-main">${p.name}</div><div class="name-sub">${statusProfiles[p.status].label} · target ${row?.target ?? 0} hr · req ${row?.requestedOff ?? 0}/5</div></td>`;
     dateMeta.forEach((d, i) => {
-      const cell = lastSchedule[p.id]?.[i] ?? makeOffCell(false);
-      const display = cell.code === "REQ OFF" ? "REQ" : cell.code === "PT Available" ? "PT" : `${cell.code}${cell.manual ? " ✎" : ""}`;
-      const title = cell.manual ? `${cell.code} · Admin change: ${cell.remark || "Changed by admin"}` : cell.code;
-      html += `<td class="${d.weekend ? "weekend" : ""}"><button class="cell-btn ${cellClass(cell, d.weekend)}" data-id="${p.id}" data-day="${i}" title="${title}">${display}</button></td>`;
+      const cell = lastSchedule[p.id]?.[i] ?? makeBlankCell();
+      const note = bookingNotes[p.id]?.[i] || "";
+      let display;
+      if (cell.blank) display = "";
+      else if (cell.code === "REQ OFF") display = "REQ";
+      else if (cell.code === "PT Available") display = "PT";
+      else display = `${cell.code}${cell.manual ? " ✎" : ""}`;
+      const baseTitle = cell.blank ? "Unallocated — click to add REQ OFF / shift"
+                      : cell.manual ? `${cell.code} · Admin change: ${cell.remark || "Changed by admin"}` : cell.code;
+      const fullTitle = note ? `${baseTitle}\n📝 ${note}` : baseTitle;
+      const noteBadge = note ? `<span class="cell-note-dot" title="${note.replace(/"/g, "&quot;")}">📝</span>` : "";
+      html += `<td class="${d.weekend ? "weekend" : ""}"><button class="cell-btn ${cellClass(cell, d.weekend)}" data-id="${p.id}" data-day="${i}" title="${fullTitle.replace(/"/g, "&quot;")}">${display}${noteBadge}</button></td>`;
     });
     html += `<td class="total-col"><strong>${row?.total ?? 0}</strong></td></tr>`;
   });
@@ -1139,43 +1340,160 @@ function regenerateSchedule() {
   allocationRun += 1;
   viewMode = "auto";
   markDirty();
-  setMessage("Regenerated allocation. REQ OFF and admin edited cells are kept locked.");
   render();
+  /* After render, count any required shifts still missing so the admin knows */
+  let missingTotal = 0;
+  dateMeta.forEach((d, dayIndex) => {
+    missingTotal += getRequiredCoverageShiftsForDay(d).filter((s) => !dayHasShift(lastSchedule, dayIndex, s)).length;
+  });
+  setMessage(
+    missingTotal === 0
+      ? "Regenerated. All required shifts are filled. REQ OFF + admin cells preserved."
+      : `Regenerated. Filled missing required shifts. ${missingTotal} still uncovered (check Coverage tab).`
+  );
+}
+
+function applyBookingsObject(all) {
+  if (!all || typeof all !== "object") return false;
+  const month = all[SCHEDULE_MONTH_KEY];
+  if (!month) return false;
+  /* Replace requests/parttimeAvailability with fresh data from bookings.
+     Admin overrides and allocated shifts are preserved separately. */
+  requests = {};
+  parttimeAvailability = {};
+  bookingNotes = {};
+  let appliedCount = 0;
+
+  /* 1. REQ OFF / part-time availability days */
+  Object.entries(month.requests || {}).forEach(([personId, days]) => {
+    const person = staff.find((p) => p.id === personId);
+    if (!person) return;
+    const indexes = (days || []).map((day) => Number(day) - 1).filter((i) => Number.isInteger(i) && i >= 0 && i < dateMeta.length);
+    if (person.status === "parttime") parttimeAvailability[personId] = indexes;
+    else if (person.status !== "hod") { requests[personId] = indexes; appliedCount++; }
+  });
+
+  /* 2. Per-day notes — independent of REQ OFF. A pharmacist may leave a note
+        without requesting OFF (purely informational for the manager). */
+  Object.entries(month.notes || {}).forEach(([personId, dayMap]) => {
+    if (!staff.find((p) => p.id === personId)) return;
+    const noteByIndex = {};
+    Object.entries(dayMap || {}).forEach(([dayStr, text]) => {
+      const i = Number(dayStr) - 1;
+      if (Number.isInteger(i) && i >= 0 && i < dateMeta.length && text) noteByIndex[i] = String(text);
+    });
+    if (Object.keys(noteByIndex).length) bookingNotes[personId] = noteByIndex;
+  });
+
+  return appliedCount > 0 || Object.keys(bookingNotes).length > 0;
 }
 
 function loadMonthlyBookingsIntoSchedule() {
+  /* 1. Local cache (instant) */
+  let loaded = false;
   try {
     const all = JSON.parse(localStorage.getItem(BOOKING_STORAGE_KEY) || "{}");
-    const month = all[SCHEDULE_MONTH_KEY];
-    if (!month) return false;
-    requests = {};
-    parttimeAvailability = {};
-    Object.entries(month.requests || {}).forEach(([personId, days]) => {
-      const person = staff.find((p) => p.id === personId);
-      if (!person) return;
-      const indexes = (days || []).map((day) => Number(day) - 1).filter((i) => Number.isInteger(i) && i >= 0 && i < dateMeta.length);
-      if (person.status === "parttime") parttimeAvailability[personId] = indexes;
-      else if (person.status !== "hod") requests[personId] = indexes;
-    });
-    setMessage(`Loaded pharmacist bookings for ${SCHEDULE_MONTH_KEY}. Save state to lock before auto allocation.`);
-    return true;
-  } catch (err) {
-    console.warn("Cannot load monthly bookings", err);
-    return false;
+    loaded = applyBookingsObject(all);
+  } catch (err) { console.warn("Cannot read local bookings", err); }
+
+  /* 2. Always check server too — bookings may have been made on another
+        workstation since the last localStorage sync. */
+  fetch('http://10.134.110.81:8765/api/schedule/bookings')
+    .then(r => r.ok ? r.json() : null)
+    .then(serverAll => {
+      if (!serverAll || typeof serverAll !== "object") return;
+      localStorage.setItem(BOOKING_STORAGE_KEY, JSON.stringify(serverAll));
+      const applied = applyBookingsObject(serverAll);
+      if (applied) {
+        setMessage(`Loaded pharmacist bookings from server for ${SCHEDULE_MONTH_KEY}.`);
+        render();
+      }
+    })
+    .catch(() => {});
+
+  if (loaded) setMessage(`Loaded pharmacist bookings for ${SCHEDULE_MONTH_KEY}. Save state to lock before auto allocation.`);
+  return loaded;
+}
+
+function populateMonthPicker() {
+  const sel = $("monthSelect");
+  if (!sel) return;
+  /* 12 months back, current month, 12 months forward */
+  const now = new Date();
+  const options = [];
+  for (let offset = -12; offset <= 12; offset++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleString("en-US", { month: "long", year: "numeric" });
+    options.push(`<option value="${key}"${key === SCHEDULE_MONTH_KEY ? " selected" : ""}>${label}</option>`);
   }
+  /* Ensure current saved month is in the list even if outside ±12 */
+  if (!options.some((o) => o.includes(`value="${SCHEDULE_MONTH_KEY}"`))) {
+    const [y, m] = SCHEDULE_MONTH_KEY.split("-").map(Number);
+    const d = new Date(y, m - 1, 1);
+    options.unshift(`<option value="${SCHEDULE_MONTH_KEY}" selected>${d.toLocaleString("en-US", { month: "long", year: "numeric" })}</option>`);
+  }
+  sel.innerHTML = options.join("");
+}
+
+function syncEyebrow() {
+  const eb = $("eyebrowMonth");
+  if (!eb) return;
+  const [y, m] = SCHEDULE_MONTH_KEY.split("-").map(Number);
+  const label = new Date(y, m - 1, 1).toLocaleString("en-US", { month: "long", year: "numeric" });
+  eb.textContent = `${label} · Pharmacy Schedule Management`;
+}
+
+function changeMonth(newKey) {
+  if (!/^\d{4}-\d{2}$/.test(newKey) || newKey === SCHEDULE_MONTH_KEY) return;
+  if (isDirty && !confirm("You have unsaved changes. Switch month and discard them?")) {
+    $("monthSelect").value = SCHEDULE_MONTH_KEY;
+    return;
+  }
+  SCHEDULE_MONTH_KEY = newKey;
+  localStorage.setItem(SCHEDULE_MONTH_STORAGE_KEY, newKey);
+  dateMeta = buildDateMeta(newKey);
+  /* Reset per-month state — load fresh from storage / server */
+  requests = {};
+  parttimeAvailability = {};
+  adminOverrides = {};
+  allocationStarted = false;
+  reqOffLocked = false;
+  lockedDays = new Set();
+  isDirty = false;
+  syncEyebrow();
+  loadState();
+  /* Always attempt to load bookings — applyBookingsObject guards against
+     overwriting locked / allocated state. */
+  loadMonthlyBookingsIntoSchedule();
+  render();
+  setMessage(`Switched to ${$("monthSelect").selectedOptions[0]?.textContent || newKey}.`);
 }
 
 function init() {
+  populateMonthPicker();
+  syncEyebrow();
   renderStatusOptions($("newStatus"), "general");
   renderNewShiftSelects();
   renderStatusRules();
-  const hasSavedState = loadState();
-  if (!hasSavedState) loadMonthlyBookingsIntoSchedule();
+  loadState();
+  loadMonthlyBookingsIntoSchedule();
+  $("monthSelect").addEventListener("change", (e) => changeMonth(e.target.value));
   $("targetMode").addEventListener("change", () => { updateManualTargetUi(); markDirty(); render(); });
   $("manualTarget").addEventListener("change", () => { markDirty(); render(); });
   $("minOff").addEventListener("change", () => { markDirty(); render(); });
   $("maxStreak").addEventListener("change", () => { markDirty(); render(); });
+  $("maxConsecNights").addEventListener("change", () => { markDirty(); render(); });
   $("btnAuto").addEventListener("click", () => { allocationStarted = true; reqOffLocked = true; viewMode = "auto"; markDirty(); setMessage("Auto allocation generated. REQ OFF and admin changes are protected."); render(); });
+  $("btnReloadBookings").addEventListener("click", () => {
+    if (allocationStarted) { setMessage("Cannot reload after Auto Allocate. Reset by switching month first."); return; }
+    /* Force unlock so bookings can flow back in */
+    reqOffLocked = false;
+    loadMonthlyBookingsIntoSchedule();
+    markDirty();
+    render();
+    setMessage("Re-pulled bookings from the booking page / server.");
+  });
   $("btnRegenerate").addEventListener("click", regenerateSchedule);
   $("btnRegenerateSetup").addEventListener("click", regenerateSchedule);
   $("btnSaveState").addEventListener("click", saveState);
@@ -1192,6 +1510,19 @@ function init() {
     if (!isDirty) return;
     event.preventDefault();
     event.returnValue = "You have unsaved schedule changes.";
+  });
+  /* Cross-tab sync: when booking.html changes the selected month or saves
+     new bookings, refresh this page when the user returns to it. */
+  window.addEventListener("focus", () => {
+    const sharedMonth = localStorage.getItem(SCHEDULE_MONTH_STORAGE_KEY);
+    if (sharedMonth && sharedMonth !== SCHEDULE_MONTH_KEY) {
+      $("monthSelect").value = sharedMonth;
+      changeMonth(sharedMonth);
+    } else {
+      /* Same month — but bookings may have changed; pull them again */
+      loadMonthlyBookingsIntoSchedule();
+      render();
+    }
   });
   setupTabs();
   updateManualTargetUi();

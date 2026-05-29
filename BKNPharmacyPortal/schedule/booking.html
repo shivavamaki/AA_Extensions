@@ -18,6 +18,7 @@
         <button id="btnSave" class="primary">Save booking</button>
         <button id="btnClear">Clear selected month</button>
         <button id="btnPrint">Print</button>
+        <button id="btnEditRules" type="button" class="rule-edit-btn" title="แก้ไขกฎ">✏️ Edit rules</button>
       </div>
     </header>
 
@@ -33,14 +34,33 @@
       <div class="status-box" id="statusBox">Select pharmacist and month.</div>
     </section>
 
-    <section class="rule-card">
-      <strong>Booking rules</strong>
-      <ul>
-        <li>Regular pharmacists can request day off up to 5 days/month.</li>
-        <li>Only 1 Saturday and 1 Sunday can be requested per month.</li>
+    <section class="rule-card" id="ruleCard" hidden>
+      <div class="rule-card-head">
+        <strong>Booking rules</strong>
+        <button id="btnCloseRules" type="button" class="rule-edit-btn" title="ปิด">✕ Close</button>
+      </div>
+      <ul id="ruleList">
+        <li>Regular pharmacists can request day off up to <span data-rule="maxDays">5</span> days/month.</li>
+        <li>Only <span data-rule="maxSat">1</span> Saturday and <span data-rule="maxSun">1</span> Sunday can be requested per month.</li>
         <li>HOD is excluded from operational schedule, so booking is not required.</li>
         <li>Part time books available work days instead of requested day off.</li>
+        <li>Editor / manager can override any booked date and assign a shift during allocation.</li>
       </ul>
+      <div id="ruleEditor" class="rule-editor">
+        <label>Max days/month
+          <input type="number" id="ruleMaxDays" min="1" max="31" step="1">
+        </label>
+        <label>Max Saturdays/month
+          <input type="number" id="ruleMaxSat" min="0" max="5" step="1">
+        </label>
+        <label>Max Sundays/month
+          <input type="number" id="ruleMaxSun" min="0" max="5" step="1">
+        </label>
+        <div class="rule-editor-btns">
+          <button id="btnRuleSave"   type="button" class="primary">Save rules</button>
+          <button id="btnRuleCancel" type="button">Cancel</button>
+        </div>
+      </div>
     </section>
 
     <main class="month-grid-wrap">
