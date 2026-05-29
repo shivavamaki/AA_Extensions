@@ -145,8 +145,6 @@
         "src/assets/fonts/THSarabunNew-BoldItalic.ttf",
         "src/assets/fonts/THSarabunNew-Italic.ttf",
         "src/assets/fonts/Sarabun-Regular.ttf",
-        "src/assets/bkn_med_database/medication_by_code.json",
-        "src/assets/bkn_med_database/images/*",
         "src/features/medication-journey/page-medication-journey.html",
         "src/features/medication-journey/page-medication-journey.js",
         "src/features/medication-journey/medication-journey.css"

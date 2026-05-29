@@ -336,11 +336,16 @@ class Handler(BaseHTTPRequestHandler):
 
     def _is_trusted_extension(self):
         origin = self.headers.get('Origin', '')
+        # Known-legacy IDs match exactly (defence in depth)
         if origin in TRUSTED_EXTENSION_ORIGINS:
             return True
-        # Also trust requests from the local machine (background service worker
-        # sends the extension origin, but if the extension ID ever changes the
-        # client_address fallback keeps local-only writes working).
+        # Trust any Chrome extension origin — Chrome guarantees this header is
+        # set by the browser and cannot be spoofed by web pages. New extension
+        # installs (e.g. the merged BKN Pharmacy Portal) work without manual
+        # allowlisting.
+        if origin.startswith('chrome-extension://'):
+            return True
+        # Local-machine fallback (when Origin header is absent)
         client_ip = self.client_address[0]
         return client_ip in ('127.0.0.1', '::1', 'localhost')
 
