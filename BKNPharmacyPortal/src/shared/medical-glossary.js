@@ -49,18 +49,32 @@ function _qty(n, lang) {
   return (i >= 1 && i <= 10) ? words[i] : String(n);
 }
 
-// Unit translation: "tablet"/"capsule"/"drop"/"spray"/"ml"
+// Unit translation: "tablet"/"capsule"/"drop"/"spray"/"ml"/"bottle"/"vial"/...
 function _unit(raw, lang, count) {
   const r = raw.toLowerCase().replace(/s$/, ""); // singularise
   const UNITS = {
-    tablet:  { th:"เม็ด", lo:"ເມັດ", my:"မှ",   km:"គ្រាប់", vi:"viên",   "zh-CN":"片", "zh-TW":"錠",  ja:"錠",    ko:"정",   ar:"قرص",   hi:"गोली",  id:"tablet", ms:"tablet", ru:"таблетку", fr:"comprimé", de:"Tablette", es:"comprimido", pt:"comprimido", tr:"tablet" },
-    capsule: { th:"แคปซูล", lo:"ແຄັບຊູນ", my:"ကပ်ဆူး", km:"កម្រៀប",  vi:"viên nang","zh-CN":"粒", "zh-TW":"粒",  ja:"カプセル",ko:"캡슐", ar:"كبسولة", hi:"कैप्सूल",id:"kapsul",ms:"kapsul", ru:"капсулу",  fr:"gélule",  de:"Kapsel",    es:"cápsula",    pt:"cápsula",   tr:"kapsül" },
-    drop:    { th:"หยด",   lo:"ຢອດ",  my:"မျက်",  km:"ដំណក់",  vi:"giọt",  "zh-CN":"滴", "zh-TW":"滴",  ja:"滴",    ko:"방울",ar:"قطرة",  hi:"बूँद",  id:"tetes",  ms:"titik",  ru:"каплю",   fr:"goutte",  de:"Tropfen",   es:"gota",       pt:"gota",      tr:"damla" },
-    spray:   { th:"ครั้ง", lo:"ເທື່ອ",my:"ကြိမ်", km:"ដង",     vi:"lần",   "zh-CN":"喷", "zh-TW":"噴",  ja:"回",    ko:"번",  ar:"رشة",   hi:"स्प्रे",id:"semprotan",ms:"semburan",ru:"вдох",  fr:"bouffée", de:"Hub",       es:"pulverización",pt:"pulverização",tr:"puf" },
+    tablet:  { th:"เม็ด", lo:"ເມັດ", my:"ဆေးပြား", km:"គ្រាប់", vi:"viên",   "zh-CN":"片", "zh-TW":"錠",  ja:"錠",    ko:"정",   ar:"قرص",   hi:"गोली",  id:"tablet", ms:"tablet", ru:"таблетку", fr:"comprimé", de:"Tablette", es:"comprimido", pt:"comprimido", tr:"tablet" },
+    capsule: { th:"แคปซูล", lo:"ແຄັບຊູນ", my:"တောင့်", km:"កម្រៀប",  vi:"viên nang","zh-CN":"粒", "zh-TW":"粒",  ja:"カプセル",ko:"캡슐", ar:"كبسولة", hi:"कैप्सूल",id:"kapsul",ms:"kapsul", ru:"капсулу",  fr:"gélule",  de:"Kapsel",    es:"cápsula",    pt:"cápsula",   tr:"kapsül" },
+    drop:    { th:"หยด",   lo:"ຢອດ",  my:"စက်",   km:"ដំណក់",  vi:"giọt",  "zh-CN":"滴", "zh-TW":"滴",  ja:"滴",    ko:"방울",ar:"قطرة",  hi:"बूँद",  id:"tetes",  ms:"titik",  ru:"каплю",   fr:"goutte",  de:"Tropfen",   es:"gota",       pt:"gota",      tr:"damla" },
+    spray:   { th:"ครั้ง", lo:"ເທື່ອ",my:"ဖျန်း",  km:"ដង",     vi:"lần",   "zh-CN":"喷", "zh-TW":"噴",  ja:"回",    ko:"번",  ar:"رشة",   hi:"स्प्रे",id:"semprotan",ms:"semburan",ru:"вдох",  fr:"bouffée", de:"Hub",       es:"pulverización",pt:"pulverização",tr:"puf" },
     ml:       { th:"มล.",  lo:"ມລ",   my:"မီလီ",  km:"មីលីលីត្រ",vi:"ml",  "zh-CN":"毫升","zh-TW":"毫升",ja:"ml",   ko:"ml",  ar:"مل",    hi:"मिली",  id:"ml",     ms:"ml",     ru:"мл",      fr:"ml",      de:"ml",        es:"ml",         pt:"ml",        tr:"ml" },
+    bottle:  { th:"ขวด",   lo:"ຂວດ",  my:"ပုလင်း", km:"ដប",     vi:"chai",  "zh-CN":"瓶", "zh-TW":"瓶",  ja:"本",    ko:"병",  ar:"زجاجة", hi:"बोतल",  id:"botol",  ms:"botol",  ru:"флакон",  fr:"flacon",  de:"Flasche",   es:"frasco",     pt:"frasco",    tr:"şişe" },
+    vial:    { th:"ขวด",   lo:"ຂວດ",  my:"ပုလင်း", km:"ដប",     vi:"lọ",    "zh-CN":"瓶", "zh-TW":"瓶",  ja:"バイアル",ko:"바이알",ar:"قارورة",hi:"शीशी",  id:"vial",   ms:"vial",   ru:"флакон",  fr:"flacon",  de:"Fläschchen",es:"vial",       pt:"frasco",    tr:"flakon" },
+    box:     { th:"กล่อง", lo:"ກ່ອງ", my:"သေတ္တာ", km:"ប្រអប់",  vi:"hộp",   "zh-CN":"盒", "zh-TW":"盒",  ja:"箱",    ko:"상자",ar:"علبة",  hi:"डिब्बा",id:"kotak",  ms:"kotak",  ru:"коробку", fr:"boîte",   de:"Schachtel", es:"caja",       pt:"caixa",     tr:"kutu" },
+    ampoule: { th:"แอมพูล",lo:"ຫຼອດ", my:"အင်ပူး", km:"ដបតូច", vi:"ống",   "zh-CN":"安瓿","zh-TW":"安瓿",ja:"アンプル",ko:"앰플",ar:"أمبولة",hi:"एम्पुल",id:"ampul",  ms:"ampul",  ru:"ампулу",  fr:"ampoule", de:"Ampulle",   es:"ampolla",    pt:"ampola",    tr:"ampul" },
+    tube:    { th:"หลอด", lo:"ຫຼອດ", my:"ပိုက်",  km:"បំពង់",   vi:"tuýp",  "zh-CN":"管", "zh-TW":"管",  ja:"チューブ",ko:"튜브",ar:"أنبوب", hi:"ट्यूब",id:"tabung", ms:"tiub",   ru:"тюбик",   fr:"tube",    de:"Tube",      es:"tubo",       pt:"tubo",      tr:"tüp" },
+    sachet:  { th:"ซอง",  lo:"ຊອງ",  my:"ထုပ်",   km:"កញ្ចប់", vi:"gói",   "zh-CN":"袋", "zh-TW":"包",  ja:"袋",    ko:"포",  ar:"كيس",   hi:"पाउच",  id:"sachet", ms:"sachet", ru:"пакетик",fr:"sachet",  de:"Beutel",    es:"sobre",      pt:"sachê",     tr:"poşet" },
+    syringe: { th:"กระบอก",lo:"ກະບອກ",my:"ဆေးထိုးအပ်",km:"ស្រាំ",vi:"ống tiêm","zh-CN":"支","zh-TW":"支", ja:"本",    ko:"개",  ar:"محقنة", hi:"सिरिंज",id:"jarum",  ms:"picagari",ru:"шприц",   fr:"seringue",de:"Spritze",   es:"jeringa",    pt:"seringa",   tr:"şırınga" },
+    pack:    { th:"แพ็ค", lo:"ແພັກ", my:"ထုပ်",   km:"កញ្ចប់", vi:"gói",   "zh-CN":"包", "zh-TW":"包",  ja:"パック",ko:"팩",  ar:"عبوة",  hi:"पैक",   id:"paket",  ms:"pek",    ru:"упаковку",fr:"paquet",  de:"Packung",   es:"paquete",    pt:"pacote",    tr:"paket" },
+    piece:   { th:"ชิ้น", lo:"ອັນ",  my:"ခု",     km:"គ្រឿង",  vi:"chiếc", "zh-CN":"个", "zh-TW":"個",  ja:"個",    ko:"개",  ar:"قطعة",  hi:"टुकड़ा",id:"buah",   ms:"biji",   ru:"штуку",   fr:"pièce",   de:"Stück",     es:"unidad",     pt:"unidade",   tr:"adet" },
   };
-  // Aliases: millilitre / milliliter / millitre all → ml
-  const aliases = { millilitre:"ml", milliliter:"ml", millitre:"ml", millilitr:"ml", litre:"ml", liter:"ml" };
+  // Aliases
+  const aliases = {
+    millilitre:"ml", milliliter:"ml", millitre:"ml", millilitr:"ml", litre:"ml", liter:"ml",
+    ampule:"ampoule", amp:"ampoule",
+    pcs:"piece", pc:"piece",
+    puff:"spray",  // metered-dose inhaler puff
+  };
   const rr = aliases[r] || r;
   const map = UNITS[rr];
   if (!map) return raw;
@@ -75,15 +89,27 @@ function _freq(raw, lang) {
     "twice daily":       { th:"วันละ 2 ครั้ง",   lo:"ມື້ລະ 2 ເທື່ອ",  my:"တစ်နေ့ နှစ်ကြိမ်",  km:"ថ្ងៃ 2 ដង",     vi:"2 lần/ngày",    "zh-CN":"每天两次",  "zh-TW":"每天兩次",  ja:"1日2回",   ko:"하루 2회",  ar:"مرتين يومياً",   hi:"दिन में दो बार",id:"dua kali sehari", ms:"dua kali sehari", ru:"два раза в день",  fr:"deux fois par jour", de:"zweimal täglich",    es:"dos veces al día",  tr:"günde iki kez" },
     "three times daily": { th:"วันละ 3 ครั้ง",   lo:"ມື້ລະ 3 ເທື່ອ",  my:"တစ်နေ့ သုံးကြိမ်",  km:"ថ្ងៃ 3 ដង",     vi:"3 lần/ngày",    "zh-CN":"每天三次",  "zh-TW":"每天三次",  ja:"1日3回",   ko:"하루 3회",  ar:"ثلاث مرات يومياً",hi:"दिन में तीन बार",id:"tiga kali sehari",ms:"tiga kali sehari",ru:"три раза в день",  fr:"trois fois par jour",de:"dreimal täglich",   es:"tres veces al día", tr:"günde üç kez" },
     "four times daily":  { th:"วันละ 4 ครั้ง",   lo:"ມື້ລະ 4 ເທື່ອ",  my:"တစ်နေ့ လေးကြိမ်",   km:"ថ្ងៃ 4 ដង",     vi:"4 lần/ngày",    "zh-CN":"每天四次",  "zh-TW":"每天四次",  ja:"1日4回",   ko:"하루 4회",  ar:"أربع مرات يومياً",hi:"दिन में चार बार",id:"empat kali sehari",ms:"empat kali sehari",ru:"четыре раза в день",fr:"quatre fois par jour",de:"viermal täglich",es:"cuatro veces al día",tr:"günde dört kez" },
-    "every 4 hours":     { th:"ทุก 4 ชั่วโมง",  lo:"ທຸກໆ 4 ຊົ່ວໂມງ",my:"နာရီ 4 ကြိမ်တစ်",  km:"រៀងរាល់ 4 ម៉ោង",vi:"mỗi 4 giờ",     "zh-CN":"每4小时",   "zh-TW":"每4小時",  ja:"4時間毎",  ko:"4시간마다",ar:"كل 4 ساعات",     hi:"हर 4 घंटे",    id:"setiap 4 jam",   ms:"setiap 4 jam",   ru:"каждые 4 часа",    fr:"toutes les 4 heures", de:"alle 4 Stunden",    es:"cada 4 horas",      tr:"her 4 saatte" },
-    "every 6 hours":     { th:"ทุก 6 ชั่วโมง",  lo:"ທຸກໆ 6 ຊົ່ວໂມງ",my:"နာရီ 6 ကြိမ်တစ်",  km:"រៀងរាល់ 6 ម៉ោង",vi:"mỗi 6 giờ",     "zh-CN":"每6小时",   "zh-TW":"每6小時",  ja:"6時間毎",  ko:"6시간마다",ar:"كل 6 ساعات",     hi:"हर 6 घंटे",    id:"setiap 6 jam",   ms:"setiap 6 jam",   ru:"каждые 6 часов",   fr:"toutes les 6 heures", de:"alle 6 Stunden",    es:"cada 6 horas",      tr:"her 6 saatte" },
-    "every 8 hours":     { th:"ทุก 8 ชั่วโมง",  lo:"ທຸກໆ 8 ຊົ່ວໂມງ",my:"နာရီ 8 ကြိမ်တစ်",  km:"រៀងរាល់ 8 ម៉ោង",vi:"mỗi 8 giờ",     "zh-CN":"每8小时",   "zh-TW":"每8小時",  ja:"8時間毎",  ko:"8시간마다",ar:"كل 8 ساعات",     hi:"हर 8 घंटे",    id:"setiap 8 jam",   ms:"setiap 8 jam",   ru:"каждые 8 часов",   fr:"toutes les 8 heures", de:"alle 8 Stunden",    es:"cada 8 horas",      tr:"her 8 saatte" },
-    "every 12 hours":    { th:"ทุก 12 ชั่วโมง", lo:"ທຸກໆ 12 ຊົ່ວໂມງ",my:"နာရီ 12 ကြိမ်တစ်",km:"រៀងរាល់ 12 ម៉ោង",vi:"mỗi 12 giờ",   "zh-CN":"每12小时",  "zh-TW":"每12小時", ja:"12時間毎", ko:"12시간마다",ar:"كل 12 ساعة",   hi:"हर 12 घंटे",   id:"setiap 12 jam",  ms:"setiap 12 jam",  ru:"каждые 12 часов",  fr:"toutes les 12 heures",de:"alle 12 Stunden",  es:"cada 12 horas",     tr:"her 12 saatte" },
+    "every 4 hours":     { th:"ทุก 4 ชั่วโมง",  lo:"ທຸກ 4 ຊົ່ວໂມງ",my:"နာရီ 4 ကြိမ်တစ်",  km:"រៀងរាល់ 4 ម៉ោង",vi:"mỗi 4 giờ",     "zh-CN":"每4小时",   "zh-TW":"每4小時",  ja:"4時間毎",  ko:"4시간마다",ar:"كل 4 ساعات",     hi:"हर 4 घंटे",    id:"setiap 4 jam",   ms:"setiap 4 jam",   ru:"каждые 4 часа",    fr:"toutes les 4 heures", de:"alle 4 Stunden",    es:"cada 4 horas",      tr:"her 4 saatte" },
+    "every 6 hours":     { th:"ทุก 6 ชั่วโมง",  lo:"ທຸກ 6 ຊົ່ວໂມງ",my:"နာရီ 6 ကြိမ်တစ်",  km:"រៀងរាល់ 6 ម៉ោង",vi:"mỗi 6 giờ",     "zh-CN":"每6小时",   "zh-TW":"每6小時",  ja:"6時間毎",  ko:"6시간마다",ar:"كل 6 ساعات",     hi:"हर 6 घंटे",    id:"setiap 6 jam",   ms:"setiap 6 jam",   ru:"каждые 6 часов",   fr:"toutes les 6 heures", de:"alle 6 Stunden",    es:"cada 6 horas",      tr:"her 6 saatte" },
+    "every 8 hours":     { th:"ทุก 8 ชั่วโมง",  lo:"ທຸກ 8 ຊົ່ວໂມງ",my:"နာရီ 8 ကြိမ်တစ်",  km:"រៀងរាល់ 8 ម៉ោង",vi:"mỗi 8 giờ",     "zh-CN":"每8小时",   "zh-TW":"每8小時",  ja:"8時間毎",  ko:"8시간마다",ar:"كل 8 ساعات",     hi:"हर 8 घंटे",    id:"setiap 8 jam",   ms:"setiap 8 jam",   ru:"каждые 8 часов",   fr:"toutes les 8 heures", de:"alle 8 Stunden",    es:"cada 8 horas",      tr:"her 8 saatte" },
+    "every 12 hours":    { th:"ทุก 12 ชั่วโมง", lo:"ທຸກ 12 ຊົ່ວໂມງ",my:"နာရီ 12 ကြိမ်တစ်",km:"រៀងរាល់ 12 ម៉ោង",vi:"mỗi 12 giờ",   "zh-CN":"每12小时",  "zh-TW":"每12小時", ja:"12時間毎", ko:"12시간마다",ar:"كل 12 ساعة",   hi:"हर 12 घंटे",   id:"setiap 12 jam",  ms:"setiap 12 jam",  ru:"каждые 12 часов",  fr:"toutes les 12 heures",de:"alle 12 Stunden",  es:"cada 12 horas",     tr:"her 12 saatte" },
     "once a week":       { th:"สัปดาห์ละ 1 ครั้ง",lo:"ອາທິດລະ 1 ເທື່ອ",my:"တစ်ပတ် တစ်ကြိမ်",km:"ម្តងក្នុងមួយសប្តាហ៍",vi:"1 lần/tuần","zh-CN":"每周一次","zh-TW":"每週一次",ja:"週1回",   ko:"주 1회",  ar:"مرة في الأسبوع", hi:"सप्ताह में एक बार",id:"sekali seminggu",ms:"sekali seminggu",ru:"один раз в неделю",fr:"une fois par semaine",de:"einmal wöchentlich",es:"una vez a la semana",tr:"haftada bir kez" },
     "once at bedtime":   { th:"วันละ 1 ครั้ง ก่อนนอน",lo:"ກ່ອນນອນ 1 ເທື່ອ",my:"အိပ်ရာမဝင်မီ တစ်ကြိမ်",km:"មុនពេលគេង 1 ដង",vi:"1 lần trước khi ngủ","zh-CN":"睡前一次","zh-TW":"睡前一次",ja:"就寝前1回",ko:"취침 전 1회",ar:"مرة واحدة عند النوم",hi:"सोने से पहले एक बार",id:"sekali sebelum tidur",ms:"sekali sebelum tidur",ru:"один раз перед сном",fr:"une fois au coucher",de:"einmal zur Schlafenszeit",es:"una vez al acostarse",tr:"yatmadan önce bir kez" },
   };
+  // Detect & strip PRN suffix so it can be appended after frequency lookup
+  const PRN_SUFFIX = {
+    th:"เมื่อมีอาการ",        lo:"ເມື່ອມີອາການ",     my:"လိုအပ်သောအခါ",      km:"ពេលត្រូវការ",
+    vi:"khi cần",            "zh-CN":"必要时",        "zh-TW":"必要時",        ja:"必要時",
+    ko:"필요 시",            ar:"عند الحاجة",        hi:"जरूरत पड़ने पर",     id:"bila perlu",
+    ms:"bila perlu",         ru:"при необходимости", fr:"si nécessaire",       de:"bei Bedarf",
+    es:"si es necesario",    pt:"se necessário",     tr:"gerektiğinde",
+  };
+  const prnRe = /\b(if\s+needed|when\s+needed|as\s+needed|prn|p\.r\.n\.?)\b/i;
+  const isPrn = prnRe.test(r);
+  const rNoPrn = isPrn ? r.replace(prnRe, "").replace(/\s+/g, " ").trim() : r;
+
   // Normalise input
-  const norm = r
+  const norm = rNoPrn
     // "N times a day" / "N times daily" / "N times per day" → canonical
     .replace(/\b(\d+)\s*times?\s*(?:a|per)?\s*day\b/i, (_, n) => {
       const i = parseInt(n);
@@ -106,9 +132,17 @@ function _freq(raw, lang) {
     .replace(/\bevery\s+(\d+)\s*hours?\b/i, (_, h) => `every ${h} hours`)
     .replace(/\bonce\s+a\s+week\b/i, "once a week")
     .replace(/\bat\s+bedtime\b/i, "once at bedtime");
+
+  // Standalone PRN (no frequency given) — just return "when needed"
+  if (isPrn && !norm) return PRN_SUFFIX[lang] || null;
+
   const map = FREQ[norm];
   if (!map) return null;
-  return map[lang] || null;
+  const base = map[lang] || null;
+  if (!base) return null;
+  if (!isPrn) return base;
+  const suffix = PRN_SUFFIX[lang];
+  return suffix ? `${base} ${suffix}` : base;
 }
 
 // Timing translation
@@ -124,6 +158,11 @@ function _timing(raw, lang) {
     "before meal":           { th:"ก่อนอาหาร",          lo:"ກ່ອນອາຫານ",       my:"ထမင်းမစားမီ",         km:"មុនពេលញ៉ាំ",          vi:"trước bữa ăn",   "zh-CN":"饭前",      "zh-TW":"飯前",     ja:"食前",      ko:"식사 전",      ar:"قبل الوجبة",        hi:"खाने से पहले",    id:"sebelum makan",   ms:"sebelum makan",    ru:"до еды",              fr:"avant le repas",       de:"vor dem Essen",      es:"antes de comer",      tr:"yemekten önce" },
     "after meal":            { th:"หลังอาหาร",           lo:"ຫຼັງອາຫານ",       my:"ထမင်းစားပြီးနောက်",  km:"ក្រោយពេលញ៉ាំ",        vi:"sau bữa ăn",     "zh-CN":"饭后",      "zh-TW":"飯後",     ja:"食後",      ko:"식사 후",      ar:"بعد الوجبة",        hi:"खाने के बाद",    id:"setelah makan",   ms:"setelah makan",    ru:"после еды",           fr:"après le repas",       de:"nach dem Essen",     es:"después de comer",    tr:"yemekten sonra" },
     "with meal":             { th:"พร้อมอาหาร",          lo:"ພ້ອມກັບອາຫານ",    my:"အစာနှင့်အတူ",         km:"ជាមួយនឹងអាហារ",        vi:"cùng bữa ăn",    "zh-CN":"随餐",      "zh-TW":"隨餐",     ja:"食事と共に",  ko:"식사와 함께",  ar:"مع الوجبة",         hi:"खाने के साथ",    id:"bersama makan",   ms:"bersama makan",    ru:"во время еды",        fr:"avec le repas",        de:"zum Essen",          es:"con la comida",       tr:"yemekle birlikte" },
+    "with breakfast":        { th:"พร้อมอาหารเช้า",        lo:"ພ້ອມອາຫານເຊົ້າ",  my:"မနက်စာနှင့်အတူ",      km:"ជាមួយអាហារពេលព្រឹក",   vi:"cùng bữa sáng",   "zh-CN":"随早餐",    "zh-TW":"隨早餐",   ja:"朝食と共に",  ko:"아침 식사와 함께",ar:"مع الإفطار",       hi:"नाश्ते के साथ",   id:"bersama sarapan", ms:"bersama sarapan",  ru:"во время завтрака",   fr:"avec le petit-déjeuner",de:"zum Frühstück",     es:"con el desayuno",    tr:"kahvaltıyla birlikte" },
+    "with lunch":            { th:"พร้อมอาหารกลางวัน",     lo:"ພ້ອມອາຫານທ່ຽງ",   my:"နေ့လည်စာနှင့်အတူ",    km:"ជាមួយអាហារថ្ងៃត្រង់",  vi:"cùng bữa trưa",   "zh-CN":"随午餐",    "zh-TW":"隨午餐",   ja:"昼食と共に",  ko:"점심 식사와 함께",ar:"مع الغداء",        hi:"दोपहर के खाने के साथ",id:"bersama makan siang",ms:"bersama makan tengah hari",ru:"во время обеда",fr:"avec le déjeuner",   de:"zum Mittagessen",     es:"con el almuerzo",   tr:"öğle yemeğiyle birlikte" },
+    "with dinner":           { th:"พร้อมอาหารเย็น",        lo:"ພ້ອມອາຫານແລງ",    my:"ညနေစာနှင့်အတူ",       km:"ជាមួយអាហារពេលល្ងាច",   vi:"cùng bữa tối",    "zh-CN":"随晚餐",    "zh-TW":"隨晚餐",   ja:"夕食と共に",  ko:"저녁 식사와 함께",ar:"مع العشاء",        hi:"रात के खाने के साथ",id:"bersama makan malam",ms:"bersama makan malam",ru:"во время ужина",    fr:"avec le dîner",      de:"zum Abendessen",     es:"con la cena",       tr:"akşam yemeğiyle birlikte" },
+    "before scheduled time": { th:"ก่อนเวลาที่กำหนด",      lo:"ກ່ອນເວລາທີ່ກຳນົດ", my:"သတ်မှတ်ထားသောအချိန်မတိုင်မီ",km:"មុនពេលកំណត់",       vi:"trước giờ quy định","zh-CN":"在预定时间前","zh-TW":"在預定時間前",ja:"指定時刻前",ko:"지정된 시간 전",ar:"قبل الموعد المحدد",hi:"निर्धारित समय से पहले",id:"sebelum waktu yang ditentukan",ms:"sebelum waktu yang ditetapkan",ru:"перед назначенным временем",fr:"avant l'heure prévue",de:"vor der vorgesehenen Zeit",es:"antes de la hora programada",tr:"belirlenen saatten önce" },
+    "at scheduled time":     { th:"ตามเวลาที่กำหนด",       lo:"ຕາມເວລາທີ່ກຳນົດ", my:"သတ်မှတ်ထားသောအချိန်တွင်", km:"តាមពេលកំណត់",       vi:"đúng giờ quy định","zh-CN":"按预定时间","zh-TW":"按預定時間",ja:"指定時刻に",ko:"지정된 시간에",ar:"في الموعد المحدد",hi:"निर्धारित समय पर",id:"pada waktu yang ditentukan",ms:"pada waktu yang ditetapkan",ru:"в назначенное время",fr:"à l'heure prévue",de:"zur vorgesehenen Zeit",es:"a la hora programada",tr:"belirlenen saatte" },
     "before bedtime":        { th:"ก่อนนอน",             lo:"ກ່ອນນອນ",         my:"အိပ်ရာမဝင်မီ",        km:"មុនពេលគេង",           vi:"trước khi ngủ",  "zh-CN":"睡前",      "zh-TW":"睡前",     ja:"就寝前",    ko:"취침 전",      ar:"قبل النوم",         hi:"सोने से पहले",    id:"sebelum tidur",   ms:"sebelum tidur",    ru:"перед сном",          fr:"avant le coucher",     de:"vor dem Schlafen",   es:"antes de dormir",     tr:"yatmadan önce" },
     "at bedtime":            { th:"ก่อนนอน",             lo:"ກ່ອນນອນ",         my:"အိပ်ရာမဝင်မီ",        km:"មុនពេលគេង",           vi:"khi đi ngủ",     "zh-CN":"睡前",      "zh-TW":"睡前",     ja:"就寝前",    ko:"취침 시",      ar:"عند النوم",         hi:"सोते समय",        id:"saat tidur",      ms:"ketika tidur",     ru:"перед сном",          fr:"au coucher",           de:"zur Schlafenszeit",  es:"al acostarse",        tr:"yatarken" },
     "in the morning":        { th:"ตอนเช้า",             lo:"ຕອນເຊົ້າ",        my:"နံနက်",               km:"ពេលព្រឹក",             vi:"vào buổi sáng",  "zh-CN":"早上",      "zh-TW":"早上",     ja:"朝",        ko:"아침에",       ar:"في الصباح",         hi:"सुबह में",        id:"di pagi hari",    ms:"pada waktu pagi",  ru:"утром",               fr:"le matin",             de:"morgens",            es:"por la mañana",       tr:"sabahları" },
@@ -134,6 +173,8 @@ function _timing(raw, lang) {
     "at lunchtime":          { th:"ตอนเที่ยง",        lo:"ຕອນທ່ຽງ",         my:"နေ့လည်",              km:"ពេលថ្ងៃត្រង់",          vi:"lúc trưa",       "zh-CN":"午餐时",    "zh-TW":"午餐時",   ja:"昼食時",    ko:"점심때",       ar:"وقت الغداء",        hi:"दोपहर के वक्त",  id:"waktu makan siang",ms:"waktu makan tengah hari",ru:"в обеденное время",fr:"à l'heure du déjeuner",de:"zur Mittagszeit",    es:"a la hora del almuerzo",tr:"öğle yemeği zamanı" },
     "at noon":               { th:"ตอนเที่ยง",        lo:"ຕອນທ່ຽງ",         my:"နေ့လည်",              km:"ពេលថ្ងៃត្រង់",          vi:"vào buổi trưa",  "zh-CN":"中午",      "zh-TW":"中午",     ja:"昼",        ko:"점심때",       ar:"ظهراً",             hi:"दोपहर में",       id:"siang hari",     ms:"tengah hari",    ru:"в обед",              fr:"à midi",               de:"mittags",            es:"al mediodía",         tr:"öğle vakti" },
     "as needed":             { th:"เมื่อมีอาการ",         lo:"ເມື່ອຕ້ອງການ",    my:"လိုအပ်သောအခါ",        km:"ពេលត្រូវការ",           vi:"khi cần",        "zh-CN":"必要时",    "zh-TW":"必要時",   ja:"必要時",    ko:"필요 시",      ar:"حسب الحاجة",        hi:"जैसी जरूरत हो",   id:"sesuai kebutuhan",ms:"mengikut keperluan",ru:"по необходимости",    fr:"au besoin",            de:"nach Bedarf",        es:"según sea necesario", tr:"gerektiği gibi" },
+    "before noon":           { th:"ก่อนเที่ยง",          lo:"ກ່ອນທ່ຽງ",        my:"နေ့လည်မတိုင်မီ",     km:"មុនថ្ងៃត្រង់",          vi:"trước trưa",     "zh-CN":"中午前",    "zh-TW":"中午前",   ja:"昼前",      ko:"점심 전",      ar:"قبل الظهر",          hi:"दोपहर से पहले",  id:"sebelum siang",  ms:"sebelum tengah hari",ru:"до полудня",         fr:"avant midi",            de:"vor Mittag",         es:"antes del mediodía",  tr:"öğleden önce" },
+    "after noon":            { th:"หลังเที่ยง",          lo:"ຫຼັງທ່ຽງ",        my:"နေ့လည်ပြီးနောက်",     km:"ក្រោយថ្ងៃត្រង់",        vi:"sau trưa",       "zh-CN":"中午后",    "zh-TW":"中午後",   ja:"昼後",      ko:"점심 후",      ar:"بعد الظهر",          hi:"दोपहर के बाद",   id:"setelah siang",  ms:"selepas tengah hari",ru:"после полудня",      fr:"après midi",            de:"nach Mittag",        es:"después del mediodía",tr:"öğleden sonra" },
   };
   const map = TIMING[r];
   if (!map) return null;
@@ -155,11 +196,21 @@ function _days(n, lang) {
   return DAYS[lang] || `for ${n} days`;
 }
 
-// Route: take N unit(s) orally
+// Route: take N unit(s) — verb varies by dose form (oral / drop / spray / inhaler)
+// `unit` (tablet|capsule|drop|spray|ml|...) drives the verb so a nasal spray
+// doesn't render as "รับประทาน" (eat).
 function _take(n, unit, lang) {
-  const TAKE = {
-    th:  (n, u) => `รับประทาน ${n} ${u} ทางปาก`,
-    lo:  (n, u) => `ກິນ ${n} ${u} ທາງປາກ`,
+  const u = (unit || "").toLowerCase().replace(/s$/, "");
+  const isDrop    = u === "drop";
+  const isSpray   = u === "spray" || u === "puff";
+  const isLiquid  = u === "ml" || /^millilit/.test(u) || u === "litre" || u === "liter";
+
+  // Oral verb (default — tablet/capsule/ml taken by mouth)
+  // Thai & Lao prescriptions don't write "by mouth" — the verb already
+  // implies it. The literal "ทางปาก / ທາງປາກ" reads odd to patients.
+  const ORAL = {
+    th:  (n, u) => `รับประทาน ${n} ${u}`,
+    lo:  (n, u) => `ກິນ ${n} ${u}`,
     my:  (n, u) => `${n} ${u} ပါးစပ်မှ သောက်ပါ`,
     km:  (n, u) => `ញ៉ាំ ${n} ${u} តាមមាត់`,
     vi:  (n, u) => `Uống ${n} ${u} qua đường miệng`,
@@ -178,7 +229,78 @@ function _take(n, unit, lang) {
     pt:  (n, u) => `Tomar ${n} ${u} por via oral`,
     tr:  (n, u) => `${n} ${u} ağız yoluyla alın`,
   };
-  const fn = TAKE[lang];
+
+  // Drop verb ("instill")
+  const DROP = {
+    th:  (n, u) => `หยอด ${n} ${u}`,
+    lo:  (n, u) => `ຢອດ ${n} ${u}`,
+    my:  (n, u) => `${n} ${u} တို့ပါ`,
+    km:  (n, u) => `ដាក់ ${n} ${u}`,
+    vi:  (n, u) => `Nhỏ ${n} ${u}`,
+    "zh-CN": (n, u) => `滴入 ${n} ${u}`,
+    "zh-TW": (n, u) => `滴入 ${n} ${u}`,
+    ja:  (n, u) => `${n}${u}を点眼/点鼻`,
+    ko:  (n, u) => `${n}${u} 점적`,
+    ar:  (n, u) => `قطّر ${n} ${u}`,
+    hi:  (n, u) => `${n} ${u} डालें`,
+    id:  (n, u) => `Teteskan ${n} ${u}`,
+    ms:  (n, u) => `Titiskan ${n} ${u}`,
+    ru:  (n, u) => `Закапать ${n} ${u}`,
+    fr:  (n, u) => `Instiller ${n} ${u}`,
+    de:  (n, u) => `${n} ${u} eintropfen`,
+    es:  (n, u) => `Aplicar ${n} ${u}`,
+    pt:  (n, u) => `Aplicar ${n} ${u}`,
+    tr:  (n, u) => `${n} ${u} damlatın`,
+  };
+
+  // Spray verb ("spray/puff")
+  const SPRAY = {
+    th:  (n, u) => `พ่น ${n} ${u}`,
+    lo:  (n, u) => `ພົ່ນ ${n} ${u}`,
+    my:  (n, u) => `${n} ${u} ဖျန်းပါ`,
+    km:  (n, u) => `បាញ់ ${n} ${u}`,
+    vi:  (n, u) => `Xịt ${n} ${u}`,
+    "zh-CN": (n, u) => `喷 ${n} ${u}`,
+    "zh-TW": (n, u) => `噴 ${n} ${u}`,
+    ja:  (n, u) => `${n}${u} 噴霧`,
+    ko:  (n, u) => `${n}${u} 분무`,
+    ar:  (n, u) => `رشّ ${n} ${u}`,
+    hi:  (n, u) => `${n} ${u} स्प्रे करें`,
+    id:  (n, u) => `Semprotkan ${n} ${u}`,
+    ms:  (n, u) => `Sembur ${n} ${u}`,
+    ru:  (n, u) => `Распылить ${n} ${u}`,
+    fr:  (n, u) => `Pulvériser ${n} ${u}`,
+    de:  (n, u) => `${n} ${u} sprühen`,
+    es:  (n, u) => `Pulverizar ${n} ${u}`,
+    pt:  (n, u) => `Pulverizar ${n} ${u}`,
+    tr:  (n, u) => `${n} ${u} sıkın`,
+  };
+
+  // Liquid verb ("measure/take")
+  const LIQUID = {
+    th:  (n, u) => `รับประทาน ${n} ${u}`,
+    lo:  (n, u) => `ກິນ ${n} ${u}`,
+    my:  (n, u) => `${n} ${u} သောက်ပါ`,
+    km:  (n, u) => `ផឹក ${n} ${u}`,
+    vi:  (n, u) => `Uống ${n} ${u}`,
+    "zh-CN": (n, u) => `口服 ${n} ${u}`,
+    "zh-TW": (n, u) => `口服 ${n} ${u}`,
+    ja:  (n, u) => `${n}${u}を服用`,
+    ko:  (n, u) => `${n}${u} 복용`,
+    ar:  (n, u) => `تناول ${n} ${u}`,
+    hi:  (n, u) => `${n} ${u} पिएँ`,
+    id:  (n, u) => `Minum ${n} ${u}`,
+    ms:  (n, u) => `Minum ${n} ${u}`,
+    ru:  (n, u) => `Принять ${n} ${u}`,
+    fr:  (n, u) => `Prendre ${n} ${u}`,
+    de:  (n, u) => `${n} ${u} einnehmen`,
+    es:  (n, u) => `Tomar ${n} ${u}`,
+    pt:  (n, u) => `Tomar ${n} ${u}`,
+    tr:  (n, u) => `${n} ${u} alın`,
+  };
+
+  const TABLE = isDrop ? DROP : isSpray ? SPRAY : isLiquid ? LIQUID : ORAL;
+  const fn = TABLE[lang];
   if (!fn) return null;
   return fn(n, _unit(unit, lang, n));
 }
@@ -201,6 +323,11 @@ const COMPOUND_TIMING = {
   "morning noon evening":               { th:"เช้า เที่ยง เย็น",                  lo:"ເຊົ້າ ທ່ຽງ ແລງ",                    my:"မနက် နေ့လည် ညနေ",                   km:"ព្រឹក ថ្ងៃត្រង់ ល្ងាច",               vi:"sáng trưa chiều",                 "zh-CN":"早中晚",     "zh-TW":"早中晚",     ja:"朝昼夕",         ko:"아침 점심 저녁",           ar:"صباح ظهر مساء",            hi:"सुबह दोपहर शाम",                id:"pagi siang sore",               ms:"pagi tengah hari petang",               ru:"утром днём вечером",             fr:"matin midi soir",                 de:"morgens mittags abends",             es:"mañana mediodía tarde",           tr:"sabah öğle akşam" },
   "morning evening":                    { th:"เช้า เย็น",                          lo:"ເຊົ້າ ແລງ",                         my:"မနက် ညနေ",                           km:"ព្រឹក ល្ងាច",                         vi:"sáng chiều",                      "zh-CN":"早晚",       "zh-TW":"早晚",       ja:"朝夕",           ko:"아침 저녁",               ar:"صباح مساء",                hi:"सुबह शाम",                      id:"pagi sore",                     ms:"pagi petang",                           ru:"утром вечером",                  fr:"matin soir",                      de:"morgens abends",                     es:"mañana tarde",                    tr:"sabah akşam" },
   "morning bedtime":                    { th:"เช้า ก่อนนอน",                       lo:"ເຊົ້າ ກ່ອນນອນ",                     my:"မနက် အိပ်ရာမဝင်မီ",                  km:"ព្រឹក មុនពេលគេង",                    vi:"sáng trước khi ngủ",              "zh-CN":"早睡前",     "zh-TW":"早睡前",     ja:"朝就寝前",       ko:"아침 취침 전",             ar:"صباح قبل النوم",           hi:"सुबह सोने से पहले",             id:"pagi sebelum tidur",            ms:"pagi sebelum tidur",                    ru:"утром перед сном",               fr:"matin coucher",                   de:"morgens vor dem Schlafen",           es:"mañana acostarse",                tr:"sabah yatmadan önce" },
+  /* 4-dose standard (Thai BKN convention written with "lunch" instead of "noon") */
+  "morning lunch evening bedtime":      { th:"เช้า กลางวัน เย็น ก่อนนอน",         lo:"ເຊົ້າ ທ່ຽງ ແລງ ກ່ອນນອນ",           my:"မနက် နေ့လည် ညနေ အိပ်ရာမဝင်မီ",     km:"ព្រឹក ថ្ងៃត្រង់ ល្ងាច មុនពេលគេង",    vi:"sáng trưa chiều trước khi ngủ",   "zh-CN":"早中晚睡前",  "zh-TW":"早中晚睡前",  ja:"朝昼夕就寝前",    ko:"아침 점심 저녁 취침 전",  ar:"صباح ظهر مساء قبل النوم", hi:"सुबह दोपहर शाम सोने से पहले", id:"pagi siang sore sebelum tidur", ms:"pagi tengah hari petang sebelum tidur", ru:"утром днём вечером перед сном", fr:"matin midi soir coucher", de:"morgens mittags abends vor dem Schlafen", es:"mañana mediodía tarde acostarse", tr:"sabah öğle akşam yatmadan önce" },
+  "morning lunch evening":              { th:"เช้า กลางวัน เย็น",                 lo:"ເຊົ້າ ທ່ຽງ ແລງ",                    my:"မနက် နေ့လည် ညနေ",                   km:"ព្រឹក ថ្ងៃត្រង់ ល្ងាច",               vi:"sáng trưa chiều",                 "zh-CN":"早中晚",     "zh-TW":"早中晚",     ja:"朝昼夕",         ko:"아침 점심 저녁",           ar:"صباح ظهر مساء",            hi:"सुबह दोपहर शाम",                id:"pagi siang sore",               ms:"pagi tengah hari petang",               ru:"утром днём вечером",             fr:"matin midi soir",                 de:"morgens mittags abends",             es:"mañana mediodía tarde",           tr:"sabah öğle akşam" },
+  /* 4-dose with explicit meal-relation */
+  "after breakfast lunch dinner bedtime": { th:"หลังอาหารเช้า กลางวัน เย็น และก่อนนอน", lo:"ຫຼັງອາຫານເຊົ້າ ທ່ຽງ ແລງ ແລະກ່ອນນອນ", my:"မနက် နေ့လည် ညနေစာ ပြီးနောက် နှင့် အိပ်ရာမဝင်မီ", km:"ក្រោយអាហារព្រឹក ថ្ងៃ ល្ងាច និងមុនពេលគេង", vi:"sau 3 bữa và trước khi ngủ", "zh-CN":"三餐后及睡前", "zh-TW":"三餐後及睡前", ja:"毎食後と就寝前", ko:"매 식사 후와 취침 전", ar:"بعد كل وجبة وقبل النوم", hi:"तीनों भोजन के बाद और सोने से पहले", id:"setelah setiap makan dan sebelum tidur", ms:"selepas setiap makan dan sebelum tidur", ru:"после каждого приёма пищи и перед сном", fr:"après chaque repas et au coucher", de:"nach jeder Mahlzeit und vor dem Schlafen", es:"después de cada comida y al acostarse", tr:"her öğünden sonra ve yatmadan önce" },
 };
 
 function _compoundTiming(raw, lang) {
@@ -236,18 +363,19 @@ function _compoundTiming(raw, lang) {
 }
 
 // Master regex — covers the HIS standard format:
-// "Take N Unit(s) Orally FREQ TIMING For D Days"
-// Each group optional except N and unit
+// "<Verb> N Unit(s) [Orally|in Mouth|in Nostril|...] FREQ [once] TIMING For D Days"
+// Each group optional except N and unit. Leading verb may be Take/Spray/Apply/etc.
 const MASTER_RE = new RegExp(
   [
-    /^Take\s+/,
+    /^(?:Take|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put)\s+/i,
     /(\d+(?:\.\d+)?|\bquarter\b|\bhalf\b|\bthree-quarter\b)\s+/,  // [1] qty
-    /(tablet|capsule|drop|spray|ml|millilit(?:re|er)|millilitr)s?\s*/i,   // [2] unit (+ millilitre)
-    /(?:orally\s*)?/i,
-    // [3] freq: "N times a day" OR canonical forms
-    /(\d+\s+times?\s+(?:a\s+)?day|once\s+daily|twice\s+daily|\d+\s+times?\s+daily|every\s+\d+\s+hours?|once\s+a\s+week|at\s+bedtime|once\s+at\s+bedtime)?\s*/i,
-    // [4] compound or simple timing (greedy — capture everything before "For N days")
-    /((?:(?:morning|noon|evening|night|bedtime|breakfast|lunch|dinner|meal)(?:\s+(?:and\s+)?)?)+(?:before\s+|after\s+|with\s+|at\s+|in\s+the\s+)?(?:morning|noon|evening|night|bedtime|breakfast|lunch|dinner|meal)?|before\s+breakfast|after\s+breakfast|before\s+lunch|after\s+lunch|before\s+dinner|after\s+dinner|before\s+meal|after\s+meal|with\s+meal|before\s+bedtime|at\s+bedtime|in\s+the\s+morning|in\s+the\s+evening|at\s+night|when\s+needed|as\s+needed)?\s*/i,
+    /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr)s?\s*/i,   // [2] unit
+    // Optional route phrase ("orally" / "in mouth" / "in nostril" / "in eye" / ...)
+    /(?:(?:orally|in\s+(?:the\s+)?(?:mouth|throat|nose|nostril|nasal|eye|ear|rectum|vagina|affected\s+area))\s*)?/i,
+    // [3] freq: "N times a day" OR canonical forms, optionally suffixed with PRN
+    /((?:\d+\s+times?\s+(?:a\s+)?day|once\s+daily|twice\s+daily|\d+\s+times?\s+daily|every\s+\d+\s+hours?|once\s+a\s+week|at\s+bedtime|once\s+at\s+bedtime)(?:\s+(?:if|when|as)\s+needed|\s+prn|\s+p\.r\.n\.?)?)?\s*/i,
+    // [4] timing — allow optional leading "once" so "once after dinner" works
+    /(?:once\s+)?((?:(?:morning|noon|evening|night|bedtime|breakfast|lunch|dinner|meal)(?:\s+(?:and\s+)?)?)+(?:before\s+|after\s+|with\s+|at\s+|in\s+the\s+)?(?:morning|noon|evening|night|bedtime|breakfast|lunch|dinner|meal)?|before\s+breakfast|after\s+breakfast|before\s+lunch|after\s+lunch|before\s+dinner|after\s+dinner|with\s+breakfast|with\s+lunch|with\s+dinner|before\s+meal|after\s+meal|with\s+meal|before\s+bedtime|at\s+bedtime|in\s+the\s+morning|in\s+the\s+evening|at\s+night|when\s+needed|as\s+needed|before\s+noon|after\s+noon|before\s+scheduled\s+time|at\s+scheduled\s+time)?\s*/i,
     /(?:for\s+(\d+)\s+days?)?\s*$/i,                                    // [5] days
   ].map(r => r.source).join(""),
   "i"
@@ -259,7 +387,9 @@ function matchPattern(text, lang) {
   if (!m) return null;
 
   const rawQty    = m[1] || "1";
-  const rawUnit   = m[2] || "tablet";
+  let   rawUnit   = m[2] || "tablet";
+  // Caplet is a tablet form — translate it the same way as "tablet".
+  if (/^caplet/i.test(rawUnit)) rawUnit = "tablet";
   const rawFreq   = (m[3] || "").trim();
   const rawTiming = (m[4] || "").trim();
   const rawDays   = m[5] || "";
@@ -283,7 +413,7 @@ function matchPattern(text, lang) {
 
   // Assemble — language-specific word order
   const ASSEMBLERS = {
-    // Thai: รับประทาน N เม็ด ทางปาก [freq] [timing] [days]
+    // Thai: รับประทาน N เม็ด [freq] [timing] [days]
     th:  (take, freq, timing, days) => [take, freq, timing, days].filter(Boolean).join(" "),
     lo:  (take, freq, timing, days) => [take, freq, timing, days].filter(Boolean).join(" "),
     my:  (take, freq, timing, days) => [take, freq, timing, days].filter(Boolean).join(" "),
@@ -309,17 +439,30 @@ function matchPattern(text, lang) {
   return assembler(takePart, freqPart, timingPart, daysPart);
 }
 
-// Quantity-only pattern: "N Tablet(s)" / "N Capsule(s)"
-const QTY_RE = /^(\d+(?:\.\d+)?)\s+(tablet|capsule|drop|spray|ml|millilit(?:re|er)|millilitr)s?$/i;
+// Quantity-only pattern: dispensed amount (e.g. "6 Tablets", "1 Vial", "1 Bottle").
+// This appears on the dispensed-quantity line of the sticker. We prefix it
+// with the per-language word for "Quantity" so the patient doesn't confuse
+// it with the per-dose amount on the line above.
+const QTY_RE = /^(\d+(?:\.\d+)?)\s+(tablet|capsule|caplet|drop|spray|ml|millilit(?:re|er)|millilitr|bottle|vial|box|ampoule|ampule|amp|tube|sachet|syringe|pack|piece|pcs|pc)s?$/i;
+
+const QTY_LABEL = {
+  th:"จำนวน",       lo:"ຈຳນວນ",        my:"အရေအတွက်",     km:"ចំនួន",
+  vi:"Số lượng",    "zh-CN":"数量",      "zh-TW":"數量",      ja:"数量",
+  ko:"수량",         ar:"الكمية",         hi:"मात्रा",         id:"Jumlah",
+  ms:"Jumlah",      ru:"Количество",    fr:"Quantité",       de:"Menge",
+  es:"Cantidad",    pt:"Quantidade",    tr:"Miktar",         tl:"Dami",
+};
 
 function matchQtyPattern(text, lang) {
   const m = text.trim().match(QTY_RE);
   if (!m) return null;
   const n = m[1];
-  // Normalise millilitre variants → "ml" for _unit lookup
-  const unitRaw = m[2].toLowerCase().replace(/s$/, "");
-  const unitKey = /^millilit/.test(unitRaw) ? "ml" : unitRaw;
-  const u = _unit(unitKey, lang, parseInt(n));
+  // Normalise millilitre variants → "ml", caplet → tablet for _unit lookup
+  let unitRaw = m[2].toLowerCase().replace(/s$/, "");
+  if (/^millilit/.test(unitRaw)) unitRaw = "ml";
+  if (unitRaw === "caplet")      unitRaw = "tablet"; // caplet = tablet form
+  const u = _unit(unitRaw, lang, parseInt(n));
+  const label = QTY_LABEL[lang];
   // Language-specific qty+unit order
   const QTY_TMPL = {
     ja: (n, u) => `${n}${u}`,
@@ -328,12 +471,359 @@ function matchQtyPattern(text, lang) {
     "zh-TW": (n, u) => `${n}${u}`,
   };
   const fn = QTY_TMPL[lang] || ((n, u) => `${n} ${u}`);
-  return fn(n, u);
+  const body = fn(n, u);
+  return label ? `${label} ${body}` : body;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+ * AUXILIARY-LABEL PHRASES
+ * Common Thai pharmacy auxiliary stickers (BKN convention).
+ * Each entry is a full phrase, matched verbatim after the master regex
+ * fails. Keys are lowercase canonical English; values are per-language
+ * translations. Falls through to glossary/Google if not matched.
+ * ═══════════════════════════════════════════════════════════════ */
+const AUXILIARY_PHRASES = {
+  "shake well before use": {
+    th:"เขย่าขวดก่อนใช้",            lo:"ໝູນຂວດກ່ອນໃຊ້",
+    my:"အသုံးပြုခြင်းမတိုင်မီ ကောင်းစွာလှုပ်ပါ", km:"ឱ្យល្បាស់មុនពេលប្រើ",
+    vi:"Lắc đều trước khi dùng",      "zh-CN":"使用前摇匀",  "zh-TW":"使用前搖勻",
+    ja:"使用前によく振ってください",     ko:"사용 전 잘 흔드세요",
+    ar:"رجّ جيداً قبل الاستعمال",       hi:"उपयोग से पहले अच्छी तरह हिलाएँ",
+    id:"Kocok dulu sebelum digunakan", ms:"Goncang dengan baik sebelum digunakan",
+    ru:"Перед употреблением взболтать",fr:"Bien agiter avant emploi",
+    de:"Vor Gebrauch gut schütteln",   es:"Agitar bien antes de usar",
+    pt:"Agitar bem antes de usar",     tr:"Kullanmadan önce iyice çalkalayın",
+  },
+  "for external use only": {
+    th:"ใช้ภายนอกเท่านั้น",           lo:"ໃຊ້ພາຍນອກເທົ່ານັ້ນ",
+    my:"အပြင်ပိုင်းသာ အသုံးပြုပါ",     km:"ប្រើខាងក្រៅប៉ុណ្ណោះ",
+    vi:"Chỉ dùng ngoài da",            "zh-CN":"仅供外用",     "zh-TW":"僅供外用",
+    ja:"外用のみ",                       ko:"외용으로만 사용",
+    ar:"للاستعمال الخارجي فقط",         hi:"केवल बाहरी उपयोग के लिए",
+    id:"Hanya untuk pemakaian luar",   ms:"Untuk kegunaan luaran sahaja",
+    ru:"Только для наружного применения",fr:"Usage externe uniquement",
+    de:"Nur zur äußerlichen Anwendung", es:"Sólo para uso externo",
+    pt:"Apenas para uso externo",      tr:"Sadece haricen kullanılır",
+  },
+  "do not crush or chew": {
+    th:"ห้ามบดหรือเคี้ยว",             lo:"ຫ້າມບົດຫຼືຄ້ຽວ",
+    my:"မချေ၊ မဝါးပါနှင့်",            km:"ហាមកិន ឬទំពាស",
+    vi:"Không nghiền hoặc nhai",       "zh-CN":"勿压碎或咀嚼",  "zh-TW":"勿壓碎或咀嚼",
+    ja:"砕いたり噛んだりしないでください",ko:"부수거나 씹지 마세요",
+    ar:"لا تسحق أو تمضغ",               hi:"कुचलें या चबाएँ नहीं",
+    id:"Jangan dihancurkan atau dikunyah",ms:"Jangan dihancurkan atau dikunyah",
+    ru:"Не разламывать и не разжёвывать",fr:"Ne pas écraser ni mâcher",
+    de:"Nicht zerdrücken oder kauen",  es:"No triturar ni masticar",
+    pt:"Não esmagar nem mastigar",     tr:"Ezmeyin veya çiğnemeyin",
+  },
+  "swallow whole": {
+    th:"กลืนทั้งเม็ด",                lo:"ກືນທັງເມັດ",
+    my:"တလုံးလုံး မျိုပါ",            km:"លេបទាំងគ្រាប់",
+    vi:"Nuốt nguyên viên",            "zh-CN":"整片吞服",     "zh-TW":"整錠吞服",
+    ja:"丸ごと飲み込んでください",       ko:"통째로 삼키세요",
+    ar:"ابلع كاملاً",                   hi:"पूरी गोली निगलें",
+    id:"Telan utuh",                  ms:"Telan bulat-bulat",
+    ru:"Глотать целиком",             fr:"Avaler en entier",
+    de:"Ganz schlucken",              es:"Tragar entero",
+    pt:"Engolir inteiro",             tr:"Bütün olarak yutun",
+  },
+  "dissolve under the tongue": {
+    th:"อมใต้ลิ้นจนละลาย",            lo:"ອົມໃຕ້ລີ້ນຈົນລະລາຍ",
+    my:"လျှာအောက်တွင် ပျော်ဝင်အောင်ထား",km:"រលាយក្រោមអណ្តាត",
+    vi:"Ngậm dưới lưỡi đến tan",       "zh-CN":"舌下含化",     "zh-TW":"舌下含化",
+    ja:"舌下で溶かしてください",          ko:"혀 밑에서 녹이세요",
+    ar:"يذوب تحت اللسان",               hi:"जीभ के नीचे घुलने दें",
+    id:"Larutkan di bawah lidah",       ms:"Lekapkan di bawah lidah hingga lebur",
+    ru:"Рассасывать под языком",        fr:"Laisser fondre sous la langue",
+    de:"Unter der Zunge auflösen",      es:"Disolver bajo la lengua",
+    pt:"Dissolver sob a língua",        tr:"Dilin altında eritin",
+  },
+  "with a full glass of water": {
+    th:"ดื่มน้ำตามมาก ๆ",              lo:"ດື່ມນ້ຳຕາມຫຼາຍໆ",
+    my:"ရေအပြည့်တစ်ခွက်နှင့်",          km:"ជាមួយទឹកពេញកែវ",
+    vi:"Uống với một cốc nước đầy",     "zh-CN":"用一满杯水送服","zh-TW":"用一滿杯水送服",
+    ja:"コップ一杯の水で",               ko:"물 한 컵과 함께",
+    ar:"مع كوب ماء كامل",                hi:"भरे गिलास पानी के साथ",
+    id:"Dengan segelas penuh air",      ms:"Dengan segelas penuh air",
+    ru:"Запить полным стаканом воды",   fr:"Avec un grand verre d'eau",
+    de:"Mit einem vollen Glas Wasser",  es:"Con un vaso lleno de agua",
+    pt:"Com um copo cheio de água",     tr:"Bir bardak dolusu suyla",
+  },
+  "may cause drowsiness": {
+    th:"อาจทำให้ง่วงนอน",              lo:"ອາດເຮັດໃຫ້ງ່ວງນອນ",
+    my:"အိပ်ငိုက်စေနိုင်သည်",          km:"អាចបណ្តាលឱ្យងងុយដេក",
+    vi:"Có thể gây buồn ngủ",          "zh-CN":"可能引起嗜睡",   "zh-TW":"可能引起嗜睡",
+    ja:"眠気を催すことがあります",        ko:"졸음을 유발할 수 있음",
+    ar:"قد يسبب النعاس",                hi:"उनींदापन हो सकता है",
+    id:"Dapat menyebabkan kantuk",     ms:"Boleh menyebabkan rasa mengantuk",
+    ru:"Может вызывать сонливость",    fr:"Peut provoquer de la somnolence",
+    de:"Kann Schläfrigkeit verursachen",es:"Puede causar somnolencia",
+    pt:"Pode causar sonolência",       tr:"Uykuya neden olabilir",
+  },
+  "do not drive": {
+    th:"ห้ามขับรถ",                   lo:"ຫ້າມຂັບລົດ",
+    my:"ကားမမောင်းပါနှင့်",            km:"ហាមបើកបរ",
+    vi:"Không lái xe",                "zh-CN":"勿驾驶",        "zh-TW":"勿駕駛",
+    ja:"運転しないでください",           ko:"운전하지 마세요",
+    ar:"لا تقد السيارة",                hi:"वाहन न चलाएँ",
+    id:"Jangan mengemudi",            ms:"Jangan memandu",
+    ru:"Не садиться за руль",          fr:"Ne pas conduire",
+    de:"Nicht Auto fahren",            es:"No conducir",
+    pt:"Não dirigir",                  tr:"Araç kullanmayın",
+  },
+  "avoid alcohol": {
+    th:"งดเครื่องดื่มแอลกอฮอล์",        lo:"ງົດເຄື່ອງດື່ມທີ່ມີແອວກໍຮໍ",
+    my:"အရက်ရှောင်ပါ",                 km:"ជៀសវាងគ្រឿងស្រវឹង",
+    vi:"Tránh rượu bia",               "zh-CN":"避免饮酒",      "zh-TW":"避免飲酒",
+    ja:"アルコールを避けてください",       ko:"음주를 피하세요",
+    ar:"تجنب الكحول",                   hi:"शराब से बचें",
+    id:"Hindari alkohol",              ms:"Elakkan alkohol",
+    ru:"Избегайте алкоголя",           fr:"Éviter l'alcool",
+    de:"Alkohol vermeiden",            es:"Evitar el alcohol",
+    pt:"Evitar álcool",                tr:"Alkolden kaçının",
+  },
+  "store in refrigerator": {
+    th:"เก็บในตู้เย็น",                lo:"ເກັບໃນຕູ້ເຢັນ",
+    my:"အအေးခန်းတွင်သိုလှောင်ပါ",      km:"រក្សាទុកក្នុងទូទឹកកក",
+    vi:"Bảo quản trong tủ lạnh",       "zh-CN":"冷藏保存",      "zh-TW":"冷藏保存",
+    ja:"冷蔵庫で保管",                  ko:"냉장 보관",
+    ar:"يحفظ في الثلاجة",              hi:"रेफ्रिजरेटर में रखें",
+    id:"Simpan di lemari es",          ms:"Simpan dalam peti sejuk",
+    ru:"Хранить в холодильнике",       fr:"Conserver au réfrigérateur",
+    de:"Im Kühlschrank aufbewahren",   es:"Conservar en el refrigerador",
+    pt:"Conservar no refrigerador",    tr:"Buzdolabında saklayın",
+  },
+  "store at room temperature": {
+    th:"เก็บที่อุณหภูมิห้อง",          lo:"ເກັບໄວ້ໃນອຸນຫະພູມຫ້ອງ",
+    my:"အခန်းအပူချိန်တွင် သိုလှောင်ပါ",km:"រក្សាទុកក្នុងសីតុណ្ហភាពបន្ទប់",
+    vi:"Bảo quản ở nhiệt độ phòng",    "zh-CN":"室温保存",      "zh-TW":"室溫保存",
+    ja:"室温で保管",                    ko:"실온 보관",
+    ar:"يحفظ في درجة حرارة الغرفة",    hi:"कमरे के तापमान पर रखें",
+    id:"Simpan pada suhu kamar",       ms:"Simpan pada suhu bilik",
+    ru:"Хранить при комнатной температуре",fr:"Conserver à température ambiante",
+    de:"Bei Raumtemperatur aufbewahren",es:"Conservar a temperatura ambiente",
+    pt:"Conservar à temperatura ambiente",tr:"Oda sıcaklığında saklayın",
+  },
+  "keep out of reach of children": {
+    th:"เก็บให้พ้นมือเด็ก",            lo:"ເກັບໃຫ້ພົ້ນມືເດັກ",
+    my:"ကလေးများလက်လှမ်းမမီရာတွင်ထားပါ",km:"ទុកឱ្យឆ្ងាយពីដៃកុមារ",
+    vi:"Để xa tầm tay trẻ em",         "zh-CN":"放在儿童触不到的地方","zh-TW":"放在兒童觸不到的地方",
+    ja:"小児の手の届かない所に保管",      ko:"어린이의 손이 닿지 않는 곳에 보관",
+    ar:"يحفظ بعيداً عن متناول الأطفال",hi:"बच्चों की पहुँच से दूर रखें",
+    id:"Jauhkan dari jangkauan anak-anak",ms:"Jauhkan dari capaian kanak-kanak",
+    ru:"Хранить в недоступном для детей месте",fr:"Tenir hors de portée des enfants",
+    de:"Außerhalb der Reichweite von Kindern aufbewahren",es:"Mantener fuera del alcance de los niños",
+    pt:"Manter fora do alcance das crianças",tr:"Çocukların erişemeyeceği yerde saklayın",
+  },
+  "apply to affected area": {
+    th:"ทาบริเวณที่เป็น",              lo:"ທາບໍລິເວນທີ່ເປັນ",
+    my:"ထိခိုက်သောနေရာတွင် လိမ်းပါ",   km:"លាបលើតំបន់ដែលរងគ្រោះ",
+    vi:"Bôi lên vùng bị bệnh",         "zh-CN":"涂抹于患处",   "zh-TW":"塗抹於患處",
+    ja:"患部に塗布",                    ko:"환부에 바르세요",
+    ar:"يوضع على المنطقة المصابة",     hi:"प्रभावित स्थान पर लगाएँ",
+    id:"Oleskan pada area yang bermasalah",ms:"Sapukan pada kawasan yang terjejas",
+    ru:"Нанести на поражённый участок",fr:"Appliquer sur la zone affectée",
+    de:"Auf die betroffene Stelle auftragen",es:"Aplicar en la zona afectada",
+    pt:"Aplicar na área afetada",      tr:"Etkilenen bölgeye uygulayın",
+  },
+  "inhale 1 puff": {
+    th:"สูดดม 1 ครั้ง",                lo:"ສູດດົມ 1 ເທື່ອ",
+    my:"တစ်ကြိမ် ရှူပါ",                km:"ស្រូប 1 ដង",
+    vi:"Hít 1 lần",                    "zh-CN":"吸入1喷",      "zh-TW":"吸入1噴",
+    ja:"1回吸入",                       ko:"1회 흡입",
+    ar:"استنشق بخّة واحدة",             hi:"1 बार साँस लें",
+    id:"Hirup 1 semprotan",            ms:"Sedut 1 semburan",
+    ru:"Сделать 1 ингаляцию",           fr:"Inhaler 1 bouffée",
+    de:"1 Hub inhalieren",              es:"Inhalar 1 pulverización",
+    pt:"Inalar 1 jato",                 tr:"1 puf çekin",
+  },
+  "inhale 2 puffs": {
+    th:"สูดดม 2 ครั้ง",                lo:"ສູດດົມ 2 ເທື່ອ",
+    my:"နှစ်ကြိမ် ရှူပါ",               km:"ស្រូប 2 ដង",
+    vi:"Hít 2 lần",                    "zh-CN":"吸入2喷",      "zh-TW":"吸入2噴",
+    ja:"2回吸入",                       ko:"2회 흡입",
+    ar:"استنشق بختين",                  hi:"2 बार साँस लें",
+    id:"Hirup 2 semprotan",            ms:"Sedut 2 semburan",
+    ru:"Сделать 2 ингаляции",           fr:"Inhaler 2 bouffées",
+    de:"2 Hübe inhalieren",             es:"Inhalar 2 pulverizaciones",
+    pt:"Inalar 2 jatos",                tr:"2 puf çekin",
+  },
+  "rinse mouth after use": {
+    th:"บ้วนปากหลังใช้",                lo:"ບ້ວນປາກຫຼັງໃຊ້",
+    my:"အသုံးပြုပြီးနောက် ပါးစပ်ပလုပ်ပါ",km:"ល្បាងមាត់ក្រោយប្រើ",
+    vi:"Súc miệng sau khi dùng",       "zh-CN":"使用后漱口",   "zh-TW":"使用後漱口",
+    ja:"使用後うがいをする",             ko:"사용 후 입을 헹구세요",
+    ar:"اشطف الفم بعد الاستعمال",      hi:"उपयोग के बाद कुल्ला करें",
+    id:"Berkumur setelah pemakaian",   ms:"Berkumur selepas penggunaan",
+    ru:"Прополоскать рот после использования",fr:"Rincer la bouche après usage",
+    de:"Mund nach Gebrauch ausspülen", es:"Enjuagar la boca después de usar",
+    pt:"Enxaguar a boca após o uso",   tr:"Kullanım sonrası ağzı çalkalayın",
+  },
+  "take with food": {
+    th:"รับประทานพร้อมอาหาร",          lo:"ກິນພ້ອມອາຫານ",
+    my:"အစာနှင့်အတူ သောက်ပါ",          km:"ញ៉ាំជាមួយអាហារ",
+    vi:"Uống cùng thức ăn",            "zh-CN":"随餐服用",     "zh-TW":"隨餐服用",
+    ja:"食事と一緒に服用",              ko:"식사와 함께 복용",
+    ar:"يؤخذ مع الطعام",                hi:"भोजन के साथ लें",
+    id:"Minum bersama makanan",        ms:"Ambil bersama makanan",
+    ru:"Принимать с едой",              fr:"Prendre avec de la nourriture",
+    de:"Mit Nahrung einnehmen",         es:"Tomar con comida",
+    pt:"Tomar com alimentos",           tr:"Yiyecekle birlikte alın",
+  },
+  "take on empty stomach": {
+    th:"รับประทานตอนท้องว่าง",          lo:"ກິນຕອນທ້ອງເປົ່າ",
+    my:"အစာအိမ်ဗလာဖြင့် သောက်ပါ",      km:"ញ៉ាំពេលក្រពះទទេ",
+    vi:"Uống lúc đói",                  "zh-CN":"空腹服用",     "zh-TW":"空腹服用",
+    ja:"空腹時に服用",                  ko:"공복에 복용",
+    ar:"يؤخذ على معدة فارغة",          hi:"खाली पेट लें",
+    id:"Minum saat perut kosong",      ms:"Ambil semasa perut kosong",
+    ru:"Принимать натощак",             fr:"Prendre à jeun",
+    de:"Auf nüchternen Magen einnehmen",es:"Tomar con el estómago vacío",
+    pt:"Tomar com o estômago vazio",   tr:"Aç karnına alın",
+  },
+  "complete the full course": {
+    th:"รับประทานยาให้ครบตามแพทย์สั่ง",lo:"ກິນຢາໃຫ້ຄົບຕາມໝໍສັ່ງ",
+    my:"ဆေးကုသမှု အပြီးအထိ သောက်ပါ",   km:"ញ៉ាំឱ្យអស់តាមការណែនាំ",
+    vi:"Uống đủ liều theo chỉ định",   "zh-CN":"按医嘱完成全程","zh-TW":"按醫囑完成全程",
+    ja:"処方の最後まで服用",              ko:"처방대로 모두 복용",
+    ar:"أكمل العلاج كاملاً",             hi:"पूरी खुराक पूरी करें",
+    id:"Habiskan sesuai resep",         ms:"Habiskan mengikut preskripsi",
+    ru:"Завершить полный курс",         fr:"Terminer tout le traitement",
+    de:"Behandlung vollständig abschließen",es:"Completar el tratamiento completo",
+    pt:"Completar o tratamento todo",   tr:"Tedaviyi tamamlayın",
+  },
+  "for nasal use only": {
+    th:"ใช้ทางจมูกเท่านั้น",            lo:"ໃຊ້ທາງດັງເທົ່ານັ້ນ",
+    my:"နှာခေါင်းသုံးသာ",                km:"ប្រើតាមច្រមុះតែប៉ុណ្ណោះ",
+    vi:"Chỉ dùng cho mũi",              "zh-CN":"仅供鼻用",      "zh-TW":"僅供鼻用",
+    ja:"鼻腔用のみ",                    ko:"비강용으로만 사용",
+    ar:"للاستعمال الأنفي فقط",          hi:"केवल नाक के लिए",
+    id:"Hanya untuk hidung",            ms:"Untuk kegunaan hidung sahaja",
+    ru:"Только для назального применения",fr:"Voie nasale uniquement",
+    de:"Nur zur nasalen Anwendung",     es:"Sólo para uso nasal",
+    pt:"Apenas para uso nasal",         tr:"Sadece burun için",
+  },
+  "for eye use only": {
+    th:"ใช้หยอดตาเท่านั้น",             lo:"ໃຊ້ຢອດຕາເທົ່ານັ້ນ",
+    my:"မျက်စိအတွက်သာ",                 km:"សម្រាប់ភ្នែកតែប៉ុណ្ណោះ",
+    vi:"Chỉ dùng cho mắt",              "zh-CN":"仅供眼用",      "zh-TW":"僅供眼用",
+    ja:"点眼用のみ",                    ko:"점안용으로만 사용",
+    ar:"للاستعمال في العين فقط",        hi:"केवल आँख के लिए",
+    id:"Hanya untuk mata",              ms:"Untuk kegunaan mata sahaja",
+    ru:"Только для глаз",                fr:"Voie ophtalmique uniquement",
+    de:"Nur zur Anwendung am Auge",     es:"Sólo para uso oftálmico",
+    pt:"Apenas para uso oftálmico",     tr:"Sadece göz için",
+  },
+};
+
+function matchAuxiliaryPhrase(text, lang) {
+  const t = text.trim().toLowerCase().replace(/\.$/, "").replace(/\s+/g, " ");
+  const map = AUXILIARY_PHRASES[t];
+  if (!map) return null;
+  return map[lang] || null;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+ * INJECTION SUB-PATTERN
+ *
+ * Matches HIS injection rows like:
+ *   "Inject 1200 mg IV every 8 hours"
+ *   "Inject 500 mg Intravenously every dose"
+ *   "Inject 100 units Subcutaneously twice daily"
+ *
+ * Output: per-language "Inject N <unit> via <route> [freq]"
+ * ═══════════════════════════════════════════════════════════════ */
+const INJECT_VERB = {
+  th:"ฉีด",          lo:"ສັກ",          my:"ထိုးပါ",         km:"ចាក់",
+  vi:"Tiêm",         "zh-CN":"注射",     "zh-TW":"注射",      ja:"注射",
+  ko:"주사",          ar:"احقن",          hi:"इंजेक्ट करें",     id:"Suntikkan",
+  ms:"Suntik",       ru:"Ввести",        fr:"Injecter",       de:"Injizieren",
+  es:"Inyectar",     pt:"Injetar",       tr:"Enjekte edin",
+};
+const INJECT_ROUTE = {
+  iv: {
+    th:"เข้าหลอดเลือดดำ", lo:"ເຂົ້າເສັ້ນເລືອດດຳ", my:"သွေးကြောထဲ", km:"តាមសរសៃឈាម",
+    vi:"tĩnh mạch",      "zh-CN":"静脉",          "zh-TW":"靜脈",         ja:"静脈内",
+    ko:"정맥내",          ar:"وريدياً",            hi:"शिरा में",          id:"intravena",
+    ms:"intravena",       ru:"внутривенно",        fr:"par voie IV",       de:"intravenös",
+    es:"vía IV",          pt:"via IV",             tr:"damar yoluyla",
+  },
+  im: {
+    th:"เข้ากล้ามเนื้อ",  lo:"ເຂົ້າກ້າມຊີ້ນ",      my:"ကြွက်သားထဲ",      km:"តាមសាច់ដុំ",
+    vi:"bắp thịt",        "zh-CN":"肌肉",          "zh-TW":"肌肉",          ja:"筋肉内",
+    ko:"근육내",           ar:"عضلياً",            hi:"मांसपेशी में",       id:"intramuskular",
+    ms:"intramuskular",    ru:"внутримышечно",     fr:"par voie IM",       de:"intramuskulär",
+    es:"vía IM",           pt:"via IM",            tr:"kas içine",
+  },
+  sc: {
+    th:"ใต้ผิวหนัง",      lo:"ໃຕ້ຜິວໜັງ",          my:"အရေပြားအောက်",     km:"ក្រោមស្បែក",
+    vi:"dưới da",         "zh-CN":"皮下",          "zh-TW":"皮下",         ja:"皮下",
+    ko:"피하",            ar:"تحت الجلد",          hi:"त्वचा के नीचे",     id:"subkutan",
+    ms:"subkutan",        ru:"подкожно",           fr:"par voie SC",       de:"subkutan",
+    es:"vía SC",          pt:"via SC",             tr:"deri altına",
+  },
+};
+const INJECT_RE = new RegExp([
+  /^Inject\s+/,
+  /(\d+(?:\.\d+)?)\s*/,                 // [1] dose number
+  /(mg|g|mcg|units?|iu|ml|millilit(?:re|er))s?\s*/i,  // [2] dose unit
+  /(?:(intravenous(?:ly)?|iv|intra-?venous|into\s+(?:the\s+)?vein|intramuscular(?:ly)?|im|intra-?muscular|subcutaneous(?:ly)?|sc|subq|subcutan|under\s+the\s+skin)\s*)?/i, // [3] route
+  /(.*)$/i,                              // [4] remainder (frequency + timing)
+].map(r => r.source).join(""), "i");
+
+function _routeKey(routeRaw) {
+  const r = (routeRaw || "").toLowerCase();
+  if (/^iv$|intravenous|into\s+(?:the\s+)?vein/.test(r)) return "iv";
+  if (/^im$|intramuscular/.test(r))                       return "im";
+  if (/^sc$|subq|subcutan|under\s+the\s+skin/.test(r))    return "sc";
+  return "";
+}
+
+function matchInjectionPattern(text, lang) {
+  const m = text.trim().match(INJECT_RE);
+  if (!m) return null;
+  const dose       = m[1];
+  const doseUnit   = (m[2] || "").toLowerCase().replace(/s$/, "");
+  const routeKey   = _routeKey(m[3]);
+  const remainder  = (m[4] || "").trim();
+
+  const verb = INJECT_VERB[lang];
+  if (!verb) return null;
+
+  // Translate dose unit (mg/g/units/ml). Fall back to literal English.
+  const DOSE_UNIT = {
+    mg:    { th:"มก.", lo:"ມກ", "zh-CN":"毫克","zh-TW":"毫克",ja:"mg",ko:"mg" },
+    g:     { th:"ก.",  lo:"ກຣາມ","zh-CN":"克",  "zh-TW":"克", ja:"g", ko:"g" },
+    mcg:   { th:"มคก.",lo:"ມຄກ","zh-CN":"微克","zh-TW":"微克",ja:"mcg",ko:"mcg" },
+    unit:  { th:"ยูนิต",lo:"ຢູນິດ","zh-CN":"单位","zh-TW":"單位",ja:"単位",ko:"단위" },
+    iu:    { th:"IU",  lo:"IU",  "zh-CN":"国际单位","zh-TW":"國際單位",ja:"IU",ko:"IU" },
+    ml:    { th:"มล.",  lo:"ມລ",  "zh-CN":"毫升","zh-TW":"毫升",ja:"ml",ko:"ml" },
+  };
+  const duKey = /^millilit/.test(doseUnit) ? "ml" : doseUnit;
+  const duMap = DOSE_UNIT[duKey];
+  const localDoseUnit = (duMap && duMap[lang]) || doseUnit;
+
+  // Try to translate the remainder via _freq (covers "every 8 hours [when needed]")
+  let freqStr = "";
+  if (remainder) {
+    const f = _freq(remainder, lang);
+    if (f) freqStr = f;
+  }
+
+  const route = routeKey ? (INJECT_ROUTE[routeKey][lang] || "") : "";
+
+  // Assemble per language. Thai/Lao native order: verb dose-amount route freq
+  const parts = [verb, `${dose} ${localDoseUnit}`, route, freqStr].filter(Boolean);
+  return parts.join(" ");
 }
 
 /* Public entry point used by translate-core.js */
 window.matchMedicalPattern = function(text, lang) {
-  return matchPattern(text, lang) || matchQtyPattern(text, lang) || null;
+  return matchAuxiliaryPhrase(text, lang)
+      || matchInjectionPattern(text, lang)
+      || matchPattern(text, lang)
+      || matchQtyPattern(text, lang)
+      || null;
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -362,20 +852,24 @@ const MEDICAL_GLOSSARY = {
     "Take":"รับประทาน","Tablet":"เม็ด","Capsule":"แคปซูล",
     "Daily":"ทุกวัน","Morning":"ตอนเช้า","Evening":"ตอนเย็น","Night":"ตอนกลางคืน",
     "Spray":"พ่น","Nostril":"รูจมูก","Nasal":"ทางจมูก","Bottle":"ขวด",
-    "Drops":"หยด","Apply":"ทา","Inhale":"สูดดม","Orally":"ทางปาก",
+    "Drops":"หยด","Apply":"ทา","Inhale":"สูดดม","Orally":"",
     "Before meal":"ก่อนอาหาร","After meal":"หลังอาหาร",
     "quarter tablet":"หนึ่งส่วนสี่เม็ด","half tablet":"ครึ่งเม็ด","three-quarter tablet":"สามส่วนสี่เม็ด"
   },
   lo:{...BASE_EN,
-    "Take":"ກິນ","Tablet":"ເມັດ","Capsule":"ແຄັບຊູນ",
-    "Daily":"ທຸກມື້","Morning":"ຕອນເຊົ້າ","Evening":"ຕອນແລງ",
+    "Take":"ກິນ","Tablet":"ເມັດ","Tablets":"ເມັດ",
+    "Capsule":"ແຄັບຊູນ","Capsules":"ແຄັບຊູນ",
+    "Daily":"ທຸກມື້","Once":"ຄັ້ງດຽວ","Twice":"ສອງເທື່ອ","Three Times":"ສາມເທື່ອ",
+    "Morning":"ຕອນເຊົ້າ","Evening":"ຕອນແລງ","Night":"ຕອນກາງຄືນ",
+    "Before":"ກ່ອນ","After":"ຫຼັງ",
     "Spray":"ພົ່ນ","Nostril":"ຮູດັງ","Nasal":"ທາງດັງ","Bottle":"ຂວດ",
-    "Drops":"ຢອດ","Apply":"ທາ","Inhale":"ສູດດົມ","Orally":"ທາງປາກ",
+    "Drops":"ຢອດ","Apply":"ທາ","Inhale":"ສູດດົມ","Orally":"",
     "Before meal":"ກ່ອນອາຫານ","After meal":"ຫຼັງອາຫານ",
-    "quarter tablet":"ໜຶ່ງສ່ວນສີ່ເມັດ","half tablet":"ເຄິ່ງເມັດ"
+    "For":"ເປັນເວລາ","Days":"ວັນ","Hours":"ຊົ່ວໂມງ","Time":"ເທື່ອ","Every":"ທຸກ",
+    "quarter tablet":"ໜຶ່ງສ່ວນສີ່ເມັດ","half tablet":"ເຄິ່ງເມັດ","three-quarter tablet":"ສາມສ່ວນສີ່ເມັດ"
   },
   my:{...BASE_EN,
-    "Take":"သောက်ပါ","Tablet":"မှ","Capsule":"ကပ်ဆူး",
+    "Take":"သောက်ပါ","Tablet":"ဆေးပြား","Capsule":"တောင့်",
     "Daily":"နေ့တိုင်း","Morning":"မနက်","Evening":"ညနေ","Night":"ည",
     "Orally":"ပါးစပ်မှ","Before meal":"ထမင်းမစားမီ","After meal":"ထမင်းစားပြီး"
   },

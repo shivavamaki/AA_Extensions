@@ -85,7 +85,7 @@ const HMTranslate = (() => {
       // ── Layer 3: Google Translate ─────────────────────────────
       const translated = await translateText(text, lang, "en");
       if (translated) {
-        node.nodeValue = translated;
+        node.nodeValue = postProcessTranslation(translated, lang);
         done++;
       }
 
@@ -163,6 +163,29 @@ const HMTranslate = (() => {
     // remove "For XX Days"
     t = t.replace(/\bFor\s+\d+\s+(Days?|Day).*/i,"");
 
+    /* ================= STRIP HIS NOISE ================= */
+
+    // Strip drug-name markdown markers and trailing route slashes that the
+    // HIS sometimes adds: "Zyrtec **10 Mg** Tablet//" → "Zyrtec 10 Mg Tablet"
+    t = t.replace(/\*\*/g, "").replace(/\/\/+/g, " ");
+
+    // Strip the HIS sub-tag "(S)" / "(s)" — a Spray-form marker that adds no
+    // patient-facing information and only confuses MASTER_RE.
+    t = t.replace(/\s*\(S\)\s*/gi, " ");
+
+    // Strip route parentheticals: "(Mouth/Throat)" / "(Nasal)" / "(ปาก / คอ)" /
+    // "(ทางจมูก)". These are reference annotations for the pharmacist; the verb
+    // (spray / instill / etc.) already conveys the route to the patient.
+    t = t.replace(/\s*\((?:[A-Za-z฀-๿຀-໿\s\/]+)\)\s*/g, " ");
+
+    // Strip trailing dispense count: "... ×1" / "... x 1". The dispensed
+    // quantity is already on its own sticker line.
+    t = t.replace(/\s*[×xX]\s*\d+\s*$/g, "");
+    // Strip a bare trailing "1"/"2"/"3" that follows a meal/time word — this
+    // is the HIS dose-count, not a real frequency. Keep digits that follow
+    // "times"/"hours"/"days" or precede them.
+    t = t.replace(/\b(breakfast|lunch|dinner|bedtime|noon|morning|evening|night|meal|needed)\s+[1-9]\s*$/i, "$1");
+
     /* ================= NORMALIZE MEDICAL PATTERNS ================= */
 
     // fix plural markers
@@ -191,29 +214,25 @@ const HMTranslate = (() => {
     // normalize tab → tablet
     t = t.replace(/\btab(s)?\b/gi,"tablet");
 
-    /* ================= FIX MEAL SEQUENCE ================= */
-
-    // ensure commas so Google Translate keeps lunch
+    /* ================= FIX MEAL SEQUENCE =================
+     * Normalise meal-time sequences into the canonical space-delimited form
+     * MASTER_RE / COMPOUND_TIMING expect. Strip commas and the Oxford "and".
+     * Examples (input → normalised):
+     *   "Morning, Noon, and Evening"   → "morning noon evening"
+     *   "After Breakfast, Lunch, and Dinner" → "after breakfast lunch dinner"
+     *   "Morning and Evening"          → "morning evening"
+     * The downstream COMPOUND_TIMING lookup handles every permutation.
+     */
+    const MEAL_TOKENS_RE =
+      /\b(morning|noon|evening|night|bedtime|breakfast|lunch|dinner|meal)\b(?:\s*,\s*\b(morning|noon|evening|night|bedtime|breakfast|lunch|dinner|meal)\b)+/gi;
+    t = t.replace(MEAL_TOKENS_RE, m => m.replace(/\s*,\s*/g, " "));
+    // Strip Oxford-comma "and" between meal-time tokens
     t = t.replace(
-    /After Breakfast Lunch and Dinner/gi,
-    "after breakfast, lunch, and dinner"
+      /\b(morning|noon|evening|night|bedtime|breakfast|lunch|dinner|meal)\s+and\s+(morning|noon|evening|night|bedtime|breakfast|lunch|dinner|meal)\b/gi,
+      "$1 $2"
     );
-
-    t = t.replace(
-    /After Breakfast Lunch Dinner/gi,
-    "after breakfast, lunch, and dinner"
-    );
-
-    t = t.replace(
-    /Breakfast Lunch Dinner/gi,
-    "breakfast, lunch, and dinner"
-    );
-
-    // morning evening pattern
-    t = t.replace(
-    /Morning and Evening/gi,
-    "morning and evening"
-    );
+    // Collapse residual "morning  noon" double spaces (set by the strips above)
+    t = t.replace(/\s{2,}/g, " ");
 
     /* ================= CLEAN SPACES ================= */
 
@@ -244,6 +263,10 @@ const HMTranslate = (() => {
 
       });
 
+    // Collapse double-spaces left by empty replacements (e.g. "Orally"→"")
+    // and trim trailing whitespace.
+    out = out.replace(/\s{2,}/g, " ").trim();
+
     return out;
 
   }
@@ -252,6 +275,47 @@ const HMTranslate = (() => {
 
     return str.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 
+  }
+
+  /* ================= POST-GOOGLE CLEANUP =================
+   * Google Translate emits known-bad tokens for some pharmacy terms.
+   * This safety net normalises them to BKN-approved Lao/Thai wording,
+   * so even when Layers 1+2 miss, the patient never sees garbled output.
+   *
+   * Bad tokens corrected:
+   *   Lao "ແອັນຊູນ" (bogus capsule) → "ແຄັບຊູນ"
+   *   Lao "ທາງປາກ" (literal "via mouth") → removed
+   *   Thai "ทางปาก" → removed
+   *   Other unsafe transliterations as discovered.
+   */
+  const POST_CLEANUP = {
+    lo: [
+      // Bogus "capsule" transliterations seen from Google
+      [/ແອັນຊູນ/g, "ແຄັບຊູນ"],
+      [/ແອັດຊູນ/g, "ແຄັບຊູນ"],
+      [/ແອນຊູນ/g,  "ແຄັບຊູນ"],
+      // Drop the literal "via mouth" — verb already implies it
+      [/\s*ທາງປາກ\s*/g, " "],
+      // Bogus "tablet" transliteration
+      [/ແທັບເລັດ/g, "ເມັດ"],
+      // Bogus "spray" transliterations
+      [/ສະເປຣ/g, "ພົ່ນ"],
+      // Tidy spaces
+      [/\s{2,}/g, " "],
+    ],
+    th: [
+      [/\s*ทางปาก\s*/g, " "],
+      [/แท็บเล็ต/g, "เม็ด"],
+      [/แคปซูล/g, "แคปซูล"], // already correct, no-op kept for symmetry
+      [/\s{2,}/g, " "],
+    ],
+  };
+  function postProcessTranslation(text, lang) {
+    const rules = POST_CLEANUP[lang];
+    if (!rules || !text) return text;
+    let out = text;
+    for (const [re, repl] of rules) out = out.replace(re, repl);
+    return out.trim();
   }
 
   /* ================= GOOGLE TRANSLATE ================= */

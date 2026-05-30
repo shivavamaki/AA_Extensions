@@ -66,30 +66,51 @@ function buildStickerPages(rows) {
 }
 
 /* ─────────────────────────────────────────────
- * Message listener — receives rows from background
+ * Render rows into #container and re-init translation
  * ───────────────────────────────────────────── */
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type !== MSG.OPEN_STICKER) return;
-
+function renderRows(rows) {
   const container = document.getElementById("container");
   if (!container) {
     console.warn("[page-med-sticker] #container not found");
     return;
   }
-
-  container.innerHTML = buildStickerPages(msg.rows || []);
+  container.innerHTML = buildStickerPages(rows || []);
   _originalHTML       = container.innerHTML;
 
   // Re-initialise translation engine with the freshly rendered DOM
   if (typeof HMTranslate !== "undefined") {
     HMTranslate.init(container, { glossary: window.MEDICAL_GLOSSARY || {} });
   }
+}
+
+/* ─────────────────────────────────────────────
+ * Message listener — receives rows when tab is REUSED
+ * (background calls chrome.tabs.sendMessage on reuse).
+ * For the first open, the payload is read from
+ * chrome.storage.session on DOMContentLoaded instead.
+ * ───────────────────────────────────────────── */
+chrome.runtime.onMessage.addListener((msg) => {
+  if (!msg || msg.type !== MSG.OPEN_STICKER) return;
+  renderRows(msg.rows || []);
 });
 
 /* ─────────────────────────────────────────────
  * Toolbar — wired up after DOM is ready
  * ───────────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", () => {
+  /* Session storage fallback — covers the race where the page loads AFTER
+     background already wrote the payload (first open / page refresh).
+     Background's openOrReuseTab only sends a runtime message on REUSE; for
+     a brand-new tab it just sets chrome.storage.session.payload_sticker. */
+  try {
+    chrome.storage.session.get("payload_sticker", (res) => {
+      const stored = res && res.payload_sticker;
+      if (stored && stored.type === MSG.OPEN_STICKER && Array.isArray(stored.rows)) {
+        renderRows(stored.rows);
+      }
+    });
+  } catch (_) { /* extension context invalid — ignore */ }
+
   const btnPrint  = document.getElementById("btnPrint");
   const btnPdf    = document.getElementById("btnPdf");
   const btnRevert = document.getElementById("btnRevert");
