@@ -55,15 +55,18 @@ Data layout:
 import hashlib
 import json
 import mimetypes
+import os
 import re
 import secrets
+import shutil
 import sys
 import socket
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 
 # ── Config ─────────────────────────────────────────────────────
@@ -94,6 +97,7 @@ EXTENSION_ORIGIN = 'chrome-extension://eeglifkmgelepjmnnldknacamedmckbj'
 # medication-db is a dict; all others are arrays
 RX_DICT_COLS  = {'medication-db'}
 DATE_RE       = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+MONTH_RE      = re.compile(r'^\d{4}-\d{2}$')
 SECTION_KEYS  = {'opd-brief', 'ipd-brief', 'opd-stat', 'ipd-stat'}
 SECTION_FIELD = {
     'opd-brief': 'opdBrief',
@@ -109,6 +113,42 @@ def kpi_file(date_key):
 
 def _now_iso():
     return datetime.now(timezone.utc).isoformat()
+
+def _atomic_write_text(path, text, encoding='utf-8'):
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(prefix=f'.{p.name}.', suffix='.tmp', dir=str(p.parent))
+    try:
+        with os.fdopen(fd, 'w', encoding=encoding) as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_name, str(p))
+    except Exception:
+        try:
+            os.unlink(tmp_name)
+        except OSError:
+            pass
+        raise
+
+def _atomic_write_json(path, data):
+    _atomic_write_text(path, json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+
+def _safe_filename(name):
+    if not name or '\x00' in name or '/' in name or '\\' in name:
+        return None
+    if name.startswith('.') or Path(name).name != name:
+        return None
+    return name
+
+def _path_within(base, target):
+    base = Path(base).resolve()
+    target = Path(target).resolve()
+    try:
+        target.relative_to(base)
+        return True
+    except ValueError:
+        return False
 
 def _empty_day(date_key):
     ts = _now_iso()
@@ -137,12 +177,8 @@ def load_or_create_day(date_key):
     return doc
 
 def save_kpi_day(date_key, data):
-    KPI_DIR.mkdir(parents=True, exist_ok=True)
     data['updatedAt'] = _now_iso()
-    kpi_file(date_key).write_text(
-        json.dumps(data, ensure_ascii=False, indent=2),
-        encoding='utf-8'
-    )
+    _atomic_write_json(kpi_file(date_key), data)
 
 def load_all_kpi():
     days = []
@@ -168,11 +204,7 @@ def load_ks(col):
         return []
 
 def save_ks(col, data):
-    KS_DIR.mkdir(parents=True, exist_ok=True)
-    ks_file(col).write_text(
-        json.dumps(data, ensure_ascii=False, indent=2),
-        encoding='utf-8'
-    )
+    _atomic_write_json(ks_file(col), data)
 
 
 # ── RX helpers (pharmacy master data) ────────────────────────
@@ -189,11 +221,7 @@ def load_rx(col):
         return {} if col in RX_DICT_COLS else []
 
 def save_rx(col, data):
-    RX_DIR.mkdir(parents=True, exist_ok=True)
-    rx_file(col).write_text(
-        json.dumps(data, ensure_ascii=False, indent=2),
-        encoding='utf-8'
-    )
+    _atomic_write_json(rx_file(col), data)
 
 
 # ── Schedule helpers ──────────────────────────────────────────
@@ -203,6 +231,15 @@ def schedule_file(name):
 def load_schedule(name):
     p = schedule_file(name)
     if not p.exists():
+        if name.startswith('state-'):
+            legacy = schedule_file('state')
+            if legacy.exists():
+                try:
+                    doc = json.loads(legacy.read_text(encoding='utf-8'))
+                    if isinstance(doc, dict) and doc.get('month') == name[6:]:
+                        return doc
+                except Exception:
+                    pass
         return None
     try:
         return json.loads(p.read_text(encoding='utf-8'))
@@ -210,11 +247,17 @@ def load_schedule(name):
         return None
 
 def save_schedule(name, data):
-    SCHEDULE_DIR.mkdir(parents=True, exist_ok=True)
-    schedule_file(name).write_text(
-        json.dumps(data, ensure_ascii=False, indent=2),
-        encoding='utf-8'
-    )
+    _atomic_write_json(schedule_file(name), data)
+    if name.startswith('state-') and isinstance(data, dict):
+        shared = load_schedule('state') or {}
+        if not isinstance(shared, dict):
+            shared = {}
+        for key in ('staff', 'shiftTemplates', 'bookingRules'):
+            if key in data:
+                shared[key] = data[key]
+        shared['lastMonthSaved'] = name[6:]
+        shared['updatedAt'] = _now_iso()
+        _atomic_write_json(schedule_file('state'), shared)
 
 
 # ── Patient profile helpers (cross-feature data sharing) ─────────────
@@ -245,13 +288,9 @@ def load_patient(puid):
         return None
 
 def save_patient(puid, data):
-    PATIENTS_DIR.mkdir(parents=True, exist_ok=True)
     data['updatedAt'] = _now_iso()
     data['patientuid'] = puid
-    patient_file(puid).write_text(
-        json.dumps(data, ensure_ascii=False, indent=2),
-        encoding='utf-8'
-    )
+    _atomic_write_json(patient_file(puid), data)
 
 def _empty_patient(puid):
     return {
@@ -296,11 +335,7 @@ def _load_users():
         return {}
 
 def _save_users(users):
-    AUTH_DIR.mkdir(parents=True, exist_ok=True)
-    AUTH_FILE.write_text(
-        json.dumps(users, ensure_ascii=False, indent=2),
-        encoding='utf-8'
-    )
+    _atomic_write_json(AUTH_FILE, users)
 
 def _ensure_default_users():
     users = _load_users()
@@ -398,7 +433,7 @@ class Handler(BaseHTTPRequestHandler):
         'users'             username|None   None
         None                None            None
         """
-        raw   = self.path.split('?')[0]
+        raw   = urllib.parse.urlsplit(self.path).path
         parts = raw.strip('/').split('/')
 
         # /api/kpi
@@ -445,9 +480,17 @@ class Handler(BaseHTTPRequestHandler):
         if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'ks-files':
             return 'ks-file-upload', urllib.parse.unquote(parts[2]), None
 
-        # /api/schedule/state  or  /api/schedule/bookings
+        # /api/schedule/state, /api/schedule/state?month=YYYY-MM, or /api/schedule/bookings
         if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'schedule' and parts[2] in ('state', 'bookings'):
-            return 'schedule', parts[2], None
+            key = parts[2]
+            if key == 'state':
+                qs = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+                month = (qs.get('month') or [''])[0]
+                if month:
+                    if not MONTH_RE.match(month):
+                        return None, None, None
+                    key = f'state-{month}'
+            return 'schedule', key, None
 
         # /api/report/fetch
         if parts == ['api', 'report', 'fetch']:
@@ -494,23 +537,23 @@ class Handler(BaseHTTPRequestHandler):
     # GET
     def do_GET(self):
         # ── Static webapp files ────────────────────────────────
-        clean = self.path.split('?')[0]
+        clean = urllib.parse.urlsplit(self.path).path
         if clean in ('/', '/index.html', ''):
             self._serve_file(WWW_DIR / 'index.html', 'text/html; charset=utf-8'); return
         if clean.startswith('/static/'):
-            self._serve_file(WWW_DIR / clean.lstrip('/'), None); return
+            self._serve_file_under(WWW_DIR, urllib.parse.unquote(clean.lstrip('/')), None); return
 
         # ── Med images ─────────────────────────────────────────
         if clean.startswith('/med-images/'):
-            fname = clean[12:]          # strip leading '/med-images/'
-            if not fname or '/' in fname or fname.startswith('.'):
+            fname = _safe_filename(urllib.parse.unquote(clean[12:]))
+            if not fname:
                 self.send_json(403, {'error': 'Forbidden'}); return
             self._serve_file(MED_IMAGES_DIR / fname, None); return
 
         # ── KS files (images / PDFs) ────────────────────────────
         if clean.startswith('/ks-files/'):
-            fname = clean[10:]          # strip leading '/ks-files/'
-            if not fname or '/' in fname or fname.startswith('.'):
+            fname = _safe_filename(urllib.parse.unquote(clean[10:]))
+            if not fname:
                 self.send_json(403, {'error': 'Forbidden'}); return
             self._serve_file(KS_FILES_DIR / fname, None); return
 
@@ -522,7 +565,7 @@ class Handler(BaseHTTPRequestHandler):
             })
             return
 
-        rtype, key, _ = self.parse_route()
+        rtype, key, extra = self.parse_route()
 
         if rtype == 'auth' and key == 'me':
             s = self._session()
@@ -564,23 +607,30 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, doc.get('adrTimeline') or {})
         elif rtype == 'patient-medcache':
             doc = load_or_create_patient(key)
-            entry = (doc.get('medicationCache') or {}).get(item_id)
+            entry = (doc.get('medicationCache') or {}).get(extra)
             self.send_json(200, entry)
         else:
             self.send_json(404, {'error': 'Not found'})
+
+    def _serve_file_under(self, base_dir, relative_path, content_type):
+        rel = str(relative_path).replace('\\', '/').lstrip('/')
+        target = Path(base_dir) / rel
+        if not _path_within(base_dir, target):
+            self.send_json(403, {'error': 'Forbidden'}); return
+        self._serve_file(target, content_type)
 
     def _serve_file(self, path, content_type):
         p = Path(path)
         if not p.exists() or not p.is_file():
             self.send_json(404, {'error': 'File not found'}); return
-        data = p.read_bytes()
         ct = content_type or mimetypes.guess_type(str(p))[0] or 'application/octet-stream'
         self.send_response(200)
         self.send_header('Content-Type', ct)
-        self.send_header('Content-Length', str(len(data)))
+        self.send_header('Content-Length', str(p.stat().st_size))
         self._cors()
         self.end_headers()
-        self.wfile.write(data)
+        with p.open('rb') as f:
+            shutil.copyfileobj(f, self.wfile)
 
     # PUT — full day doc OR single section OR rx collection OR user
     def do_PUT(self):
@@ -596,19 +646,20 @@ class Handler(BaseHTTPRequestHandler):
             if not self._require('super_admin', 'admin', 'editor'): return
 
         if rtype == 'med-image-upload':
-            safe_name = Path(key).name
+            safe_name = _safe_filename(key)
             if not safe_name:
                 self.send_json(400, {'error': 'Invalid filename'}); return
             length = int(self.headers.get('Content-Length', 0))
             data   = self.rfile.read(length)
             if not data:
                 self.send_json(400, {'error': 'Empty body'}); return
+            MED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
             (MED_IMAGES_DIR / safe_name).write_bytes(data)
             self.send_json(200, {'ok': True, 'file': safe_name})
             return
 
         if rtype == 'ks-file-upload':
-            safe_name = Path(key).name
+            safe_name = _safe_filename(key)
             if not safe_name:
                 self.send_json(400, {'error': 'Invalid filename'}); return
             length = int(self.headers.get('Content-Length', 0))
@@ -923,7 +974,7 @@ def main():
     ip = get_local_ip()
     Handler._ip   = ip
     Handler._port = port
-    server = HTTPServer(('0.0.0.0', port), Handler)
+    server = ThreadingHTTPServer(('0.0.0.0', port), Handler)
 
     print()
     print('  ╔══════════════════════════════════════════════╗')

@@ -912,7 +912,16 @@ function clearDirty() {
   if (btn) btn.textContent = "Save to database in server";
 }
 
-function saveState() {
+function scheduleStateUrl() {
+  return `http://10.134.110.81:8765/api/schedule/state?month=${encodeURIComponent(SCHEDULE_MONTH_KEY)}`;
+}
+
+function stateTimestamp(state) {
+  const ts = Date.parse(state?.updatedAt || "");
+  return Number.isFinite(ts) ? ts : 0;
+}
+
+async function saveState() {
   const state = {
     staff, requests, parttimeAvailability, adminOverrides, shiftTemplates, allocationRun, allocationStarted, reqOffLocked, lockedDays: [...lockedDays],
     settings: {
@@ -926,14 +935,25 @@ function saveState() {
   if (!allocationStarted) reqOffLocked = true;
   state.reqOffLocked = reqOffLocked;
   state.month = SCHEDULE_MONTH_KEY;
+  state.updatedAt = new Date().toISOString();
   localStorage.setItem(storageKey(), JSON.stringify(state));
-  fetch(`http://10.134.110.81:8765/api/schedule/state?month=${encodeURIComponent(SCHEDULE_MONTH_KEY)}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(state)
-  }).catch(() => {});
-  clearDirty();
-  setMessage(allocationStarted ? "State saved. Closing or refreshing the page will keep this schedule." : "REQ OFF / PT availability saved and locked. Click Auto Allocate to generate shifts.");
+  const btn = $("btnSaveState");
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch(scheduleStateUrl(), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state)
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    clearDirty();
+    setMessage(allocationStarted ? "State saved to server. Closing or refreshing the page will keep this schedule." : "REQ OFF / PT availability saved to server and locked. Click Auto Allocate to generate shifts.");
+  } catch (err) {
+    markDirty();
+    setMessage(`Saved in this browser, but server save failed: ${err.message || err}. Try Save again before closing.`);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 function applyState(state) {
@@ -957,26 +977,30 @@ function applyState(state) {
 function loadState() {
   try {
     const raw = localStorage.getItem(storageKey());
-    if (!raw) {
-      fetch(`http://10.134.110.81:8765/api/schedule/state?month=${encodeURIComponent(SCHEDULE_MONTH_KEY)}`)
-        .then(r => r.ok ? r.json() : null)
-        .then(state => {
-          if (state && typeof state === 'object') {
-            applyState(state);
-            localStorage.setItem(storageKey(), JSON.stringify(state));
-            clearDirty();
-            render();
-            setTimeout(() => setMessage("Loaded saved state from server."), 0);
-          }
-        })
-        .catch(() => {});
-      return false;
+    let localState = null;
+    if (raw) {
+      localState = JSON.parse(raw);
+      applyState(localState);
+      clearDirty();
+      setTimeout(() => setMessage("Loaded saved state from this browser."), 0);
     }
-    const state = JSON.parse(raw);
-    applyState(state);
-    clearDirty();
-    setTimeout(() => setMessage("Loaded saved state from this browser."), 0);
-    return true;
+
+    fetch(scheduleStateUrl())
+      .then(r => r.ok ? r.json() : null)
+      .then(state => {
+        if (!state || typeof state !== 'object') return;
+        if (localState) {
+          const serverTs = stateTimestamp(state);
+          if (!serverTs || serverTs < stateTimestamp(localState)) return;
+        }
+        applyState(state);
+        localStorage.setItem(storageKey(), JSON.stringify(state));
+        clearDirty();
+        render();
+        setTimeout(() => setMessage("Loaded saved state from server."), 0);
+      })
+      .catch(() => {});
+    return !!localState;
   } catch (err) {
     console.warn("Could not load saved state", err);
     return false;

@@ -49,7 +49,6 @@ chrome.tabs.onRemoved.addListener(tabId => {
 function openOrReuseTab(key, relativeUrl, payload) {
   const fullUrl    = chrome.runtime.getURL(relativeUrl);
   const storageKey = 'payload_' + key.replace(/^aa_/, '');
-  chrome.storage.session.set({ [storageKey]: payload });
 
   function sendPayload(tabId) {
     chrome.tabs.sendMessage(tabId, payload, () => void chrome.runtime.lastError);
@@ -61,20 +60,28 @@ function openOrReuseTab(key, relativeUrl, payload) {
     });
   }
 
-  const currentId = tabRegistry[key];
-  if (currentId !== null) {
-    chrome.tabs.get(currentId, tab => {
-      if (chrome.runtime.lastError || !tab) {
-        tabRegistry[key] = null;
-        createNewTab();
-      } else {
-        chrome.tabs.update(currentId, { active: true });
-        sendPayload(currentId);
-      }
-    });
-  } else {
-    createNewTab();
+  function openAfterPayloadStored() {
+    const currentId = tabRegistry[key];
+    if (currentId !== null) {
+      chrome.tabs.get(currentId, tab => {
+        if (chrome.runtime.lastError || !tab) {
+          tabRegistry[key] = null;
+          createNewTab();
+        } else {
+          chrome.tabs.update(currentId, { active: true }, () => sendPayload(currentId));
+        }
+      });
+    } else {
+      createNewTab();
+    }
   }
+
+  chrome.storage.session.set({ [storageKey]: payload }, () => {
+    if (chrome.runtime.lastError) {
+      console.warn('[BKN] Could not store feature payload:', chrome.runtime.lastError.message);
+    }
+    openAfterPayloadStored();
+  });
 }
 
 /* ── Jasper XLS fetch (AAOverlay) ────────────────────────────────────────── */
@@ -84,11 +91,26 @@ function handleFetchXls(msg, sendResponse) {
     sendResponse({ ok: false, error: 'URL not allowed' });
     return;
   }
-  const timeout = setTimeout(() => sendResponse({ ok: false, error: 'timeout' }), 30000);
-  fetch(url, { credentials: 'include', headers: { Accept: 'application/vnd.ms-excel,*/*' } })
+  const controller = new AbortController();
+  let settled = false;
+  const finish = (response) => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timeout);
+    sendResponse(response);
+  };
+  const timeout = setTimeout(() => {
+    controller.abort();
+    finish({ ok: false, error: 'timeout' });
+  }, 30000);
+  fetch(url, {
+    credentials: 'include',
+    headers: { Accept: 'application/vnd.ms-excel,*/*' },
+    signal: controller.signal,
+  })
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
-    .then(buf => { clearTimeout(timeout); sendResponse({ ok: true, data: Array.from(new Uint8Array(buf)) }); })
-    .catch(e   => { clearTimeout(timeout); sendResponse({ ok: false, error: String(e) }); });
+    .then(buf => finish({ ok: true, data: Array.from(new Uint8Array(buf)) }))
+    .catch(e => finish({ ok: false, error: String(e) }));
 }
 
 /* ── MAIN-world Angular context extractor (AAOverlay) ────────────────────── */
@@ -330,7 +352,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (!tabId) { sendResponse({ ok: false }); return true; }
     chrome.scripting.executeScript({
       target: { tabId }, world: 'MAIN', func: _arcusSetupXhrTap,
-    }, () => sendResponse({ ok: true }));
+    }, () => {
+      if (chrome.runtime.lastError) {
+        sendResponse({ ok: false, error: chrome.runtime.lastError.message });
+      } else {
+        sendResponse({ ok: true });
+      }
+    });
     return true;
   }
 
