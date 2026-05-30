@@ -57,10 +57,10 @@
         "src/features/med-sticker/content-pomlist.js",
         "src/features/patient-sticker/parser-patient.js",
         "src/features/patient-sticker/content-patient-sticker.js",
-        "src/features/medication-journey/medication-journey-core.js",
-        "src/features/medication-journey/medication-journey-parser-html.js",
-        "src/features/medication-journey/medication-journey-jasper.js",
-        "src/features/medication-journey/content-medication-journey.js",
+        "src/features/adrtimeline/adrtimeline-core.js",
+        "src/features/adrtimeline/adrtimeline-parser-html.js",
+        "src/features/adrtimeline/adrtimeline-jasper.js",
+        "src/features/adrtimeline/content-adrtimeline.js",
         "content_script.js"
       ],
       "css": [
@@ -145,9 +145,9 @@
         "src/assets/fonts/THSarabunNew-BoldItalic.ttf",
         "src/assets/fonts/THSarabunNew-Italic.ttf",
         "src/assets/fonts/Sarabun-Regular.ttf",
-        "src/features/medication-journey/page-medication-journey.html",
-        "src/features/medication-journey/page-medication-journey.js",
-        "src/features/medication-journey/medication-journey.css"
+        "src/features/adrtimeline/page-adrtimeline.html",
+        "src/features/adrtimeline/page-adrtimeline.js",
+        "src/features/adrtimeline/adrtimeline.css"
       ],
       "matches": [
         "<all_urls>"

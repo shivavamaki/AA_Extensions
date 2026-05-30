@@ -1,5 +1,5 @@
-/* ── content-medication-journey.js ────────────────────────────────────────
-   Entry-point content script for the Medication Journey feature.
+/* ── content-adrtimeline.js ───────────────────────────────────────────────
+   Entry-point content script for the ADR Timeline feature.
    Injects a button on the ArcusAir order-profile page and orchestrates
    data extraction, Jasper XLS fetching, and page opening.
 ──────────────────────────────────────────────────────────────────────────── */
@@ -266,36 +266,58 @@
     return (window.location.hash || "").includes("/emr/emrview/emr/orders");
   }
 
+  /* Shared collapsible BKN tool group is created by patient-sticker content
+     script and exposed via Symbol.for("__BKN_TOOL_GROUP_FACTORY__") on
+     `document`. Fall back to a self-made group if patient-sticker hasn't
+     run yet (the two scripts race during page load). */
+  function _getOrCreateBknGroupLocal() {
+    const paprint = document.querySelector(ANCHOR_SEL);
+    if (!paprint || !paprint.parentElement) return null;
+    let group = paprint.parentElement.querySelector(":scope > .bkn-tool-group");
+    if (group) return group;
+    const factory = document[Symbol.for("__BKN_TOOL_GROUP_FACTORY__")];
+    if (typeof factory === "function") return factory();
+    /* Self-build minimal group (will be styled when patient-sticker's CSS
+       loads — both scripts share the same .bkn-tool-group class names). */
+    group = document.createElement("span");
+    group.className = "bkn-tool-group";
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", "BKN Pharmacy tools");
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "bkn-tool-trigger";
+    trigger.title = "BKN Pharmacy tools";
+    trigger.textContent = "💊";
+    trigger.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); });
+    const flyout = document.createElement("span");
+    flyout.className = "bkn-tool-flyout";
+    group.appendChild(trigger);
+    group.appendChild(flyout);
+    paprint.insertAdjacentElement("afterend", group);
+    return group;
+  }
+
   function _injectButton() {
     if (document.getElementById("arcus-medj-btn2")) return;
     if (!_isOrdersPage()) return;
 
-    const anchor = document.querySelector(ANCHOR_SEL);
-    if (!anchor) return;
+    const group = _getOrCreateBknGroupLocal();
+    if (!group) return;
+    const flyout = group.querySelector(".bkn-tool-flyout");
+    if (!flyout) return;
+    if (flyout.querySelector("#arcus-medj-btn2")) return;
 
     const btn = document.createElement("button");
     btn.id          = "arcus-medj-btn2";
+    btn.className   = "hm-btn arcus-medj-btn";
     btn.textContent = "📊";
-    Object.assign(btn.style, {
-      background:   "#e3f2fd",
-      border:       "1.5px solid #1976d2",
-      color:        "#0d47a1",
-      borderRadius: "50%",
-      padding:      "4px 7px",
-      fontSize:     "14px",
-      cursor:       "pointer",
-      fontFamily:   "Segoe UI, Arial, sans-serif",
-      lineHeight:   "1",
-      verticalAlign: "middle",
-      marginLeft:   "6px",
-      transition:   "background .15s",
-    });
-    btn.title = "ADR Timeline";
-    btn.addEventListener("mouseenter", function () { btn.style.background = "#bbdefb"; });
-    btn.addEventListener("mouseleave", function () { btn.style.background = "#e3f2fd"; });
+    btn.title       = "ADR Timeline";
+    btn.style.fontSize = "16px";
     btn.addEventListener("click", _onMedicationJourneyClick);
 
-    anchor.insertAdjacentElement("afterend", btn);
+    /* Keep ordering: 📊 first inside flyout */
+    if (flyout.firstChild) flyout.insertBefore(btn, flyout.firstChild);
+    else                   flyout.appendChild(btn);
   }
 
   function _removeButton() {

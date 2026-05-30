@@ -44,7 +44,7 @@ chrome://extensions ─┐
    │     shared/                                                      │
    │       shared-data-client.js  ◄── window.BKNData (cross-feature)  │
    │     features/                                                    │
-   │       home-med, med-sticker, patient-sticker, medication-journey │
+   │       home-med, med-sticker, patient-sticker, adrtimeline        │
    │                                                                  │
    │   formulary/, knowledge/, kpi/, schedule/, vaccine/, etc.        │
    └──────────────────────────────────────────────────────────────────┘
@@ -66,7 +66,7 @@ chrome://extensions ─┐
 ### Cross-feature data flow
 
 1. User opens ADR Timeline on ArcusAir → patient context (`patientuid`, HN, name) is extracted
-2. `content-medication-journey.js` calls `BKNData.setPatientContext(ctx)` → saved to `chrome.storage.session` **and** server (`data/patients/{puid}.json`)
+2. `content-adrtimeline.js` calls `BKNData.setPatientContext(ctx)` → saved to `chrome.storage.session` **and** server (`data/patients/{puid}.json`)
 3. IV Sticker / Aux Sticker / med reconcile any other feature can now call `BKNData.getPatientContext()` to retrieve the same patient without re-extraction
 4. ADR Timeline edits (custom events, manual medications) auto-save via `_persistAdrTimeline()` — debounced 600ms, sent through `BKN_SERVER_PROXY` to `PUT /api/patients/{puid}/adr-timeline`
 5. Next time the same patient's ADR Timeline opens, the saved events are preloaded from the server
@@ -121,7 +121,7 @@ BKNPharmacyPortal/
     │   ├── home-med/
     │   ├── med-sticker/
     │   ├── patient-sticker/
-    │   └── medication-journey/    ← uses BKNData for ADR persistence
+    │   └── adrtimeline/           ← uses BKNData for ADR persistence
     ├── assets/fonts/          ← Thai/Sarabun
     ├── styles/overlay.css
     └── vendor/jsbarcode.min.js

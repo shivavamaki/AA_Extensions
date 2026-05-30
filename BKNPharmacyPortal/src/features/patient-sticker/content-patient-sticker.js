@@ -223,6 +223,59 @@
       background: rgba(0,0,0,0.06) !important;
       border-radius: 6px !important;
     }
+    /* ── Collapsible BKN tool group ──────────────────────────────────── */
+    .bkn-tool-group {
+      display: inline-flex !important;
+      align-items: center !important;
+      vertical-align: middle !important;
+      margin-left: 6px !important;
+      padding: 2px 4px 2px 4px !important;
+      border-radius: 16px !important;
+      background: transparent !important;
+      box-shadow: 0 0 0 0 rgba(0,0,0,0) !important;
+      transition: background .18s ease, box-shadow .18s ease, padding .18s ease !important;
+      overflow: visible !important;
+    }
+    .bkn-tool-group .bkn-tool-trigger {
+      all: unset !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 22px !important;
+      height: 22px !important;
+      border-radius: 50% !important;
+      background: #e3f2fd !important;
+      border: 1.5px solid #1976d2 !important;
+      color: #0d47a1 !important;
+      font-size: 13px !important;
+      line-height: 1 !important;
+      cursor: pointer !important;
+      transition: background .15s, transform .15s !important;
+    }
+    .bkn-tool-group .bkn-tool-trigger:hover { background: #bbdefb !important; }
+    .bkn-tool-group .bkn-tool-flyout {
+      display: inline-flex !important;
+      align-items: center !important;
+      max-width: 0 !important;
+      overflow: hidden !important;
+      opacity: 0 !important;
+      margin-left: 0 !important;
+      transition: max-width .25s ease, opacity .18s ease, margin-left .25s ease !important;
+    }
+    .bkn-tool-group:hover,
+    .bkn-tool-group:focus-within {
+      background: #ffffff !important;
+      box-shadow: 0 2px 10px rgba(15,23,42,.18) !important;
+      padding: 2px 8px 2px 4px !important;
+    }
+    .bkn-tool-group:hover .bkn-tool-flyout,
+    .bkn-tool-group:focus-within .bkn-tool-flyout {
+      max-width: 320px !important;
+      opacity: 1 !important;
+      margin-left: 4px !important;
+    }
+    .bkn-tool-group .bkn-tool-flyout > * { margin-left: 4px !important; }
+    .bkn-tool-group .bkn-tool-flyout > *:first-child { margin-left: 0 !important; }
   `;
 
   const STICKER_BTN_SEL =
@@ -416,15 +469,48 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════
+   * SHARED COLLAPSIBLE BUTTON GROUP next to #paprint
+   * Other features (ADR Timeline) also call this so all extension
+   * icons live in one hover-revealed flyout.
+   * Exposed on document via a Symbol so guards across content scripts
+   * can reuse the same factory.
+   * ═══════════════════════════════════════════════════════════════ */
+  const _GROUP_KEY = Symbol.for("__BKN_TOOL_GROUP_FACTORY__");
+  function _getOrCreateBknGroup() {
+    const paprint = document.querySelector("#paprint");
+    if (!paprint || !paprint.parentElement) return null;
+    let group = paprint.parentElement.querySelector(":scope > .bkn-tool-group");
+    if (group) return group;
+    group = document.createElement("span");
+    group.className = "bkn-tool-group";
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", "BKN Pharmacy tools");
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "bkn-tool-trigger";
+    trigger.title = "BKN Pharmacy tools";
+    trigger.textContent = "💊";
+    trigger.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); });
+    const flyout = document.createElement("span");
+    flyout.className = "bkn-tool-flyout";
+    group.appendChild(trigger);
+    group.appendChild(flyout);
+    paprint.insertAdjacentElement("afterend", group);
+    return group;
+  }
+  document[_GROUP_KEY] = _getOrCreateBknGroup;
+
+  /* ═══════════════════════════════════════════════════════════════
    * INSERT BUTTONS (idempotent)
    * ═══════════════════════════════════════════════════════════════ */
   function insertButtons() {
     ensureStyles();
 
-    // Slot 1: 🏷️ sticker next to #paprint
-    const paprint = document.querySelector("#paprint");
-    if (paprint && !paprint.parentElement.querySelector(".hm-patient-btn")) {
-      paprint.insertAdjacentElement("afterend", _createIconButton({
+    // Slot 1: 🏷️ sticker — inside collapsible BKN tool group
+    const group = _getOrCreateBknGroup();
+    const flyout = group && group.querySelector(".bkn-tool-flyout");
+    if (flyout && !flyout.querySelector(".hm-patient-btn")) {
+      flyout.appendChild(_createIconButton({
         icon: "🏷️", title: "Print Patient Sticker",
         className: "hm-patient-btn", onClick: openPatientSticker,
       }));
@@ -462,16 +548,12 @@
       }));
     }
 
-    // Slot 4: ⚠️ Allergy card next to #paprint
-    const paprint2 = document.querySelector("#paprint");
-    if (paprint2 && !paprint2.parentElement.querySelector(".hm-allergy-btn")) {
-      const allergyBtn = _createIconButton({
+    // Slot 4: ⚠️ Allergy card — inside the same collapsible BKN group
+    if (flyout && !flyout.querySelector(".hm-allergy-btn")) {
+      flyout.appendChild(_createIconButton({
         icon: "⚠️", title: "Print Allergy Card",
         className: "hm-allergy-btn", onClick: openAllergyCard,
-      });
-      const existingPatientBtn = paprint2.parentElement.querySelector(".hm-patient-btn");
-      if (existingPatientBtn) existingPatientBtn.insertAdjacentElement("afterend", allergyBtn);
-      else                    paprint2.insertAdjacentElement("afterend", allergyBtn);
+      }));
     }
 
     // Wire #allocatedispense

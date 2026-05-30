@@ -1,4 +1,4 @@
-/* ── medication-journey-core.js ────────────────────────────────────────────
+/* ── adrtimeline-core.js ──────────────────────────────────────────────────
    Defines window.MedicationJourney namespace with core functions.
    Loaded as a content script on arcusair.bdms.co.th
 ──────────────────────────────────────────────────────────────────────────── */

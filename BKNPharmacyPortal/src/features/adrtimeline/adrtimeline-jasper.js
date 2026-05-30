@@ -1,4 +1,4 @@
-/* ── medication-journey-jasper.js ─────────────────────────────────────────
+/* ── adrtimeline-jasper.js ────────────────────────────────────────────────
    Fetches the Jasper medication-review XLS and parses BIFF8/OLE2 binary.
 ──────────────────────────────────────────────────────────────────────────── */
 "use strict";

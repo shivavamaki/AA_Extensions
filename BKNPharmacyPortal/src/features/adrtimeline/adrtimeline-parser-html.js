@@ -1,4 +1,4 @@
-/* ── medication-journey-parser-html.js ────────────────────────────────────
+/* ── adrtimeline-parser-html.js ───────────────────────────────────────────
    Parses the ArcusAir order-profile table (DOM) into raw order objects.
 ──────────────────────────────────────────────────────────────────────────── */
 "use strict";

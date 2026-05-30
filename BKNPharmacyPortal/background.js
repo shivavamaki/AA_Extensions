@@ -37,7 +37,7 @@ const ROUTE_MAP = {
   [MSG.OPEN_PATIENT_STICKER]:    { key: 'aa_patientSticker',     url: 'src/features/patient-sticker/page-patient-sticker.html' },
   [MSG.OPEN_MED_RECONCILE]:      { key: 'aa_medReconcile',       url: 'src/features/patient-sticker/page-med-reconcile.html' },
   [MSG.OPEN_ALLERGY_CARD]:       { key: 'aa_allergyCard',        url: 'src/features/patient-sticker/page-allergy-card.html' },
-  [MSG.OPEN_MEDICATION_JOURNEY]: { key: 'aa_medicationJourney',  url: 'src/features/medication-journey/page-medication-journey.html' },
+  [MSG.OPEN_MEDICATION_JOURNEY]: { key: 'aa_medicationJourney',  url: 'src/features/adrtimeline/page-adrtimeline.html' },
 };
 
 chrome.tabs.onRemoved.addListener(tabId => {

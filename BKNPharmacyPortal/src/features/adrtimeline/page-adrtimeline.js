@@ -1,4 +1,4 @@
-/* ── page-medication-journey.js ─────────────────────────────────────────────
+/* ── page-adrtimeline.js ─────────────────────────────────────────────────────
    ADR Drug Timeline — Gantt-style chart matching the ADR Timeline.png format.
 ──────────────────────────────────────────────────────────────────────────── */
 "use strict";
@@ -720,7 +720,7 @@ async function saveToPng(journeyData) {
 
   try {
     /* Fetch the extension's CSS so we can inline it (avoids tainted-canvas) */
-    const cssUrl  = chrome.runtime.getURL("src/features/medication-journey/medication-journey.css");
+    const cssUrl  = chrome.runtime.getURL("src/features/adrtimeline/adrtimeline.css");
     const cssText = await fetch(cssUrl).then(r => r.text()).catch(() => "");
 
     /* Clone DOM — avoids modifying live page */
