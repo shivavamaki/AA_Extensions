@@ -2,97 +2,59 @@
 
 /**
  * features/home-med/page-home-med.js
- * Reworked A4 portrait Home Medication Sheet.
+ * Reworked Home Medication Sheet page.
  *
- * Fixes:
- * - Does not force every medicine into Bedtime.
- * - Uses real discharge-medication columns: Dosage, Route, Frequency,
- *   Duration, Quantity, Comments, Careprovider.
- * - Reads the first-open payload from chrome.storage.session to avoid an
- *   initial blank/UnknownHN sheet.
+ * Flow:
+ *   1. Receive { context } (patient/report UIDs) via LOAD_MED_TABLE message or
+ *      chrome.storage.session (payload_sheet).
+ *   2. Build the HomeMedSheetReport/Thai Jasper URL from the context.
+ *   3. Fetch the XLS via MJ_FETCH_XLS, parse with parseBiff8ToSheets.
+ *   4. Map rows (header-agnostic) → meds, filter to oral / take-home only,
+ *      extract the patient header from the report itself.
+ *   5. Render the existing A4 layout. Images come from the pharmacy server via
+ *      BKNData. From/to dates are adjustable in the toolbar (re-fetch on change).
  */
 
-const { norm, escapeHtml, safeSetText, readCell, buildHeaderIndex } = window.CoreDom;
+const { norm, escapeHtml, safeSetText } = window.CoreDom;
 const { MSG } = window.CoreMessages;
 
-let _patient = null;
-let _lastMsg = null;
-let _pharmacistName = null;
+let _context = null;
 let _medDbByCode = null;
 let _medDbLoadPromise = null;
 
-const MED_DB_PATH = "src/assets/bkn_med_database/medication_by_code.json";
-const MED_DB_IMAGE_BASE_PATH = "src/assets/bkn_med_database/";
 const MED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "jfif", "webp"];
 
-function _emptyPatient() {
+/* ───────────────────────────── Date helpers ───────────────────────────── */
+function _pad2(n) { return String(n).padStart(2, "0"); }
+
+/** Today/30-days-ago in Bangkok time as YYYY-MM-DD. */
+function _defaultThaiDateRange() {
+  const now = new Date();
+  const bkk = new Date(now.getTime() + 7 * 3600 * 1000);
+  const end = `${bkk.getUTCFullYear()}-${_pad2(bkk.getUTCMonth() + 1)}-${_pad2(bkk.getUTCDate())}`;
+  const startD = new Date(bkk.getTime() - 30 * 24 * 3600 * 1000);
+  const start = `${startD.getUTCFullYear()}-${_pad2(startD.getUTCMonth() + 1)}-${_pad2(startD.getUTCDate())}`;
+  return { start, end };
+}
+
+/** Bangkok-day range (YYYY-MM-DD) → UTC ISO fromdate/todate. */
+function _thaiRangeToUtc(startThai, endThai) {
+  const [sy, sm, sd] = startThai.split("-").map(Number);
+  const [ey, em, ed] = endThai.split("-").map(Number);
   return {
-    fullName: null,
-    hn: null,
-    ageText: null,
-    visitDateTime: null,
-    an: null,
-    room: null,
-    department: null,
-    doctor: null,
-    rights: null,
-    rawText: "",
-    rawLines: [],
+    fromdate: new Date(Date.UTC(sy, sm - 1, sd, 0, 0, 0, 0) - 7 * 3600 * 1000).toISOString(),
+    todate:   new Date(Date.UTC(ey, em - 1, ed, 16, 59, 59, 999)).toISOString(),
   };
 }
 
-function _cleanPatientName(name, hn) {
-  let out = norm(name || "");
-  if (!out) return "-";
-  if (hn) {
-    const hnLoose = hn.replace(/-/g, "\\s*-\\s*");
-    out = out.replace(new RegExp(`\\(?\\s*${hnLoose}\\s*\\)?`, "i"), "");
-  }
-  return norm(out.replace(/\(\s*\)?/g, "")) || "-";
-}
-
-function populateHeader(p) {
-  const patient = p || _emptyPatient();
-  const name = _cleanPatientName(patient.fullName, patient.hn);
-
-  safeSetText("patientName", name);
-  safeSetText("patientHN", patient.hn || "-");
-  safeSetText("patientAN", patient.an || "-");
-  safeSetText("patientRoom", patient.room || "-");
-  safeSetText("sheetDate", patient.visitDateTime || new Date().toLocaleDateString("th-TH"));
-  safeSetText("pharmacistName", _pharmacistName || "-");
-}
-
-function _appendNoData(tbody, text) {
-  const tr = document.createElement("tr");
-  tr.innerHTML = `<td colspan="4" class="empty">${escapeHtml(text)}</td>`;
-  tbody.appendChild(tr);
-}
-
-function _isGroupRow(cells) {
-  return cells.length === 1 || cells.some((td) => td.hasAttribute("colspan"));
-}
-
-function _cleanValue(value) {
-  return norm(value).replace(/^[-–—]+$/, "");
-}
-
-function _cleanDrugName(value) {
-  return _cleanValue(value).replace(/\s+/g, " ");
-}
-
-function _runtimeUrl(path) {
-  if (typeof chrome !== "undefined" && chrome.runtime?.getURL) {
-    return chrome.runtime.getURL(path);
-  }
-  return path;
-}
-
-function _pharmacyServerUrl() {
-  const stored = typeof localStorage !== "undefined"
-    ? localStorage.getItem("pharmacyServerUrl")
-    : null;
-  return (stored || "http://10.134.110.81:8765").replace(/\/$/, "");
+/* ───────────────────────── Server access (BKNData) ─────────────────────── */
+async function _serverBase() {
+  try {
+    if (window.BKNData && window.BKNData.getServerUrl) {
+      return (await window.BKNData.getServerUrl()) || "";
+    }
+  } catch (_) { /* ignore */ }
+  return "";
 }
 
 async function _loadMedicationDatabase() {
@@ -100,106 +62,173 @@ async function _loadMedicationDatabase() {
   if (_medDbLoadPromise) return _medDbLoadPromise;
 
   _medDbLoadPromise = (async () => {
-    // 1. Try server first
     try {
-      const r = await fetch(`${_pharmacyServerUrl()}/api/medication-db`, {
-        signal: AbortSignal.timeout(5000),
-      });
-      if (r.ok) {
-        _medDbByCode = await r.json();
-        return _medDbByCode;
+      if (window.BKNData && window.BKNData.serverFetch) {
+        const r = await window.BKNData.serverFetch("/api/medication-db");
+        if (r && r.ok && r.json) { _medDbByCode = r.json; return _medDbByCode; }
       }
     } catch (_) { /* server unavailable */ }
-
-    // 2. Fall back to bundled extension asset
-    try {
-      const r = await fetch(_runtimeUrl(MED_DB_PATH));
-      if (!r.ok) throw new Error(`status ${r.status}`);
-      _medDbByCode = await r.json();
-    } catch (err) {
-      console.warn("[home-med] Medication database unavailable:", err);
-      _medDbByCode = {};
-    }
+    _medDbByCode = {};
     return _medDbByCode;
   })();
 
   return _medDbLoadPromise;
 }
 
-function _lookupMedicationItem(med) {
+/* ── Name index for image lookup + add-item autocomplete ────────────────────
+ * The med DB is keyed by item code, but RT_COMMON_286 gives only drug names,
+ * and user-added items are names too. Build a normalized name → entry index.
+ */
+let _medNameIndex = null;   // [{ key, name, code, hasImage }]
+function _normName(s) {
+  return norm(s || "").toLowerCase().replace(/[^a-z0-9ก-๙]+/g, " ").trim();
+}
+function _buildNameIndex() {
+  if (_medNameIndex) return _medNameIndex;
   const db = _medDbByCode || {};
-  const code = _cleanValue(med?.code || "");
-  if (!code) return null;
-
-  if (db[code]) return db[code];
-
-  // Fallback for accidental formatting/spacing in item code.
-  const compact = code.replace(/\D/g, "");
-  if (compact && db[compact]) return db[compact];
-
-  return null;
+  _medNameIndex = [];
+  for (const code of Object.keys(db)) {
+    const e = db[code] || {};
+    const name = norm(e.name || "");
+    if (!name) continue;
+    _medNameIndex.push({
+      key: _normName(name),
+      name,
+      code: norm(e.code || code),
+      hasImage: !!e.has_image,
+    });
+  }
+  return _medNameIndex;
 }
 
+// Dosage-form / unit / noise words that should NOT drive a name match.
+const _NAME_STOPWORDS = new Set([
+  "tablet", "tablets", "tab", "tabs", "capsule", "capsules", "cap", "caps",
+  "injection", "inj", "vial", "amp", "ampoule", "syrup", "syr", "solution",
+  "susp", "suspension", "spray", "drop", "drops", "cream", "gel", "ointment",
+  "mg", "mcg", "ml", "g", "gm", "unit", "units", "iu", "bag", "bottle",
+  "sachet", "tube", "the", "of", "in", "and", "for",
+]);
+
+/** Significant tokens of a drug name (drop form/unit noise; keep dose numbers). */
+function _nameTokens(name) {
+  return _normName(name).split(" ").filter((t) => t && !_NAME_STOPWORDS.has(t));
+}
+
+/**
+ * Best DB entry for a drug name. Exact normalized match first; otherwise score
+ * candidates by shared significant tokens (brand/generic + dose number), so
+ * "Sporal (100 Mg) Capsule" matches "Sporal 100 Mg Cap".
+ */
+function _lookupByName(drugName) {
+  const idx = _buildNameIndex();
+  const q = _normName(drugName);
+  if (!q) return null;
+
+  // 1) exact / prefix on the fully-normalized string.
+  let hit = idx.find((e) => e.key === q);
+  if (hit) return hit;
+
+  const qTokens = _nameTokens(drugName);
+  if (!qTokens.length) return null;
+  const qSet = new Set(qTokens);
+  const qFirst = qTokens[0];
+
+  let best = null;
+  let bestScore = 0;
+  for (const e of idx) {
+    const eTokens = _nameTokens(e.name);
+    if (!eTokens.length) continue;
+    // Require the leading (brand/generic) token to match — avoids cross-drug hits.
+    if (eTokens[0] !== qFirst && !qSet.has(eTokens[0])) continue;
+    let shared = 0;
+    for (const t of eTokens) if (qSet.has(t)) shared += 1;
+    // Normalize by the larger token count so partial names still score well.
+    const score = shared / Math.max(qTokens.length, eTokens.length);
+    if (score > bestScore) { bestScore = score; best = e; }
+  }
+  // Require a reasonable overlap to avoid false positives.
+  return bestScore >= 0.5 ? best : null;
+}
+
+/** Up to `limit` name suggestions for the add-item search box. */
+function _searchMeds(query, limit = 12) {
+  const idx = _buildNameIndex();
+  const q = _normName(query);
+  if (q.length < 2) return [];
+  const starts = [];
+  const contains = [];
+  for (const e of idx) {
+    if (e.key.startsWith(q)) starts.push(e);
+    else if (e.key.includes(q)) contains.push(e);
+    if (starts.length >= limit) break;
+  }
+  return [...starts, ...contains].slice(0, limit);
+}
+
+let _medImagesBase = "";
+/** Image URL candidates for a med, matched by item code (preferred) or name. */
 function _medicineImageCandidates(med) {
-  const item = _lookupMedicationItem(med);
-  const code = _cleanValue(med?.code || "").replace(/\D/g, "");
-  const serverBase = `${_pharmacyServerUrl()}/med-images`;
+  const base = _medImagesBase;
   const candidates = [];
+  if (!base) return candidates;
 
-  // 1) Explicit image_file from DB — server first, then extension bundle fallback.
-  const imageFile = item?.image_file || "";
-  if (imageFile) {
-    candidates.push(`${serverBase}/${imageFile}`);
-    candidates.push(_runtimeUrl(`${MED_DB_IMAGE_BASE_PATH}images/${imageFile}`));
+  // 1) explicit code on the med (user-added items carry it)
+  let code = norm(med?.code || "");
+  // 2) otherwise resolve by drug name against the DB
+  if (!code && med?.drug) {
+    const hit = _lookupByName(med.drug);
+    if (hit && hit.hasImage) code = hit.code;
   }
-
-  // 2) Guess by item code across all extensions — server first, then bundle fallback.
   if (code) {
-    MED_IMAGE_EXTENSIONS.forEach((ext) => candidates.push(`${serverBase}/${code}.${ext}`));
-    MED_IMAGE_EXTENSIONS.forEach((ext) =>
-      candidates.push(_runtimeUrl(`${MED_DB_IMAGE_BASE_PATH}images/${code}.${ext}`))
-    );
+    MED_IMAGE_EXTENSIONS.forEach((ext) => candidates.push(`${base}/med-images/${code}.${ext}`));
   }
-
   return [...new Set(candidates)];
 }
 
-function _renderNoImageSlot(icon) {
-  return `
-    <span class="med-photo-icon">${icon}</span>
-    <span class="med-photo-label">รูปยา</span>`;
+/* ─────────────────────────── Patient header ───────────────────────────── */
+function populateHeader(header, context, meds) {
+  const h = header || {};
+  const c = context || {};
+  // Physician isn't in the report header; take it from the first med's provider.
+  const physician = (meds || []).map((m) => m.provider).find(Boolean) || "-";
+  safeSetText("patientName", h.patientName || c.patientName || "-");
+  safeSetText("patientHN",   h.hn || c.hn || c.patientId || "-");
+  safeSetText("patientAN",   h.an || c.an || c.patientVisitId || "-");
+  safeSetText("patientRoom", h.room || c.bed || "-");
+  safeSetText("sheetDate",   h.visitDate || new Date().toLocaleDateString("th-TH"));
+  safeSetText("pharmacistName", c.pharmacistName || "-");
+  safeSetText("physicianName",  physician);
 }
 
-function _buildMedicinePhotoSlot(med) {
-  const icon = _medicineIcon(med);
-  const candidates = _medicineImageCandidates(med);
+/* ─────────────────────────── Med image binding ────────────────────────── */
+function _renderNoImageSlot(icon) {
+  return `<span class="med-photo-icon">${icon}</span><span class="med-photo-label">รูปยา</span>`;
+}
 
-  if (candidates.length) {
-    // src is intentionally omitted here — _bindMedicineImageFallbacks sets it
-    // after attaching the error listener so fast-failing server URLs don't miss it.
+function _medicineIcon(med) {
+  const text = `${med?.dosage || ""} ${med?.drug || ""} ${med?.quantity || ""}`.toLowerCase();
+  if (/\b(ml|millilitre|milliliter|syrup|syr\b|solution|suspension|elixir|bottle|spray|drop)\b/i.test(text)) return "🧪";
+  return "💊";
+}
+
+function _buildMedicinePhotoSlot(med, candidates) {
+  const icon = _medicineIcon(med);
+  if (candidates && candidates.length) {
     return `
       <div class="med-photo-slot has-image" data-fallback-icon="${escapeHtml(icon)}">
         <img class="med-photo" data-img-index="0" data-img-candidates="${escapeHtml(encodeURIComponent(JSON.stringify(candidates)))}" alt="Medicine picture" />
       </div>`;
   }
-
-  return `
-    <div class="med-photo-slot no-image" aria-label="Medicine picture placeholder">
-      ${_renderNoImageSlot(icon)}
-    </div>`;
+  return `<div class="med-photo-slot no-image" aria-label="Medicine picture placeholder">${_renderNoImageSlot(icon)}</div>`;
 }
 
 function _bindMedicineImageFallbacks(root) {
   if (!root) return;
-
   root.querySelectorAll("img.med-photo[data-img-candidates]").forEach((img) => {
     let candidates = [];
-    try {
-      candidates = JSON.parse(decodeURIComponent(img.dataset.imgCandidates || "%5B%5D"));
-    } catch (_err) {
-      candidates = [];
-    }
-
+    try { candidates = JSON.parse(decodeURIComponent(img.dataset.imgCandidates || "%5B%5D")); }
+    catch (_e) { candidates = []; }
     if (!candidates.length) return;
 
     img.addEventListener("error", () => {
@@ -209,314 +238,424 @@ function _bindMedicineImageFallbacks(root) {
         img.src = candidates[nextIndex];
         return;
       }
-
       const slot = img.closest(".med-photo-slot");
       if (!slot) return;
-
       const icon = slot.dataset.fallbackIcon || "💊";
       slot.classList.remove("has-image");
       slot.classList.add("no-image");
       slot.innerHTML = _renderNoImageSlot(icon);
     });
-
-    // Set src AFTER listener is attached — prevents missing the error event for
-    // fast-failing URLs (e.g. connection-refused on the local pharmacy server).
     img.src = candidates[0];
   });
 }
 
-function _doseUnitThai(unit) {
-  const u = (unit || "").toLowerCase();
-  if (/tablet|tab\b/.test(u)) return "เม็ด";
-  if (/capsule|cap\b/.test(u)) return "แคปซูล";
-  if (/millilitre|milliliter|ml\b/.test(u)) return "มิลลิลิตร";
-  if (/bottle/.test(u)) return "ขวด";
-  if (/drop/.test(u)) return "หยด";
-  if (/puff|spray/.test(u)) return "พัฟ";
-  if (/sachet/.test(u)) return "ซอง";
-  return unit || "";
+/* ───────────────────────── Instruction text ───────────────────────────── */
+function _cleanValue(value) {
+  return norm(value).replace(/^[-–—]+$/, "");
 }
 
-function _formatDoseHuman(dosage) {
-  const raw = _cleanValue(dosage);
-  if (!raw) return "";
-
-  const m = raw.match(/([0-9]+(?:\.[0-9]+)?)\s*(.*)$/i);
-  if (!m) return `ครั้งละ ${raw}`;
-
-  const amount = m[1];
-  const unit = _doseUnitThai(m[2].trim());
-  return `ครั้งละ ${amount}${unit ? ` ${unit}` : ""}`;
+/** Compose the default instruction text shown/edited in the How-to-take cell.
+ * The report's `comment` already holds the full instruction line
+ * (e.g. "Take วันละ 3 ครั้ง หลังอาหาร เช้า กลางวัน เย็น"), so prefer it as-is.
+ * `route`/`dosage`/`frequency` are only fallbacks when comment is empty — and
+ * we never prepend `route` to `comment` (it doubled the verb: "Take Take …"). */
+function _instructionText(med) {
+  const comment = _cleanValue(med.comment);
+  if (comment) return comment;
+  const parts = [med.route, med.dosage, med.frequency].map(_cleanValue).filter(Boolean);
+  return parts.join(" ");
 }
 
+/* ─────────────────────── Editable med-list state ──────────────────────── */
+// _meds is the single source of truth. Each item:
+//   { drug, instruction, note, quantity, code, provider }
+let _meds = [];
+// "How to take" defaults to Thai — the report emits the verb in English
+// ("Take …"); we auto-translate via the shared glossary so the patient-facing
+// instruction reads in Thai (รับประทาน …) without the user choosing a language.
+let _currentLang = "th";
 
-function _medicineIcon({ dosage = "", drug = "", quantity = "" } = {}) {
-  const text = `${dosage} ${drug} ${quantity}`.toLowerCase();
-
-  // Liquid / mL / syrup items use a liquid icon.
-  if (/\b(ml|millilitre|milliliter|syrup|syr\b|solution|suspension|elixir|bottle)\b/i.test(text)) {
-    return "🧪";
-  }
-
-  // Tablet and capsule use the same medicine icon.
-  if (/\b(tablet|tab\b|capsule|cap\b)\b/i.test(text)) {
-    return "💊";
-  }
-
-  return "💊";
+function _medFromReport(m) {
+  return {
+    drug:        norm(m.drug || ""),
+    instruction: _instructionText(m),
+    note:        "",
+    quantity:    _cleanValue(m.quantity || ""),
+    code:        norm(m.code || ""),
+    provider:    norm(m.provider || ""),
+  };
 }
 
-function _formatRouteHuman(route) {
-  const r = _cleanValue(route);
-  if (!r) return "";
-  if (/oral|orally|po\b|รับประทาน/i.test(r)) return "รับประทาน";
-  if (/topical|apply|ทา/i.test(r)) return "ทา";
-  if (/inhal|สูด/i.test(r)) return "สูดดม";
-  if (/nasal|จมูก/i.test(r)) return "ใช้ทางจมูก";
-  if (/eye|ophthalmic|ตา/i.test(r)) return "ใช้กับตา";
-  if (/ear|otic|หู/i.test(r)) return "ใช้กับหู";
-  return r;
+/* ─────────────────────────────── Render ───────────────────────────────── */
+function _appendNoData(tbody, text) {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td colspan="5" class="empty">${escapeHtml(text)}</td>`;
+  tbody.appendChild(tr);
 }
 
-function _mealText(f) {
-  if (/before/i.test(f)) {
-    if (/breakfast.*lunch.*dinner/i.test(f)) return "ก่อนอาหารเช้า กลางวัน และเย็น";
-    if (/breakfast.*dinner/i.test(f)) return "ก่อนอาหารเช้าและเย็น";
-    if (/breakfast/i.test(f)) return "ก่อนอาหารเช้า";
-    if (/lunch/i.test(f)) return "ก่อนอาหารกลางวัน";
-    if (/dinner/i.test(f)) return "ก่อนอาหารเย็น";
-    return "ก่อนอาหาร";
-  }
-
-  if (/after/i.test(f)) {
-    if (/breakfast.*lunch.*dinner/i.test(f)) return "หลังอาหารเช้า กลางวัน และเย็น";
-    if (/breakfast.*dinner/i.test(f)) return "หลังอาหารเช้าและเย็น";
-    if (/breakfast/i.test(f)) return "หลังอาหารเช้า";
-    if (/lunch/i.test(f)) return "หลังอาหารกลางวัน";
-    if (/dinner/i.test(f)) return "หลังอาหารเย็น";
-    return "หลังอาหาร";
-  }
-
-  if (/bedtime|at night|night/i.test(f)) return "ก่อนนอน";
-  return "";
+/** Build one editable medicine row. */
+function _buildMedRow(med, index) {
+  const candidates = _medicineImageCandidates(med);
+  const photo = _buildMedicinePhotoSlot(med, candidates);
+  const tr = document.createElement("tr");
+  tr.className = "med-row";
+  tr.dataset.index = String(index);
+  tr.innerHTML = `
+    <td class="col-act no-print">
+      <button type="button" class="row-del" title="Remove this medicine">−</button>
+    </td>
+    <td class="col-no">${index + 1}</td>
+    <td class="col-med">
+      <div class="med-cell">
+${photo}
+        <div class="med-text">
+          <div class="med-name" contenteditable="true" data-field="drug" data-ph="ชื่อยา" data-no-translate translate="no">${escapeHtml(med.drug || "")}</div>
+          ${med.code ? `<div class="med-code">Code: ${escapeHtml(med.code)}</div>` : ""}
+        </div>
+      </div>
+    </td>
+    <td class="col-how">
+      <div class="instruction-card">
+        <span class="instruction-icon">${_medicineIcon(med)}</span>
+        <span class="instruction-text" contenteditable="true" data-field="instruction" data-ph="วิธีใช้ยา">${escapeHtml(med.instruction || "")}</span>
+      </div>
+      <div class="comment note-line" contenteditable="true" data-field="note" data-ph="หมายเหตุ (ถ้ามี)">${escapeHtml(med.note || "")}</div>
+    </td>
+    <td class="col-qty">
+      <div class="qty-main" contenteditable="true" data-field="quantity" data-ph="จำนวน">${escapeHtml(med.quantity || "")}</div>
+    </td>
+  `;
+  return tr;
 }
 
-function _prnText(f) {
-  if (!/if\s*needed|when\s*have\s*symptom|prn/i.test(f)) return "";
-  if (/fever/i.test(f)) return "เมื่อมีไข้";
-  if (/pain/i.test(f)) return "เมื่อมีอาการปวด";
-  if (/nausea|vomit/i.test(f)) return "เมื่อมีอาการคลื่นไส้หรืออาเจียน";
-  if (/constipation/i.test(f)) return "เมื่อท้องผูก";
-  return "เมื่อมีอาการ";
-}
-
-function _frequencyText(frequency) {
-  const raw = _cleanValue(frequency);
-  if (!raw) return "";
-
-  const f = raw.toLowerCase().replace(/\s+/g, " ");
-  const parts = [];
-
-  const every = f.match(/every\s+(\d+)\s+hours?/i);
-  if (every) parts.push(`ทุก ${every[1]} ชั่วโมง`);
-  else if (/once\s+daily|1\s*time\s*daily|daily/i.test(f)) parts.push("วันละ 1 ครั้ง");
-  else if (/2\s*times?\s*daily|twice\s*daily|bid/i.test(f)) parts.push("วันละ 2 ครั้ง");
-  else if (/3\s*times?\s*daily|three\s*times?\s*daily|tid/i.test(f)) parts.push("วันละ 3 ครั้ง");
-  else if (/4\s*times?\s*daily|qid/i.test(f)) parts.push("วันละ 4 ครั้ง");
-
-  const meal = _mealText(raw);
-  if (meal) parts.push(meal);
-
-  const prn = _prnText(raw);
-  if (prn) parts.push(prn);
-
-  return parts.join(" ") || raw;
-}
-
-function _buildInstruction(med) {
-  const { dosage, route, frequency, comment } = med || {};
-  const icon = _medicineIcon(med);
-  const routeText = _formatRouteHuman(route);
-  const doseText = _formatDoseHuman(dosage);
-  const freqText = _frequencyText(frequency);
-
-  const sentence = [routeText, doseText, freqText]
-    .filter(Boolean)
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  const html = [];
-  if (sentence) {
-    html.push(`<div class="instruction-card"><span class="instruction-icon">${icon}</span><span class="instruction-text">${escapeHtml(sentence)}</span></div>`);
-  } else {
-    html.push(`<span class="muted">No instruction</span>`);
-  }
-
-  if (comment) {
-    html.push(`<div class="comment">หมายเหตุ: ${escapeHtml(comment)}</div>`);
-  }
-
-  return html.join("");
-}
-
-
-function _durationText(duration) {
-  const d = _cleanValue(duration);
-  if (!d) return "";
-
-  // Arcus often sends duration as a plain number, meaning days.
-  // Example: 7 -> 7 days.
-  const numeric = d.match(/^([0-9]+(?:\.[0-9]+)?)$/);
-  if (numeric) {
-    const n = numeric[1];
-    return `${n} day${Number(n) === 1 ? "" : "s"}`;
-  }
-
-  if (/^([0-9]+(?:\.[0-9]+)?)\s*d(?:ay)?s?$/i.test(d)) {
-    const n = d.match(/^([0-9]+(?:\.[0-9]+)?)/)[1];
-    return `${n} day${Number(n) === 1 ? "" : "s"}`;
-  }
-
-  return d;
-}
-
-function _isBottleUom(quantity) {
-  return /\bbottles?\b/i.test(_cleanValue(quantity));
-}
-
-function _isPrnFrequency(frequency) {
-  return /\bif\s+needed\b/i.test(_cleanValue(frequency));
-}
-
-function _shouldShowDuration({ quantity, frequency, duration }) {
-  const d = _cleanValue(duration);
-  if (!d) return false;
-
-  // Do not print "For: 1 day" for bottle items or PRN orders.
-  // Examples: "1 Bottle" and frequency containing "If Needed".
-  if (_isBottleUom(quantity)) return false;
-  if (_isPrnFrequency(frequency)) return false;
-
-  return true;
-}
-
-function _buildQty({ quantity, duration, frequency }) {
-  const d = _shouldShowDuration({ quantity, duration, frequency })
-    ? _durationText(duration)
-    : "";
-  const parts = [];
-  if (quantity) parts.push(`<div class="qty-main">${escapeHtml(quantity)}</div>`);
-  if (d) parts.push(`<div class="muted">For: ${escapeHtml(d)}</div>`);
-  return parts.length ? parts.join("") : `<span class="muted">-</span>`;
-}
-
-function _extractMedRows(html) {
-  const tmp = document.createElement("div");
-  tmp.innerHTML = html || "";
-
-  const table = tmp.querySelector("table");
-  if (!table) return [];
-
-  const idx = buildHeaderIndex(table);
-  const rows = [];
-
-  Array.from(table.querySelectorAll("tbody tr")).forEach((tr) => {
-    const cells = Array.from(tr.children);
-    if (!cells.length || _isGroupRow(cells)) return;
-
-    const status = _cleanValue(readCell(cells, idx, ["status"]));
-    if (/cancelled/i.test(status)) return;
-
-    const row = {
-      code: _cleanValue(readCell(cells, idx, ["code", "item code", "drug code", "รหัส", "รหัสยา", "item no", "no."])),
-      drug: _cleanDrugName(readCell(cells, idx, ["order item", "drug", "medication"])),
-      dosage: _cleanValue(readCell(cells, idx, ["dosage", "dose"])),
-      route: _cleanValue(readCell(cells, idx, ["route"])),
-      frequency: _cleanValue(readCell(cells, idx, ["frequency", "freq"])),
-      duration: _cleanValue(readCell(cells, idx, ["duration"])),
-      quantity: _cleanValue(readCell(cells, idx, ["quantity", "qty"])),
-      comment: _cleanValue(readCell(cells, idx, ["comments", "comment", "instruction", "sig"])),
-      provider: _cleanValue(readCell(cells, idx, ["careprovider", "provider"])),
-    };
-
-    if (!row.drug && !row.dosage && !row.frequency && !row.comment) return;
-    rows.push(row);
-  });
-
-  return rows;
-}
-
-function buildMedTable(html) {
+async function renderMeds() {
   const tbody = document.querySelector("#medTable tbody");
   if (!tbody) return;
+  if (!_medImagesBase) _medImagesBase = await _serverBase();
 
   tbody.innerHTML = "";
 
-  const rows = _extractMedRows(html);
-  if (!rows.length) {
-    _appendNoData(tbody, "No active discharge medication found");
-    safeSetText("physicianName", "-");
+  _meds.forEach((med, i) => tbody.appendChild(_buildMedRow(med, i)));
+
+  // Always append the "add medicine" row at the bottom (hidden when printing).
+  tbody.appendChild(_buildAddRow());
+
+  _bindMedicineImageFallbacks(tbody);
+  _bindRowEditing(tbody);
+
+  // Re-init the translation engine on the freshly rendered table and re-apply
+  // the currently selected language (so edits/additions get translated too).
+  _initTranslate();
+  if (_currentLang) _applyTranslate(_currentLang);
+}
+
+/* ───────────────────────────── Translation ────────────────────────────── */
+// Reuses the shared med-sticker engine: HMTranslate + window.MEDICAL_GLOSSARY.
+// Drug-name cells carry data-no-translate so only instructions/notes translate.
+function _translateRoot() {
+  return document.querySelector("#medTable tbody");
+}
+
+function _initTranslate() {
+  if (typeof HMTranslate === "undefined") return;
+  const root = _translateRoot();
+  if (root) HMTranslate.init(root, { glossary: window.MEDICAL_GLOSSARY || {} });
+}
+
+async function _applyTranslate(lang) {
+  if (typeof HMTranslate === "undefined") return;
+  const root = _translateRoot();
+  if (!root) return;
+  HMTranslate.restore();
+  if (lang) await HMTranslate.translate(root, lang);
+}
+
+/** Build the trailing add-medicine row with a search box + suggestion list. */
+function _buildAddRow() {
+  const tr = document.createElement("tr");
+  tr.className = "add-row no-print";
+  tr.innerHTML = `
+    <td class="col-act">
+      <button type="button" class="row-add" title="Add this medicine">+</button>
+    </td>
+    <td class="col-no">+</td>
+    <td class="col-med" colspan="3">
+      <div class="add-wrap">
+        <input type="text" class="add-input" placeholder="พิมพ์ชื่อยาเพื่อเพิ่ม… (type a medicine name to add)" autocomplete="off" />
+        <div class="add-suggest" hidden></div>
+      </div>
+    </td>
+  `;
+  return tr;
+}
+
+/* ───────────────────── Editing / add / remove / persist ───────────────── */
+function _commitField(index, field, value) {
+  if (index < 0 || index >= _meds.length) return;
+  _meds[index][field] = norm(value);
+  _persist();
+}
+
+function _removeMed(index) {
+  if (index < 0 || index >= _meds.length) return;
+  _meds.splice(index, 1);
+  _persist();
+  renderMeds();
+}
+
+function _addMed(med) {
+  _meds.push({
+    drug: norm(med.drug || ""), instruction: norm(med.instruction || ""),
+    note: "", quantity: norm(med.quantity || ""), code: norm(med.code || ""),
+    provider: "",
+  });
+  _persist();
+  renderMeds();
+}
+
+/** Wire contenteditable commits, the − remove buttons, and the add box. */
+function _bindRowEditing(tbody) {
+  // Editable cells → commit on blur.
+  tbody.querySelectorAll("[contenteditable][data-field]").forEach((el) => {
+    el.addEventListener("blur", () => {
+      const tr = el.closest(".med-row");
+      if (!tr) return;
+      const idx = Number(tr.dataset.index);
+      const field = el.dataset.field;
+      _commitField(idx, field, el.textContent);
+      // Re-resolve the medicine image if the drug name changed.
+      if (field === "drug") {
+        const slot = tr.querySelector(".med-photo-slot");
+        if (slot) _refreshRowImage(tr, idx);
+      }
+    });
+    // Enter commits (except keep newlines out of single-line fields).
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); el.blur(); }
+    });
+  });
+
+  // Remove buttons.
+  tbody.querySelectorAll(".row-del").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tr = btn.closest(".med-row");
+      if (tr) _removeMed(Number(tr.dataset.index));
+    });
+  });
+
+  // Add-medicine search box.
+  const addRow = tbody.querySelector(".add-row");
+  if (addRow) _bindAddBox(addRow);
+}
+
+/** Re-resolve and swap a row's medicine image after a name edit. */
+function _refreshRowImage(tr, idx) {
+  const med = _meds[idx];
+  const cell = tr.querySelector(".med-cell");
+  if (!cell || !med) return;
+  const candidates = _medicineImageCandidates(med);
+  const newSlot = document.createElement("div");
+  newSlot.innerHTML = _buildMedicinePhotoSlot(med, candidates);
+  const oldSlot = cell.querySelector(".med-photo-slot");
+  if (oldSlot && newSlot.firstElementChild) {
+    oldSlot.replaceWith(newSlot.firstElementChild);
+    _bindMedicineImageFallbacks(cell);
+  }
+}
+
+/** Live suggestion dropdown + add behavior for the add-medicine row. */
+function _bindAddBox(addRow) {
+  const input = addRow.querySelector(".add-input");
+  const list = addRow.querySelector(".add-suggest");
+  const addBtn = addRow.querySelector(".row-add");
+  if (!input || !list) return;
+
+  const commitAdd = (name, code) => {
+    const drug = norm(name || input.value);
+    if (!drug) return;
+    _addMed({ drug, code: code || "" });
+    // renderMeds() rebuilds the table; focus the fresh add box for fast entry.
+    const fresh = document.querySelector("#medTable .add-input");
+    if (fresh) fresh.focus();
+  };
+
+  const renderSuggest = () => {
+    const matches = _searchMeds(input.value);
+    if (!matches.length) { list.hidden = true; list.innerHTML = ""; return; }
+    list.innerHTML = matches.map((m) =>
+      `<div class="add-opt" data-code="${escapeHtml(m.code)}" data-name="${escapeHtml(m.name)}">${escapeHtml(m.name)}</div>`
+    ).join("");
+    list.hidden = false;
+  };
+
+  input.addEventListener("input", renderSuggest);
+  input.addEventListener("focus", renderSuggest);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); commitAdd(); }
+    if (e.key === "Escape") { list.hidden = true; }
+  });
+  list.addEventListener("mousedown", (e) => {
+    // mousedown (not click) so it fires before input blur hides the list.
+    const opt = e.target.closest(".add-opt");
+    if (!opt) return;
+    e.preventDefault();
+    commitAdd(opt.dataset.name, opt.dataset.code);
+  });
+  if (addBtn) addBtn.addEventListener("click", () => commitAdd());
+  // Hide suggestions when focus leaves the add box.
+  input.addEventListener("blur", () => setTimeout(() => { list.hidden = true; }, 150));
+}
+
+/* ───────────────────────────── Persistence ────────────────────────────── */
+let _persistTimer = null;
+function _persist() {
+  if (!window.BKNData || !window.BKNData.saveMedCache) return;
+  const c = _context || {};
+  if (!c.patientuid || !c.patientvisituid) return;
+  clearTimeout(_persistTimer);
+  _persistTimer = setTimeout(() => {
+    try {
+      window.BKNData.saveMedCache(c.patientuid, c.patientvisituid, {
+        kind: "homeMedSheet",
+        meds: _meds,
+        savedAt: new Date().toISOString(),
+      });
+    } catch (_) { /* best-effort */ }
+  }, 600);
+}
+
+async function _loadSavedMeds() {
+  if (!window.BKNData || !window.BKNData.loadMedCache) return null;
+  const c = _context || {};
+  if (!c.patientuid || !c.patientvisituid) return null;
+  try {
+    const cached = await window.BKNData.loadMedCache(c.patientuid, c.patientvisituid);
+    if (cached && cached.kind === "homeMedSheet" && Array.isArray(cached.meds)) {
+      return cached.meds;
+    }
+  } catch (_) { /* ignore */ }
+  return null;
+}
+
+/* ─────────────────────────── Fetch + orchestrate ──────────────────────── */
+function _setStatus(text) {
+  const el = document.getElementById("fetchStatus");
+  if (el) el.textContent = text;
+}
+
+async function fetchAndRender() {
+  const tbody = document.querySelector("#medTable tbody");
+  if (!_context || !_context.patientvisituid) {
+    if (tbody) { tbody.innerHTML = ""; _appendNoData(tbody, "No patient context. Open from the Discharge Medication dispense view."); }
+    return;
+  }
+  if (!window.BKNData || !window.BKNData.serverFetch) {
+    if (tbody) { tbody.innerHTML = ""; _appendNoData(tbody, "BKNData unavailable (shared-data-client.js not loaded)."); }
     return;
   }
 
-  let physician = "";
+  const { start, end } = _currentDateRange();
+  const { fromdate, todate } = _thaiRangeToUtc(start, end);
 
-  rows.forEach((med, i) => {
-    if (!physician && med.provider) physician = med.provider;
-    const medPhoto = _buildMedicinePhotoSlot(med);
+  _setStatus("⏳ กำลังดึงรายงานยากลับบ้าน (ผ่านเซิร์ฟเวอร์)...");
+  await _loadMedicationDatabase();
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="col-no">${i + 1}</td>
-      <td class="col-med">
-        <div class="med-cell">
-${medPhoto}
-          <div class="med-text">
-            <div class="med-name">${escapeHtml(med.drug || "-")}</div>
-            ${med.code ? `<div class="med-code">Code: ${escapeHtml(med.code)}</div>` : ""}
-          </div>
-        </div>
-      </td>
-      <td class="col-how">${_buildInstruction(med)}</td>
-      <td class="col-qty">${_buildQty(med)}</td>
-    `;
-    tbody.appendChild(tr);
-  });
+  // The pharmacy server logs into Jasper, fetches + parses the hoamemedthai
+  // report, filters to oral take-home meds, and returns structured JSON.
+  let resp = null;
+  try {
+    resp = await window.BKNData.serverFetch("/api/report/home-med", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ context: _context, fromdate, todate }),
+    });
+  } catch (e) {
+    console.error("[home-med] serverFetch threw:", e);
+  }
 
-  _bindMedicineImageFallbacks(tbody);
-  safeSetText("physicianName", physician || "-");
+  console.log("[home-med] server response:", resp);
+  window.__HM_RESP__ = resp;  // inspect in console: window.__HM_RESP__
+
+  if (!resp || !resp.ok || !resp.json || !resp.json.ok) {
+    const err = (resp && resp.json && resp.json.error) || (resp && resp.error) || `HTTP ${resp && resp.status}`;
+    _setStatus("❌ ดึงรายงานไม่สำเร็จ: " + err);
+    if (tbody) {
+      tbody.innerHTML = "";
+      _appendNoData(tbody, "ดึงรายงานจากเซิร์ฟเวอร์ไม่สำเร็จ: " + err);
+    }
+    return;
+  }
+
+  const data = resp.json;
+  const reportMeds = data.meds || [];
+  console.log(`[home-med] meds=${reportMeds.length} of allMeds=${data.allMeds}, hmSections=${data.hmSectionCount}, fallback=${data.usedFallback}`);
+
+  // Build the editable list: prefer the user's previously-saved edits for this
+  // visit; otherwise seed from the report meds.
+  const saved = await _loadSavedMeds();
+  if (saved && saved.length) {
+    _meds = saved.map((m) => ({
+      drug: norm(m.drug || ""), instruction: norm(m.instruction || ""),
+      note: norm(m.note || ""), quantity: norm(m.quantity || ""),
+      code: norm(m.code || ""), provider: norm(m.provider || ""),
+    }));
+    _setStatus(`✅ ${_meds.length} รายการ (โหลดฉบับที่แก้ไขไว้)`);
+  } else {
+    _meds = reportMeds.map(_medFromReport);
+    if (!_meds.length) {
+      _setStatus("⚠️ ไม่พบรายการยาในรายงาน — เพิ่มยาด้านล่าง หรือปรับช่วงวันที่");
+    } else if (data.usedFallback) {
+      _setStatus(`⚠️ ไม่พบยา (HM) — แสดงยาทั้งหมด ${_meds.length} รายการให้ตัดออก/แก้ไข`);
+    } else {
+      _setStatus(`✅ ${_meds.length} รายการยากลับบ้าน (HM) — เพิ่ม/ลบ/แก้ไขได้`);
+    }
+  }
+
+  populateHeader(data.patient || {}, _context, reportMeds);
+  await renderMeds();
 }
 
+/* ───────────────────────────── Date controls ──────────────────────────── */
+function _currentDateRange() {
+  const f = document.getElementById("fromDate");
+  const t = document.getElementById("toDate");
+  if (f && t && f.value && t.value) return { start: f.value, end: t.value };
+  return _defaultThaiDateRange();
+}
+
+function _initDateControls() {
+  const f = document.getElementById("fromDate");
+  const t = document.getElementById("toDate");
+  const { start, end } = _defaultThaiDateRange();
+  if (f && !f.value) f.value = start;
+  if (t && !t.value) t.value = end;
+
+  const reload = document.getElementById("btnReload");
+  if (reload) reload.onclick = () => fetchAndRender();
+}
+
+/* ───────────────────────────── Print controls ─────────────────────────── */
 const PRINT_CONTROL_DEFAULTS = {
-  marginMm: "8",
-  previewScale: "1",
-  fontSizeMode: "normal",
-  pictureSizeMode: "normal",
-  compactMode: false,
-  hideLogo: false,
+  marginMm: "8", previewScale: "1", fontSizeMode: "normal",
+  pictureSizeMode: "normal", compactMode: false, hideLogo: false, fitWidth: false,
 };
 
 function _getPrintControls() {
   return {
-    paperSize: document.getElementById("paperSize"),
     printMargin: document.getElementById("printMargin"),
     previewScale: document.getElementById("previewScale"),
     fontSizeMode: document.getElementById("fontSizeMode"),
     pictureSizeMode: document.getElementById("pictureSizeMode"),
     compactMode: document.getElementById("compactMode"),
     hideLogo: document.getElementById("hideLogo"),
+    fitWidth: document.getElementById("fitWidth"),
     printStatus: document.getElementById("printStatus"),
   };
 }
 
 function _ensurePrintStyleTag() {
   let style = document.getElementById("hm-print-page-style");
-  if (!style) {
-    style = document.createElement("style");
-    style.id = "hm-print-page-style";
-    document.head.appendChild(style);
-  }
+  if (!style) { style = document.createElement("style"); style.id = "hm-print-page-style"; document.head.appendChild(style); }
   return style;
 }
 
@@ -524,54 +663,34 @@ function _loadPrintSettings() {
   try {
     const raw = localStorage.getItem("hm:homeMedPrintSettings");
     return raw ? { ...PRINT_CONTROL_DEFAULTS, ...JSON.parse(raw) } : { ...PRINT_CONTROL_DEFAULTS };
-  } catch (_err) {
-    return { ...PRINT_CONTROL_DEFAULTS };
-  }
+  } catch (_e) { return { ...PRINT_CONTROL_DEFAULTS }; }
 }
 
 function _savePrintSettings(settings) {
-  try {
-    localStorage.setItem("hm:homeMedPrintSettings", JSON.stringify(settings));
-  } catch (_err) {
-    // localStorage can be disabled in some extension contexts; ignore safely.
-  }
+  try { localStorage.setItem("hm:homeMedPrintSettings", JSON.stringify(settings)); } catch (_e) { /* ignore */ }
 }
 
-function _fontSizePx(mode) {
-  if (mode === "small") return "12px";
-  if (mode === "large") return "14px";
-  return "13px";
-}
-
-function _pictureSizeMm(mode) {
-  if (mode === "small") return "16mm";
-  if (mode === "large") return "24mm";
-  return "20mm";
-}
+function _fontSizePx(mode) { return mode === "small" ? "12px" : mode === "large" ? "14px" : "13px"; }
+function _pictureSizeMm(mode) { return mode === "small" ? "16mm" : mode === "large" ? "24mm" : "20mm"; }
 
 function applyPrintSettings(settings) {
   const cfg = { ...PRINT_CONTROL_DEFAULTS, ...(settings || {}) };
   const root = document.documentElement;
   const body = document.body;
-
   root.style.setProperty("--screen-scale", cfg.previewScale);
   root.style.setProperty("--base-font-size", _fontSizePx(cfg.fontSizeMode));
   root.style.setProperty("--medicine-image-size", _pictureSizeMm(cfg.pictureSizeMode));
-
   body.classList.toggle("compact-mode", !!cfg.compactMode);
   body.classList.toggle("hide-logo", !!cfg.hideLogo);
-
+  body.classList.toggle("fit-width", !!cfg.fitWidth);
   const margin = Number(cfg.marginMm) || 8;
-  const style = _ensurePrintStyleTag();
-  style.textContent = `@page { size: A4 portrait; margin: ${margin}mm; }`;
-
-  const controls = _getPrintControls();
-  if (controls.printStatus) {
+  _ensurePrintStyleTag().textContent = `@page { size: A4 portrait; margin: ${margin}mm; }`;
+  const c = _getPrintControls();
+  if (c.printStatus) {
     const compact = cfg.compactMode ? " · compact" : "";
     const logo = cfg.hideLogo ? " · logo hidden" : "";
-    controls.printStatus.textContent = `A4 portrait · margin ${margin} mm · ${Math.round(Number(cfg.previewScale) * 100)}% preview${compact}${logo}`;
+    c.printStatus.textContent = `A4 portrait · margin ${margin} mm · ${Math.round(Number(cfg.previewScale) * 100)}% preview${compact}${logo}`;
   }
-
   return cfg;
 }
 
@@ -584,83 +703,66 @@ function currentPrintSettingsFromControls() {
     pictureSizeMode: c.pictureSizeMode?.value || PRINT_CONTROL_DEFAULTS.pictureSizeMode,
     compactMode: !!c.compactMode?.checked,
     hideLogo: !!c.hideLogo?.checked,
+    fitWidth: !!c.fitWidth?.checked,
   };
 }
 
 function bindPrintControls() {
   const c = _getPrintControls();
   const saved = _loadPrintSettings();
-
   if (c.printMargin) c.printMargin.value = saved.marginMm;
   if (c.previewScale) c.previewScale.value = saved.previewScale;
   if (c.fontSizeMode) c.fontSizeMode.value = saved.fontSizeMode;
   if (c.pictureSizeMode) c.pictureSizeMode.value = saved.pictureSizeMode;
   if (c.compactMode) c.compactMode.checked = !!saved.compactMode;
   if (c.hideLogo) c.hideLogo.checked = !!saved.hideLogo;
-
+  if (c.fitWidth) c.fitWidth.checked = !!saved.fitWidth;
   applyPrintSettings(saved);
-
-  [c.printMargin, c.previewScale, c.fontSizeMode, c.pictureSizeMode, c.compactMode, c.hideLogo]
+  [c.printMargin, c.previewScale, c.fontSizeMode, c.pictureSizeMode, c.compactMode, c.hideLogo, c.fitWidth]
     .filter(Boolean)
-    .forEach((el) => {
-      el.addEventListener("change", () => {
-        const next = applyPrintSettings(currentPrintSettingsFromControls());
-        _savePrintSettings(next);
-      });
-    });
+    .forEach((el) => el.addEventListener("change", () => {
+      _savePrintSettings(applyPrintSettings(currentPrintSettingsFromControls()));
+    }));
 }
 
-function buildFileName(p) {
-  const hn = p?.hn ? p.hn.replace(/[^\w-]+/g, "_") : "UnknownHN";
-  return `HomeMedicationSheet_${hn}`;
+function buildFileName(context) {
+  // Prefer the HN rendered in the sheet header (from the report), then context.
+  const hnEl = document.getElementById("patientHN");
+  const domHn = hnEl ? norm(hnEl.textContent) : "";
+  const hn = (domHn && domHn !== "-") ? domHn : (context?.hn || context?.patientId || "");
+  return `HomeMedicationSheet_${hn ? String(hn).replace(/[^\w-]+/g, "_") : "UnknownHN"}`;
 }
 
-function bindToolbar(patient) {
+function bindToolbar() {
   const btnPrint = document.getElementById("btnPrint");
   const btnPdf = document.getElementById("btnPdf");
   const btnRevert = document.getElementById("btnRevert");
-
-  if (btnPrint) {
-    btnPrint.onclick = () => {
-      applyPrintSettings(currentPrintSettingsFromControls());
-      _buildPrintHeader();
-      window.print();
-    };
-  }
-
+  // Set document.title for both Print and PDF — browsers use it as the
+  // default save/print filename, so the HN ends up in the file name.
+  if (btnPrint) btnPrint.onclick = () => { document.title = buildFileName(_context); applyPrintSettings(currentPrintSettingsFromControls()); _buildPrintHeader(); window.print(); };
   if (btnRevert) btnRevert.onclick = () => location.reload();
-
-  if (btnPdf) {
-    btnPdf.onclick = () => {
-      document.title = buildFileName(patient);
-      applyPrintSettings(currentPrintSettingsFromControls());
-      _buildPrintHeader();
-      window.print();
-    };
-  }
+  if (btnPdf) btnPdf.onclick = () => { document.title = buildFileName(_context); applyPrintSettings(currentPrintSettingsFromControls()); _buildPrintHeader(); window.print(); };
 }
 
-async function renderFromMessage(msg) {
-  if (!msg || msg.type !== MSG.LOAD_MED_TABLE) return;
-  _lastMsg = msg;
-  _patient = msg.patientData || _emptyPatient();
-  _pharmacistName = msg.pharmacistName || null;
-
-  populateHeader(_patient);
-  await _loadMedicationDatabase();
-  buildMedTable(msg.tableHTML || "");
-  bindToolbar(_patient);
+function bindLangControl() {
+  const sel = document.getElementById("lang");
+  if (!sel) return;
+  // Reflect the default language (Thai) in the dropdown.
+  sel.value = _currentLang;
+  sel.addEventListener("change", async (e) => {
+    _currentLang = e.target.value || "";
+    const fetchEl = document.getElementById("fetchStatus");
+    if (_currentLang && fetchEl) fetchEl.textContent = "⏳ กำลังแปล…";
+    await _applyTranslate(_currentLang);
+    if (fetchEl) fetchEl.textContent = _currentLang ? "✅ แปลแล้ว" : "";
+  });
 }
 
+/* ───────────────────── Repeating print header (unchanged) ─────────────── */
 function _cloneForPrintHeader(el) {
   const clone = el.cloneNode(true);
-
-  // Original header blocks use .screen-only so they are hidden in print.
-  // When cloned into the repeating table <thead>, remove that class; otherwise
-  // the cloned header is also hidden and the print/PDF starts directly at table columns.
   clone.classList.remove("screen-only");
-  clone.querySelectorAll(".screen-only").forEach((node) => node.classList.remove("screen-only"));
-
+  clone.querySelectorAll(".screen-only").forEach((n) => n.classList.remove("screen-only"));
   return clone;
 }
 
@@ -674,9 +776,19 @@ function _buildPrintHeader() {
   });
 }
 
+/* ─────────────────────────────── Boot ─────────────────────────────────── */
+function _applyContextAndRender(msg) {
+  if (!msg || msg.type !== MSG.LOAD_MED_TABLE) return;
+  _context = msg.context || null;
+  populateHeader(null, _context);
+  fetchAndRender();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   bindPrintControls();
-  bindToolbar(_patient || _emptyPatient());
+  _initDateControls();
+  bindToolbar();
+  bindLangControl();
 
   window.addEventListener("beforeprint", _buildPrintHeader);
   window.addEventListener("afterprint", () => {
@@ -685,16 +797,15 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   chrome.runtime.onMessage.addListener((msg) => {
-    if (msg.type !== MSG.LOAD_MED_TABLE) return;
-    renderFromMessage(msg);
+    if (msg.type === MSG.LOAD_MED_TABLE) _applyContextAndRender(msg);
   });
 
   chrome.storage.session.get("payload_sheet", (res) => {
     const stored = res?.payload_sheet;
-    if (stored?.type === MSG.LOAD_MED_TABLE) renderFromMessage(stored);
-    else if (!_lastMsg) {
+    if (stored?.type === MSG.LOAD_MED_TABLE) _applyContextAndRender(stored);
+    else {
       const tbody = document.querySelector("#medTable tbody");
-      if (tbody) _appendNoData(tbody, "No medication data loaded. Please open from the discharge medication dialog.");
+      if (tbody) _appendNoData(tbody, "No medication data loaded. Open from the Discharge Medication dispense view.");
     }
   });
 });

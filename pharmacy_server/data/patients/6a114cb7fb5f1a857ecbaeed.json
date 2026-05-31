@@ -1,0 +1,17 @@
+{
+  "patientuid": "6a114cb7fb5f1a857ecbaeed",
+  "createdAt": "2026-05-31T06:21:13.773001+00:00",
+  "updatedAt": "2026-05-31T06:21:13.773001+00:00",
+  "context": {
+    "patientuid": "6a114cb7fb5f1a857ecbaeed",
+    "patientvisituid": "6a116d474413670575b7a423",
+    "hn": "48-26-006286",
+    "patientName": "MRS. NATCHANA  SASIWILASAKORN"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

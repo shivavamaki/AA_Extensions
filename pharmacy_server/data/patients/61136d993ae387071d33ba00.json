@@ -1,0 +1,17 @@
+{
+  "patientuid": "61136d993ae387071d33ba00",
+  "createdAt": "2026-05-31T07:02:54.041402+00:00",
+  "updatedAt": "2026-05-31T07:02:54.041402+00:00",
+  "context": {
+    "patientuid": "61136d993ae387071d33ba00",
+    "patientvisituid": "6a1abe458232b627b0817d4c",
+    "hn": "48-17-006123",
+    "patientName": "MR. NUPIAN  CHAIYABUT"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

@@ -65,6 +65,9 @@ import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
+import http.cookiejar
+import struct
+import threading
 from datetime import datetime, timezone
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
@@ -105,6 +108,694 @@ SECTION_FIELD = {
     'opd-stat':  'opdStat',
     'ipd-stat':  'ipdStat',
 }
+
+# ── Jasper (aa-report) service login ───────────────────────────
+# The Jasper report server requires an interactive session. The pharmacy
+# server logs in once with a service account, captures the JSESSIONID cookie,
+# and reuses it to fetch report XLS files on behalf of the extension.
+#
+# ⚠️ SECURITY NOTE: these credentials are hardcoded here at the maintainer's
+#    request. This file lives in the git repo, so the password is visible to
+#    anyone with repo access. Rotate by editing the two constants below.
+JASPER_BASE       = 'https://aa-report.bdms.co.th'
+JASPER_LOGIN_URL  = JASPER_BASE + '/jasperserver/j_spring_security_check'
+JASPER_USERNAME   = 'bkn07'
+JASPER_PASSWORD   = 'abc@123'
+
+# Module-level cached Jasper session (cookie jar + opener), guarded by a lock.
+_jasper_lock   = threading.Lock()
+_jasper_opener = None
+
+
+def _jasper_build_opener():
+    """Create a fresh urllib opener with its own cookie jar."""
+    jar = http.cookiejar.CookieJar()
+    return urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar)), jar
+
+
+_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128'
+
+
+def _jasper_scrape_csrf(html):
+    """Return a CSRF token if the login page embeds one (Spring Security)."""
+    # Common forms: <input name="_csrf" value="..."> or meta tag.
+    m = re.search(r'name=["\']_csrf["\'][^>]*value=["\']([^"\']+)["\']', html, re.I)
+    if m:
+        return ('_csrf', m.group(1))
+    m = re.search(r'value=["\']([^"\']+)["\'][^>]*name=["\']_csrf["\']', html, re.I)
+    if m:
+        return ('_csrf', m.group(1))
+    m = re.search(r'<meta[^>]*name=["\']_csrf["\'][^>]*content=["\']([^"\']+)["\']', html, re.I)
+    if m:
+        return ('_csrf', m.group(1))
+    return None
+
+
+def _jasper_login():
+    """Log in to Jasper, returning an opener carrying the authenticated session.
+    Follows the standard Spring Security flow: GET the login page first (to seat
+    a JSESSIONID + any CSRF token), then POST credentials. Raises RuntimeError
+    with diagnostics on failure."""
+    opener, jar = _jasper_build_opener()
+    diag = {}
+
+    # 1) GET the login page to establish a session + capture any CSRF token.
+    csrf = None
+    try:
+        req = urllib.request.Request(JASPER_BASE + '/jasperserver/login.html',
+                                     headers={'User-Agent': _UA, 'Accept': 'text/html,*/*'})
+        with opener.open(req, timeout=30) as r:
+            html = r.read().decode('utf-8', 'replace')
+        csrf = _jasper_scrape_csrf(html)
+        diag['csrf_found'] = bool(csrf)
+    except Exception as e:
+        diag['get_login_error'] = str(e)
+
+    # 2) POST credentials (include CSRF token if present).
+    fields = {'j_username': JASPER_USERNAME, 'j_password': JASPER_PASSWORD}
+    if csrf:
+        fields[csrf[0]] = csrf[1]
+    form = urllib.parse.urlencode(fields).encode('utf-8')
+    req = urllib.request.Request(JASPER_LOGIN_URL, data=form, headers={
+        'User-Agent': _UA,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': '*/*',
+        'Referer': JASPER_BASE + '/jasperserver/login.html',
+    })
+    try:
+        with opener.open(req, timeout=30) as r:
+            diag['post_status'] = r.status
+            diag['post_final_url'] = r.geturl()
+            body = r.read(4096).decode('utf-8', 'replace')
+    except urllib.error.HTTPError as e:
+        diag['post_status'] = e.code
+        diag['post_final_url'] = getattr(e, 'url', '')
+        body = ''
+    except Exception as e:
+        raise RuntimeError('Jasper login POST failed: %s | diag=%s' % (e, diag))
+
+    diag['cookies'] = [c.name for c in jar]
+    final = diag.get('post_final_url', '') or ''
+    # Failure signatures: redirected back to login?error, or login form in body.
+    if ('login' in final and 'error' in final) or ('j_username' in body and 'j_password' in body):
+        raise RuntimeError('Jasper login rejected — credentials or login flow wrong. diag=%s' % diag)
+    if not any(c.name == 'JSESSIONID' for c in jar):
+        raise RuntimeError('Jasper login: no JSESSIONID cookie. diag=%s' % diag)
+
+    # 3) Verify the session is actually authenticated (not anonymous) by hitting
+    #    an endpoint that requires login; the report fetch will confirm anyway.
+    _JASPER_LOGIN_DIAG.clear()
+    _JASPER_LOGIN_DIAG.update(diag)
+    return opener
+
+
+# Last login attempt diagnostics, surfaced in error responses for debugging.
+_JASPER_LOGIN_DIAG = {}
+
+
+def _jasper_get_opener(force_relogin=False):
+    """Return a cached logged-in opener, logging in if needed."""
+    global _jasper_opener
+    with _jasper_lock:
+        if force_relogin or _jasper_opener is None:
+            _jasper_opener = _jasper_login()
+        return _jasper_opener
+
+
+def jasper_fetch_xls(report_url):
+    """Fetch a Jasper report URL as bytes using the service session.
+    Re-logs in once if the session has expired (login page returned).
+    Returns bytes. Raises RuntimeError on failure."""
+    def _do_fetch(opener):
+        req = urllib.request.Request(report_url, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128',
+            'Accept': 'application/vnd.ms-excel, application/octet-stream, */*',
+        })
+        with opener.open(req, timeout=60) as r:
+            return r.read()
+
+    opener = _jasper_get_opener()
+    data = _do_fetch(opener)
+    # Detect an expired session (Jasper served the login page) and retry once.
+    head = data[:512].lower()
+    if (b'<html' in head or b'<!doctype' in head) and data[:4] != b'\xd0\xcf\x11\xe0':
+        opener = _jasper_get_opener(force_relogin=True)
+        data = _do_fetch(opener)
+    return data
+
+
+# ── BIFF8 / OLE2 .xls parser (stdlib) ──────────────────────────
+# Ported from the extension's MedicationJourney.parseBiff8ToSheets so the
+# server can read Jasper .xls output without third-party deps.
+def parse_biff8_to_sheets(buf):
+    """Parse OLE2/BIFF8 .xls bytes into [{'name': str, 'rows': [[cell,...]]}]."""
+    if len(buf) < 8 or buf[:4] != b'\xd0\xcf\x11\xe0':
+        return []
+
+    def u16(off):  return struct.unpack_from('<H', buf, off)[0]
+    def u32(off):  return struct.unpack_from('<I', buf, off)[0]
+    def i32(off):  return struct.unpack_from('<i', buf, off)[0]
+
+    sector_size        = 1 << u16(0x1E)
+    mini_sector_size   = 1 << u16(0x20)
+    mini_stream_cutoff = u32(0x38)
+    fat_count          = u32(0x2C)
+    dir_start          = u32(0x30)
+    mini_fat_start     = u32(0x3C)
+
+    fat = []
+    for i in range(min(109, fat_count)):
+        sec_id = u32(0x4C + i * 4)
+        if sec_id >= 0xFFFFFFF8:
+            break
+        sec_off = (sec_id + 1) * sector_size
+        for j in range(sector_size // 4):
+            off = sec_off + j * 4
+            if off + 4 <= len(buf):
+                fat.append(i32(off))
+
+    def read_sector_chain(start_sec, max_bytes=0):
+        chunks = []
+        sec = start_sec
+        total = 0
+        while 0 <= sec < 0xFFFFFFF8:
+            off = (sec + 1) * sector_size
+            length = min(sector_size, len(buf) - off)
+            if length <= 0:
+                break
+            chunks.append(buf[off:off + length])
+            total += length
+            if max_bytes and total >= max_bytes:
+                break
+            sec = fat[sec] if sec < len(fat) else -1
+        return b''.join(chunks)
+
+    dir_data = read_sector_chain(dir_start)
+    dir_count = len(dir_data) // 128
+    dir_entries = []
+    for i in range(dir_count):
+        base = i * 128
+        name_len = struct.unpack_from('<H', dir_data, base + 64)[0]
+        start = struct.unpack_from('<I', dir_data, base + 116)[0]
+        size = struct.unpack_from('<I', dir_data, base + 120)[0]
+        name = ''
+        for c in range(0, (name_len - 2) if name_len > 0 else 0, 2):
+            name += chr(struct.unpack_from('<H', dir_data, base + c)[0])
+        dir_entries.append({'name': name, 'start': start, 'size': size})
+
+    if not dir_entries:
+        return []
+    root_entry = dir_entries[0]
+    wb_entry = next((e for e in dir_entries
+                     if e['name'].lower() in ('workbook', 'book')), None)
+    if not wb_entry:
+        return []
+
+    if wb_entry['size'] < mini_stream_cutoff:
+        mini_stream = read_sector_chain(root_entry['start'])
+        mini_fat_data = read_sector_chain(mini_fat_start)
+        mini_fat = list(struct.unpack_from('<%di' % (len(mini_fat_data) // 4),
+                                           mini_fat_data, 0)) if mini_fat_data else []
+        chunks = []
+        msec = wb_entry['start']
+        while 0 <= msec < 0xFFFFFFF8:
+            off = msec * mini_sector_size
+            length = min(mini_sector_size, len(mini_stream) - off)
+            if length <= 0:
+                break
+            chunks.append(mini_stream[off:off + length])
+            msec = mini_fat[msec] if msec < len(mini_fat) else -1
+        wb = b''.join(chunks)
+    else:
+        wb = read_sector_chain(wb_entry['start'], wb_entry['size'])
+
+    def decode_biff8_string(data, off, char_count):
+        flags = data[off]
+        is_wide = (flags & 0x01) != 0
+        has_rt = (flags & 0x08) != 0
+        has_ext = (flags & 0x04) != 0
+        pos = off + 1
+        run_count = 0
+        ext_len = 0
+        if has_rt:
+            run_count = struct.unpack_from('<H', data, pos)[0]; pos += 2
+        if has_ext:
+            ext_len = struct.unpack_from('<I', data, pos)[0]; pos += 4
+        chars = []
+        if is_wide:
+            for _ in range(char_count):
+                chars.append(chr(struct.unpack_from('<H', data, pos)[0])); pos += 2
+        else:
+            for _ in range(char_count):
+                chars.append(chr(data[pos])); pos += 1
+        pos += run_count * 4 + ext_len
+        return ''.join(chars), pos
+
+    sheets = []
+    current_sheet = -1
+    in_globals = True
+    sst = []
+    sst_unique = 0
+    sst_building = False
+    sst_accum = b''
+
+    def parse_accumulated_sst():
+        nonlocal sst_building, sst_accum
+        if not sst_accum:
+            return
+        p = 8
+        for _ in range(sst_unique):
+            if p >= len(sst_accum) - 2:
+                break
+            cc = struct.unpack_from('<H', sst_accum, p)[0]
+            p += 2
+            try:
+                s, p = decode_biff8_string(sst_accum, p, cc)
+                sst.append(s)
+            except Exception:
+                sst.append('')
+                break
+        sst_building = False
+        sst_accum = b''
+
+    def set_cell(sheet_idx, row, col, val):
+        if sheet_idx < 0 or sheet_idx >= len(sheets):
+            return
+        rows = sheets[sheet_idx]['rows']
+        while len(rows) <= row:
+            rows.append([])
+        r = rows[row]
+        while len(r) <= col:
+            r.append('')
+        r[col] = val
+
+    def decode_rk(rk):
+        div100 = (rk & 0x01) != 0
+        is_int = (rk & 0x02) != 0
+        if is_int:
+            num = float(rk >> 2)
+        else:
+            # Top 30 bits are the high word of an IEEE-754 double; low word = 0.
+            # Mask to unsigned 32-bit and pack as unsigned ('<I'), not signed.
+            hi = (rk & 0xFFFFFFFC) & 0xFFFFFFFF
+            num = struct.unpack('<d', struct.pack('<II', 0, hi))[0]
+        if div100:
+            num /= 100.0
+        return num
+
+    pos = 0
+    wb_len = len(wb)
+    while pos + 4 <= wb_len:
+        rec_type = struct.unpack_from('<H', wb, pos)[0]
+        rec_len = struct.unpack_from('<H', wb, pos + 2)[0]
+        rec_off = pos + 4
+        pos += 4 + rec_len
+
+        if rec_type == 0x003C:  # CONTINUE
+            if sst_building and sst_accum:
+                sst_accum += wb[rec_off:rec_off + rec_len]
+            continue
+        if sst_building and sst_accum:
+            parse_accumulated_sst()
+
+        if rec_type in (0x0009, 0x0209, 0x0409, 0x0809):  # BOF (0x0809 = BIFF8)
+            if rec_len >= 6:
+                bof_type = struct.unpack_from('<H', wb, rec_off + 2)[0]
+                if bof_type == 0x0010:
+                    current_sheet += 1
+                    in_globals = False
+                elif bof_type == 0x0005:
+                    in_globals = True
+        elif rec_type == 0x0085:  # BOUNDSHEET
+            if rec_len >= 8:
+                name_len = wb[rec_off + 6]
+                flags = wb[rec_off + 7]
+                is_wide = (flags & 0x01) != 0
+                name_off = rec_off + 8
+                name = ''
+                if is_wide:
+                    for c in range(name_len):
+                        name += chr(struct.unpack_from('<H', wb, name_off + c * 2)[0])
+                else:
+                    for c in range(name_len):
+                        name += chr(wb[name_off + c])
+                sheets.append({'name': name, 'rows': []})
+        elif rec_type == 0x00FC:  # SST
+            if rec_len >= 8:
+                sst_unique = struct.unpack_from('<I', wb, rec_off + 4)[0]
+                sst_building = True
+                sst[:] = []
+                sst_accum = wb[rec_off:rec_off + rec_len]
+        elif rec_type == 0x00FD:  # LABELSST
+            if rec_len >= 10:
+                row = struct.unpack_from('<H', wb, rec_off)[0]
+                col = struct.unpack_from('<H', wb, rec_off + 2)[0]
+                idx = struct.unpack_from('<I', wb, rec_off + 6)[0]
+                set_cell(current_sheet, row, col, sst[idx] if idx < len(sst) else '')
+        elif rec_type == 0x0204:  # LABEL
+            if rec_len >= 9:
+                row = struct.unpack_from('<H', wb, rec_off)[0]
+                col = struct.unpack_from('<H', wb, rec_off + 2)[0]
+                cc = struct.unpack_from('<H', wb, rec_off + 6)[0]
+                try:
+                    s, _ = decode_biff8_string(wb, rec_off + 8, cc)
+                    set_cell(current_sheet, row, col, s)
+                except Exception:
+                    pass
+        elif rec_type == 0x0203:  # NUMBER
+            if rec_len >= 14:
+                row = struct.unpack_from('<H', wb, rec_off)[0]
+                col = struct.unpack_from('<H', wb, rec_off + 2)[0]
+                val = struct.unpack_from('<d', wb, rec_off + 6)[0]
+                set_cell(current_sheet, row, col, _num_str(val))
+        elif rec_type in (0x0027, 0x027E):  # RK
+            if rec_len >= 10:
+                row = struct.unpack_from('<H', wb, rec_off)[0]
+                col = struct.unpack_from('<H', wb, rec_off + 2)[0]
+                rk = i32(rec_off + 6)
+                set_cell(current_sheet, row, col, _num_str(decode_rk(rk)))
+        elif rec_type == 0x00BE:  # MULRK
+            if rec_len >= 6:
+                row = struct.unpack_from('<H', wb, rec_off)[0]
+                first_col = struct.unpack_from('<H', wb, rec_off + 2)[0]
+                entry_count = (rec_len - 2) // 6
+                for e in range(entry_count):
+                    e_off = rec_off + 4 + e * 6
+                    if e_off + 6 > rec_off + rec_len:
+                        break
+                    rk = i32(e_off + 2)
+                    set_cell(current_sheet, row, first_col + e, _num_str(decode_rk(rk)))
+
+    if sst_building and sst_accum:
+        parse_accumulated_sst()
+
+    for sh in sheets:
+        sh['rows'] = [r for r in sh['rows']
+                      if r and any(c not in (None, '') for c in r)]
+    return sheets
+
+
+def _num_str(v):
+    """Format a numeric cell like JS String(Number) — integers without .0."""
+    if v == int(v):
+        return str(int(v))
+    return repr(v)
+
+
+# ── Home Medication Sheet (from RT_COMMON_286_UNBILL report) ───
+# RT_COMMON_286_UNBILL is the patient charge/order report. It marks the
+# discharge / home meds with "(HM)" category headers (e.g.
+# "1.1.1 (5) ยาแผนปัจจุบัน-ยาอันตราย (HM)"). Unlike hoamemedthai it fetches
+# headlessly with the pp token (same as the working RT_COMMON_257/917 reports).
+HM_REPORT_UNIT     = '/BDMS/Other/RT_COMMON_286_UNBILL'
+HM_REPORT_TEMPLATE = '5bebdddc7a789a015391a428'
+
+
+def _build_home_med_jasper_url(ctx, fromdate=None, todate=None):
+    """Build the RT_COMMON_286_UNBILL Jasper XLS URL from extracted context.
+
+    NOTE: the pp token's '&' must NOT be percent-encoded — Jasper expects the
+    raw `pp=u=..&r=..&o=..` form (see popup.js rawEncode for the RT reports)."""
+    if not fromdate or not todate:
+        bkk = datetime.now(timezone.utc).timestamp() + 7 * 3600
+        end_d = datetime.utcfromtimestamp(bkk)
+        start_d = datetime.utcfromtimestamp(bkk - 31 * 24 * 3600)
+        fromdate = start_d.strftime('%Y-%m-%dT17:00:00.000Z')
+        todate = end_d.strftime('%Y-%m-%dT16:59:59.999Z')
+
+    pp = ctx.get('_pp') or ''
+    if not pp and ctx.get('loginuid'):
+        o = ctx.get('parentorguid') or ctx.get('organisationuid') or ''
+        pp = 'u=%s&r=%s&o=%s' % (ctx.get('loginuid'), ctx.get('roleuid', ''), o)
+
+    params = [
+        ('_flowId', 'viewReportFlow'),
+        ('output', 'xls'),
+        ('reportUnit', HM_REPORT_UNIT),
+        ('userTimezone', 'Asia/bangkok'),
+        ('decorate', 'no'),
+        ('patientuid', ctx.get('patientuid', '')),
+        ('patientvisituid', ctx.get('patientvisituid', '')),
+        ('fromdate', fromdate),
+        ('todate', todate),
+        ('loginuid', ctx.get('loginuid', '')),
+        ('logindepartmentuid', ctx.get('logindepartmentuid') or ctx.get('departmentuid', '')),
+        ('organisationuid', ctx.get('organisationuid', '')),
+        ('userLocale', 'th'),
+        ('reporttemplateuid', HM_REPORT_TEMPLATE),
+        ('preflangcode', 'th'),
+        ('isduplicate', 'false'),
+    ]
+    # Encode everything EXCEPT pp normally; append pp raw (its &/= are literal).
+    qs = urllib.parse.urlencode(params)
+    # quote pp values but keep the u=..&r=..&o=.. structure literal.
+    return JASPER_BASE + '/jasperserver/flow.html?' + qs + '&pp=' + pp
+
+
+def _hm_norm(s):
+    return re.sub(r'\s+', ' ', str(s or '').replace(' ', ' ')).strip()
+
+
+_HM_FIELD_SYNONYMS = {
+    'code':      ['item code', 'drug code', 'code', 'รหัสยา', 'รหัส'],
+    'drug':      ['order item', 'drug name', 'medication', 'drug', 'ชื่อยา', 'รายการยา'],
+    'dosage':    ['dosage', 'dose', 'ขนาดยา', 'ขนาด'],
+    'route':     ['route', 'วิธีให้', 'ทางให้', 'ช่องทาง'],
+    'frequency': ['frequency', 'freq', 'ความถี่'],
+    'duration':  ['duration', 'ระยะเวลา', 'จำนวนวัน'],
+    'quantity':  ['quantity', 'qty', 'จำนวน'],
+    'comment':   ['comments', 'comment', 'instruction', 'instructions', 'sig',
+                  'หมายเหตุ', 'คำแนะนำ', 'วิธีใช้', 'administration instruction'],
+    'provider':  ['careprovider', 'care provider', 'physician', 'doctor', 'แพทย์', 'ผู้สั่ง'],
+    'status':    ['status', 'สถานะ'],
+}
+
+_HM_DROP = [
+    r'\binject\b', r'\binfuse\b', r'\binfusion\b', r'\bintravenous\b',
+    r'\bINJ\b', r'\bvial\b', r'\bamp(?:oule|ule)?\b', r'\bbag\b',
+    r'\bsyringe\b', r'\bcontinuous\b', r'ฉีด',
+]
+_HM_KEEP = [
+    r'\btake\b', r'\boral', r'\bp\.?o\.?\b', r'\bswallow\b', r'รับประทาน', r'กิน',
+    r'\bspray\b', r'สเปรย์', r'พ่น',
+    r'\bapply\b', r'\btopical\b', r'\bgel\b', r'\bcream\b', r'\bointment\b', r'ทา',
+    r'\bdrop\b', r'หยอด', r'\bnasal\b', r'\bnostril\b', r'จมูก',
+    r'\bsublingual\b', r'\bbuccal\b', r'อม', r'\bsachet\b', r'ซอง',
+    r'\bsuck\b', r'\bchew\b', r'เคี้ยว',
+]
+
+
+def _hm_map_headers(header_row):
+    field_idx = {}
+    used = set()
+    unmatched = []
+    for i, raw in enumerate(header_row):
+        h = _hm_norm(raw).lower()
+        if not h:
+            continue
+        best_field, best_len = None, 0
+        for field, syns in _HM_FIELD_SYNONYMS.items():
+            if field in used:
+                continue
+            for syn in syns:
+                if syn in h and len(syn) > best_len:
+                    best_field, best_len = field, len(syn)
+        if best_field:
+            field_idx[i] = best_field
+            used.add(best_field)
+        else:
+            unmatched.append({'index': i, 'header': _hm_norm(raw)})
+    return field_idx, unmatched
+
+
+def _hm_is_take_home(med):
+    text = ' '.join([med.get('route', ''), med.get('comment', ''),
+                     med.get('drug', ''), med.get('frequency', ''),
+                     med.get('dosage', ''), med.get('quantity', '')])
+    for p in _HM_DROP:
+        if re.search(p, text, re.I):
+            return False
+    for p in _HM_KEEP:
+        if re.search(p, text, re.I):
+            return True
+    return False
+
+
+# RT_COMMON_286 header labels: "ชื่อผู้ป่วย : ...", "HN: ...", "EN: ...",
+# "Room: ...", "วันที่รับผู้ป่วย :...". Values may be inline (after ':') or in
+# the adjacent cell.
+_HM_HEADER_FIELDS = {
+    'patientName': [r'ชื่อผู้ป่วย', r'^name$'],
+    'hn':          [r'^hn\b'],
+    'an':          [r'^en\b'],            # EN = visit/admission number
+    'room':        [r'^room\b'],
+    'visitDate':   [r'วันที่รับผู้ป่วย', r'visit\s*date'],
+}
+# Fields whose value must NOT look like a date (avoids grabbing an adjacent date).
+_HM_NO_DATE_FIELDS = {'room', 'patientName', 'hn', 'an'}
+
+
+def _hm_looks_numeric(s):
+    try:
+        float(s)
+        return True
+    except (TypeError, ValueError):
+        return False
+
+
+def _hm_next_text_cell(row, start):
+    """Next non-empty, non-numeric STRING cell after index `start` (skips the
+    float garbage RT_COMMON_286 puts between label and value cells)."""
+    for j in range(start + 1, len(row)):
+        v = _hm_norm(row[j])
+        if v and not _hm_looks_numeric(v):
+            return v
+    return ''
+
+
+def _hm_extract_header(sheets):
+    out = {}
+    for sh in sheets:
+        for row in sh.get('rows', []):
+            for c, cell_raw in enumerate(row):
+                cell = _hm_norm(cell_raw)
+                if not cell:
+                    continue
+                label = re.sub(r'[:：]\s*$', '', cell)
+                for field, pats in _HM_HEADER_FIELDS.items():
+                    if field in out:
+                        continue
+                    if any(re.search(p, label, re.I) for p in pats):
+                        # Value may be inline after ':' or in the next text cell.
+                        inline = ''
+                        if ':' in cell or '：' in cell:
+                            inline = re.split(r'[:：]', cell, 1)[1].strip()
+                        val = inline or _hm_next_text_cell(row, c)
+                        if not val:
+                            continue
+                        # Reject pure numeric garbage.
+                        if _hm_looks_numeric(val):
+                            continue
+                        # Reject date values for non-date fields (room/name/hn/an).
+                        if field in _HM_NO_DATE_FIELDS and _HM_DATE.search(val):
+                            continue
+                        out[field] = val
+    return out
+
+
+def _row_text(row):
+    """Join a row's non-empty cells into one normalized string."""
+    return _hm_norm(' '.join(_hm_norm(c) for c in row if _hm_norm(c)))
+
+
+# Category header markers in RT_COMMON_286. "(HM)" = home/discharge meds.
+_HM_SECTION_HM   = re.compile(r'\(HM\)')
+# A category/section header line starts with a dotted code like "1.1.1 (5)".
+_HM_SECTION_HEAD = re.compile(r'^\d+\.\d+(?:\.\d+)?\s*\(\d+\)')
+# An instruction line begins with an administration verb (EN) seen in the report.
+_HM_INSTRUCTION  = re.compile(
+    r'\b(take|inject|infuse|apply|spray|chew|as directed|instill|swallow|use|drop)\b',
+    re.I)
+# A drug line in the body has: <seq#> <drug name ...> <DD/MM/YYYY> <qty> <price> ...
+_HM_DATE = re.compile(r'\b\d{2}/\d{2}/\d{4}\b')
+
+
+def _cell(row, i):
+    return _hm_norm(row[i]) if i < len(row) else ''
+
+
+def build_home_med_from_sheets(sheets):
+    """Parse RT_COMMON_286_UNBILL into home meds.
+
+    Fixed-column layout (confirmed from the real XLS):
+      col 3  = drug name (drug row) OR instruction text (next row)
+      col 15 = order date DD/MM/YYYY  → marks a DRUG row
+      col 25 = physician (on the instruction row)
+    Category headers sit in col 1 or 2, e.g. '1.1.1 (5) ...ยาอันตราย (HM)'.
+    Keep items under an (HM) section that pass the oral/take-home filter.
+    """
+    sh = max(sheets, key=lambda s: len(s.get('rows', [])), default=None)
+    rows = sh.get('rows', []) if sh else []
+
+    NAME_COL, DATE_COL, QTY_COL, PROV_COL = 3, 15, 19, 25
+    meds = []
+    all_count = 0
+    in_hm = False
+    cur = None
+    sections_seen = []   # diagnostics: every category header encountered
+
+    def _flush():
+        nonlocal cur
+        if cur and cur.get('drug'):
+            meds.append(cur)
+        cur = None
+
+    in_drug = False   # true while inside a medicine section (code 1.1.x)
+    for row in rows:
+        cat = _cell(row, 1) or _cell(row, 2)
+        if cat and _HM_SECTION_HEAD.match(cat):
+            _flush()
+            in_hm = bool(_HM_SECTION_HM.search(cat))
+            # Medicine sections are coded "1.1.x"; fees/supplies/food are not.
+            in_drug = bool(re.match(r'^\s*1\.1(?:\.\d+)?\s*\(', cat))
+            sections_seen.append({'label': cat, 'hm': in_hm, 'drug': in_drug})
+            continue
+
+        name = _cell(row, NAME_COL)
+        date = _cell(row, DATE_COL)
+
+        # Drug row: text in name col AND a date in the date col.
+        if name and _HM_DATE.search(date or ''):
+            _flush()
+            all_count += 1
+            qty = _cell(row, QTY_COL)
+            cur = {
+                'drug': name, 'quantity': qty, 'comment': '',
+                'route': '', 'frequency': '', 'dosage': '', 'code': '',
+                'provider': '', '_hm': in_hm, '_drug': in_drug,
+            }
+            continue
+
+        # Instruction row: text in name col, begins with an admin verb, no date.
+        if cur and name and _HM_INSTRUCTION.search(name) and not _HM_DATE.search(name):
+            cur['comment'] = name
+            mm = re.match(r'^\s*([A-Za-z][A-Za-z ]+?)\s', name)
+            if mm:
+                cur['route'] = mm.group(1).strip()
+            cur['provider'] = _cell(row, PROV_COL)
+            _flush()
+            continue
+
+    _flush()
+
+    # Initial list: prefer meds under (HM) discharge sections. If the report has
+    # no (HM) sections yet (e.g. patient still admitted, discharge meds not
+    # finalized), fall back to ALL meds so the pharmacist can prune in the UI.
+    hm_count = sum(1 for s in sections_seen if s['hm'])
+    used_fallback = hm_count == 0
+    kept = []
+    for m in meds:
+        if used_fallback:
+            # Fallback: medicine sections only (drop nursing/room/supply/food).
+            if not m.get('_drug'):
+                continue
+        else:
+            if not m.get('_hm'):
+                continue
+        m['oral'] = _hm_is_take_home(m)
+        m.pop('_hm', None)
+        m.pop('_drug', None)
+        kept.append(m)
+
+    return {
+        'patient': _hm_extract_header(sheets),
+        'meds': kept,
+        'allMeds': all_count,
+        'unmatched': [],
+        'sections': sections_seen,
+        'hmSectionCount': hm_count,
+        'usedFallback': used_fallback,
+    }
 
 
 # ── KPI helpers (per-day files) ────────────────────────────────
@@ -496,6 +1187,10 @@ class Handler(BaseHTTPRequestHandler):
         if parts == ['api', 'report', 'fetch']:
             return 'report-fetch', None, None
 
+        # /api/report/home-med  — server-side Jasper login + parse
+        if parts == ['api', 'report', 'home-med']:
+            return 'report-home-med', None, None
+
         # /api/patients/{puid}                              -> 'patient', puid, None
         # /api/patients/{puid}/context                      -> 'patient-context', puid, None
         # /api/patients/{puid}/adr-timeline                 -> 'patient-adr', puid, None
@@ -750,7 +1445,7 @@ class Handler(BaseHTTPRequestHandler):
             doc = load_or_create_patient(key)
             cache = doc.get('medicationCache') or {}
             body.setdefault('fetchedAt', _now_iso())
-            cache[item_id] = body
+            cache[extra] = body
             doc['medicationCache'] = cache
             save_patient(key, doc)
             self.send_json(200, {'ok': True})
@@ -878,6 +1573,61 @@ class Handler(BaseHTTPRequestHandler):
             self._cors()
             self.end_headers()
             self.wfile.write(data)
+            return
+
+        # ── Home Medication Sheet: build the hoamemedthai URL from context
+        #    and fetch it exactly like the working RT reports (plain urlopen —
+        #    the pp token authenticates; NO Jasper login). Parse + oral-filter. ──
+        if rtype == 'report-home-med':
+            ctx = body.get('context') or {}
+            if not ctx.get('patientvisituid'):
+                self.send_json(400, {'error': 'context.patientvisituid required'}); return
+            url = _build_home_med_jasper_url(ctx, body.get('fromdate'), body.get('todate'))
+            try:
+                req = urllib.request.Request(url, headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125',
+                    'Accept': 'application/vnd.ms-excel, application/octet-stream, */*',
+                })
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    data = r.read()
+            except urllib.error.URLError as e:
+                self.send_json(502, {'error': f'Cannot reach report server: {getattr(e, "reason", str(e))}', 'url': url}); return
+            except Exception as e:
+                self.send_json(500, {'error': f'Fetch error: {e}', 'url': url}); return
+
+            if data[:4] != b'\xd0\xcf\x11\xe0':
+                head = data[:200].decode('utf-8', 'replace')
+                is_login = '<html' in head.lower() or 'login' in head.lower()
+                self.send_json(502, {
+                    'error': 'Jasper did not return an XLS (likely a login/error page). '
+                             'Check the pp token / report parameters.',
+                    'isLoginPage': is_login,
+                    'bytes': len(data),
+                }); return
+
+            # Persist a copy for debugging/audit (best-effort).
+            try:
+                TEMP_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+                ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+                (TEMP_REPORTS_DIR / f'homemed_{ts}.xls').write_bytes(data)
+            except Exception:
+                pass
+
+            try:
+                sheets = parse_biff8_to_sheets(data)
+                result = build_home_med_from_sheets(sheets)
+            except Exception as e:
+                self.send_json(500, {'error': f'Parse error: {e}', 'url': url}); return
+
+            result['ok'] = True
+            result['url'] = url
+            # Debug: include the raw parsed rows (first sheet, capped) so the
+            # row-scanner can be tuned to the real XLS layout if needed.
+            if body.get('debug'):
+                big = max(sheets, key=lambda s: len(s.get('rows', [])), default={'rows': []})
+                result['rawRows'] = [r for r in big.get('rows', [])][:120]
+                result['sheetInfo'] = [{'name': s.get('name'), 'rows': len(s.get('rows', []))} for s in sheets]
+            self.send_json(200, result)
             return
 
         # ── KPI med errors (editor/admin/super_admin) ─────────

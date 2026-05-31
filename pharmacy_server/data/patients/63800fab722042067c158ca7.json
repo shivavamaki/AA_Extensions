@@ -1,0 +1,17 @@
+{
+  "patientuid": "63800fab722042067c158ca7",
+  "createdAt": "2026-05-31T09:21:59.594038+00:00",
+  "updatedAt": "2026-05-31T09:21:59.594038+00:00",
+  "context": {
+    "patientuid": "63800fab722042067c158ca7",
+    "patientvisituid": "6a1a7e21cc214c06281b2054",
+    "hn": "48-15-015763",
+    "patientName": "MISS NARANRAT  PHAKTHANACHAIWONG"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

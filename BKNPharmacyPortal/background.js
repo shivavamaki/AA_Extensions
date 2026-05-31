@@ -279,16 +279,82 @@ function _arcusSetupXhrTap() {
   window.__arcus_pctx__ = window.__arcus_pctx__ || {};
   var UID_RE = /[?&]patientuid=([a-f0-9]{24})/i;
   var VID_RE = /[?&]patientvisituid=([a-f0-9]{24})/i;
+
+  /* Session/role UIDs needed to authenticate Jasper reports. These appear in
+     dispense-workbench request URLs and/or JSON bodies under varying casings. */
+  var SESSION_KEYS = [
+    'loginuid', 'roleuid', 'organisationuid', 'parentorguid', 'parentorganisationuid',
+    'logindepartmentuid', 'departmentuid', 'careprovideruid'
+  ];
+  /* alias map: lowercased source key -> canonical key */
+  var KEY_ALIASES = {
+    loginuid: 'loginuid', loginid: 'loginuid', userid: 'loginuid', uid: 'loginuid',
+    roleuid: 'roleuid', roleid: 'roleuid',
+    organisationuid: 'organisationuid', orguid: 'organisationuid', organizationuid: 'organisationuid',
+    parentorguid: 'parentorguid', parentorganisationuid: 'parentorguid',
+    logindepartmentuid: 'logindepartmentuid', deptuid: 'logindepartmentuid',
+    departmentuid: 'departmentuid',
+    careprovideruid: 'careprovideruid', careproviderid: 'careprovideruid'
+  };
+
+  function _store(canonKey, val) {
+    if (!val) return;
+    val = String(val);
+    if (!/^[a-f0-9]{24}$/i.test(val)) return;           // only accept 24-hex ids
+    if (!window.__arcus_pctx__[canonKey]) window.__arcus_pctx__[canonKey] = val;
+  }
+
+  function _scanUrlSession(url) {
+    SESSION_KEYS.forEach(function (k) {
+      var re = new RegExp('[?&]' + k + '=([a-f0-9]{24})', 'i');
+      var m = re.exec(url);
+      if (m && m[1]) _store(k, m[1]);
+    });
+  }
+
+  function _scanObjSession(obj) {
+    if (!obj || typeof obj !== 'object') return;
+    Object.keys(obj).forEach(function (k) {
+      var canon = KEY_ALIASES[k.toLowerCase()];
+      if (canon) _store(canon, obj[k]);
+    });
+  }
+
   function _scan(url) {
     if (!url) return;
     var m;
     m = UID_RE.exec(url); if (m && m[1]) window.__arcus_pctx__.patientuid      = m[1];
     m = VID_RE.exec(url); if (m && m[1]) window.__arcus_pctx__.patientvisituid = m[1];
+    try { _scanUrlSession(url); } catch (_) {}
+  }
+  function _scanBody(body) {
+    if (!body || typeof body !== 'string') return;
+    try {
+      var b = JSON.parse(body);
+      if (b.patientuid)      window.__arcus_pctx__.patientuid      = String(b.patientuid);
+      if (b.patientvisituid) window.__arcus_pctx__.patientvisituid = String(b.patientvisituid);
+      if (b.PatientUID && !window.__arcus_pctx__.patientuid)      window.__arcus_pctx__.patientuid      = String(b.PatientUID);
+      if (b.PatientVisitUID && !window.__arcus_pctx__.patientvisituid) window.__arcus_pctx__.patientvisituid = String(b.PatientVisitUID);
+      _scanObjSession(b);
+    } catch (_) {
+      /* Not JSON — scan raw text for the 24-hex ids. */
+      var m;
+      m = UID_RE.exec(body); if (m && m[1]) window.__arcus_pctx__.patientuid      = m[1];
+      m = VID_RE.exec(body); if (m && m[1]) window.__arcus_pctx__.patientvisituid = m[1];
+      try { _scanUrlSession(body); } catch (_) {}
+    }
   }
   var _origOpen = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function (method, url) {
     try { _scan(String(url)); } catch (_) {}
     return _origOpen.apply(this, arguments);
+  };
+  /* Dispense Workbench passes patientuid/patientvisituid in the XHR request
+     BODY (e.g. getallorderitem), not the URL — scan send() bodies too. */
+  var _origSend = XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.send = function (body) {
+    try { _scanBody(typeof body === 'string' ? body : null); } catch (_) {}
+    return _origSend.apply(this, arguments);
   };
   var _origFetch = window.fetch;
   window.fetch = function (input, init) {

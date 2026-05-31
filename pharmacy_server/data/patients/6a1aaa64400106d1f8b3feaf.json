@@ -1,0 +1,17 @@
+{
+  "patientuid": "6a1aaa64400106d1f8b3feaf",
+  "createdAt": "2026-05-31T09:23:31.772779+00:00",
+  "updatedAt": "2026-05-31T09:23:31.772779+00:00",
+  "context": {
+    "patientuid": "6a1aaa64400106d1f8b3feaf",
+    "patientvisituid": "6a1aaa65400106d1f8b3feea",
+    "hn": "48-15-015763",
+    "patientName": "MRS. YONSEE  NOLAN"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

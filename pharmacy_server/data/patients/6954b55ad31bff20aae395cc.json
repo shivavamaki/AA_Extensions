@@ -1,0 +1,17 @@
+{
+  "patientuid": "6954b55ad31bff20aae395cc",
+  "createdAt": "2026-05-31T06:03:31.709794+00:00",
+  "updatedAt": "2026-05-31T06:13:27.195217+00:00",
+  "context": {
+    "patientuid": "6954b55ad31bff20aae395cc",
+    "patientvisituid": "6a029f200a05f7b80c49e3a0",
+    "hn": "48-15-006778",
+    "patientName": "MR. HANS  WUETHRICH"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

@@ -1,0 +1,17 @@
+{
+  "patientuid": "5b8a57533238d86bf0c302a8",
+  "createdAt": "2026-05-31T08:20:48.802056+00:00",
+  "updatedAt": "2026-05-31T08:21:35.339330+00:00",
+  "context": {
+    "patientuid": "5b8a57533238d86bf0c302a8",
+    "patientvisituid": "6a1adc63beb0ec5db43d0b77",
+    "hn": "48-18-000487",
+    "patientName": "MRS. VEERIN  ROJANASRIRAT"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}
