@@ -3,8 +3,8 @@
 //
 // Home Medication Sheet — reworked.
 //
-// The button is shown ONLY on the Dispense Workbench dispense route AND only
-// when a "DISCHARGE MEDICATION" cell is present on the page. On click it
+// The button is shown when the page DOM contains a "DISCHARGE MEDICATION"
+// cell. On click it
 // extracts the ArcusAir patient/report context (reusing the MedicationJourney
 // extractor that ADR Timeline uses), mirrors it to the shared BKNData context
 // bus, then routes to the Home Medication Sheet page carrying the context UIDs.
@@ -18,16 +18,6 @@
   const { createIconButton, norm } = window.CoreDom;
   const { MSG }                    = window.CoreMessages;
 
-  /* ─────────────────────────────────────────────
-   * Gates
-   * ───────────────────────────────────────────── */
-  const DISPENSE_HASH = "#!/pharmacy/dispenseworkbench/pharmacy/dispense";
-
-  function isDispensePage() {
-    return location.origin === "https://arcusair.bdms.co.th"
-      && (location.hash || "").split("?")[0] === DISPENSE_HASH;
-  }
-
   /** True when a "DISCHARGE MEDICATION" md-cell is present on the page. */
   function hasDischargeMedicationCell() {
     const cells = document.querySelectorAll("td.md-cell");
@@ -37,9 +27,9 @@
     return false;
   }
 
-  /** Both gates must hold for the button to be shown. */
+  /** Gate by page DOM, not URL; ArcusAir hash routing can change during SPA navigation. */
   function shouldShow() {
-    return isDispensePage() && hasDischargeMedicationCell();
+    return hasDischargeMedicationCell();
   }
 
   /* ─────────────────────────────────────────────
@@ -106,11 +96,19 @@
     return document.querySelector(TOOLBAR_SPAN_SEL);
   }
 
+  function findDirectToolGroup(span) {
+    if (!span) return null;
+    for (const child of span.children) {
+      if (child.classList?.contains("bkn-tool-group")) return child;
+    }
+    return null;
+  }
+
   function getOrCreateDispenseToolGroup() {
     const span = getToolbarSpan();
     if (!span) return null;
 
-    let group = span.querySelector(":scope > .bkn-tool-group");
+    let group = findDirectToolGroup(span);
     if (group) {
       group.classList.add("bkn-dispense-tool-group");
       return group;
@@ -138,7 +136,8 @@
   }
 
   function cleanupDispenseToolGroup() {
-    const group = getToolbarSpan()?.querySelector(":scope > .bkn-dispense-tool-group");
+    const group = findDirectToolGroup(getToolbarSpan());
+    if (!group?.classList?.contains("bkn-dispense-tool-group")) return;
     const flyout = group?.querySelector(".bkn-tool-flyout");
     if (group && flyout && !flyout.children.length) group.remove();
   }
@@ -361,10 +360,10 @@
     flyout.insertBefore(journeyBtn, sheetBtn.nextSibling);
   }
 
-  // Install the XHR tap as soon as we're on the dispense workbench so it
-  // captures the patient ids before the pharmacist clicks the button.
+  // Install the XHR tap without a URL gate so ArcusAir hash-route variations
+  // do not prevent patient ids from being captured before the click.
   function syncAll() {
-    if (isDispensePage()) ensureXhrTap();
+    ensureXhrTap();
     syncButton();
   }
 

@@ -11,17 +11,9 @@
   const { parseRows }        = window.ParserOrderTable;
 
   /* ─────────────────────────────────────────────
-   * Route guard
-   * ───────────────────────────────────────────── */
-  const DISPENSE_HASH = "#!/pharmacy/dispenseworkbench/pharmacy/dispense";
-
-  function isDispensePage() {
-    return location.origin === "https://arcusair.bdms.co.th"
-      && (location.hash || "").split("?")[0] === DISPENSE_HASH;
-  }
-
-  /* ─────────────────────────────────────────────
-   * Target span where the button is appended
+   * Target span where the button is appended.
+   * Gate by DOM availability, not URL; ArcusAir hash routing can change shape
+   * while the dispense toolbar is still the reliable signal.
    * ───────────────────────────────────────────── */
   const TOOLBAR_SPAN_SEL =
     "body > div.full-height.ng-scope.layout-row > div > md-content > md-content" +
@@ -33,11 +25,19 @@
     return document.querySelector(TOOLBAR_SPAN_SEL);
   }
 
+  function findDirectToolGroup(span) {
+    if (!span) return null;
+    for (const child of span.children) {
+      if (child.classList?.contains("bkn-tool-group")) return child;
+    }
+    return null;
+  }
+
   function getOrCreateDispenseToolGroup() {
     const span = getToolbarSpan();
     if (!span) return null;
 
-    let group = span.querySelector(":scope > .bkn-tool-group");
+    let group = findDirectToolGroup(span);
     if (group) {
       group.classList.add("bkn-dispense-tool-group");
       return group;
@@ -62,17 +62,6 @@
     group.appendChild(flyout);
     span.appendChild(group);
     return group;
-  }
-
-  function cleanupDispenseToolGroup() {
-    const group = getToolbarSpan()?.querySelector(":scope > .bkn-dispense-tool-group");
-    const flyout = group?.querySelector(".bkn-tool-flyout");
-    if (group && flyout && !flyout.children.length) group.remove();
-  }
-
-  function removeStickerButton() {
-    document.querySelectorAll(".print-sticker-btn").forEach((btn) => btn.remove());
-    cleanupDispenseToolGroup();
   }
 
   /* ─────────────────────────────────────────────
@@ -114,11 +103,6 @@
    * Inject button (idempotent)
    * ───────────────────────────────────────────── */
   function tryInsertButton() {
-    if (!isDispensePage()) {
-      removeStickerButton();
-      return;
-    }
-
     const group = getOrCreateDispenseToolGroup();
     const flyout = group?.querySelector(".bkn-tool-flyout");
     if (!flyout) return;
