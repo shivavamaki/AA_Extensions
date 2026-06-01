@@ -1,0 +1,89 @@
+{
+  "patientuid": "5c066f8d3e4efabebdd45451",
+  "createdAt": "2026-06-01T03:06:42.456047+00:00",
+  "updatedAt": "2026-06-01T03:07:49.439527+00:00",
+  "context": {
+    "patientuid": "5c066f8d3e4efabebdd45451",
+    "patientvisituid": "6a1a8202dde726a7eef15b37",
+    "hn": "48-22-020754",
+    "patientName": "MISS ANUTIDA  ANUCHAN"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {
+    "6a1a8202dde726a7eef15b37": {
+      "kind": "homeMedSheet",
+      "meds": [
+        {
+          "drug": "CEFSPAN (100 mg/5 mL) Susp.(30 mL)",
+          "instruction": "Take 6 MilliLitre Orally 2 Times Daily After Breakfast and Dinner",
+          "note": "(Take Until Finished) Antibiotic , kept in Refrigerator after mixing 14 days",
+          "quantity": "1 Bottle",
+          "code": "51101599000005",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "Ped Electrolyte Orange POWDER (ORS) 3.3 g",
+          "instruction": "Drink Instead of Water Orally Every 2-3 Hours When have Symptom",
+          "note": "Mix 1 pack in a glass of water(150 ml) After Dissolved, Use Within 24 Hours (Not more than 4 packs/day)",
+          "quantity": "5 Pack",
+          "code": "51191906000002",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "Dehecta Susp Sachet(3 G/20 Ml)",
+          "instruction": "Take 20 MilliLitre Orally 3 Times Daily After Breakfast Lunch and Dinner (Away from other medicine 2 hr)",
+          "note": "Antidiarrheal.Take After Other Drugs 2 Hour",
+          "quantity": "5 Pack",
+          "code": "51001070203001",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "Air-x 40 mg/0.6 mL Oral DROP 15 mL",
+          "instruction": "Take 1 MilliLitre Orally 3 Times Daily After Breakfast Lunch and Dinner",
+          "note": "(Shake Well Before Use) Antiflatulence",
+          "quantity": "1 Bottle",
+          "code": "51171505000007",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "Berclomine Syr 60 mL",
+          "instruction": "Take 5 MilliLitre Orally Every 6 Hours If Needed For Abdominal Pain",
+          "note": "(Shake Well Before Use) For Stomach Pain",
+          "quantity": "1 Bottle",
+          "code": "51001030504002",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "Aerius Oral Solution 60 Ml",
+          "instruction": "Take 5 MilliLitre Orally Once Daily After Dinner",
+          "note": "For allergy runny nose",
+          "quantity": "1 Bottle",
+          "code": "51161633000002",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "Domperidone 1 mg/mL SUSP 30 mL",
+          "instruction": "Take 5 MilliLitre Orally 3 Times Daily Before Breakfast Lunch and Dinner If needed",
+          "note": "(Take Half an Hour Before Meal) (Shake Well Before Use) For Nausea Or Vomitting",
+          "quantity": "1 Bottle",
+          "code": "51001030601004",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "Tempra Forte Syr **ฟ้า**(250 mg/5 mL) (60Ml)",
+          "instruction": "Take 6 MilliLitre Orally Every 4 Hours If Needed For Fever",
+          "note": "สำหรับความเจ็บปวดหรือไข้",
+          "quantity": "1 Bottle",
+          "code": "51142001000019",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        }
+      ],
+      "savedAt": "2026-06-01T03:07:49.353Z",
+      "fetchedAt": "2026-06-01T03:07:49.439527+00:00"
+    }
+  }
+}

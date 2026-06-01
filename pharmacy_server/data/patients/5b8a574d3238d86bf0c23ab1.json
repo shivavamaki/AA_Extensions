@@ -1,0 +1,65 @@
+{
+  "patientuid": "5b8a574d3238d86bf0c23ab1",
+  "createdAt": "2026-06-01T03:04:06.292121+00:00",
+  "updatedAt": "2026-06-01T03:06:33.994551+00:00",
+  "context": {
+    "patientuid": "5b8a574d3238d86bf0c23ab1",
+    "patientvisituid": "6a1b832f6d129baef05553c6",
+    "hn": "48-22-020754",
+    "patientName": "MISS KRONGKHUAN  CHAROENKHET"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {
+    "6a1b832f6d129baef05553c6": {
+      "kind": "homeMedSheet",
+      "meds": [
+        {
+          "drug": "Cravit 750 Mg Tablet @#",
+          "instruction": "Take 1 Tablet Orally Once Daily After Breakfast",
+          "note": "(Take Till Finished do not take with milk antacid calcium iron compound) , Antibiotic",
+          "quantity": "7 Tablet",
+          "code": "51101538000013",
+          "provider": "ธัญลักษณ์ ปัตเตย์, พญ."
+        },
+        {
+          "drug": "Ondansetron 8 mg TABLET #",
+          "instruction": "Take 1 Tablet Orally 3 Times Daily Before Breakfast Lunch and Dinner",
+          "note": "Antiemetic drug, For nausea and vomiting.",
+          "quantity": "15 Tablet",
+          "code": "51171816000004",
+          "provider": "ธัญลักษณ์ ปัตเตย์, พญ."
+        },
+        {
+          "drug": "Buscopan Tablet",
+          "instruction": "Take 1 Tablet Orally Every 6 Hours If Needed For Abdominal Pain",
+          "note": "",
+          "quantity": "10 Tablet",
+          "code": "51172107000002",
+          "provider": "ธัญลักษณ์ ปัตเตย์, พญ."
+        },
+        {
+          "drug": "Electrolyte Powder (oreda) Orange (16.5 g)",
+          "instruction": "Drink Instead of Water Orally Every 2-3 Hours When have Symptom",
+          "note": "Mix 1 pack in a water 750 ml After Dissolved, Use Within 24 Hours (Not more than 4 packs/day)",
+          "quantity": "5 Pack",
+          "code": "51191906000011",
+          "provider": "ธัญลักษณ์ ปัตเตย์, พญ."
+        },
+        {
+          "drug": "Paracetamol 500 mg TABLET",
+          "instruction": "Take 1 Tablet Orally Every 6 Hours If Needed",
+          "note": "For Pain or Fever // Not take more than 6 tablets per day",
+          "quantity": "10 Tablet",
+          "code": "51142001000033",
+          "provider": "ธัญลักษณ์ ปัตเตย์, พญ."
+        }
+      ],
+      "savedAt": "2026-06-01T03:06:33.974Z",
+      "fetchedAt": "2026-06-01T03:06:33.994551+00:00"
+    }
+  }
+}

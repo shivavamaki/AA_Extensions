@@ -264,6 +264,7 @@ function _arcusExtractAngularCtx() {
       if (xhrCtx.patientuid      && !pc.patientuid)      pc.patientuid      = xhrCtx.patientuid;
       if (xhrCtx.patientvisituid && !pc.patientvisituid) pc.patientvisituid = xhrCtx.patientvisituid;
       out._raw.xhrTap = xhrCtx;
+      out._raw.arcusHdrs = window.__arcus_hdrs__ || {};
     } catch (_) {}
 
     if (pc && (pc.patientuid || pc.patientvisituid)) out.patientCtx = pc;
@@ -344,6 +345,23 @@ function _arcusSetupXhrTap() {
       try { _scanUrlSession(body); } catch (_) {}
     }
   }
+  /* Capture the per-session auth/header values ArcusAir's own API requires
+     (incus-token + appname/utcoffset). These ride as XHR request HEADERS, not
+     URL/body, so hook setRequestHeader. Stored in window.__arcus_hdrs__. */
+  window.__arcus_hdrs__ = window.__arcus_hdrs__ || {};
+  var HDR_KEYS = { 'incus-token': 1, 'appname': 1, 'utcoffset': 1,
+                   'hasanonymouspermission': 1 };
+  var _origSetHdr = XMLHttpRequest.prototype.setRequestHeader;
+  XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
+    try {
+      var k = String(name || '').toLowerCase();
+      if (HDR_KEYS[k] && value != null && value !== '') {
+        window.__arcus_hdrs__[k] = String(value);
+      }
+    } catch (_) {}
+    return _origSetHdr.apply(this, arguments);
+  };
+
   var _origOpen = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function (method, url) {
     try { _scan(String(url)); } catch (_) {}

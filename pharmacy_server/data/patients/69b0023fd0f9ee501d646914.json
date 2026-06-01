@@ -1,0 +1,17 @@
+{
+  "patientuid": "69b0023fd0f9ee501d646914",
+  "createdAt": "2026-06-01T02:30:05.051476+00:00",
+  "updatedAt": "2026-06-01T02:31:23.731909+00:00",
+  "context": {
+    "patientuid": "69b0023fd0f9ee501d646914",
+    "patientvisituid": "6a1a39bd5d6bdcd4d6884205",
+    "hn": "48-24-002517",
+    "patientName": "MR. NATCHANON  RITTINEARM"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

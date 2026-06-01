@@ -208,6 +208,44 @@
       text-transform: uppercase;
     }
 
+    /* ── Clinical banner (Diagnosis + Allergies, stacked) ──────── */
+    .clinical-banner {
+      margin: 0 0 12px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1.5px solid #cbd5e1;
+    }
+    .clinical-banner .dx-line,
+    .clinical-banner .allergy-line {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 7px 12px;
+      font-size: 14px;
+      line-height: 1.3;
+    }
+    /* Diagnosis on the upper line — distinct blue tone. */
+    .clinical-banner .dx-line {
+      background: #eff6ff;
+      color: #1e3a8a;
+      border-bottom: 1px solid #dbeafe;
+    }
+    .clinical-banner .dx-label,
+    .clinical-banner .allergy-label { font-weight: 800; white-space: nowrap; }
+    .clinical-banner .dx-value,
+    .clinical-banner .allergy-value { font-weight: 700; word-break: break-word; }
+    /* Allergy line: red when present, calm grey for NKDA. */
+    .clinical-banner .allergy-line {
+      background: #fef2f2;
+      color: #7f1d1d;
+    }
+    .clinical-banner .allergy-line.nkda {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    /* Hide the diagnosis line entirely when there's no diagnosis. */
+    .clinical-banner .dx-line.empty { display: none; }
+
     .patient-field .value {
       margin-top: 1px;
       font-size: 15px;
@@ -576,14 +614,7 @@
       <button id="btnRevert" class="secondary" type="button">↩ Revert</button>
     </div>
 
-    <div class="toolbar-group" aria-label="Report date range">
-      <label>From
-        <input id="fromDate" type="date" />
-      </label>
-      <label>To
-        <input id="toDate" type="date" />
-      </label>
-      <button id="btnReload" class="secondary" type="button">🔄 Reload</button>
+    <div class="toolbar-group" aria-label="Status">
       <span class="print-status" id="fetchStatus"></span>
     </div>
 
@@ -698,6 +729,17 @@
       <div class="patient-field">
         <span class="label">Room</span>
         <div class="value" id="patientRoom">-</div>
+      </div>
+    </section>
+
+    <section class="clinical-banner screen-only" id="clinicalBanner" data-no-translate translate="no">
+      <div class="dx-line" id="dxLine">
+        <span class="dx-label">🩺 Diagnosis / การวินิจฉัย:</span>
+        <span class="dx-value" id="diagnosisValue">-</span>
+      </div>
+      <div class="allergy-line nkda" id="allergyBanner">
+        <span class="allergy-label">⚠️ Allergies / แพ้ยา:</span>
+        <span class="allergy-value" id="allergyValue">No Known Drug Allergies (ไม่มีประวัติแพ้ยา)</span>
       </div>
     </section>
 

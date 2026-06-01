@@ -24,29 +24,6 @@ let _medDbLoadPromise = null;
 
 const MED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "jfif", "webp"];
 
-/* ───────────────────────────── Date helpers ───────────────────────────── */
-function _pad2(n) { return String(n).padStart(2, "0"); }
-
-/** Today/30-days-ago in Bangkok time as YYYY-MM-DD. */
-function _defaultThaiDateRange() {
-  const now = new Date();
-  const bkk = new Date(now.getTime() + 7 * 3600 * 1000);
-  const end = `${bkk.getUTCFullYear()}-${_pad2(bkk.getUTCMonth() + 1)}-${_pad2(bkk.getUTCDate())}`;
-  const startD = new Date(bkk.getTime() - 30 * 24 * 3600 * 1000);
-  const start = `${startD.getUTCFullYear()}-${_pad2(startD.getUTCMonth() + 1)}-${_pad2(startD.getUTCDate())}`;
-  return { start, end };
-}
-
-/** Bangkok-day range (YYYY-MM-DD) → UTC ISO fromdate/todate. */
-function _thaiRangeToUtc(startThai, endThai) {
-  const [sy, sm, sd] = startThai.split("-").map(Number);
-  const [ey, em, ed] = endThai.split("-").map(Number);
-  return {
-    fromdate: new Date(Date.UTC(sy, sm - 1, sd, 0, 0, 0, 0) - 7 * 3600 * 1000).toISOString(),
-    todate:   new Date(Date.UTC(ey, em - 1, ed, 16, 59, 59, 999)).toISOString(),
-  };
-}
-
 /* ───────────────────────── Server access (BKNData) ─────────────────────── */
 async function _serverBase() {
   try {
@@ -201,6 +178,46 @@ function populateHeader(header, context, meds) {
   safeSetText("physicianName",  physician);
 }
 
+/* ─────────────────────── Diagnosis + Allergy banner ───────────────────── */
+function renderDiagnosis(diagnosis) {
+  const line = document.getElementById("dxLine");
+  const valEl = document.getElementById("diagnosisValue");
+  if (!line || !valEl) return;
+  const dx = norm(diagnosis || "");
+  if (dx) {
+    valEl.textContent = dx;
+    line.classList.remove("empty");
+  } else {
+    // No diagnosis available → hide the diagnosis line (allergy line remains).
+    line.classList.add("empty");
+  }
+}
+
+function renderAllergies(allergies) {
+  const banner = document.getElementById("allergyBanner");
+  const valEl = document.getElementById("allergyValue");
+  if (!banner || !valEl) return;
+
+  const a = allergies || {};
+  const items = Array.isArray(a.items) ? a.items : [];
+
+  if (items.length) {
+    // Has allergies → red banner listing allergen (reaction).
+    banner.classList.remove("nkda");
+    valEl.textContent = items
+      .map((it) => it.reaction ? `${it.allergen} (${it.reaction})` : it.allergen)
+      .filter(Boolean)
+      .join(", ") || "มีประวัติแพ้ยา (see chart)";
+  } else if (a.nkda) {
+    banner.classList.add("nkda");
+    valEl.textContent = "No Known Drug Allergies (ไม่มีประวัติแพ้ยา)";
+  } else {
+    // No record / couldn't fetch → neutral, don't claim NKDA.
+    banner.classList.add("nkda");
+    valEl.textContent = "ไม่มีข้อมูลแพ้ยา (allergy info unavailable)";
+  }
+}
+
 /* ─────────────────────────── Med image binding ────────────────────────── */
 function _renderNoImageSlot(icon) {
   return `<span class="med-photo-icon">${icon}</span><span class="med-photo-label">รูปยา</span>`;
@@ -279,7 +296,7 @@ function _medFromReport(m) {
   return {
     drug:        norm(m.drug || ""),
     instruction: _instructionText(m),
-    note:        "",
+    note:        norm(m.note || ""),   // ArcusAir free-text instruction line
     quantity:    _cleanValue(m.quantity || ""),
     code:        norm(m.code || ""),
     provider:    norm(m.provider || ""),
@@ -553,21 +570,22 @@ async function fetchAndRender() {
     if (tbody) { tbody.innerHTML = ""; _appendNoData(tbody, "BKNData unavailable (shared-data-client.js not loaded)."); }
     return;
   }
+  if (!_context.incusToken) {
+    _setStatus("❌ ไม่พบ session (incus-token) — เปิดผู้ป่วยบน ArcusAir แล้วลองใหม่");
+    if (tbody) { tbody.innerHTML = ""; _appendNoData(tbody, "ไม่พบ ArcusAir session — เปิดหน้าผู้ป่วยบน ArcusAir ก่อน แล้วกดปุ่มซ้ำ"); }
+    return;
+  }
 
-  const { start, end } = _currentDateRange();
-  const { fromdate, todate } = _thaiRangeToUtc(start, end);
-
-  _setStatus("⏳ กำลังดึงรายงานยากลับบ้าน (ผ่านเซิร์ฟเวอร์)...");
+  _setStatus("⏳ กำลังดึงรายการยากลับบ้าน...");
   await _loadMedicationDatabase();
 
-  // The pharmacy server logs into Jasper, fetches + parses the hoamemedthai
-  // report, filters to oral take-home meds, and returns structured JSON.
+  // Fetch discharge meds + allergies from the ArcusAir getallorderitem API.
   let resp = null;
   try {
-    resp = await window.BKNData.serverFetch("/api/report/home-med", {
+    resp = await window.BKNData.serverFetch("/api/report/home-med-api", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ context: _context, fromdate, todate }),
+      body: JSON.stringify({ context: _context }),
     });
   } catch (e) {
     console.error("[home-med] serverFetch threw:", e);
@@ -578,20 +596,20 @@ async function fetchAndRender() {
 
   if (!resp || !resp.ok || !resp.json || !resp.json.ok) {
     const err = (resp && resp.json && resp.json.error) || (resp && resp.error) || `HTTP ${resp && resp.status}`;
-    _setStatus("❌ ดึงรายงานไม่สำเร็จ: " + err);
+    _setStatus("❌ ดึงรายการยาไม่สำเร็จ: " + err);
     if (tbody) {
       tbody.innerHTML = "";
-      _appendNoData(tbody, "ดึงรายงานจากเซิร์ฟเวอร์ไม่สำเร็จ: " + err);
+      _appendNoData(tbody, "ดึงรายการยาจาก ArcusAir ไม่สำเร็จ: " + err);
     }
     return;
   }
 
   const data = resp.json;
   const reportMeds = data.meds || [];
-  console.log(`[home-med] meds=${reportMeds.length} of allMeds=${data.allMeds}, hmSections=${data.hmSectionCount}, fallback=${data.usedFallback}`);
+  console.log(`[home-med] meds=${reportMeds.length} allMeds=${data.allMeds}`);
 
   // Build the editable list: prefer the user's previously-saved edits for this
-  // visit; otherwise seed from the report meds.
+  // visit; otherwise seed from the ArcusAir discharge meds.
   const saved = await _loadSavedMeds();
   if (saved && saved.length) {
     _meds = saved.map((m) => ({
@@ -603,35 +621,16 @@ async function fetchAndRender() {
   } else {
     _meds = reportMeds.map(_medFromReport);
     if (!_meds.length) {
-      _setStatus("⚠️ ไม่พบรายการยาในรายงาน — เพิ่มยาด้านล่าง หรือปรับช่วงวันที่");
-    } else if (data.usedFallback) {
-      _setStatus(`⚠️ ไม่พบยา (HM) — แสดงยาทั้งหมด ${_meds.length} รายการให้ตัดออก/แก้ไข`);
+      _setStatus("⚠️ ไม่พบรายการยากลับบ้าน — เพิ่มยาด้านล่าง");
     } else {
-      _setStatus(`✅ ${_meds.length} รายการยากลับบ้าน (HM) — เพิ่ม/ลบ/แก้ไขได้`);
+      _setStatus(`✅ ${_meds.length} รายการยากลับบ้าน — เพิ่ม/ลบ/แก้ไขได้`);
     }
   }
 
   populateHeader(data.patient || {}, _context, reportMeds);
+  renderDiagnosis(_context && _context.diagnosis);
+  renderAllergies(data.allergies);
   await renderMeds();
-}
-
-/* ───────────────────────────── Date controls ──────────────────────────── */
-function _currentDateRange() {
-  const f = document.getElementById("fromDate");
-  const t = document.getElementById("toDate");
-  if (f && t && f.value && t.value) return { start: f.value, end: t.value };
-  return _defaultThaiDateRange();
-}
-
-function _initDateControls() {
-  const f = document.getElementById("fromDate");
-  const t = document.getElementById("toDate");
-  const { start, end } = _defaultThaiDateRange();
-  if (f && !f.value) f.value = start;
-  if (t && !t.value) t.value = end;
-
-  const reload = document.getElementById("btnReload");
-  if (reload) reload.onclick = () => fetchAndRender();
 }
 
 /* ───────────────────────────── Print controls ─────────────────────────── */
@@ -770,7 +769,7 @@ function _buildPrintHeader() {
   const cell = document.getElementById("printHdrCell");
   if (!cell) return;
   cell.innerHTML = "";
-  [".top-title", ".patient-card", ".section-title"].forEach((sel) => {
+  [".top-title", ".patient-card", ".clinical-banner", ".section-title"].forEach((sel) => {
     const el = document.querySelector(sel);
     if (el) cell.appendChild(_cloneForPrintHeader(el));
   });
@@ -786,7 +785,6 @@ function _applyContextAndRender(msg) {
 
 document.addEventListener("DOMContentLoaded", () => {
   bindPrintControls();
-  _initDateControls();
   bindToolbar();
   bindLangControl();
 

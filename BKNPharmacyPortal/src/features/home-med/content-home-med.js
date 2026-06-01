@@ -40,6 +40,41 @@
   }
 
   /* ─────────────────────────────────────────────
+   * Read the diagnosis text from the patient EMR banner.
+   * The diagnosis sits in the banner's secondary section as a
+   * `div.overme` element. Prefer the exact path, fall back to a
+   * resilient scan within patient-emr-banner .sec-banner.
+   * ───────────────────────────────────────────── */
+  const DIAGNOSIS_SEL =
+    "body > div.full-height.ng-scope.layout-row > div > md-content > md-content" +
+    " > div > md-card > md-content.md-whiteframe-z2.padding-left-14-imp.margin-5" +
+    ".stickydiv.incus-border-1.overflow-x-hide.ng-scope._md.md-incustheme-theme" +
+    ".width-70-per > div.ng-isolate-scope.flex-initial > div:nth-child(1) >" +
+    " patient-emr-banner > div > div.sec-banner.ng-scope >" +
+    " div.sec-first-section.layout-row.layout-align-start-center > div:nth-child(2) > div";
+
+  function readDiagnosis() {
+    // 1) Exact selector from the dispense workbench banner.
+    let el = document.querySelector(DIAGNOSIS_SEL);
+    let txt = el ? norm(el.textContent) : "";
+    if (txt) return txt;
+
+    // 2) Resilient fallback: the diagnosis div.overme inside .sec-banner.
+    //    (The banner's first section holds the diagnosis text.)
+    const sec = document.querySelector("patient-emr-banner .sec-banner .sec-first-section");
+    if (sec) {
+      // Pick the longest .overme text that isn't a label/short token.
+      let best = "";
+      sec.querySelectorAll("div.overme").forEach((d) => {
+        const t = norm(d.textContent);
+        if (t.length > best.length) best = t;
+      });
+      if (best) return best;
+    }
+    return "";
+  }
+
+  /* ─────────────────────────────────────────────
    * Install the MAIN-world XHR/fetch tap early so it
    * captures patientuid / patientvisituid from the
    * Dispense Workbench requests (which carry them in
@@ -126,6 +161,10 @@
         _m("departmentuid",     tap.departmentuid);
         _m("careprovideruid",   tap.careprovideruid);
 
+        // ArcusAir API headers (incus-token etc.) captured from setRequestHeader.
+        const hdrs = (pageCtx._raw && pageCtx._raw.arcusHdrs) || {};
+        if (hdrs["incus-token"]) ctx.incusToken = hdrs["incus-token"];
+
         const ok = ctx.patientuid && ctx.patientvisituid && ctx.loginuid;
         console.group("[home-med] context after merge");
         console.log("patientuid      :", ctx.patientuid       || "⚠️ MISSING");
@@ -136,6 +175,7 @@
         console.log("parentorguid    :", ctx.parentorguid     || "(none — pp falls back to organisationuid)");
         console.log("careprovideruid :", ctx.careprovideruid  || "(none)");
         console.log("_pp             :", ctx._pp              || "(none — built from u/r/o)");
+        console.log("incusToken      :", ctx.incusToken       || "⚠️ MISSING (ArcusAir API needs it)");
         console.log("canFetchReport  :", ok ? "✅ YES" : "❌ NO");
         console.log("xhrTap          :", JSON.parse(JSON.stringify(tap)));
         console.log("FULL ctx        :", JSON.parse(JSON.stringify(ctx)));
@@ -189,6 +229,12 @@
       // the report will likely bounce to the Jasper login page without it.
       console.warn("[home-med] proceeding without loginuid — Jasper auth may fail", context);
     }
+
+    // Diagnosis is only in the page DOM (not the API) — read it now.
+    try {
+      const dx = readDiagnosis();
+      if (dx) context.diagnosis = dx;
+    } catch (_) { /* non-fatal */ }
 
     // Mirror to the shared cross-feature / cross-workstation context bus.
     try {
