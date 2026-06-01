@@ -922,6 +922,7 @@ function stateTimestamp(state) {
 }
 
 async function saveState() {
+  const savedMonth = SCHEDULE_MONTH_KEY;
   const state = {
     staff, requests, parttimeAvailability, adminOverrides, shiftTemplates, allocationRun, allocationStarted, reqOffLocked, lockedDays: [...lockedDays],
     settings: {
@@ -946,9 +947,11 @@ async function saveState() {
       body: JSON.stringify(state)
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (SCHEDULE_MONTH_KEY !== savedMonth) return;
     clearDirty();
     setMessage(allocationStarted ? "State saved to server. Closing or refreshing the page will keep this schedule." : "REQ OFF / PT availability saved to server and locked. Click Auto Allocate to generate shifts.");
   } catch (err) {
+    if (SCHEDULE_MONTH_KEY !== savedMonth) return;
     markDirty();
     setMessage(`Saved in this browser, but server save failed: ${err.message || err}. Try Save again before closing.`);
   } finally {
@@ -996,6 +999,11 @@ function loadState() {
         applyState(state);
         localStorage.setItem(storageKey(), JSON.stringify(state));
         clearDirty();
+        // Re-merge locally cached bookings since applyState() overwrites requests
+        try {
+          const all = JSON.parse(localStorage.getItem(BOOKING_STORAGE_KEY) || "{}");
+          applyBookingsObject(all);
+        } catch (_) {}
         render();
         setTimeout(() => setMessage("Loaded saved state from server."), 0);
       })
