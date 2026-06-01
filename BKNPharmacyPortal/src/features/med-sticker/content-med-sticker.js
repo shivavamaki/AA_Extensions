@@ -13,8 +13,11 @@
   /* ─────────────────────────────────────────────
    * Route guard
    * ───────────────────────────────────────────── */
+  const DISPENSE_HASH = "#!/pharmacy/dispenseworkbench/pharmacy/dispense";
+
   function isDispensePage() {
-    return location.hash.includes("pharmacy/dispenseworkbench/pharmacy/dispense");
+    return location.origin === "https://arcusair.bdms.co.th"
+      && (location.hash || "").split("?")[0] === DISPENSE_HASH;
   }
 
   /* ─────────────────────────────────────────────
@@ -25,6 +28,52 @@
     " > div > md-card > md-content.md-whiteframe-z2.padding-left-14-imp.margin-5" +
     ".stickydiv.incus-border-1.overflow-x-hide.ng-scope._md.md-incustheme-theme" +
     ".width-70-per > div.ng-isolate-scope.flex-initial > div.margin-top-7-imp.layout-row > span";
+
+  function getToolbarSpan() {
+    return document.querySelector(TOOLBAR_SPAN_SEL);
+  }
+
+  function getOrCreateDispenseToolGroup() {
+    const span = getToolbarSpan();
+    if (!span) return null;
+
+    let group = span.querySelector(":scope > .bkn-tool-group");
+    if (group) {
+      group.classList.add("bkn-dispense-tool-group");
+      return group;
+    }
+
+    group = document.createElement("span");
+    group.className = "bkn-tool-group bkn-dispense-tool-group";
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", "BKN Pharmacy tools");
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "bkn-tool-trigger";
+    trigger.title = "BKN Pharmacy tools";
+    trigger.textContent = "💊";
+    trigger.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); });
+
+    const flyout = document.createElement("span");
+    flyout.className = "bkn-tool-flyout";
+
+    group.appendChild(trigger);
+    group.appendChild(flyout);
+    span.appendChild(group);
+    return group;
+  }
+
+  function cleanupDispenseToolGroup() {
+    const group = getToolbarSpan()?.querySelector(":scope > .bkn-dispense-tool-group");
+    const flyout = group?.querySelector(".bkn-tool-flyout");
+    if (group && flyout && !flyout.children.length) group.remove();
+  }
+
+  function removeStickerButton() {
+    document.querySelectorAll(".print-sticker-btn").forEach((btn) => btn.remove());
+    cleanupDispenseToolGroup();
+  }
 
   /* ─────────────────────────────────────────────
    * Button click handler
@@ -65,20 +114,28 @@
    * Inject button (idempotent)
    * ───────────────────────────────────────────── */
   function tryInsertButton() {
-    if (!isDispensePage()) return;
+    if (!isDispensePage()) {
+      removeStickerButton();
+      return;
+    }
 
-    const span = document.querySelector(TOOLBAR_SPAN_SEL);
-    if (!span) return;
-    if (span.querySelector(".print-sticker-btn")) return;
+    const group = getOrCreateDispenseToolGroup();
+    const flyout = group?.querySelector(".bkn-tool-flyout");
+    if (!flyout) return;
 
-    const btn = createIconButton({
-      icon:      "🌐✨",
-      title:     "Open Medication Sticker",
-      className: "print-sticker-btn",
-      onClick:   handleClick,
-    });
+    let btn = document.querySelector(".print-sticker-btn");
+    if (!btn) {
+      btn = createIconButton({
+        icon:      "🌐✨",
+        title:     "Open Medication Sticker",
+        className: "print-sticker-btn",
+        onClick:   handleClick,
+      });
+    }
 
-    span.appendChild(btn);
+    if (btn.parentElement !== flyout || btn !== flyout.firstElementChild) {
+      flyout.insertBefore(btn, flyout.firstChild);
+    }
   }
 
   tryInsertButton();
@@ -87,4 +144,7 @@
     childList: true,
     subtree:   true,
   });
+
+  window.addEventListener("hashchange", tryInsertButton);
+  window.addEventListener("popstate",   tryInsertButton);
 })();

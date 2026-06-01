@@ -1,7 +1,7 @@
 {
   "patientuid": "662a1766c686030523109a25",
   "createdAt": "2026-06-01T10:03:53.400001+00:00",
-  "updatedAt": "2026-06-01T10:13:47.284465+00:00",
+  "updatedAt": "2026-06-01T10:31:26.451462+00:00",
   "context": {
     "patientuid": "662a1766c686030523109a25",
     "patientvisituid": "6a19374432d812cff05f08cc",
@@ -52,7 +52,7 @@
         {
           "drug": "Tempra Forte Syr **ฟ้า**(250 mg/5 mL) (60Ml)",
           "instruction": "Take 3 MilliLitre Orally Every 4 Hours If Needed For Fever",
-          "note": "(Shake Well Before Use) For Pain Or Fever",
+          "note": "สำหรับความเจ็บปวดหรือไข้",
           "quantity": "1 Bottle",
           "code": "51142001000019",
           "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
@@ -106,8 +106,8 @@
           "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
         }
       ],
-      "savedAt": "2026-06-01T10:13:47.268Z",
-      "fetchedAt": "2026-06-01T10:13:47.284465+00:00"
+      "savedAt": "2026-06-01T10:31:26.272Z",
+      "fetchedAt": "2026-06-01T10:31:26.451219+00:00"
     }
   }
 }

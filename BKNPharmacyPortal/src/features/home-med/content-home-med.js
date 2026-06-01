@@ -21,8 +21,11 @@
   /* ─────────────────────────────────────────────
    * Gates
    * ───────────────────────────────────────────── */
+  const DISPENSE_HASH = "#!/pharmacy/dispenseworkbench/pharmacy/dispense";
+
   function isDispensePage() {
-    return location.hash.includes("pharmacy/dispenseworkbench/pharmacy/dispense");
+    return location.origin === "https://arcusair.bdms.co.th"
+      && (location.hash || "").split("?")[0] === DISPENSE_HASH;
   }
 
   /** True when a "DISCHARGE MEDICATION" md-cell is present on the page. */
@@ -98,6 +101,59 @@
     " > div > md-card > md-content.md-whiteframe-z2.padding-left-14-imp.margin-5" +
     ".stickydiv.incus-border-1.overflow-x-hide.ng-scope._md.md-incustheme-theme" +
     ".width-70-per > div.ng-isolate-scope.flex-initial > div.margin-top-7-imp.layout-row > span";
+
+  function getToolbarSpan() {
+    return document.querySelector(TOOLBAR_SPAN_SEL);
+  }
+
+  function getOrCreateDispenseToolGroup() {
+    const span = getToolbarSpan();
+    if (!span) return null;
+
+    let group = span.querySelector(":scope > .bkn-tool-group");
+    if (group) {
+      group.classList.add("bkn-dispense-tool-group");
+      return group;
+    }
+
+    group = document.createElement("span");
+    group.className = "bkn-tool-group bkn-dispense-tool-group";
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", "BKN Pharmacy tools");
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "bkn-tool-trigger";
+    trigger.title = "BKN Pharmacy tools";
+    trigger.textContent = "💊";
+    trigger.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); });
+
+    const flyout = document.createElement("span");
+    flyout.className = "bkn-tool-flyout";
+
+    group.appendChild(trigger);
+    group.appendChild(flyout);
+    span.appendChild(group);
+    return group;
+  }
+
+  function cleanupDispenseToolGroup() {
+    const group = getToolbarSpan()?.querySelector(":scope > .bkn-dispense-tool-group");
+    const flyout = group?.querySelector(".bkn-tool-flyout");
+    if (group && flyout && !flyout.children.length) group.remove();
+  }
+
+  function removeHomeMedButtons() {
+    document.querySelectorAll(".hm-sheet-btn, .hm-journey-btn").forEach((btn) => btn.remove());
+    cleanupDispenseToolGroup();
+  }
+
+  function ensureFlyoutButton(flyout, selector, opts) {
+    let btn = document.querySelector(selector);
+    if (!btn) btn = createIconButton(opts);
+    if (btn.parentElement !== flyout) flyout.appendChild(btn);
+    return btn;
+  }
 
   /* ─────────────────────────────────────────────
    * Context extraction (reuse the ADR Timeline extractor).
@@ -282,29 +338,27 @@
    *   🏠💊 Home Medication Sheet   🗺️ Medication Journey
    * ───────────────────────────────────────────── */
   function syncButton() {
-    const span = document.querySelector(TOOLBAR_SPAN_SEL);
-
     if (!shouldShow()) {
-      if (span) {
-        span.querySelector(".hm-sheet-btn")?.remove();
-        span.querySelector(".hm-journey-btn")?.remove();
-      }
+      removeHomeMedButtons();
       return;
     }
-    if (!span) return;
 
-    if (!span.querySelector(".hm-sheet-btn")) {
-      span.appendChild(createIconButton({
-        icon: "🏠💊", title: "Open Home Medication Sheet (Discharge)",
-        className: "hm-sheet-btn", onClick: handleSheetClick,
-      }));
-    }
-    if (!span.querySelector(".hm-journey-btn")) {
-      span.appendChild(createIconButton({
-        icon: "🗺️", title: "Open Medication Journey (timeline)",
-        className: "hm-journey-btn", onClick: handleJourneyClick,
-      }));
-    }
+    const group = getOrCreateDispenseToolGroup();
+    const flyout = group?.querySelector(".bkn-tool-flyout");
+    if (!flyout) return;
+
+    const sheetBtn = ensureFlyoutButton(flyout, ".hm-sheet-btn", {
+      icon: "🏠💊", title: "Open Home Medication Sheet (Discharge)",
+      className: "hm-sheet-btn", onClick: handleSheetClick,
+    });
+    const journeyBtn = ensureFlyoutButton(flyout, ".hm-journey-btn", {
+      icon: "🗺️", title: "Open Medication Journey (timeline)",
+      className: "hm-journey-btn", onClick: handleJourneyClick,
+    });
+
+    const stickerBtn = flyout.querySelector(".print-sticker-btn");
+    flyout.insertBefore(sheetBtn, stickerBtn ? stickerBtn.nextSibling : flyout.firstChild);
+    flyout.insertBefore(journeyBtn, sheetBtn.nextSibling);
   }
 
   // Install the XHR tap as soon as we're on the dispense workbench so it
