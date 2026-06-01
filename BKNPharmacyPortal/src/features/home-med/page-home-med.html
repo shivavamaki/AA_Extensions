@@ -575,13 +575,12 @@
         padding: 0;
         box-shadow: none;
       }
+      /* The column-header row repeats on every printed page. */
       thead { display: table-header-group; }
       tfoot { display: table-footer-group; }
       tr { break-inside: avoid; page-break-inside: avoid; }
       .footer-note { break-inside: avoid; break-before: avoid; }
-      /* header sections are cloned into <thead> for print — hide originals */
-      .screen-only { display: none !important; }
-      .print-hdr-row { display: table-row !important; }
+      /* Header sections (.screen-only) now also print once at the top. */
       /* Hide all editing chrome: action column, add-medicine row, suggestions */
       .no-print { display: none !important; }
       .add-row { display: none !important; }
@@ -757,10 +756,7 @@
         <col class="cg-qty" style="width:28mm">
       </colgroup>
       <thead>
-        <!-- Populated by JS before print to repeat header on every page -->
-        <tr class="print-hdr-row">
-          <td colspan="5" class="hdr-cell" id="printHdrCell"></td>
-        </tr>
+        <!-- This column-header row repeats on every printed page via thead. -->
         <tr>
           <th class="col-act no-print"></th>
           <th class="col-no">#</th>

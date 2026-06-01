@@ -1,0 +1,113 @@
+{
+  "patientuid": "662a1766c686030523109a25",
+  "createdAt": "2026-06-01T10:03:53.400001+00:00",
+  "updatedAt": "2026-06-01T10:09:17.705223+00:00",
+  "context": {
+    "patientuid": "662a1766c686030523109a25",
+    "patientvisituid": "6a19374432d812cff05f08cc",
+    "hn": "48-25-000250",
+    "patientName": "MASTER PANNAWIT  SANSEE"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {
+    "6a19374432d812cff05f08cc": {
+      "kind": "homeMedSheet",
+      "meds": [
+        {
+          "drug": "Keflex Syrup (125 Mg/5 Ml)",
+          "instruction": "Take 7 MilliLitre Orally 3 Times Daily After Breakfast Lunch and Dinner",
+          "note": "(Take Until Finished) AntibioticKept in refrigerator after mixing 14 days at temp 4-8 C",
+          "quantity": "2 Bottle",
+          "code": "51101550000007",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "Meptin Syrup (5 mcg/mL) (60 mL)",
+          "instruction": "Take 2.5 MilliLitre Orally 2 Times Daily After Breakfast and Dinner If needed",
+          "note": "Bronchodilator",
+          "quantity": "1 Bottle",
+          "code": "51018030303015",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "Prednisolone 5 mg/5 mL SYRUP 60 mL",
+          "instruction": "Take 5 MilliLitre Orally 2 Times Daily After Breakfast and Dinner",
+          "note": "",
+          "quantity": "1 Bottle",
+          "code": "51181751000003",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "Singulair **ซอง** GRANULE (4 mg) Sachet",
+          "instruction": "Take 1 Pack Orally Once Daily Before Bedtime",
+          "note": "Dissolve 1 Sachet in 5 mL of water",
+          "quantity": "7 Pack",
+          "code": "51161515000006",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "Tempra Forte Syr **ฟ้า**(250 mg/5 mL) (60Ml)",
+          "instruction": "Take 3 MilliLitre Orally Every 4 Hours If Needed For Fever",
+          "note": "(Shake Well Before Use) For Pain Or Fever",
+          "quantity": "1 Bottle",
+          "code": "51142001000019",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "Ibuprofen Ped 100mg/5mL SUSP 60mL",
+          "instruction": "Take 5 MilliLitre Orally Every 6 Hours If Needed For High Fever",
+          "note": "(Take after meal immediately) For pain-fever-inflammation",
+          "quantity": "1 Bottle",
+          "code": "51142106000013",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "Aerius Oral Solution 60 Ml",
+          "instruction": "Take 2.5 MilliLitre Orally 2 Times Daily Morning and Evening",
+          "note": "For allergy runny nose",
+          "quantity": "1 Bottle",
+          "code": "51161633000002",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "FuciDIN*** H*** Cream (5 Gm) (tube)",
+          "instruction": "Apply to the Affected Area (Topical) 3 Times Daily Morning Noon Evening",
+          "note": "EXTERNAL USE ONLY",
+          "quantity": "1 Tube",
+          "code": "51004070301001",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "Chlorhexidine 4% SCRUB (mL)",
+          "instruction": "Scrub the Wound (Topical) 2 Times Daily Morning and Evening",
+          "note": "1(For External Use Only) Do not use longer than 7 days after first opening",
+          "quantity": "60 MilliLitre",
+          "code": "51102707000055",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "Prospan Cough SYRUP (100 mL)",
+          "instruction": "Take 2.5 MilliLitre Orally 2 Times Daily After Breakfast and Dinner",
+          "note": "Mucolytic",
+          "quantity": "1 Bottle",
+          "code": "51018050601024",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        },
+        {
+          "drug": "Keflex Syrup (125 Mg/5 Ml)",
+          "instruction": "Take 7 MilliLitre Orally 3 Times Daily After Breakfast Lunch and Dinner",
+          "note": "",
+          "quantity": "1 Bottle",
+          "code": "51101550000007",
+          "provider": "กนกวรรณ ชูสกุล แก้วเขียว, พญ."
+        }
+      ],
+      "savedAt": "2026-06-01T10:09:17.658Z",
+      "fetchedAt": "2026-06-01T10:09:17.705223+00:00"
+    }
+  }
+}

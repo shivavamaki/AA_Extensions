@@ -20,6 +20,7 @@ const MSG = Object.freeze({
   OPEN_MED_RECONCILE:      'OPEN_MED_RECONCILE',
   OPEN_ALLERGY_CARD:       'OPEN_ALLERGY_CARD',
   OPEN_MEDICATION_JOURNEY: 'OPEN_MEDICATION_JOURNEY',
+  OPEN_MED_JOURNEY:        'OPEN_MED_JOURNEY',
 });
 
 const tabRegistry = {
@@ -29,6 +30,7 @@ const tabRegistry = {
   aa_medReconcile:      null,
   aa_allergyCard:       null,
   aa_medicationJourney: null,
+  aa_medJourney:        null,
 };
 
 const ROUTE_MAP = {
@@ -38,6 +40,7 @@ const ROUTE_MAP = {
   [MSG.OPEN_MED_RECONCILE]:      { key: 'aa_medReconcile',       url: 'src/features/patient-sticker/page-med-reconcile.html' },
   [MSG.OPEN_ALLERGY_CARD]:       { key: 'aa_allergyCard',        url: 'src/features/patient-sticker/page-allergy-card.html' },
   [MSG.OPEN_MEDICATION_JOURNEY]: { key: 'aa_medicationJourney',  url: 'src/features/adrtimeline/page-adrtimeline.html' },
+  [MSG.OPEN_MED_JOURNEY]:        { key: 'aa_medJourney',         url: 'src/features/med-journey/page-med-journey.html' },
 };
 
 chrome.tabs.onRemoved.addListener(tabId => {
@@ -265,6 +268,7 @@ function _arcusExtractAngularCtx() {
       if (xhrCtx.patientvisituid && !pc.patientvisituid) pc.patientvisituid = xhrCtx.patientvisituid;
       out._raw.xhrTap = xhrCtx;
       out._raw.arcusHdrs = window.__arcus_hdrs__ || {};
+      out._raw.medreconMap = window.__arcus_medrecon__ || {};
     } catch (_) {}
 
     if (pc && (pc.patientuid || pc.patientvisituid)) out.patientCtx = pc;
@@ -362,9 +366,19 @@ function _arcusSetupXhrTap() {
     return _origSetHdr.apply(this, arguments);
   };
 
+  /* Map of patientvisituid → medreconcileuid, captured when the pharmacist
+     opens the Med Reconcile screen (the only place the uid appears). Later, on
+     the Dispense Workbench in the same SPA tab, the journey can look it up. */
+  window.__arcus_medrecon__ = window.__arcus_medrecon__ || {};
+  var ID24 = /([a-f0-9]{24})/i;
+
   var _origOpen = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function (method, url) {
-    try { _scan(String(url)); } catch (_) {}
+    try {
+      _scan(String(url));
+      // Tag this XHR if it's a medreconcile call so send() can grab the uid.
+      this.__bkn_medrecon = /\/medreconcile\//i.test(String(url));
+    } catch (_) {}
     return _origOpen.apply(this, arguments);
   };
   /* Dispense Workbench passes patientuid/patientvisituid in the XHR request
@@ -372,6 +386,17 @@ function _arcusSetupXhrTap() {
   var _origSend = XMLHttpRequest.prototype.send;
   XMLHttpRequest.prototype.send = function (body) {
     try { _scanBody(typeof body === 'string' ? body : null); } catch (_) {}
+    // Capture medreconcileuid from a medreconcile request body, keyed by the
+    // patientvisituid currently in context (set by the screen's own list call).
+    try {
+      if (this.__bkn_medrecon && typeof body === 'string') {
+        var mu = '';
+        try { var jb = JSON.parse(body); mu = jb.medreconcileuid || ''; } catch (_) {}
+        if (!mu) { var mm = ID24.exec(body); if (mm) mu = mm[1]; }
+        var vid = window.__arcus_pctx__.patientvisituid || '';
+        if (mu && vid) window.__arcus_medrecon__[vid] = String(mu);
+      }
+    } catch (_) {}
     return _origSend.apply(this, arguments);
   };
   var _origFetch = window.fetch;

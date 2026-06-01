@@ -1,0 +1,135 @@
+{
+  "patientuid": "5b8a57503238d86bf0c298cc",
+  "createdAt": "2026-06-01T08:32:19.031637+00:00",
+  "updatedAt": "2026-06-01T09:30:12.195533+00:00",
+  "context": {
+    "patientuid": "5b8a57503238d86bf0c298cc",
+    "patientvisituid": "6a1b0f05e0655b83661311f3",
+    "hn": "48-19-006981",
+    "patientName": "MR. YUTTHANA  MANEEKOT"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {
+    "6a1b0f05e0655b83661311f3__journey": {
+      "kind": "medJourney",
+      "rows": [
+        {
+          "drug": "Ciprofloxacin 500 mg TABLET",
+          "code": "51101542000003",
+          "admission": "",
+          "ward": "",
+          "home": "Take 1 Tablet Orally 2 Times Daily After Breakfast and Dinner",
+          "status": "new",
+          "note": "(Take Till Finished do not take with milk-antacid-calcium-iron compound), Antibiotic",
+          "provider": "อาทิตย์ ภูผาธรรม, นพ."
+        },
+        {
+          "drug": "Hidrasec CAP (100 mg)",
+          "code": "51171923000001",
+          "admission": "",
+          "ward": "Take 1 Capsule Orally 3 Times Daily After Breakfast Lunch and Dinner",
+          "home": "Take 1 Capsule Orally 3 Times Daily After Breakfast Lunch and Dinner",
+          "status": "continued",
+          "note": "For Diarrhea ( Don't Take More than 4 tablets Per Day )",
+          "provider": "อาทิตย์ ภูผาธรรม, นพ."
+        },
+        {
+          "drug": "Buscopan Tablet",
+          "code": "51172107000002",
+          "admission": "",
+          "ward": "Take 1 Tablet Orally 3 Times Daily After Breakfast Lunch and Dinner",
+          "home": "Take 1 Tablet Orally 3 Times Daily After Breakfast Lunch and Dinner If needed",
+          "status": "continued",
+          "note": "",
+          "provider": "อาทิตย์ ภูผาธรรม, นพ."
+        },
+        {
+          "drug": "Gastro-Bismol 524 mg TABLET #",
+          "code": "51171707000001",
+          "admission": "",
+          "ward": "Take 1 Tablet Orally 3 Times Daily After Breakfast Lunch and Dinner",
+          "home": "Take 1 Tablet Orally 3 Times Daily After Breakfast Lunch and Dinner",
+          "status": "continued",
+          "note": "(Black Stool May Occur)",
+          "provider": "อาทิตย์ ภูผาธรรม, นพ."
+        },
+        {
+          "drug": "Electrolyte Powder (oreda) Orange (16.5 g)",
+          "code": "51191906000011",
+          "admission": "",
+          "ward": "Drink Instead of Water Orally Every 2-3 Hours When have Symptom",
+          "home": "Drink Instead of Water Orally Every 2-3 Hours When have Symptom",
+          "status": "continued",
+          "note": "Mix 1 pack in a water 750 ml After Dissolved, Use Within 24 Hours (Not more than 4 packs/day)",
+          "provider": "อาทิตย์ ภูผาธรรม, นพ."
+        },
+        {
+          "drug": "Hyoscine 20 mg/mL INJ Amp",
+          "code": "51172107000005",
+          "admission": "",
+          "ward": "Inject 20 Milligram Intravenous Bolus Take Now",
+          "home": "",
+          "status": "changed",
+          "note": "SC, IM or slow IV",
+          "provider": "นราชัย จุฬานนท์, ผศ. นพ."
+        },
+        {
+          "drug": "INJECTION Prevacid (30 mg)",
+          "code": "51171906000004",
+          "admission": "",
+          "ward": "Inject 30 Milligram IntraVenously Once",
+          "home": "",
+          "status": "stopped",
+          "note": "Use Within 1 Hr After Reconstitution with NSS,D5W Stability After Dilution: D5W 5Hrs,NSS 12Hrs",
+          "provider": "นิศา วรสูต, พญ."
+        },
+        {
+          "drug": "Paracetamol 500 mg TABLET",
+          "code": "51142001000033",
+          "admission": "",
+          "ward": "Take 1 Tablet Orally Every 6 Hours If Needed",
+          "home": "",
+          "status": "stopped",
+          "note": "For Pain or Fever // Not take more than 6 tablets per day",
+          "provider": "นิศา วรสูต, พญ."
+        },
+        {
+          "drug": "Prevacid Fdt-30 Mg Tablet",
+          "code": "51171906000003",
+          "admission": "",
+          "ward": "Take 1 Tablet Orally Once Daily Before Breakfast",
+          "home": "",
+          "status": "stopped",
+          "note": "(To inhibit acid secretion) (Take 1 hour before meals or 2 hours after meals) Do Not Chew or Crush",
+          "provider": "นิศา วรสูต, พญ."
+        },
+        {
+          "drug": "Rocephin INJ (2 g) I.V.Vial #",
+          "code": "51101551000017",
+          "admission": "",
+          "ward": "Infuse 2000 Milligram IntraVenously Every 24 Hours",
+          "home": "",
+          "status": "stopped",
+          "note": "Reconstitution-SWFI (diluent in pakage) stability 25C 24hrs,Dilution-NSS 50 ml stability 2-8C 7days IVinfuse30-60 mins",
+          "provider": "นิศา วรสูต, พญ."
+        },
+        {
+          "drug": "Ondanzetron 8 mg INJ Amp",
+          "code": "51171804000001",
+          "admission": "",
+          "ward": "Inject 8 Milligram Intravenous Bolus Take Now",
+          "home": "",
+          "status": "stopped",
+          "note": "Administration-IM or IV push >2-5 mins or IV infusion>15 mins,Dilution-Nss 50 ml stability 25C 7days",
+          "provider": "พชรพร ปรีชากุล, พญ."
+        }
+      ],
+      "savedAt": "2026-06-01T08:39:47.944Z",
+      "fetchedAt": "2026-06-01T08:39:47.980622+00:00"
+    }
+  }
+}

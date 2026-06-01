@@ -126,6 +126,8 @@
         "src/vendor/jsbarcode.min.js",
         "src/features/home-med/page-home-med.html",
         "src/features/home-med/page-home-med.js",
+        "src/features/med-journey/page-med-journey.html",
+        "src/features/med-journey/page-med-journey.js",
         "src/features/med-sticker/page-med-sticker.html",
         "src/features/med-sticker/page-med-sticker.js",
         "src/features/patient-sticker/page-patient-sticker.html",

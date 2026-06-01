@@ -167,6 +167,56 @@ def fetch_arcus_discharge_meds(ctx):
     })
 
 
+ARCUS_MEDRECON_URL = ARCUS_BASE + '/ordermanagement/medreconcile/getdetail'
+
+
+def fetch_arcus_medreconcile(ctx):
+    """POST to ArcusAir medreconcile/getdetail. Needs ctx.medreconcileuid
+    (captured when the pharmacist opened the Med Reconcile screen). Returns JSON.
+    Best-effort — caller swallows errors when the uid is absent."""
+    mu = ctx.get('medreconcileuid')
+    if not mu:
+        return None
+    return _arcus_post_json(ARCUS_MEDRECON_URL, ctx, {'medreconcileuid': mu})
+
+
+def build_reconcile_meds(data):
+    """Map medreconcile/getdetail JSON → [{drug, code, status, instruction,
+    frequency, route, note}]. These are the patient's pre-admission / home meds
+    with the doctor's reconcile decision (CONTINUE/STOP/HOLD/CHANGE...)."""
+    items = ((data or {}).get('medreconcile') or {}).get('medicationitems') or []
+    out = []
+    for it in items:
+        # orderitemname is the visible (often free-text) home-med name; the
+        # orderitemuid.name is a generic placeholder ("Non Hospital Formulary Item").
+        name = _hm_norm(it.get('orderitemname') or '')
+        if not name:
+            name = _hm_norm((it.get('orderitemuid') or {}).get('name') or '')
+        if not name:
+            continue
+        oi = it.get('orderitemuid') or {}
+        code = _hm_norm(oi.get('code') or '')
+        freq = _hm_norm((it.get('frequencyuid') or {}).get('locallangdesc')
+                        or (it.get('frequencyuid') or {}).get('name') or '')
+        route = _hm_norm((it.get('routeuid') or {}).get('valuedescription') or '')
+        comments = _hm_norm(it.get('comments') or '')
+        recon = _hm_norm(it.get('reconcilestatus') or '')
+        out.append({
+            'drug': name, 'code': code,
+            'status': recon, 'instruction': comments,
+            'frequency': freq, 'route': route, 'note': comments,
+        })
+    return out
+
+
+_RECON_STATUS_MAP = {
+    'CONTINUE': 'continued', 'CONTINUED': 'continued',
+    'STOP': 'stopped', 'STOPPED': 'stopped', 'DISCONTINUE': 'stopped',
+    'HOLD': 'changed', 'CHANGE': 'changed', 'CHANGED': 'changed', 'MODIFY': 'changed',
+    'NEW': 'new', 'START': 'new',
+}
+
+
 def fetch_arcus_allergies(ctx):
     """POST to ArcusAir getallergies. Returns JSON. Best-effort (allergy is
     supplementary — caller swallows errors)."""
@@ -288,81 +338,215 @@ def _arc_first(v):
     return v
 
 
+def _arcus_patient_header(it):
+    """Patient header dict from an order item's patientuid block."""
+    p = _arc_first(it.get('patientuid')) or {}
+    ln = _hm_norm((p.get('localnametitleuid') or {}).get('valuedescription') or '')
+    return {
+        'patientName': _hm_norm(' '.join(x for x in [
+            ln, p.get('localfirstname') or '', p.get('locallastname') or ''] if x)),
+        'hn': _hm_norm(p.get('mrn') or ''),
+        'an': _hm_norm(it.get('ordernumber') or ''),
+        'room': _hm_norm((_arc_first(it.get('beduid')) or {}).get('name') or ''),
+    }
+
+
+def _arcus_item_to_med(it):
+    """Map one getallorderitem entry → a med dict (or None). Also attaches the
+    order-type label and key dates so callers can place it on a timeline."""
+    poi = it.get('patientorderitems') or {}
+    name = _hm_norm(poi.get('orderitemname') or '')
+    if not name:
+        name = _hm_norm((_arc_first(poi.get('orderitemuid')) or {}).get('name') or '')
+    if not name:
+        return None
+
+    code = _hm_norm(poi.get('chargecode') or '')
+    if not code:
+        code = _hm_norm((_arc_first(poi.get('orderitemuid')) or {}).get('code') or '')
+
+    verb = _hm_norm((_arc_first(poi.get('instructionuid')) or {}).get('valuedescription') or '')
+    dosage = poi.get('dosage')
+    dose_unit = _hm_norm((_arc_first(poi.get('dosageUOM')) or {}).get('valuedescription') or '')
+    route = _hm_norm((_arc_first(poi.get('routeuid')) or {}).get('valuedescription') or '')
+    freq = _hm_norm((_arc_first(poi.get('frequencyuid')) or {}).get('name') or '')
+    instr_parts = []
+    if verb:
+        instr_parts.append(verb)
+    if dosage:
+        instr_parts.append(str(dosage) + (' ' + dose_unit if dose_unit else ''))
+    if route:
+        instr_parts.append(route)
+    if freq:
+        instr_parts.append(freq)
+    instruction = ' '.join(instr_parts).strip()
+
+    qty_n = poi.get('quantity')
+    qty_unit = _hm_norm((_arc_first(poi.get('quantityUOM')) or {}).get('valuedescription') or '')
+    quantity = (str(qty_n) + (' ' + qty_unit if qty_unit else '')) if qty_n is not None else ''
+
+    note = ''
+    for ins in (poi.get('instructions') or []):
+        if ins.get('valuecode') == 'INSTYP1' and ins.get('instructiontext'):
+            note = _hm_norm(ins['instructiontext'])
+            break
+
+    provider = _hm_norm((_arc_first(poi.get('careprovideruid')) or {}).get('name') or '')
+    if not provider:
+        provider = _hm_norm((_arc_first(it.get('careprovideruid')) or {}).get('name') or '')
+
+    ordertype = _hm_norm((_arc_first(it.get('ordertypeuid')) or {}).get('valuedescription') or '')
+    status = _hm_norm((_arc_first(poi.get('statusuid')) or {}).get('valuedescription') or '')
+    # Order category ("Medicine" vs supplies/services/food). Two sources seen:
+    # item-level ordercattype = "MEDICINE", and orderitemuid.ordercatuid.name.
+    ordercat = _hm_norm(it.get('ordercattype') or '')
+    if not ordercat:
+        ordercat = _hm_norm((_arc_first(poi.get('orderitemuid')) or {}).get('ordercatuid', {})
+                            .get('name') if isinstance((_arc_first(poi.get('orderitemuid')) or {}).get('ordercatuid'), dict) else '')
+
+    return {
+        'drug': name, 'code': code, 'quantity': quantity,
+        'comment': instruction, 'note': note,
+        'route': route, 'frequency': freq, 'dosage': str(dosage or ''),
+        'provider': provider,
+        'oral': bool(re.search(r'oral|\btake\b|รับประทาน', route + ' ' + verb, re.I)),
+        'ordertype': ordertype, 'status': status, 'ordercat': ordercat,
+        'orderdate': it.get('orderdate') or poi.get('startdate') or '',
+        'startdate': poi.get('startdate') or '',
+    }
+
+
+def _is_medicine(med):
+    """True if an order item is an actual medicine (drop supplies/services/food/
+    labs). Primary signal: item code starts with '51' (BKN medicine prefix).
+    Secondary: order category contains 'MEDICINE'. Non-formulary home meds
+    (code 011001) are handled separately via the reconcile path."""
+    code = (med.get('code') or '').strip()
+    if code.startswith('51'):
+        return True
+    cat = (med.get('ordercat') or '').upper()
+    if 'MEDICINE' in cat:
+        return True
+    return False
+
+
 def build_home_med_from_arcus(data):
-    """Map ArcusAir getallorderitem JSON → home-med rows (same shape as the
-    Jasper path): {patient, meds, allMeds}. Each item already IS a discharge med."""
+    """Map ArcusAir getallorderitem JSON → home-med rows: {patient, meds, allMeds}.
+    Each item already IS a discharge med (server filtered)."""
     items = (data or {}).get('orderitems') or []
     meds = []
     patient = {}
-
     for it in items:
-        poi = it.get('patientorderitems') or {}
-        name = _hm_norm(poi.get('orderitemname') or '')
-        if not name:
-            oi = _arc_first(poi.get('orderitemuid'))
-            name = _hm_norm((oi or {}).get('name') or '')
-        if not name:
+        med = _arcus_item_to_med(it)
+        if not med:
             continue
-
-        code = _hm_norm(poi.get('chargecode') or '')
-        if not code:
-            oi = _arc_first(poi.get('orderitemuid'))
-            code = _hm_norm((oi or {}).get('code') or '')
-
-        # Build a human instruction: <verb> <dose> <unit> <route> <frequency>
-        verb = _hm_norm((_arc_first(poi.get('instructionuid')) or {}).get('valuedescription') or '')
-        dosage = poi.get('dosage')
-        dose_unit = _hm_norm((_arc_first(poi.get('dosageUOM')) or {}).get('valuedescription') or '')
-        route = _hm_norm((_arc_first(poi.get('routeuid')) or {}).get('valuedescription') or '')
-        freq = _hm_norm((_arc_first(poi.get('frequencyuid')) or {}).get('name') or '')
-        instr_parts = []
-        if verb:
-            instr_parts.append(verb)
-        if dosage:
-            instr_parts.append(str(dosage) + (' ' + dose_unit if dose_unit else ''))
-        if route:
-            instr_parts.append(route)
-        if freq:
-            instr_parts.append(freq)
-        instruction = ' '.join(instr_parts).strip()
-
-        # Quantity = "<n> <UOM>"
-        qty_n = poi.get('quantity')
-        qty_unit = _hm_norm((_arc_first(poi.get('quantityUOM')) or {}).get('valuedescription') or '')
-        quantity = (str(qty_n) + (' ' + qty_unit if qty_unit else '')) if qty_n is not None else ''
-
-        # Free-text patient instruction line (e.g. "Drink Instead of Water").
-        note = ''
-        for ins in (poi.get('instructions') or []):
-            if ins.get('valuecode') == 'INSTYP1' and ins.get('instructiontext'):
-                note = _hm_norm(ins['instructiontext'])
-                break
-
-        provider = _hm_norm((_arc_first(poi.get('careprovideruid')) or {}).get('name') or '')
-        if not provider:
-            provider = _hm_norm((_arc_first(it.get('careprovideruid')) or {}).get('name') or '')
-
-        # Patient header (from the first item).
         if not patient:
-            p = _arc_first(it.get('patientuid')) or {}
-            ln = _hm_norm((p.get('localnametitleuid') or {}).get('valuedescription') or '')
-            patient = {
-                'patientName': _hm_norm(' '.join(x for x in [
-                    ln, p.get('localfirstname') or '', p.get('locallastname') or ''] if x)),
-                'hn': _hm_norm(p.get('mrn') or ''),
-                'an': _hm_norm(it.get('ordernumber') or ''),
-                'room': _hm_norm((_arc_first(it.get('beduid')) or {}).get('name') or ''),
-            }
-
-        meds.append({
-            'drug': name, 'code': code, 'quantity': quantity,
-            'comment': instruction, 'note': note,
-            'route': route, 'frequency': freq, 'dosage': str(dosage or ''),
-            'provider': provider,
-            'oral': bool(re.search(r'oral|\btake\b|รับประทาน', route + ' ' + verb, re.I)),
-        })
-
+            patient = _arcus_patient_header(it)
+        # Drop the timeline-only fields for the home-med sheet shape.
+        for k in ('ordertype', 'status', 'ordercat', 'orderdate', 'startdate'):
+            med.pop(k, None)
+        meds.append(med)
     return {'patient': patient, 'meds': meds, 'allMeds': len(meds)}
+
+
+def fetch_arcus_all_orders(ctx):
+    """Fetch ALL order items (no ordertype filter) for the medication journey."""
+    return _arcus_post_json(ARCUS_ORDERITEM_URL, ctx, {
+        'pagesize': 500, 'pagenumber': 1,
+        'patientuid': ctx.get('patientuid', ''),
+        'patientvisituid': ctx.get('patientvisituid', ''),
+        'isactive': True, 'sortorder': '-orderdate',
+    })
+
+
+def _journey_phase(ordertype):
+    """Map an order-type label → journey phase column.
+    admission = home/OPD meds (pre-admission) · ward = inpatient · home = discharge."""
+    t = (ordertype or '').upper()
+    if 'DISCHARGE' in t:
+        return 'home'
+    if 'HOME' in t or 'OPD' in t:
+        return 'admission'
+    return 'ward'
+
+
+def build_med_journey_from_arcus(data, reconcile_meds=None):
+    """Group all orders by drug into a continuity timeline.
+    Returns {patient, rows:[{drug, code, admission, ward, home, status, note}]}.
+
+    When `reconcile_meds` (from medreconcile/getdetail) is provided, the patient's
+    pre-admission home meds fill the 'admission' column and their authoritative
+    reconcilestatus overrides the auto-guessed status. status stays editable.
+    """
+    items = (data or {}).get('orderitems') or []
+    patient = {}
+    by_drug = {}
+    order_seen = []
+
+    def _row_for(drug, code):
+        key = (drug.lower(), code or '')
+        row = by_drug.get(key)
+        if not row:
+            row = {
+                'drug': drug, 'code': code or '',
+                'admission': '', 'ward': '', 'home': '',
+                'status': '', 'note': '', 'provider': '',
+                '_phases': set(), '_recon': '',
+            }
+            by_drug[key] = row
+            order_seen.append(key)
+        return row
+
+    # 1) Reconcile (pre-admission home) meds first → admission column + status.
+    for rm in (reconcile_meds or []):
+        if not rm.get('drug'):
+            continue
+        row = _row_for(rm['drug'], rm.get('code'))
+        if not row['admission']:
+            row['admission'] = rm.get('instruction') or rm.get('frequency') or rm.get('route') or '—'
+        row['_phases'].add('admission')
+        row['_recon'] = _RECON_STATUS_MAP.get((rm.get('status') or '').upper(), '')
+        if rm.get('note') and not row['note']:
+            row['note'] = rm['note']
+
+    # 2) Inpatient/discharge orders → ward/home columns. Medicines only
+    #    (drop supplies/services/food/labs — code prefix 51 / cat Medicine).
+    for it in items:
+        med = _arcus_item_to_med(it)
+        if not med:
+            continue
+        if not patient:
+            patient = _arcus_patient_header(it)
+        if not _is_medicine(med):
+            continue
+        phase = _journey_phase(med.get('ordertype'))
+        row = _row_for(med['drug'], med.get('code'))
+        cell = med.get('comment') or med.get('route') or ''
+        if cell and not row[phase]:
+            row[phase] = cell
+        row['_phases'].add(phase)
+        if med.get('note') and not row['note']:
+            row['note'] = med['note']
+        if med.get('provider') and not row['provider']:
+            row['provider'] = med['provider']
+
+    if not patient and reconcile_meds:
+        patient = {}  # header comes from orders; reconcile getdetail lacks it
+
+    rows = []
+    for key in order_seen:
+        row = by_drug[key]
+        phases = row.pop('_phases')
+        recon = row.pop('_recon')
+        if recon:
+            row['status'] = recon          # authoritative from med reconciliation
+        elif 'home' in phases:
+            row['status'] = 'continued' if (phases & {'admission', 'ward'}) else 'new'
+        elif phases:
+            row['status'] = 'stopped'
+        rows.append(row)
+
+    return {'patient': patient, 'rows': rows, 'allRows': len(rows)}
 
 
 # ── KPI helpers (per-day files) ────────────────────────────────
@@ -757,6 +941,10 @@ class Handler(BaseHTTPRequestHandler):
         # /api/report/home-med-api — fetch ArcusAir getallorderitem JSON directly
         if parts == ['api', 'report', 'home-med-api']:
             return 'report-home-med-api', None, None
+
+        # /api/report/med-journey — all orders grouped into a continuity timeline
+        if parts == ['api', 'report', 'med-journey']:
+            return 'report-med-journey', None, None
 
         # /api/patients/{puid}                              -> 'patient', puid, None
         # /api/patients/{puid}/context                      -> 'patient-context', puid, None
@@ -1163,6 +1351,42 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 self.send_json(500, {'error': f'Parse error: {e}'}); return
             # Allergies are supplementary — fetch best-effort, never fail the sheet.
+            try:
+                result['allergies'] = build_allergies_from_arcus(fetch_arcus_allergies(ctx))
+            except Exception as e:
+                result['allergies'] = {'nkda': False, 'items': [], 'hasRecord': False, 'error': str(e)}
+            result['ok'] = True
+            result['source'] = 'arcus-api'
+            self.send_json(200, result)
+            return
+
+        # ── Medication Journey: all orders grouped into a continuity timeline ──
+        if rtype == 'report-med-journey':
+            ctx = body.get('context') or {}
+            if not ctx.get('patientuid') or not ctx.get('patientvisituid'):
+                self.send_json(400, {'error': 'patientuid + patientvisituid required'}); return
+            if not ctx.get('incusToken'):
+                self.send_json(400, {'error': 'incusToken missing — open the patient on ArcusAir first'}); return
+            try:
+                data = fetch_arcus_all_orders(ctx)
+            except urllib.error.HTTPError as e:
+                self.send_json(502, {'error': f'ArcusAir HTTP {e.code} — token may be expired'}); return
+            except Exception as e:
+                self.send_json(500, {'error': f'ArcusAir fetch error: {e}'}); return
+            # Best-effort: pre-admission home meds + reconcile status, if the
+            # pharmacist opened the Med Reconcile screen (gave us medreconcileuid).
+            recon_meds = None
+            try:
+                rd = fetch_arcus_medreconcile(ctx)
+                if rd:
+                    recon_meds = build_reconcile_meds(rd)
+            except Exception:
+                recon_meds = None
+            try:
+                result = build_med_journey_from_arcus(data, recon_meds)
+            except Exception as e:
+                self.send_json(500, {'error': f'Parse error: {e}'}); return
+            result['hasReconcile'] = bool(recon_meds)
             try:
                 result['allergies'] = build_allergies_from_arcus(fetch_arcus_allergies(ctx))
             except Exception as e:

@@ -737,10 +737,11 @@ function bindToolbar() {
   const btnPdf = document.getElementById("btnPdf");
   const btnRevert = document.getElementById("btnRevert");
   // Set document.title for both Print and PDF — browsers use it as the
-  // default save/print filename, so the HN ends up in the file name.
-  if (btnPrint) btnPrint.onclick = () => { document.title = buildFileName(_context); applyPrintSettings(currentPrintSettingsFromControls()); _buildPrintHeader(); window.print(); };
+  // default save/print filename, so the HN ends up in the file name. The header
+  // sections print once at the top; the column-header row repeats via <thead>.
+  if (btnPrint) btnPrint.onclick = () => { document.title = buildFileName(_context); applyPrintSettings(currentPrintSettingsFromControls()); window.print(); };
   if (btnRevert) btnRevert.onclick = () => location.reload();
-  if (btnPdf) btnPdf.onclick = () => { document.title = buildFileName(_context); applyPrintSettings(currentPrintSettingsFromControls()); _buildPrintHeader(); window.print(); };
+  if (btnPdf) btnPdf.onclick = () => { document.title = buildFileName(_context); applyPrintSettings(currentPrintSettingsFromControls()); window.print(); };
 }
 
 function bindLangControl() {
@@ -757,24 +758,6 @@ function bindLangControl() {
   });
 }
 
-/* ───────────────────── Repeating print header (unchanged) ─────────────── */
-function _cloneForPrintHeader(el) {
-  const clone = el.cloneNode(true);
-  clone.classList.remove("screen-only");
-  clone.querySelectorAll(".screen-only").forEach((n) => n.classList.remove("screen-only"));
-  return clone;
-}
-
-function _buildPrintHeader() {
-  const cell = document.getElementById("printHdrCell");
-  if (!cell) return;
-  cell.innerHTML = "";
-  [".top-title", ".patient-card", ".clinical-banner", ".section-title"].forEach((sel) => {
-    const el = document.querySelector(sel);
-    if (el) cell.appendChild(_cloneForPrintHeader(el));
-  });
-}
-
 /* ─────────────────────────────── Boot ─────────────────────────────────── */
 function _applyContextAndRender(msg) {
   if (!msg || msg.type !== MSG.LOAD_MED_TABLE) return;
@@ -787,12 +770,6 @@ document.addEventListener("DOMContentLoaded", () => {
   bindPrintControls();
   bindToolbar();
   bindLangControl();
-
-  window.addEventListener("beforeprint", _buildPrintHeader);
-  window.addEventListener("afterprint", () => {
-    const cell = document.getElementById("printHdrCell");
-    if (cell) cell.innerHTML = "";
-  });
 
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === MSG.LOAD_MED_TABLE) _applyContextAndRender(msg);

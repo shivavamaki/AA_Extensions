@@ -165,6 +165,13 @@
         const hdrs = (pageCtx._raw && pageCtx._raw.arcusHdrs) || {};
         if (hdrs["incus-token"]) ctx.incusToken = hdrs["incus-token"];
 
+        // medreconcileuid for THIS visit, captured when the pharmacist opened
+        // the Med Reconcile screen earlier this session (keyed by visituid).
+        const mrMap = (pageCtx._raw && pageCtx._raw.medreconMap) || {};
+        if (ctx.patientvisituid && mrMap[ctx.patientvisituid]) {
+          ctx.medreconcileuid = mrMap[ctx.patientvisituid];
+        }
+
         const ok = ctx.patientuid && ctx.patientvisituid && ctx.loginuid;
         console.group("[home-med] context after merge");
         console.log("patientuid      :", ctx.patientuid       || "⚠️ MISSING");
@@ -176,6 +183,7 @@
         console.log("careprovideruid :", ctx.careprovideruid  || "(none)");
         console.log("_pp             :", ctx._pp              || "(none — built from u/r/o)");
         console.log("incusToken      :", ctx.incusToken       || "⚠️ MISSING (ArcusAir API needs it)");
+        console.log("medreconcileuid :", ctx.medreconcileuid  || "(none — open Med Reconcile screen for this patient to capture)");
         console.log("canFetchReport  :", ok ? "✅ YES" : "❌ NO");
         console.log("xhrTap          :", JSON.parse(JSON.stringify(tap)));
         console.log("FULL ctx        :", JSON.parse(JSON.stringify(ctx)));
@@ -252,7 +260,7 @@
 
     try {
       chrome.runtime
-        .sendMessage({ type: MSG.LOAD_MED_TABLE, context })
+        .sendMessage({ type: _msgType, context })
         .finally(() => setTimeout(() => (_sending = false), 300));
     } catch (e) {
       _sending = false;
@@ -264,28 +272,39 @@
     }
   }
 
+  // The button click sets which page to open; both share the same extraction.
+  let _msgType = MSG.LOAD_MED_TABLE;
+  function handleSheetClick()   { _msgType = MSG.LOAD_MED_TABLE;   handleClick(); }
+  function handleJourneyClick() { _msgType = MSG.OPEN_MED_JOURNEY; handleClick(); }
+
   /* ─────────────────────────────────────────────
-   * Inject / remove button (idempotent, page-level)
+   * Inject / remove buttons (idempotent, page-level):
+   *   🏠💊 Home Medication Sheet   🗺️ Medication Journey
    * ───────────────────────────────────────────── */
   function syncButton() {
     const span = document.querySelector(TOOLBAR_SPAN_SEL);
-    const existing = span && span.querySelector(".hm-sheet-btn");
 
     if (!shouldShow()) {
-      if (existing) existing.remove();
+      if (span) {
+        span.querySelector(".hm-sheet-btn")?.remove();
+        span.querySelector(".hm-journey-btn")?.remove();
+      }
       return;
     }
+    if (!span) return;
 
-    if (!span || existing) return;
-
-    const btn = createIconButton({
-      icon:      "🏠💊",
-      title:     "Open Home Medication Sheet (Discharge)",
-      className: "hm-sheet-btn",
-      onClick:   handleClick,
-    });
-
-    span.appendChild(btn);
+    if (!span.querySelector(".hm-sheet-btn")) {
+      span.appendChild(createIconButton({
+        icon: "🏠💊", title: "Open Home Medication Sheet (Discharge)",
+        className: "hm-sheet-btn", onClick: handleSheetClick,
+      }));
+    }
+    if (!span.querySelector(".hm-journey-btn")) {
+      span.appendChild(createIconButton({
+        icon: "🗺️", title: "Open Medication Journey (timeline)",
+        className: "hm-journey-btn", onClick: handleJourneyClick,
+      }));
+    }
   }
 
   // Install the XHR tap as soon as we're on the dispense workbench so it

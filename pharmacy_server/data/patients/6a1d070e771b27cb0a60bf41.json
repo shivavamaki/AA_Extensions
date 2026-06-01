@@ -1,0 +1,17 @@
+{
+  "patientuid": "6a1d070e771b27cb0a60bf41",
+  "createdAt": "2026-06-01T05:19:00.596341+00:00",
+  "updatedAt": "2026-06-01T05:19:00.596341+00:00",
+  "context": {
+    "patientuid": "6a1d070e771b27cb0a60bf41",
+    "patientvisituid": "6a1d070e88c3e8d5d4235dd7",
+    "hn": "48-15-015763",
+    "patientName": "MISS MAYUREE  SRICHIN"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

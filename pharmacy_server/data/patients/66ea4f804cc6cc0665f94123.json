@@ -1,0 +1,17 @@
+{
+  "patientuid": "66ea4f804cc6cc0665f94123",
+  "createdAt": "2026-06-01T09:33:28.956880+00:00",
+  "updatedAt": "2026-06-01T09:33:28.956880+00:00",
+  "context": {
+    "patientuid": "66ea4f804cc6cc0665f94123",
+    "patientvisituid": "6a1a423fa4a2abf37a764408",
+    "hn": "48-19-006981",
+    "patientName": "MISS WITCHAYAPORN  HITAKUN"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Medication Journey</title>
+  <style>
+    @font-face {
+      font-family: "Sarabun";
+      src: url("../../assets/fonts/Sarabun-Regular.ttf") format("truetype");
+      font-weight: 400;
+    }
+    * { box-sizing: border-box; }
+    :root {
+      --screen-scale: 1;
+      --base-font-size: 13px;
+    }
+    body {
+      margin: 0;
+      font-family: "Sarabun", Arial, sans-serif;
+      color: #0f172a;
+      background: #eef2f7;
+      font-size: var(--base-font-size);
+    }
+
+    /* ── Toolbar (screen only) ─────────────────────────────────── */
+    .toolbar {
+      position: sticky; top: 0; z-index: 1000;
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+      padding: 10px 14px; background: #0f766e; color: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    }
+    .toolbar button {
+      padding: 7px 12px; border: 0; border-radius: 8px;
+      background: #0d9488; color: #fff; font-size: 13px; cursor: pointer; font-weight: 600;
+    }
+    .toolbar button.secondary { background: #475569; }
+    .toolbar label { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #e2e8f0; }
+    .toolbar select { height: 30px; border-radius: 7px; border: 1px solid #155e63; background: #134e4a; color: #fff; padding: 4px 7px; font-size: 12px; }
+    .print-status { color: #ccfbf1; font-size: 12px; }
+
+    .sheet-wrap { width: 297mm; margin: 12px auto; transform: scale(var(--screen-scale)); transform-origin: top center; }
+    .sheet {
+      width: 297mm; min-height: 210mm; margin: 0 auto; padding: 12mm 12mm;
+      background: #fff; box-shadow: 0 4px 18px rgba(15,23,42,.12);
+    }
+
+    .top-title { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px; }
+    .top-title h1 { margin: 0; font-size: 24px; }
+    .top-title .subtitle { font-size: 13px; color: #475569; }
+
+    .patient-card { display: grid; grid-template-columns: 2fr 1fr 1.3fr 1fr; gap: 6px; padding: 9px 10px; border: 1.5px solid #0f172a; border-radius: 10px; background: #f8fafc; margin-bottom: 10px; }
+    .patient-field .label { font-size: 10px; color: #6b7280; font-weight: 700; text-transform: uppercase; }
+    .patient-field .value { font-size: 15px; font-weight: 700; }
+
+    /* Clinical banner (diagnosis + allergy) */
+    .clinical-banner { margin: 0 0 12px; border-radius: 10px; overflow: hidden; border: 1.5px solid #cbd5e1; }
+    .clinical-banner .dx-line, .clinical-banner .allergy-line { display: flex; align-items: baseline; gap: 8px; padding: 7px 12px; font-size: 14px; }
+    .clinical-banner .dx-line { background: #eff6ff; color: #1e3a8a; border-bottom: 1px solid #dbeafe; }
+    .clinical-banner .dx-label, .clinical-banner .allergy-label { font-weight: 800; white-space: nowrap; }
+    .clinical-banner .allergy-line { background: #fef2f2; color: #7f1d1d; }
+    .clinical-banner .allergy-line.nkda { background: #f3f4f6; color: #374151; }
+    .clinical-banner .dx-line.empty { display: none; }
+
+    /* Phase legend */
+    .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; font-size: 12px; }
+    .legend .chip { padding: 3px 10px; border-radius: 14px; font-weight: 700; }
+    .chip.continued { background: #dcfce7; color: #166534; }
+    .chip.new { background: #dbeafe; color: #1e40af; }
+    .chip.changed { background: #fef3c7; color: #92400e; }
+    .chip.stopped { background: #fee2e2; color: #991b1b; }
+
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.5px solid #0f172a; }
+    th { background: #0f766e; color: #fff; border: 1px solid #0f172a; padding: 7px 8px; text-align: left; font-size: 13px; }
+    th .th-sub { display: block; font-size: 11px; font-weight: 500; color: #ccfbf1; }
+    td { border: 1px solid #94a3b8; padding: 7px 8px; vertical-align: top; font-size: 13px; line-height: 1.3; word-break: break-word; }
+
+    .col-act { width: 9mm; text-align: center; }
+    .col-drug { width: 17%; }
+    .col-phase { width: 19%; }
+    .col-status { width: 11%; }
+    .col-note { width: 15%; }
+
+    .drug-name { font-weight: 800; font-size: 14px; }
+    .drug-code { font-size: 10px; color: #6b7280; margin-top: 2px; }
+
+    [contenteditable] { outline: none; border-radius: 5px; padding: 1px 3px; min-height: 1.1em; cursor: text; }
+    [contenteditable]:hover { background: #f1f5f9; }
+    [contenteditable]:focus { background: #ecfeff; box-shadow: 0 0 0 2px #5eead4 inset; }
+    [contenteditable]:empty::before { content: attr(data-ph); color: #9ca3af; font-weight: 400; }
+
+    .status-sel { width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px; font-family: inherit; font-size: 12px; }
+    /* Status cell tint */
+    tr[data-status="continued"] .col-status { background: #f0fdf4; }
+    tr[data-status="new"] .col-status { background: #eff6ff; }
+    tr[data-status="changed"] .col-status { background: #fffbeb; }
+    tr[data-status="stopped"] .col-status { background: #fef2f2; }
+
+    .row-del, .row-add {
+      width: 22px; height: 22px; border-radius: 999px; border: 1.5px solid #cbd5e1;
+      background: #fff; cursor: pointer; font-size: 16px; font-weight: 800; color: #475569;
+    }
+    .row-del:hover { border-color: #ef4444; color: #ef4444; }
+    .row-add { border-color: #22c55e; color: #16a34a; }
+    .add-row td { background: #f8fafc; }
+    .add-wrap { position: relative; }
+    .add-input { width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1.5px dashed #94a3b8; border-radius: 8px; font-family: inherit; font-size: 13px; }
+    .add-suggest { position: absolute; z-index: 50; left: 0; right: 0; top: 100%; margin-top: 2px; max-height: 240px; overflow-y: auto; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 8px 24px rgba(15,23,42,.18); }
+    .add-opt { padding: 7px 10px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+    .add-opt:hover { background: #ecfeff; }
+
+    .empty { text-align: center; padding: 24px; color: #6b7280; font-style: italic; }
+
+    .footer-note { margin-top: 12px; padding-top: 8px; border-top: 1px solid #d1d5db; display: grid; grid-template-columns: 2fr 1fr; gap: 10px; font-size: 12px; color: #374151; }
+    .sign-box { border: 1px dashed #9ca3af; border-radius: 8px; padding: 6px 8px; }
+
+    @page { size: A4 landscape; margin: 8mm; }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none !important; }
+      .sheet-wrap { width: auto; margin: 0; transform: none !important; }
+      .sheet { width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; }
+      /* The column-header row repeats on every printed page. */
+      thead { display: table-header-group; }
+      tr { break-inside: avoid; page-break-inside: avoid; }
+      .no-print { display: none !important; }
+      .add-row { display: none !important; }
+      .add-suggest { display: none !important; }
+      [contenteditable] { background: none !important; box-shadow: none !important; }
+      [contenteditable]:empty::before { content: "" !important; }
+      /* Replace the status <select> with its text value for print (set by JS). */
+      .status-sel { display: none !important; }
+      .status-print { display: inline !important; }
+    }
+    .status-print { display: none; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button id="btnPrint" type="button">🖨 Print</button>
+    <button id="btnPdf" type="button">📄 Save PDF</button>
+    <button id="btnRevert" class="secondary" type="button">↩ Revert</button>
+    <span class="print-status" id="fetchStatus"></span>
+    <label>Language
+      <select id="lang">
+        <option value="">🌐 Translate</option>
+        <option value="th">Thai (ไทย)</option>
+        <option value="lo">Lao (ລາວ)</option>
+        <option value="my">Myanmar (မြန်မာ)</option>
+        <option value="km">Khmer (ខ្មែរ)</option>
+        <option value="en">English</option>
+        <option value="zh-CN">Chinese</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="sheet-wrap">
+  <main class="sheet">
+    <section class="top-title">
+      <div>
+        <h1>🗺️ Medication Journey</h1>
+        <div class="subtitle">เส้นทางยา: จากโรงพยาบาลสู่บ้าน · Medication Continuity Timeline</div>
+      </div>
+      <div class="subtitle"><strong>Date:</strong> <span id="sheetDate">-</span></div>
+    </section>
+
+    <section class="patient-card">
+      <div class="patient-field"><span class="label">Patient name</span><div class="value" id="patientName">-</div></div>
+      <div class="patient-field"><span class="label">HN</span><div class="value" id="patientHN">-</div></div>
+      <div class="patient-field"><span class="label">Visit / AN</span><div class="value" id="patientAN">-</div></div>
+      <div class="patient-field"><span class="label">Room</span><div class="value" id="patientRoom">-</div></div>
+    </section>
+
+    <section class="clinical-banner" id="clinicalBanner" data-no-translate translate="no">
+      <div class="dx-line" id="dxLine">
+        <span class="dx-label">🩺 Diagnosis / การวินิจฉัย:</span>
+        <span class="dx-value" id="diagnosisValue">-</span>
+      </div>
+      <div class="allergy-line nkda" id="allergyBanner">
+        <span class="allergy-label">⚠️ Allergies / แพ้ยา:</span>
+        <span class="allergy-value" id="allergyValue">No Known Drug Allergies (ไม่มีประวัติแพ้ยา)</span>
+      </div>
+    </section>
+
+    <section class="legend" data-no-translate translate="no">
+      <span class="chip continued">ใช้ต่อ (continued)</span>
+      <span class="chip new">เริ่มใหม่ (new)</span>
+      <span class="chip changed">เปลี่ยน (changed)</span>
+      <span class="chip stopped">หยุด (stopped)</span>
+    </section>
+
+    <table id="journeyTable">
+      <colgroup>
+        <col class="no-print" style="width:9mm">
+        <col style="width:17%"><col style="width:19%"><col style="width:19%">
+        <col style="width:19%"><col style="width:10%"><col style="width:16%">
+      </colgroup>
+      <thead>
+        <tr>
+          <th class="col-act no-print"></th>
+          <th class="col-drug">ชื่อยา<span class="th-sub">Medicine</span></th>
+          <th class="col-phase">ก่อน/แรกรับ<span class="th-sub">Before / Admission</span></th>
+          <th class="col-phase">ระหว่างนอน รพ.<span class="th-sub">During ward</span></th>
+          <th class="col-phase">แพทย์สั่งกลับบ้าน<span class="th-sub">Discharge / Home</span></th>
+          <th class="col-status">สถานะ<span class="th-sub">Status</span></th>
+          <th class="col-note">หมายเหตุ<span class="th-sub">Note</span></th>
+        </tr>
+      </thead>
+      <tbody><!-- rows injected by JS --></tbody>
+    </table>
+
+    <section class="footer-note">
+      <div class="sign-box"><strong>คำแนะนำ / Note</strong><br/>หากไม่แน่ใจวิธีใช้ยา กรุณาปรึกษาเภสัชกรก่อนกลับบ้าน</div>
+      <div class="sign-box"><strong>เภสัชกร (Pharmacist)</strong><br/><span id="pharmacistName">-</span></div>
+    </section>
+  </main>
+  </div>
+
+  <script src="../../core/messages.js"></script>
+  <script src="../../core/utils.js"></script>
+  <script src="../../core/dom.js"></script>
+  <script src="../../shared/shared-data-client.js"></script>
+  <script src="../../shared/translate-core.js"></script>
+  <script src="../../shared/medical-glossary.js"></script>
+  <script src="page-med-journey.js"></script>
+</body>
+</html>
