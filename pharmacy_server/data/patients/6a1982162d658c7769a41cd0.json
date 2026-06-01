@@ -1,0 +1,17 @@
+{
+  "patientuid": "6a1982162d658c7769a41cd0",
+  "createdAt": "2026-06-01T11:54:37.292079+00:00",
+  "updatedAt": "2026-06-01T11:56:41.152025+00:00",
+  "context": {
+    "patientuid": "6a1982162d658c7769a41cd0",
+    "patientvisituid": "6a19821703dce8e443beb34a",
+    "hn": "48-23-012646",
+    "patientName": "MR. KHANIT  SUDAKHAM"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

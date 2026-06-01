@@ -11,20 +11,58 @@
   const { parseRows }        = window.ParserOrderTable;
 
   /* ─────────────────────────────────────────────
-   * Route guard
-   * ───────────────────────────────────────────── */
-  function isDispensePage() {
-    return location.hash.includes("pharmacy/dispenseworkbench/pharmacy/dispense");
-  }
-
-  /* ─────────────────────────────────────────────
-   * Target span where the button is appended
+   * Target span where the button is appended.
+   * Gate by DOM availability, not URL; ArcusAir hash routing can change shape
+   * while the dispense toolbar is still the reliable signal.
    * ───────────────────────────────────────────── */
   const TOOLBAR_SPAN_SEL =
     "body > div.full-height.ng-scope.layout-row > div > md-content > md-content" +
     " > div > md-card > md-content.md-whiteframe-z2.padding-left-14-imp.margin-5" +
     ".stickydiv.incus-border-1.overflow-x-hide.ng-scope._md.md-incustheme-theme" +
     ".width-70-per > div.ng-isolate-scope.flex-initial > div.margin-top-7-imp.layout-row > span";
+
+  function getToolbarSpan() {
+    return document.querySelector(TOOLBAR_SPAN_SEL);
+  }
+
+  function findDirectToolGroup(span) {
+    if (!span) return null;
+    for (const child of span.children) {
+      if (child.classList?.contains("bkn-tool-group")) return child;
+    }
+    return null;
+  }
+
+  function getOrCreateDispenseToolGroup() {
+    const span = getToolbarSpan();
+    if (!span) return null;
+
+    let group = findDirectToolGroup(span);
+    if (group) {
+      group.classList.add("bkn-dispense-tool-group");
+      return group;
+    }
+
+    group = document.createElement("span");
+    group.className = "bkn-tool-group bkn-dispense-tool-group";
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", "BKN Pharmacy tools");
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "bkn-tool-trigger";
+    trigger.title = "BKN Pharmacy tools";
+    trigger.textContent = "💊";
+    trigger.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); });
+
+    const flyout = document.createElement("span");
+    flyout.className = "bkn-tool-flyout";
+
+    group.appendChild(trigger);
+    group.appendChild(flyout);
+    span.appendChild(group);
+    return group;
+  }
 
   /* ─────────────────────────────────────────────
    * Button click handler
@@ -65,20 +103,23 @@
    * Inject button (idempotent)
    * ───────────────────────────────────────────── */
   function tryInsertButton() {
-    if (!isDispensePage()) return;
+    const group = getOrCreateDispenseToolGroup();
+    const flyout = group?.querySelector(".bkn-tool-flyout");
+    if (!flyout) return;
 
-    const span = document.querySelector(TOOLBAR_SPAN_SEL);
-    if (!span) return;
-    if (span.querySelector(".print-sticker-btn")) return;
+    let btn = document.querySelector(".print-sticker-btn");
+    if (!btn) {
+      btn = createIconButton({
+        icon:      "🌐✨",
+        title:     "Open Medication Sticker",
+        className: "print-sticker-btn",
+        onClick:   handleClick,
+      });
+    }
 
-    const btn = createIconButton({
-      icon:      "🌐✨",
-      title:     "Open Medication Sticker",
-      className: "print-sticker-btn",
-      onClick:   handleClick,
-    });
-
-    span.appendChild(btn);
+    if (btn.parentElement !== flyout || btn !== flyout.firstElementChild) {
+      flyout.insertBefore(btn, flyout.firstChild);
+    }
   }
 
   tryInsertButton();
@@ -87,4 +128,7 @@
     childList: true,
     subtree:   true,
   });
+
+  window.addEventListener("hashchange", tryInsertButton);
+  window.addEventListener("popstate",   tryInsertButton);
 })();
