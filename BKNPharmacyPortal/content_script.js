@@ -641,41 +641,37 @@
     console.warn('[BKN IV Scraper] injectIvLabelButton failed', err);
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // SHARED MUTATION OBSERVER — watches for SPA route changes and DOM updates
-  // ═══════════════════════════════════════════════════════════════════════════
-  let _ivDebounce = null;
-  let _stDebounce = null;
+  function handleArcusAirRouteChange() {
+    if (!isDispensePage()) {
+      const oldBtn = document.getElementById(IV_BTN_ID);
+      if (oldBtn) oldBtn.remove();
+    } else {
+      waitForElement(IV_INJECT_ANCHOR_SEL, injectIvLabelButton);
+    }
 
-  const pageObserver = new MutationObserver(() => {
+    if (!isStockTransferPage()) {
+      const oldExportBtn = document.getElementById('exportPdfBtn');
+      if (oldExportBtn) oldExportBtn.remove();
+    } else {
+      waitForElement(
+        'md-card-content disable-all-inputs > div',
+        injectExportButton
+      );
+    }
+  }
 
-    clearTimeout(_ivDebounce);
-    _ivDebounce = setTimeout(() => {
-      if (HOST === 'arcusair.bdms.co.th') {
-        injectIvLabelButton();
-      }
-    }, 350);
+  function initArcusAirRouteWatchers() {
+    if (HOST !== 'arcusair.bdms.co.th') return;
 
-    clearTimeout(_stDebounce);
-    _stDebounce = setTimeout(() => {
+    window.addEventListener('hashchange', () => setTimeout(handleArcusAirRouteChange, 350));
+    window.addEventListener('popstate', () => setTimeout(handleArcusAirRouteChange, 350));
 
-      if (HOST === 'arcusair.bdms.co.th' && isStockTransferPage()) {
-        waitForElement(
-          "md-card-content disable-all-inputs > div",
-          () => injectExportButton()
-        );
-      }
+    onBodyReady(() => {
+      handleArcusAirRouteChange();
+    });
+  }
 
-    }, 500);
-
-  });
-
-  onBodyReady((body) => {
-    if (body) pageObserver.observe(body, { childList: true, subtree: true });
-  });
-
-  // Run once on load in case page is already rendered
-  injectIvLabelButton();
+  initArcusAirRouteWatchers();
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 5. ARCUSAIR — STOCK TRANSFER PDF EXPORT
