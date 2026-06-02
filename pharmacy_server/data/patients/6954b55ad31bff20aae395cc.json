@@ -1,0 +1,89 @@
+{
+  "patientuid": "6954b55ad31bff20aae395cc",
+  "createdAt": "2026-05-31T06:03:31.709794+00:00",
+  "updatedAt": "2026-06-01T03:25:10.533875+00:00",
+  "context": {
+    "patientuid": "6954b55ad31bff20aae395cc",
+    "patientvisituid": "6a029f200a05f7b80c49e3a0",
+    "hn": "48-26-000146",
+    "patientName": "MR. HANS  WUETHRICH"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {
+    "6a029f200a05f7b80c49e3a0": {
+      "kind": "homeMedSheet",
+      "meds": [
+        {
+          "drug": "Atozet 10/20 mg FC TABLET",
+          "instruction": "Take 1 Tablet Orally Once Daily After Dinner",
+          "note": "X ( antihyperlipidemia )",
+          "quantity": "40 Tablet",
+          "code": "51003100201010",
+          "provider": "ยุทธพงษ์ เต็มธนะกิจไพศาล, นพ."
+        },
+        {
+          "drug": "Concor (**2.5 Mg**) ขาว Tablet //",
+          "instruction": "Take 1 Tablet Orally Once Daily After Breakfast",
+          "note": "Hypertention",
+          "quantity": "40 Tablet",
+          "code": "51121725000002",
+          "provider": "ยุทธพงษ์ เต็มธนะกิจไพศาล, นพ."
+        },
+        {
+          "drug": "NasONEX (140 Dose) Nasal Spray",
+          "instruction": "Spray into the nostril 2 SPRAY(S) (Nasal) 2 Time Daily Morning and Evening",
+          "note": "( For External Use Only ) Shake well before use",
+          "quantity": "1 Bottle",
+          "code": "51181749000005",
+          "provider": "บุญส่ง พัจนสุนทร, รศ. นพ."
+        },
+        {
+          "drug": "Spiriva Combopack",
+          "instruction": "สูดผ่านปาก 1 แคปซูล ครั้งหนึ่งทุกวัน",
+          "note": "Spiriva (18 mcg)with Handihaler Set(box)",
+          "quantity": "1 Set",
+          "code": "51161524000001",
+          "provider": "บุญส่ง พัจนสุนทร, รศ. นพ."
+        },
+        {
+          "drug": "Xarelto (** 15 mg **) Tablet ><",
+          "instruction": "Take 1 Tablet Orally 2 Times Daily After Breakfast and Dinner",
+          "note": "",
+          "quantity": "30 Tablet",
+          "code": "51002010124002",
+          "provider": "บุญส่ง พัจนสุนทร, รศ. นพ."
+        },
+        {
+          "drug": "Bilaxten TABLET (20 mg) @",
+          "instruction": "Take 1 Tablet Orally Once Daily Before Breakfast",
+          "note": "For Allergy-running Nose-itching, (Take 1 hour before meals or 2 hours after meals)",
+          "quantity": "15 Tablet",
+          "code": "51018060124004",
+          "provider": "บุญส่ง พัจนสุนทร, รศ. นพ."
+        },
+        {
+          "drug": "Duodart (0.5/0.4mg) CAPSULE (ยานอกบัญชี)",
+          "instruction": "Take 1 Tablet Orally Once Daily Before Bedtime",
+          "note": "",
+          "quantity": "7 Capsule",
+          "code": "51182014000002",
+          "provider": "นนท์ ว่องวิทวัส, นพ."
+        },
+        {
+          "drug": "Meiact Tablet (200 mg)",
+          "instruction": "Take 1 Tablet Orally 2 Times Daily After Breakfast and Dinner",
+          "note": "Antibiotic (Take until finished)",
+          "quantity": "10 Tablet",
+          "code": "51101583000003",
+          "provider": "นนท์ ว่องวิทวัส, นพ."
+        }
+      ],
+      "savedAt": "2026-06-01T03:25:10.514Z",
+      "fetchedAt": "2026-06-01T03:25:10.533875+00:00"
+    }
+  }
+}

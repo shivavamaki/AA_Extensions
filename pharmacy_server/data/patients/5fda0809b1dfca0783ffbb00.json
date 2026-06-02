@@ -1,0 +1,17 @@
+{
+  "patientuid": "5fda0809b1dfca0783ffbb00",
+  "createdAt": "2026-06-01T03:13:49.166581+00:00",
+  "updatedAt": "2026-06-01T03:13:49.166581+00:00",
+  "context": {
+    "patientuid": "5fda0809b1dfca0783ffbb00",
+    "patientvisituid": "6a1ae67c214982274abcb62d",
+    "hn": "48-15-015763",
+    "patientName": "MISS TIPTARA  SENKEN"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

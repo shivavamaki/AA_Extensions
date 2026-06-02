@@ -1,0 +1,17 @@
+{
+  "patientuid": "632156498a9b9311a7e22645",
+  "createdAt": "2026-05-31T08:19:30.369842+00:00",
+  "updatedAt": "2026-05-31T09:25:39.207696+00:00",
+  "context": {
+    "patientuid": "632156498a9b9311a7e22645",
+    "patientvisituid": "6a1a64f472e5dd403164fbf7",
+    "hn": "48-15-015763",
+    "patientName": "MISS NUNTHITRA  MUTDEE"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

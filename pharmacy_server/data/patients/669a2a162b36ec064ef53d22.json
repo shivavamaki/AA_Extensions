@@ -1,0 +1,17 @@
+{
+  "patientuid": "669a2a162b36ec064ef53d22",
+  "createdAt": "2026-05-31T11:09:10.350874+00:00",
+  "updatedAt": "2026-05-31T11:09:10.350874+00:00",
+  "context": {
+    "patientuid": "669a2a162b36ec064ef53d22",
+    "patientvisituid": "6a1a6b5a0a56738cadf8f7d6",
+    "hn": "48-24-011586",
+    "patientName": "MISS BENYAPA  ROBSUEK"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

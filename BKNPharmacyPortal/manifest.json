@@ -50,8 +50,6 @@
         "src/core/dom.js",
         "src/core/storage.js",
         "src/shared/shared-data-client.js",
-        "src/features/home-med/parser-home-med.js",
-        "src/features/home-med/content-home-med.js",
         "src/features/med-sticker/parser-order-table.js",
         "src/features/med-sticker/content-med-sticker.js",
         "src/features/med-sticker/content-pomlist.js",
@@ -61,6 +59,7 @@
         "src/features/adrtimeline/adrtimeline-parser-html.js",
         "src/features/adrtimeline/adrtimeline-jasper.js",
         "src/features/adrtimeline/content-adrtimeline.js",
+        "src/features/home-med/content-home-med.js",
         "content_script.js"
       ],
       "css": [
@@ -127,6 +126,8 @@
         "src/vendor/jsbarcode.min.js",
         "src/features/home-med/page-home-med.html",
         "src/features/home-med/page-home-med.js",
+        "src/features/med-journey/page-med-journey.html",
+        "src/features/med-journey/page-med-journey.js",
         "src/features/med-sticker/page-med-sticker.html",
         "src/features/med-sticker/page-med-sticker.js",
         "src/features/patient-sticker/page-patient-sticker.html",

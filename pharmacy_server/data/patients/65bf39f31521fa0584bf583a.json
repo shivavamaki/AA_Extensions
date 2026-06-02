@@ -1,0 +1,29 @@
+{
+  "patientuid": "65bf39f31521fa0584bf583a",
+  "createdAt": "2026-05-31T11:17:49.013466+00:00",
+  "updatedAt": "2026-05-31T11:23:29.269259+00:00",
+  "context": {
+    "patientuid": "65bf39f31521fa0584bf583a",
+    "patientvisituid": "6a15638bad52264a974a0818",
+    "patientId": "48-24-001311",
+    "hn": "48-24-001311",
+    "patientName": "MISS THITINAN  RATTANASAKUNPHET",
+    "loginuid": "63101b44567e610637d41b04",
+    "roleuid": "5b83f09c3238d86bf0d583c7",
+    "organisationuid": "5b20f438d1202e29ce16f710",
+    "parentorguid": "569794170946a3d0d588efe6",
+    "logindepartmentuid": "5ee83dd361de5822deed220d",
+    "gender": "หญิง",
+    "dob": "48-24-001311",
+    "bed": "607",
+    "dept": "Ward 6 / อุทุมพร ภูนุชอภัย, พญ.",
+    "admitDate": "04-10-2532",
+    "pharmacistName": "นาตญา จารย์แปะ, ภญ."
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

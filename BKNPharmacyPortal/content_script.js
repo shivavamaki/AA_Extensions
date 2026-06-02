@@ -582,14 +582,15 @@
    * 2) Insert after IV_INJECT_ANCHOR_SEL only
    */
   function injectIvLabelButton() {
-    if (!isDispensePage()) {
-      const oldBtn = document.getElementById(IV_BTN_ID);
-      if (oldBtn) oldBtn.remove();
-      return;
-    }
+    try {
+      if (!isDispensePage()) {
+        const oldBtn = document.getElementById(IV_BTN_ID);
+        if (oldBtn) oldBtn.remove();
+        return;
+      }
 
-    const anchor = document.querySelector(IV_INJECT_ANCHOR_SEL);
-    if (!anchor) return;
+      const anchor = document.querySelector(IV_INJECT_ANCHOR_SEL);
+      if (!anchor) return;
 
     const existing = document.getElementById(IV_BTN_ID);
     if (existing) {
@@ -636,6 +637,8 @@
 
     anchor.insertAdjacentElement('afterend', btn);
     console.log('[BKN IV Scraper] IV Label button injected after requested anchor selector.');
+  } catch (err) {
+    console.warn('[BKN IV Scraper] injectIvLabelButton failed', err);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -667,7 +670,9 @@
 
   });
 
-  pageObserver.observe(document.body, { childList: true, subtree: true });
+  onBodyReady((body) => {
+    if (body) pageObserver.observe(body, { childList: true, subtree: true });
+  });
 
   // Run once on load in case page is already rendered
   injectIvLabelButton();
@@ -782,6 +787,14 @@
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+  function onBodyReady(cb) {
+    if (document.body) {
+      cb(document.body);
+      return;
+    }
+    window.addEventListener('DOMContentLoaded', () => cb(document.body), { once: true });
+  }
+
   function waitForElement(sel, cb, maxWait = 10000) {
     const el = document.querySelector(sel);
     if (el) { cb(el); return; }
@@ -789,7 +802,9 @@
       const found = document.querySelector(sel);
       if (found) { obs.disconnect(); cb(found); }
     });
-    obs.observe(document.body, { childList: true, subtree: true });
+    onBodyReady((body) => {
+      if (body) obs.observe(body, { childList: true, subtree: true });
+    });
     setTimeout(() => obs.disconnect(), maxWait);
   }
 

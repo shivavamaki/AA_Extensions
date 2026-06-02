@@ -1,0 +1,17 @@
+{
+  "patientuid": "5c066f8d3e4efabebdd458c6",
+  "createdAt": "2026-05-31T08:20:30.102923+00:00",
+  "updatedAt": "2026-05-31T08:20:30.102923+00:00",
+  "context": {
+    "patientuid": "5c066f8d3e4efabebdd458c6",
+    "patientvisituid": "6a1a650f9666d23ad905eab1",
+    "hn": "48-26-006604",
+    "patientName": "MISS NANTHIPOR  MUTDEE"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

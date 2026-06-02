@@ -1,0 +1,17 @@
+{
+  "patientuid": "68ce2b6b75f596eec59cdf39",
+  "createdAt": "2026-06-01T05:15:42.632991+00:00",
+  "updatedAt": "2026-06-01T05:15:42.632991+00:00",
+  "context": {
+    "patientuid": "68ce2b6b75f596eec59cdf39",
+    "patientvisituid": "6a19752265195fc25b7e941d",
+    "hn": "48-25-011960",
+    "patientName": "MASTER JAKGRAPAT  NILAPAN"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

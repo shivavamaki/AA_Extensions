@@ -22,6 +22,10 @@
 
   const SERVER_KEY    = "bknks.serverUrl";   /* matches existing rx_menu key */
   const PATIENT_CACHE = "bkn.patientContext"; /* session cache key */
+  /* Default pharmacy server — same host the rest of the extension hardcodes
+     (popup.js REPORT_SERVER, kpi/knowledge/schedule apps). Used when the user
+     has not explicitly configured bknks.serverUrl. */
+  const SERVER_DEFAULT = "http://10.134.110.81:8765";
 
   let _serverUrlCache = null;
   let _patientCache   = null;
@@ -32,10 +36,12 @@
     return new Promise(resolve => {
       try {
         chrome.storage.local.get([SERVER_KEY], r => {
-          _serverUrlCache = (r && r[SERVER_KEY]) ? String(r[SERVER_KEY]).replace(/\/$/, "") : "";
+          _serverUrlCache = (r && r[SERVER_KEY])
+            ? String(r[SERVER_KEY]).replace(/\/$/, "")
+            : SERVER_DEFAULT;
           resolve(_serverUrlCache);
         });
-      } catch (_) { resolve(""); }
+      } catch (_) { resolve(SERVER_DEFAULT); }
     });
   }
 

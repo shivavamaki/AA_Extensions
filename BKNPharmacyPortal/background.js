@@ -20,6 +20,7 @@ const MSG = Object.freeze({
   OPEN_MED_RECONCILE:      'OPEN_MED_RECONCILE',
   OPEN_ALLERGY_CARD:       'OPEN_ALLERGY_CARD',
   OPEN_MEDICATION_JOURNEY: 'OPEN_MEDICATION_JOURNEY',
+  OPEN_MED_JOURNEY:        'OPEN_MED_JOURNEY',
 });
 
 const tabRegistry = {
@@ -29,6 +30,7 @@ const tabRegistry = {
   aa_medReconcile:      null,
   aa_allergyCard:       null,
   aa_medicationJourney: null,
+  aa_medJourney:        null,
 };
 
 const ROUTE_MAP = {
@@ -38,6 +40,7 @@ const ROUTE_MAP = {
   [MSG.OPEN_MED_RECONCILE]:      { key: 'aa_medReconcile',       url: 'src/features/patient-sticker/page-med-reconcile.html' },
   [MSG.OPEN_ALLERGY_CARD]:       { key: 'aa_allergyCard',        url: 'src/features/patient-sticker/page-allergy-card.html' },
   [MSG.OPEN_MEDICATION_JOURNEY]: { key: 'aa_medicationJourney',  url: 'src/features/adrtimeline/page-adrtimeline.html' },
+  [MSG.OPEN_MED_JOURNEY]:        { key: 'aa_medJourney',         url: 'src/features/med-journey/page-med-journey.html' },
 };
 
 chrome.tabs.onRemoved.addListener(tabId => {
@@ -264,6 +267,8 @@ function _arcusExtractAngularCtx() {
       if (xhrCtx.patientuid      && !pc.patientuid)      pc.patientuid      = xhrCtx.patientuid;
       if (xhrCtx.patientvisituid && !pc.patientvisituid) pc.patientvisituid = xhrCtx.patientvisituid;
       out._raw.xhrTap = xhrCtx;
+      out._raw.arcusHdrs = window.__arcus_hdrs__ || {};
+      out._raw.medreconMap = window.__arcus_medrecon__ || {};
     } catch (_) {}
 
     if (pc && (pc.patientuid || pc.patientvisituid)) out.patientCtx = pc;
@@ -279,16 +284,120 @@ function _arcusSetupXhrTap() {
   window.__arcus_pctx__ = window.__arcus_pctx__ || {};
   var UID_RE = /[?&]patientuid=([a-f0-9]{24})/i;
   var VID_RE = /[?&]patientvisituid=([a-f0-9]{24})/i;
+
+  /* Session/role UIDs needed to authenticate Jasper reports. These appear in
+     dispense-workbench request URLs and/or JSON bodies under varying casings. */
+  var SESSION_KEYS = [
+    'loginuid', 'roleuid', 'organisationuid', 'parentorguid', 'parentorganisationuid',
+    'logindepartmentuid', 'departmentuid', 'careprovideruid'
+  ];
+  /* alias map: lowercased source key -> canonical key */
+  var KEY_ALIASES = {
+    loginuid: 'loginuid', loginid: 'loginuid', userid: 'loginuid', uid: 'loginuid',
+    roleuid: 'roleuid', roleid: 'roleuid',
+    organisationuid: 'organisationuid', orguid: 'organisationuid', organizationuid: 'organisationuid',
+    parentorguid: 'parentorguid', parentorganisationuid: 'parentorguid',
+    logindepartmentuid: 'logindepartmentuid', deptuid: 'logindepartmentuid',
+    departmentuid: 'departmentuid',
+    careprovideruid: 'careprovideruid', careproviderid: 'careprovideruid'
+  };
+
+  function _store(canonKey, val) {
+    if (!val) return;
+    val = String(val);
+    if (!/^[a-f0-9]{24}$/i.test(val)) return;           // only accept 24-hex ids
+    if (!window.__arcus_pctx__[canonKey]) window.__arcus_pctx__[canonKey] = val;
+  }
+
+  function _scanUrlSession(url) {
+    SESSION_KEYS.forEach(function (k) {
+      var re = new RegExp('[?&]' + k + '=([a-f0-9]{24})', 'i');
+      var m = re.exec(url);
+      if (m && m[1]) _store(k, m[1]);
+    });
+  }
+
+  function _scanObjSession(obj) {
+    if (!obj || typeof obj !== 'object') return;
+    Object.keys(obj).forEach(function (k) {
+      var canon = KEY_ALIASES[k.toLowerCase()];
+      if (canon) _store(canon, obj[k]);
+    });
+  }
+
   function _scan(url) {
     if (!url) return;
     var m;
     m = UID_RE.exec(url); if (m && m[1]) window.__arcus_pctx__.patientuid      = m[1];
     m = VID_RE.exec(url); if (m && m[1]) window.__arcus_pctx__.patientvisituid = m[1];
+    try { _scanUrlSession(url); } catch (_) {}
   }
+  function _scanBody(body) {
+    if (!body || typeof body !== 'string') return;
+    try {
+      var b = JSON.parse(body);
+      if (b.patientuid)      window.__arcus_pctx__.patientuid      = String(b.patientuid);
+      if (b.patientvisituid) window.__arcus_pctx__.patientvisituid = String(b.patientvisituid);
+      if (b.PatientUID && !window.__arcus_pctx__.patientuid)      window.__arcus_pctx__.patientuid      = String(b.PatientUID);
+      if (b.PatientVisitUID && !window.__arcus_pctx__.patientvisituid) window.__arcus_pctx__.patientvisituid = String(b.PatientVisitUID);
+      _scanObjSession(b);
+    } catch (_) {
+      /* Not JSON — scan raw text for the 24-hex ids. */
+      var m;
+      m = UID_RE.exec(body); if (m && m[1]) window.__arcus_pctx__.patientuid      = m[1];
+      m = VID_RE.exec(body); if (m && m[1]) window.__arcus_pctx__.patientvisituid = m[1];
+      try { _scanUrlSession(body); } catch (_) {}
+    }
+  }
+  /* Capture the per-session auth/header values ArcusAir's own API requires
+     (incus-token + appname/utcoffset). These ride as XHR request HEADERS, not
+     URL/body, so hook setRequestHeader. Stored in window.__arcus_hdrs__. */
+  window.__arcus_hdrs__ = window.__arcus_hdrs__ || {};
+  var HDR_KEYS = { 'incus-token': 1, 'appname': 1, 'utcoffset': 1,
+                   'hasanonymouspermission': 1 };
+  var _origSetHdr = XMLHttpRequest.prototype.setRequestHeader;
+  XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
+    try {
+      var k = String(name || '').toLowerCase();
+      if (HDR_KEYS[k] && value != null && value !== '') {
+        window.__arcus_hdrs__[k] = String(value);
+      }
+    } catch (_) {}
+    return _origSetHdr.apply(this, arguments);
+  };
+
+  /* Map of patientvisituid → medreconcileuid, captured when the pharmacist
+     opens the Med Reconcile screen (the only place the uid appears). Later, on
+     the Dispense Workbench in the same SPA tab, the journey can look it up. */
+  window.__arcus_medrecon__ = window.__arcus_medrecon__ || {};
+  var ID24 = /([a-f0-9]{24})/i;
+
   var _origOpen = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function (method, url) {
-    try { _scan(String(url)); } catch (_) {}
+    try {
+      _scan(String(url));
+      // Tag this XHR if it's a medreconcile call so send() can grab the uid.
+      this.__bkn_medrecon = /\/medreconcile\//i.test(String(url));
+    } catch (_) {}
     return _origOpen.apply(this, arguments);
+  };
+  /* Dispense Workbench passes patientuid/patientvisituid in the XHR request
+     BODY (e.g. getallorderitem), not the URL — scan send() bodies too. */
+  var _origSend = XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.send = function (body) {
+    try { _scanBody(typeof body === 'string' ? body : null); } catch (_) {}
+    // Capture medreconcileuid from a medreconcile request body, keyed by the
+    // patientvisituid currently in context (set by the screen's own list call).
+    try {
+      if (this.__bkn_medrecon && typeof body === 'string') {
+        var mu = '';
+        try { var jb = JSON.parse(body); mu = jb.medreconcileuid || ''; } catch (_) {}
+        if (!mu) { var mm = ID24.exec(body); if (mm) mu = mm[1]; }
+        var vid = window.__arcus_pctx__.patientvisituid || '';
+        if (mu && vid) window.__arcus_medrecon__[vid] = String(mu);
+      }
+    } catch (_) {}
+    return _origSend.apply(this, arguments);
   };
   var _origFetch = window.fetch;
   window.fetch = function (input, init) {

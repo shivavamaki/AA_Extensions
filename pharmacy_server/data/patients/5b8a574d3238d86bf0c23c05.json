@@ -1,0 +1,17 @@
+{
+  "patientuid": "5b8a574d3238d86bf0c23c05",
+  "createdAt": "2026-05-31T08:18:51.786556+00:00",
+  "updatedAt": "2026-05-31T08:18:51.786556+00:00",
+  "context": {
+    "patientuid": "5b8a574d3238d86bf0c23c05",
+    "patientvisituid": "6a195cc45c4a187ddbc97d80",
+    "hn": "48-16-001894",
+    "patientName": "MISS RUNGYADA  PANOMTHORNNIJAKUL"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

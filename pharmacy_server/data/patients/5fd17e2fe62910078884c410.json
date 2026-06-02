@@ -1,0 +1,73 @@
+{
+  "patientuid": "5fd17e2fe62910078884c410",
+  "createdAt": "2026-05-31T11:31:02.674678+00:00",
+  "updatedAt": "2026-06-01T01:59:57.470353+00:00",
+  "context": {
+    "patientuid": "5fd17e2fe62910078884c410",
+    "patientvisituid": "6a1a01c5ca22bdcdb0034bc1",
+    "hn": "48-25-011960",
+    "patientName": "MASTER NACHAWIT  JUMPAWONG"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {
+    "6a1a01c5ca22bdcdb0034bc1": {
+      "kind": "homeMedSheet",
+      "meds": [
+        {
+          "drug": "Ibuprofen Ped 100mg/5mL SUSP 60mL",
+          "instruction": "Take ทุก 6 ชั่วโมง เวลามีไข้สูง",
+          "note": "",
+          "quantity": "1",
+          "code": "",
+          "provider": "ปราญชลี ศรีบุตตะ, พญ."
+        },
+        {
+          "drug": "Aerius Oral Solution 60 Ml",
+          "instruction": "Take วันละ 1 ครั้ง หลังอาหารเย็น",
+          "note": "",
+          "quantity": "1",
+          "code": "",
+          "provider": "รัฐพล อุปลา, รศ. นพ."
+        },
+        {
+          "drug": "Prospan Cough SYRUP (100 mL)",
+          "instruction": "Take วันละ 2 ครั้ง หลังอาหาร เช้า เย็น",
+          "note": "",
+          "quantity": "1",
+          "code": "",
+          "provider": "รัฐพล อุปลา, รศ. นพ."
+        },
+        {
+          "drug": "ZITHROmax Susp. (200 mg/5 mL) (15 mL)",
+          "instruction": "Take วันละ 1 ครั้ง ก่อนอาหารเย็น",
+          "note": "",
+          "quantity": "1",
+          "code": "",
+          "provider": "รัฐพล อุปลา, รศ. นพ."
+        },
+        {
+          "drug": "Betadine Throat Spray (12 mL)",
+          "instruction": "Spray into the Mouth วันละ 3 ครั้ง เช้า กลางวัน เย็น เวลามีอาการ",
+          "note": "",
+          "quantity": "1",
+          "code": "",
+          "provider": "รัฐพล อุปลา, รศ. นพ."
+        },
+        {
+          "drug": "Bakamol Syrup (120 mg/5 mL)(60 mL)",
+          "instruction": "รับประทาน ทุก 4-6 ชั่วโมง เวลามีอาการ",
+          "note": "",
+          "quantity": "1",
+          "code": "",
+          "provider": "ปราญชลี ศรีบุตตะ, พญ."
+        }
+      ],
+      "savedAt": "2026-06-01T01:59:57.363Z",
+      "fetchedAt": "2026-06-01T01:59:57.470353+00:00"
+    }
+  }
+}

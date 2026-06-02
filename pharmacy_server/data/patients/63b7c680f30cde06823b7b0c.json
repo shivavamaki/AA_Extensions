@@ -1,0 +1,17 @@
+{
+  "patientuid": "63b7c680f30cde06823b7b0c",
+  "createdAt": "2026-05-31T08:21:10.257578+00:00",
+  "updatedAt": "2026-05-31T08:21:10.257578+00:00",
+  "context": {
+    "patientuid": "63b7c680f30cde06823b7b0c",
+    "patientvisituid": "6a1bd24f068223fa1865cdc6",
+    "hn": "48-26-006604",
+    "patientName": "MISS JINNA  BUTAKHIEW"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}
