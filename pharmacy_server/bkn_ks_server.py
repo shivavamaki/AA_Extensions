@@ -65,6 +65,12 @@ import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
+import http.cookiejar
+import struct
+import threading
+import time
+import random
+import unicodedata
 from datetime import datetime, timezone
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
@@ -355,11 +361,215 @@ def _create_session(username, role):
     return token
 
 
+# ── Live dashboard ──────────────────────────────────────────────
+_STATS_LOCK   = threading.Lock()
+_req_count    = 0
+_recent_reqs  = []   # (time_str, method, path, status)
+_SERVER_START = None
+
+def _record_request(method, path, status):
+    global _req_count
+    ts = datetime.now().strftime('%H:%M:%S')
+    with _STATS_LOCK:
+        _req_count += 1
+        _recent_reqs.append((ts, method, path[:40], str(status)))
+        if len(_recent_reqs) > 5:
+            _recent_reqs.pop(0)
+
+# ANSI escape helpers
+_ESC_HIDE  = '\033[?25l'
+_ESC_SHOW  = '\033[?25h'
+_ESC_HOME  = '\033[H'
+_ESC_CLEAR = '\033[2J'
+_RST = '\033[0m'
+_CY  = '\033[1;36m'   # bright cyan
+_GN  = '\033[1;32m'   # bright green
+_RD  = '\033[1;31m'   # bright red
+_YL  = '\033[1;33m'   # bright yellow
+_BL  = '\033[0;34m'   # blue
+_MG  = '\033[1;35m'   # bright magenta
+_WH  = '\033[1;37m'   # bright white
+
+# Box width (chars between ║ walls)
+_BW = 62
+
+def _vis_len(s):
+    """Display column width of s, stripping ANSI escapes and counting wide chars."""
+    plain = re.sub(r'\033\[[^m]*m', '', s)
+    w = 0
+    for c in plain:
+        eaw = unicodedata.east_asian_width(c)
+        w += 2 if eaw in ('W', 'F') else 1
+    return w
+
+def _bline(content, width=_BW):
+    """Pad content to visual width and wrap in ║...║."""
+    pad = max(0, width - _vis_len(content))
+    return '║' + content + ' ' * pad + '║'
+
+def _sep(l='╠', m='═', r='╣', width=_BW):
+    return l + m * width + r
+
+
+class _MaprangGame:
+    """Auto-play ASCII game: Maprang chases falling items."""
+    W = 40   # play area width (all ASCII = 1 col each)
+    H = 5    # rows items fall through before ground
+
+    _SYMS = [('+', _CY), ('o', _RD), ('*', _YL), ('%', _MG)]
+    _WALK = ['(o^o)', '(^_^)', '(o^o)', '(-‿-)']
+    _MSGS = [
+        _GN + 'มาปรางเก่งมาก!' + _RST,
+        _YL + 'やったー! ✨' + _RST,
+        _CY + 'Catch it! 💖' + _RST,
+        _MG + 'สู้ๆนะ มาปราง! 🎀' + _RST,
+        _WH + 'Yes!! 🎉' + _RST,
+    ]
+
+    def __init__(self):
+        self.mx    = self.W // 2
+        self.score = 0
+        self.msg   = ''
+        self.msg_t = 0
+        self.items = []   # [x, y, sym, color]
+        self.tick  = 0
+        self.walk  = 0
+
+    def step(self):
+        self.tick += 1
+        if self.tick % 18 == 0 and len(self.items) < 6:
+            sym, col = random.choice(self._SYMS)
+            self.items.append([random.randint(1, self.W - 2), 0, sym, col])
+        for item in self.items:
+            item[1] += 1
+        # Chase nearest active item
+        active = [i for i in self.items if i[1] < self.H]
+        if active:
+            tx = min(active, key=lambda i: abs(i[0] - self.mx))[0]
+            if tx < self.mx:
+                self.mx = max(1, self.mx - 1)
+            elif tx > self.mx:
+                self.mx = min(self.W - 2, self.mx + 1)
+        # Catch items that reached ground
+        caught  = [i for i in self.items if i[1] >= self.H and abs(i[0] - self.mx) <= 1]
+        missed  = [i for i in self.items if i[1] >= self.H and i not in caught]
+        if caught:
+            self.score += len(caught)
+            self.msg    = random.choice(self._MSGS)
+            self.msg_t  = 20
+        self.items = [i for i in self.items if i[1] < self.H]
+        if self.msg_t > 0:
+            self.msg_t -= 1
+        else:
+            self.msg = ''
+        self.walk = (self.walk + 1) % 4
+
+    def render(self):
+        """List of strings (with ANSI) for the play area including borders."""
+        lines = [_BL + '┌' + '─' * self.W + '┐' + _RST]
+        for row in range(self.H):
+            cells = [' '] * self.W
+            for x, y, sym, col in self.items:
+                if y == row and 0 <= x < self.W:
+                    cells[x] = col + sym + _RST
+            lines.append(_BL + '│' + _RST + ''.join(cells) + _BL + '│' + _RST)
+        # Ground row — Maprang
+        ground = [' '] * self.W
+        face   = self._WALK[self.walk]
+        for i, ch in enumerate(face):
+            xi = self.mx - 2 + i
+            if 0 <= xi < self.W:
+                ground[xi] = _GN + ch + _RST
+        lines.append(_BL + '│' + _RST + ''.join(ground) + _BL + '│' + _RST)
+        lines.append(_BL + '└' + '─' * self.W + '┘' + _RST)
+        return lines
+
+
+def _enable_ansi():
+    """Enable ANSI VT sequences in Windows 10+ cmd.exe."""
+    if os.name == 'nt':
+        os.system('')
+
+
+def _run_dashboard(ip, port):
+    """Background thread: redraws animated terminal dashboard at ~5 fps."""
+    _enable_ansi()
+    game = _MaprangGame()
+    sys.stdout.write(_ESC_HIDE)
+    sys.stdout.flush()
+
+    def uptime_str():
+        s = int(time.time() - _SERVER_START)
+        return f'{s // 3600:02}:{(s % 3600) // 60:02}:{s % 60:02}'
+
+    while True:
+        try:
+            game.step()
+            out = [_ESC_HOME + _ESC_CLEAR]
+
+            # ── Title ──────────────────────────────────────────────
+            out.append(_BL + _sep('╔', '═', '╗') + _RST)
+            out.append(_bline(_WH + '  BKN Pharmacy — Knowledge Sharing Server' + _RST))
+
+            # ── Server info ────────────────────────────────────────
+            out.append(_BL + _sep() + _RST)
+            up   = uptime_str()
+            url  = f'  🌐  http://{ip}:{port}'
+            with _STATS_LOCK:
+                rc   = _req_count
+                last = (_recent_reqs[-1][1] + ' ' + _recent_reqs[-1][2]) if _recent_reqs else '—'
+            out.append(_bline(f'{url}      {_CY}⏱ Uptime: {up}{_RST}'))
+            req_s  = f'  📊  Requests: {rc}'
+            last_s = last[:_BW - _vis_len(req_s) - 12]
+            out.append(_bline(f'{req_s}   {_YL}Last: {last_s}{_RST}'))
+
+            # ── Maprang game ───────────────────────────────────────
+            out.append(_BL + _sep() + _RST)
+            score_s = _YL + f'⭐ Score: {game.score}' + _RST
+            out.append(_bline(f'  {_MG}🌸 Maprang Plays! 🌸{_RST}       {score_s}'))
+            out.append(_bline(''))
+            for pl in game.render():
+                out.append(_bline('  ' + pl))
+            msg_s = game.msg or ''
+            out.append(_bline(f'  {msg_s}'))
+
+            # ── Recent requests ────────────────────────────────────
+            out.append(_BL + _sep() + _RST)
+            out.append(_bline(_WH + '  Recent requests:' + _RST))
+            with _STATS_LOCK:
+                recent = list(_recent_reqs[-4:])
+            while len(recent) < 4:
+                recent.insert(0, None)
+            for entry in recent:
+                if entry:
+                    ts, method, path, status = entry
+                    sc = _GN if status.startswith('2') else (_YL if status.startswith('3') else _RD)
+                    row = f'  [{_CY}{ts}{_RST}]  {_WH}{method:<6}{_RST}  {path:<36}  {sc}{status}{_RST}'
+                else:
+                    row = ''
+                out.append(_bline(row))
+
+            # ── Footer ─────────────────────────────────────────────
+            out.append(_BL + _sep() + _RST)
+            out.append(_bline(f'  {_WH}Press Ctrl+C to stop the server{_RST}'))
+            out.append(_BL + _sep('╚', '═', '╝') + _RST)
+
+            sys.stdout.write('\n'.join(out) + '\n')
+            sys.stdout.flush()
+        except Exception:
+            pass
+        time.sleep(0.2)
+
+
 # ── HTTP handler ───────────────────────────────────────────────
 class Handler(BaseHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
-        print(f'  [{self.address_string()}]  {fmt % args}')
+        try:
+            _record_request(self.command, self.path, args[1] if len(args) > 1 else '?')
+        except Exception:
+            pass
+        # Suppress default stderr output — the dashboard shows it.
 
     def _cors(self):
         self.send_header('Access-Control-Allow-Origin',  '*')
@@ -969,34 +1179,22 @@ def main():
             p.write_text(empty, encoding='utf-8')
     _ensure_default_users()
 
+    global _SERVER_START
     ip = get_local_ip()
     Handler._ip   = ip
     Handler._port = port
     server = ThreadingHTTPServer(('0.0.0.0', port), Handler)
 
-    print()
-    print('  ╔══════════════════════════════════════════════╗')
-    print('  ║   BKN Pharmacy — Knowledge Sharing Server    ║')
-    print('  ╚══════════════════════════════════════════════╝')
-    print()
-    print(f'  Server URL  :  http://{ip}:{port}')
-    print(f'  KPI data    :  {KPI_DIR.resolve()}')
-    print(f'  KS data     :  {KS_DIR.resolve()}')
-    print(f'  RX data     :  {RX_DIR.resolve()}')
-    print(f'  Med images  :  {MED_IMAGES_DIR.resolve()}  ({len(list(MED_IMAGES_DIR.glob("*")))} files)')
-    print()
-    print('  ── How to connect ──────────────────────────────')
-    print('  1. Copy the Server URL above.')
-    print('  2. Open the KPI or Knowledge app in the extension.')
-    print('  3. Set Server URL → Save.')
-    print()
-    print('  Press Ctrl+C to stop.')
-    print()
+    _SERVER_START = time.time()
+    _enable_ansi()
+    t = threading.Thread(target=_run_dashboard, args=(ip, port), daemon=True)
+    t.start()
 
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print('\n  Server stopped.')
+        sys.stdout.write(_ESC_SHOW + '\n  Server stopped.\n')
+        sys.stdout.flush()
 
 
 if __name__ == '__main__':
