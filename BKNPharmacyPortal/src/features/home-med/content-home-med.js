@@ -82,80 +82,18 @@
     } catch (_) { /* extension context may be gone; harmless */ }
   }
 
-  /* ─────────────────────────────────────────────
-   * Button target — same dispense toolbar span as the
-   * Medication Sticker button (content-med-sticker.js).
-   * ───────────────────────────────────────────── */
-  const TOOLBAR_SPAN_SEL =
-    "body > div.full-height.ng-scope.layout-row > div > md-content > md-content" +
-    " > div > md-card > md-content.md-whiteframe-z2.padding-left-14-imp.margin-5" +
-    ".stickydiv.incus-border-1.overflow-x-hide.ng-scope._md.md-incustheme-theme" +
-    ".width-70-per > div.ng-isolate-scope.flex-initial > div.margin-top-7-imp.layout-row > span";
-
-  function getToolbarSpan() {
-    return document.querySelector(TOOLBAR_SPAN_SEL);
-  }
-
-  function findDirectToolGroup(span) {
-    if (!span) return null;
-    for (const child of span.children) {
-      if (child.classList?.contains("bkn-tool-group")) return child;
-    }
-    return null;
-  }
-
   function getOrCreateDispenseToolGroup() {
-    // Prefer the single shared group anchored after #paprint (patient banner).
-    // On the dispense workbench the banner is present, so all features collapse
-    // into one group there instead of a second one in the toolbar span.
+    // Single source of truth: patient-sticker's #paprint group. Do NOT build a
+    // second group in the toolbar span — that produced duplicate 💊 groups on
+    // the dispense workbench (which has both anchors). If the shared group does
+    // not exist yet, bail and wait for the next observer tick.
     const sharedFactory = document[Symbol.for("__BKN_TOOL_GROUP_FACTORY__")];
-    if (typeof sharedFactory === "function") {
-      const shared = sharedFactory();
-      if (shared) return shared;
-    }
-    const existing = document.querySelector(".bkn-tool-group");
-    if (existing) return existing;
-
-    const span = getToolbarSpan();
-    if (!span) return null;
-
-    let group = findDirectToolGroup(span);
-    if (group) {
-      group.classList.add("bkn-dispense-tool-group");
-      return group;
-    }
-
-    group = document.createElement("span");
-    group.className = "bkn-tool-group bkn-dispense-tool-group";
-    group.setAttribute("role", "group");
-    group.setAttribute("aria-label", "BKN Pharmacy tools");
-
-    const trigger = document.createElement("button");
-    trigger.type = "button";
-    trigger.className = "bkn-tool-trigger";
-    trigger.title = "BKN Pharmacy tools";
-    trigger.textContent = "💊";
-    trigger.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); });
-
-    const flyout = document.createElement("span");
-    flyout.className = "bkn-tool-flyout";
-
-    group.appendChild(trigger);
-    group.appendChild(flyout);
-    span.appendChild(group);
-    return group;
-  }
-
-  function cleanupDispenseToolGroup() {
-    const group = findDirectToolGroup(getToolbarSpan());
-    if (!group?.classList?.contains("bkn-dispense-tool-group")) return;
-    const flyout = group?.querySelector(".bkn-tool-flyout");
-    if (group && flyout && !flyout.children.length) group.remove();
+    if (typeof sharedFactory === "function") return sharedFactory();
+    return document.querySelector(".bkn-tool-group");
   }
 
   function removeHomeMedButtons() {
     document.querySelectorAll(".hm-sheet-btn, .hm-journey-btn").forEach((btn) => btn.remove());
-    cleanupDispenseToolGroup();
   }
 
   function ensureFlyoutButton(flyout, selector, opts) {
