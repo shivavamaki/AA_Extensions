@@ -1,7 +1,7 @@
 {
   "patientuid": "6a114cb7fb5f1a857ecbaeed",
   "createdAt": "2026-05-31T06:21:13.773001+00:00",
-  "updatedAt": "2026-05-31T06:21:13.773001+00:00",
+  "updatedAt": "2026-06-02T04:32:59.952799+00:00",
   "context": {
     "patientuid": "6a114cb7fb5f1a857ecbaeed",
     "patientvisituid": "6a116d474413670575b7a423",
@@ -13,5 +13,53 @@
     "customMedications": [],
     "adrEvent": null
   },
-  "medicationCache": {}
+  "medicationCache": {
+    "6a116d474413670575b7a423": {
+      "kind": "homeMedSheet",
+      "meds": [
+        {
+          "drug": "Dramamine 50 Mg Tab",
+          "instruction": "Take 1 Tablet Orally Every 6 Hours If Needed For Dizziness",
+          "note": "",
+          "quantity": "10 Tablet",
+          "code": "51171820000002",
+          "provider": "พิมพ์วิมล จันทร์แสง, พญ."
+        },
+        {
+          "drug": "SERMION (**30 mg**) Tablet //",
+          "instruction": "Take 1 Tablet Orally Once Daily After Breakfast",
+          "note": "",
+          "quantity": "14 Tablet",
+          "code": "51141705000002",
+          "provider": "พิมพ์วิมล จันทร์แสง, พญ."
+        },
+        {
+          "drug": "Serc 24 mg TABLET",
+          "instruction": "Take 1 Tablet Orally 2 Times Daily After Breakfast and Dinner",
+          "note": "",
+          "quantity": "28 Tablet",
+          "code": "51161608000002",
+          "provider": "พิมพ์วิมล จันทร์แสง, พญ."
+        },
+        {
+          "drug": "Nasic cleanse (10 sachets with bottle)",
+          "instruction": "Use As Nasal Wash 1 Pack (Nasal) 2 Time Daily Morning and Evening",
+          "note": "ผสม 1 ซอง กับน้ำ 250 มล",
+          "quantity": "1 Set",
+          "code": "42143502000007",
+          "provider": "สงวนศักดิ์ ธนาวิรัตนานิจ, ศ. นพ."
+        },
+        {
+          "drug": "NSS 0.9% (P) Irrigate 1000 mL",
+          "instruction": "As Directed (Nasal) 2 Time Daily Morning and Evening",
+          "note": "ล้างโพรงจมูก เช้า-เย็น",
+          "quantity": "5 Bottle",
+          "code": "51102714000034",
+          "provider": "พิมพ์วิมล จันทร์แสง, พญ."
+        }
+      ],
+      "savedAt": "2026-06-02T04:29:15.983Z",
+      "fetchedAt": "2026-06-02T04:29:15.788294+00:00"
+    }
+  }
 }

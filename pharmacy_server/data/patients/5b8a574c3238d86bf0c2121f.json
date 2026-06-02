@@ -1,11 +1,11 @@
 {
   "patientuid": "5b8a574c3238d86bf0c2121f",
   "createdAt": "2026-06-02T02:36:34.708222+00:00",
-  "updatedAt": "2026-06-02T02:37:19.109844+00:00",
+  "updatedAt": "2026-06-02T03:40:32.817101+00:00",
   "context": {
     "patientuid": "5b8a574c3238d86bf0c2121f",
     "patientvisituid": "6a1bdd6b0094b8b965656bc1",
-    "hn": "48-14-002086",
+    "hn": "48-14-000263",
     "patientName": "MRS. SUPHA  NAH"
   },
   "adrTimeline": {
@@ -13,5 +13,164 @@
     "customMedications": [],
     "adrEvent": null
   },
-  "medicationCache": {}
+  "medicationCache": {
+    "6a1bdd6b0094b8b965656bc1__journey": {
+      "kind": "medJourney",
+      "rows": [
+        {
+          "drug": "Goofice TABLET (5 mg)",
+          "code": "51171614000006",
+          "admission": "",
+          "ward": "Take 2 Tablet Orally Once",
+          "home": "Take 2 Tablet Orally Once Daily Before Breakfast",
+          "status": "continued",
+          "note": "",
+          "provider": "ศุภวดี วงศ์นิจศีล, พญ."
+        },
+        {
+          "drug": "Colpermin Capsule",
+          "code": "51001020106001",
+          "admission": "",
+          "ward": "Take 1 Capsule Orally 3 Times Daily Before Breakfast Lunch and Dinner",
+          "home": "Take 1 Capsule Orally 3 Times Daily Before Breakfast Lunch and Dinner If needed",
+          "status": "continued",
+          "note": "Antispasmodic",
+          "provider": "ศุภวดี วงศ์นิจศีล, พญ."
+        },
+        {
+          "drug": "Neurontin (100 Mg) Capsule //",
+          "code": "51141517000002",
+          "admission": "",
+          "ward": "Take 1 Capsule Orally 3 Times Daily After Breakfast Lunch and Dinner",
+          "home": "Take 1 Capsule Orally 3 Times Daily After Breakfast Lunch and Dinner",
+          "status": "continued",
+          "note": "(Do not take with antacid) May cause drowsiness",
+          "provider": "ศุภวดี วงศ์นิจศีล, พญ."
+        },
+        {
+          "drug": "Dayvigo 5 mg TABLET",
+          "code": "51141812000006",
+          "admission": "",
+          "ward": "Take 1 Tablet Orally As directed",
+          "home": "",
+          "status": "stopped",
+          "note": "Insomnia",
+          "provider": "ศุภวดี วงศ์นิจศีล, พญ."
+        },
+        {
+          "drug": "Meteospasmyl CAPSULE (60/300 mg)",
+          "code": "51001030601011",
+          "admission": "",
+          "ward": "Take 1 Tablet Orally 3 Times Daily Before Breakfast Lunch and Dinner",
+          "home": "",
+          "status": "stopped",
+          "note": "",
+          "provider": "ศุภวดี วงศ์นิจศีล, พญ."
+        },
+        {
+          "drug": "Fleet Enema (Adult)",
+          "code": "51171622000004",
+          "admission": "",
+          "ward": "Use as Enema 1 Bottle Into Rectal Once",
+          "home": "",
+          "status": "stopped",
+          "note": "( For External Use Only )",
+          "provider": "ศุภวดี วงศ์นิจศีล, พญ."
+        },
+        {
+          "drug": "INJECTION Prevacid (30 mg)",
+          "code": "51171906000004",
+          "admission": "",
+          "ward": "Inject 30 Milligram IntraVenously Once Daily Morning",
+          "home": "",
+          "status": "stopped",
+          "note": "Use Within 1 Hr After Reconstitution with NSS,D5W Stability After Dilution: D5W 5Hrs,NSS 12Hrs",
+          "provider": "ศุภวดี วงศ์นิจศีล, พญ."
+        },
+        {
+          "drug": "Morphine Inj (3 Mg/3 Ml)Prefilled Syringe>< #",
+          "code": "51142206000018",
+          "admission": "",
+          "ward": "Inject 3 Milligram IntraVenously Once",
+          "home": "",
+          "status": "stopped",
+          "note": "",
+          "provider": "ฐปนวงศ์ มิตรสูงเนิน, ผศ. นพ."
+        },
+        {
+          "drug": "NSS 0.9 % (P) INJ 100 mL",
+          "code": "51191602000033",
+          "admission": "",
+          "ward": "Infuse 1 Bag IntraVenously Every 24 Hours",
+          "home": "",
+          "status": "stopped",
+          "note": "",
+          "provider": "ฐปนวงศ์ มิตรสูงเนิน, ผศ. นพ."
+        },
+        {
+          "drug": "Acupan INJ (20 mg/2 mL) Amp",
+          "code": "51014020207002",
+          "admission": "",
+          "ward": "Inject 20 Milligram Intermittent Once",
+          "home": "",
+          "status": "stopped",
+          "note": "Should be given by slow IV infusion",
+          "provider": "ฐปนวงศ์ มิตรสูงเนิน, ผศ. นพ."
+        },
+        {
+          "drug": "Controloc INJECTION IV (40 mg) $$#",
+          "code": "51171915000004",
+          "admission": "",
+          "ward": "Inject 80 Milligram IntraVenously Once",
+          "home": "",
+          "status": "stopped",
+          "note": "",
+          "provider": "ฐปนวงศ์ มิตรสูงเนิน, ผศ. นพ."
+        },
+        {
+          "drug": "Hyoscine 20 mg/mL INJ Amp",
+          "code": "51172107000005",
+          "admission": "",
+          "ward": "Inject 20 Milligram Intravenous Bolus Take Now",
+          "home": "",
+          "status": "stopped",
+          "note": "SC, IM or slow IV",
+          "provider": "ฐปนวงศ์ มิตรสูงเนิน, ผศ. นพ."
+        }
+      ],
+      "savedAt": "2026-06-02T03:00:38.395Z",
+      "fetchedAt": "2026-06-02T03:00:38.466231+00:00"
+    },
+    "6a1bdd6b0094b8b965656bc1": {
+      "kind": "homeMedSheet",
+      "meds": [
+        {
+          "drug": "Goofice TABLET (5 mg)",
+          "instruction": "Take 2 Tablet Orally Once Daily Before Breakfast",
+          "note": "",
+          "quantity": "28 Tablet",
+          "code": "51171614000006",
+          "provider": "ศุภวดี วงศ์นิจศีล, พญ."
+        },
+        {
+          "drug": "Colpermin Capsule",
+          "instruction": "Take 1 Capsule Orally 3 Times Daily Before Breakfast Lunch and Dinner If needed",
+          "note": "Antispasmodic",
+          "quantity": "15 Capsule",
+          "code": "51001020106001",
+          "provider": "ศุภวดี วงศ์นิจศีล, พญ."
+        },
+        {
+          "drug": "Neurontin (100 Mg) Capsule //",
+          "instruction": "Take 1 Capsule Orally 3 Times Daily After Breakfast Lunch and Dinner",
+          "note": "(Do not take with antacid) May cause drowsiness",
+          "quantity": "21 Capsule",
+          "code": "51141517000002",
+          "provider": "ศุภวดี วงศ์นิจศีล, พญ."
+        }
+      ],
+      "savedAt": "2026-06-02T03:04:42.290Z",
+      "fetchedAt": "2026-06-02T03:04:42.306174+00:00"
+    }
+  }
 }
