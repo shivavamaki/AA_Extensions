@@ -637,8 +637,9 @@
 
     anchor.insertAdjacentElement('afterend', btn);
     console.log('[BKN IV Scraper] IV Label button injected after requested anchor selector.');
-  } catch (err) {
-    console.warn('[BKN IV Scraper] injectIvLabelButton failed', err);
+    } catch (err) {
+      console.warn('[BKN IV Scraper] injectIvLabelButton failed', err);
+    }
   }
 
   function handleArcusAirRouteChange() {
