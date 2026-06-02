@@ -80,10 +80,18 @@
 
   tryInsertButton();
 
-  new MutationObserver(tryInsertButton).observe(document.body, {
-    childList: true,
-    subtree:   true,
-  });
+  // Debounce to one run per animation frame. The handler mutates the DOM, which
+  // would otherwise re-trigger this observer synchronously on every Angular
+  // re-render — pegging the CPU and freezing the dispense workbench.
+  let _scheduled = false;
+  new MutationObserver(() => {
+    if (_scheduled) return;
+    _scheduled = true;
+    requestAnimationFrame(() => {
+      _scheduled = false;
+      tryInsertButton();
+    });
+  }).observe(document.body, { childList: true, subtree: true });
 
   window.addEventListener("hashchange", tryInsertButton);
   window.addEventListener("popstate",   tryInsertButton);

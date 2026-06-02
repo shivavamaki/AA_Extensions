@@ -304,9 +304,18 @@
       className: "hm-journey-btn", onClick: handleJourneyClick,
     });
 
+    // Reorder only when out of place — moving nodes that are already correct
+    // still fires the MutationObserver, keeping the page in a perpetual
+    // re-render loop. sheet should sit right after the sticker button (or first),
+    // journey right after sheet.
     const stickerBtn = flyout.querySelector(".print-sticker-btn");
-    flyout.insertBefore(sheetBtn, stickerBtn ? stickerBtn.nextSibling : flyout.firstChild);
-    flyout.insertBefore(journeyBtn, sheetBtn.nextSibling);
+    const sheetTarget = stickerBtn ? stickerBtn.nextSibling : flyout.firstChild;
+    if (sheetBtn.nextSibling !== sheetTarget && sheetBtn !== sheetTarget) {
+      flyout.insertBefore(sheetBtn, sheetTarget);
+    }
+    if (journeyBtn.previousSibling !== sheetBtn) {
+      flyout.insertBefore(journeyBtn, sheetBtn.nextSibling);
+    }
   }
 
   // Install the XHR tap without a URL gate so ArcusAir hash-route variations
@@ -318,10 +327,18 @@
 
   syncAll();
 
-  new MutationObserver(syncAll).observe(document.body, {
-    childList: true,
-    subtree:   true,
-  });
+  // Debounce to one run per animation frame. syncButton() mutates the DOM, which
+  // would otherwise re-trigger this observer synchronously on every Angular
+  // re-render — pegging the CPU and freezing the dispense workbench.
+  let _scheduled = false;
+  new MutationObserver(() => {
+    if (_scheduled) return;
+    _scheduled = true;
+    requestAnimationFrame(() => {
+      _scheduled = false;
+      syncAll();
+    });
+  }).observe(document.body, { childList: true, subtree: true });
 
   window.addEventListener("hashchange", syncAll);
   window.addEventListener("popstate",   syncAll);

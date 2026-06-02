@@ -1,0 +1,17 @@
+{
+  "patientuid": "5b8a574c3238d86bf0c219df",
+  "createdAt": "2026-06-02T02:36:25.994040+00:00",
+  "updatedAt": "2026-06-02T02:36:25.994040+00:00",
+  "context": {
+    "patientuid": "5b8a574c3238d86bf0c219df",
+    "patientvisituid": "6a1c6c3d566e91cc6da1afbc",
+    "hn": "48-14-002086",
+    "patientName": "MRS. NATTIYA  CHAIWONGJARAT"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

@@ -1,0 +1,17 @@
+{
+  "patientuid": "5b8a574c3238d86bf0c2121f",
+  "createdAt": "2026-06-02T02:36:34.708222+00:00",
+  "updatedAt": "2026-06-02T02:37:19.109844+00:00",
+  "context": {
+    "patientuid": "5b8a574c3238d86bf0c2121f",
+    "patientvisituid": "6a1bdd6b0094b8b965656bc1",
+    "hn": "48-14-002086",
+    "patientName": "MRS. SUPHA  NAH"
+  },
+  "adrTimeline": {
+    "customEvents": [],
+    "customMedications": [],
+    "adrEvent": null
+  },
+  "medicationCache": {}
+}

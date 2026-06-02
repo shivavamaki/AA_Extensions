@@ -91,9 +91,17 @@
   }
 
   tryInsert();
-  new MutationObserver(tryInsert).observe(document.body, {
-    childList: true,
-    subtree:   true,
-  });
+
+  // Debounce to one run per animation frame so we don't query the DOM on every
+  // Angular mutation batch (contributes to dispense-workbench CPU load).
+  let _scheduled = false;
+  new MutationObserver(() => {
+    if (_scheduled) return;
+    _scheduled = true;
+    requestAnimationFrame(() => {
+      _scheduled = false;
+      tryInsert();
+    });
+  }).observe(document.body, { childList: true, subtree: true });
 
 })();
