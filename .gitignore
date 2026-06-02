@@ -3,7 +3,11 @@ Thumbs.db
 **/Thumbs.db
 
 # ── Pharmacy server: production-written data (never overwrite from git) ──────
-# KPI daily records are written by the server; new files must never be tracked
+# All runtime data under pharmacy_server/data is server-written. New files must
+# never be tracked. Files already committed stay tracked (ignore rules don't
+# untrack); this only stops *new* untracked files from showing up.
+pharmacy_server/data/
+# (kept explicit for clarity)
 pharmacy_server/data/kpi/
 # Temporary Jasper report downloads
 pharmacy_server/data/temp-reports/
