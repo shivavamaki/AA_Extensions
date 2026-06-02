@@ -320,7 +320,57 @@ const HMTranslate = (() => {
 
   /* ================= GOOGLE TRANSLATE ================= */
 
+  /* ===== Persistent translation cache (lang|||sl|||text → translated) =====
+   * Translation is a pure function of (text, lang, sl), so memoizing it is
+   * safe. This avoids re-calling Google Translate when a table/sticker is
+   * re-rendered (e.g. adding/removing a Home Med row re-renders the whole
+   * table) — only genuinely new strings hit the network. */
+  const _CACHE_KEY = "hm:translateCache";
+  let _cache = null;            // Map<string, string>, lazily loaded
+  let _cacheLoad = null;        // in-flight load promise
+  let _cacheDirty = false;
+  let _cacheFlushTimer = null;
+
+  function _hasChromeStorage() {
+    return typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;
+  }
+
+  function _loadCache() {
+    if (_cache) return Promise.resolve(_cache);
+    if (_cacheLoad) return _cacheLoad;
+    _cacheLoad = new Promise((resolve) => {
+      if (!_hasChromeStorage()) { _cache = new Map(); resolve(_cache); return; }
+      try {
+        chrome.storage.local.get(_CACHE_KEY, (res) => {
+          const obj = (res && res[_CACHE_KEY]) || {};
+          _cache = new Map(Object.entries(obj));
+          resolve(_cache);
+        });
+      } catch (_e) { _cache = new Map(); resolve(_cache); }
+    });
+    return _cacheLoad;
+  }
+
+  function _flushCache() {
+    if (!_cacheDirty || !_cache || !_hasChromeStorage()) return;
+    _cacheDirty = false;
+    try {
+      chrome.storage.local.set({ [_CACHE_KEY]: Object.fromEntries(_cache) });
+    } catch (_e) { /* ignore quota/availability errors */ }
+  }
+
+  function _scheduleFlush() {
+    _cacheDirty = true;
+    clearTimeout(_cacheFlushTimer);
+    _cacheFlushTimer = setTimeout(_flushCache, 800);
+  }
+
   async function translateText(text, lang, sl = "auto") {
+
+    const key = lang + "|||" + sl + "|||" + text;
+    const cache = await _loadCache();
+    const hit = cache.get(key);
+    if (hit !== undefined) return hit;
 
     try {
 
@@ -337,7 +387,15 @@ const HMTranslate = (() => {
 
       if (!data || !data[0]) return text;
 
-      return data[0].map(t=>t[0]).join("");
+      const result = data[0].map(t=>t[0]).join("");
+      // Cap the cache so it can't grow unbounded over months of use.
+      if (cache.size >= 5000) {
+        const oldest = cache.keys().next().value;
+        if (oldest !== undefined) cache.delete(oldest);
+      }
+      cache.set(key, result);
+      _scheduleFlush();
+      return result;
 
     }
     catch(e){
