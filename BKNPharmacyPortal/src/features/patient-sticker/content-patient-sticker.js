@@ -477,6 +477,11 @@
    * ═══════════════════════════════════════════════════════════════ */
   const _GROUP_KEY = Symbol.for("__BKN_TOOL_GROUP_FACTORY__");
   function _getOrCreateBknGroup() {
+    // Only inject on patient-specific pages (banner present). Work lists and
+    // dispensing queues also have #paprint but no banner — creating the group
+    // there puts a stopPropagation trigger inside patient-row containers,
+    // which swallows row-click events and blocks Angular navigation.
+    if (!document.querySelector("patient-emr-banner")) return null;
     const paprint = document.querySelector("#paprint");
     if (!paprint || !paprint.parentElement) return null;
     let group = paprint.parentElement.querySelector(":scope > .bkn-tool-group");

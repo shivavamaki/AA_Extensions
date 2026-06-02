@@ -271,6 +271,7 @@
      `document`. Fall back to a self-made group if patient-sticker hasn't
      run yet (the two scripts race during page load). */
   function _getOrCreateBknGroupLocal() {
+    if (!document.querySelector("patient-emr-banner")) return null;
     const paprint = document.querySelector(ANCHOR_SEL);
     if (!paprint || !paprint.parentElement) return null;
     let group = paprint.parentElement.querySelector(":scope > .bkn-tool-group");
@@ -344,11 +345,18 @@
   window.addEventListener("hashchange", _onNavChange);
   window.addEventListener("popstate",   _onNavChange);
 
-  /* MutationObserver — retry injection when Angular renders the tab bar */
+  /* MutationObserver — retry injection when Angular renders the tab bar.
+     RAF-debounced so rapid batch mutations only trigger one check. */
+  let _mjScheduled = false;
   const _observer = new MutationObserver(function () {
-    if (_isOrdersPage() && !document.getElementById("arcus-medj-btn2")) {
-      _injectButton();
-    }
+    if (_mjScheduled) return;
+    _mjScheduled = true;
+    requestAnimationFrame(function () {
+      _mjScheduled = false;
+      if (_isOrdersPage() && !document.getElementById("arcus-medj-btn2")) {
+        _injectButton();
+      }
+    });
   });
   _observer.observe(document.body, { childList: true, subtree: true });
 
