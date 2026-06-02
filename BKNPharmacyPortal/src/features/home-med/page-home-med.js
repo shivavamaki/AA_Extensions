@@ -22,8 +22,6 @@ let _context = null;
 let _medDbByCode = null;
 let _medDbLoadPromise = null;
 
-const MED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "jfif", "webp"];
-
 /* ───────────────────────── Server access (BKNData) ─────────────────────── */
 async function _serverBase() {
   try {
@@ -158,7 +156,9 @@ function _medicineImageCandidates(med) {
     if (hit && hit.hasImage) code = hit.code;
   }
   if (code) {
-    MED_IMAGE_EXTENSIONS.forEach((ext) => candidates.push(`${base}/med-images/${code}.${ext}`));
+    // The server resolves the extension for us (jpg/jpeg/png/jfif/webp/gif/jxl…),
+    // so a single by-code URL is enough — no client-side extension guessing.
+    candidates.push(`${base}/med-image/${encodeURIComponent(code)}`);
   }
   return [...new Set(candidates)];
 }

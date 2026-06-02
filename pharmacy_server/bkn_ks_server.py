@@ -62,6 +62,7 @@ import shutil
 import sys
 import socket
 import tempfile
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -81,6 +82,8 @@ RX_DIR        = DATA_DIR / 'rx'
 AUTH_DIR      = DATA_DIR / 'auth'
 AUTH_FILE     = AUTH_DIR / 'users.json'
 MED_IMAGES_DIR = DATA_DIR / 'med-images'
+# Extensions probed (in order) by the /med-image/:code route before scanning.
+MED_IMAGE_EXTS = ('jpg', 'jpeg', 'png', 'jfif', 'webp', 'gif', 'jxl')
 KS_FILES_DIR  = DATA_DIR / 'ks' / 'files'
 SCHEDULE_DIR      = DATA_DIR / 'schedule'
 TEMP_REPORTS_DIR  = DATA_DIR / 'temp-reports'
@@ -556,20 +559,51 @@ def kpi_file(date_key):
 def _now_iso():
     return datetime.now(timezone.utc).isoformat()
 
+# Per-path write locks serialize concurrent writers to the same file within
+# this process (ThreadingHTTPServer runs each request in its own thread, so two
+# PUTs for the same patient would otherwise race in os.replace).
+_write_locks_guard = threading.Lock()
+_write_locks = {}
+
+def _lock_for(path_str):
+    with _write_locks_guard:
+        lock = _write_locks.get(path_str)
+        if lock is None:
+            lock = threading.Lock()
+            _write_locks[path_str] = lock
+        return lock
+
 def _atomic_write_text(path, text, encoding='utf-8'):
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(prefix=f'.{p.name}.', suffix='.tmp', dir=str(p.parent))
-    try:
-        with os.fdopen(fd, 'w', encoding=encoding) as f:
-            f.write(text)
-        os.replace(tmp_name, str(p))
-    except Exception:
+    target = str(p)
+    # Serialize same-process writers to this exact file.
+    with _lock_for(target):
+        fd, tmp_name = tempfile.mkstemp(prefix=f'.{p.name}.', suffix='.tmp', dir=str(p.parent))
         try:
-            os.unlink(tmp_name)
-        except OSError:
-            pass
-        raise
+            with os.fdopen(fd, 'w', encoding=encoding) as f:
+                f.write(text)
+            # os.replace can transiently fail with WinError 5 (Access denied) on
+            # SMB shares when the destination is briefly locked by another
+            # process (a concurrent reader, antivirus, or indexer). Retry with
+            # backoff before giving up.
+            last_err = None
+            for attempt in range(8):
+                try:
+                    os.replace(tmp_name, target)
+                    last_err = None
+                    break
+                except PermissionError as e:
+                    last_err = e
+                    time.sleep(0.05 * (attempt + 1))
+            if last_err is not None:
+                raise last_err
+        except Exception:
+            try:
+                os.unlink(tmp_name)
+            except OSError:
+                pass
+            raise
 
 def _atomic_write_json(path, data):
     _atomic_write_text(path, json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -990,6 +1024,31 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_file(WWW_DIR / 'index.html', 'text/html; charset=utf-8'); return
         if clean.startswith('/static/'):
             self._serve_file_under(WWW_DIR, urllib.parse.unquote(clean.lstrip('/')), None); return
+
+        # ── Med image by code (any extension) ──────────────────
+        # /med-image/:code — serve whatever file has this stem, so the client
+        # need not guess the extension (covers jpg/jpeg/png/jfif/webp/gif/jxl…).
+        if clean.startswith('/med-image/'):
+            code = _safe_filename(urllib.parse.unquote(clean[11:]))
+            if not code or '.' in code:
+                self.send_json(403, {'error': 'Forbidden'}); return
+            match = None
+            # Fast path: probe common extensions directly (no dir scan).
+            for ext in MED_IMAGE_EXTS:
+                cand = MED_IMAGES_DIR / f'{code}.{ext}'
+                if cand.is_file():
+                    match = cand; break
+            # Fallback: scan for any other extension (gif/jxl/…).
+            if match is None:
+                try:
+                    for p in MED_IMAGES_DIR.iterdir():
+                        if p.is_file() and p.stem == code:
+                            match = p; break
+                except OSError:
+                    pass
+            if match is None:
+                self.send_json(404, {'error': 'File not found'}); return
+            self._serve_file(match, None); return
 
         # ── Med images ─────────────────────────────────────────
         if clean.startswith('/med-images/'):
