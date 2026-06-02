@@ -105,6 +105,17 @@
   }
 
   function getOrCreateDispenseToolGroup() {
+    // Prefer the single shared group anchored after #paprint (patient banner).
+    // On the dispense workbench the banner is present, so all features collapse
+    // into one group there instead of a second one in the toolbar span.
+    const sharedFactory = document[Symbol.for("__BKN_TOOL_GROUP_FACTORY__")];
+    if (typeof sharedFactory === "function") {
+      const shared = sharedFactory();
+      if (shared) return shared;
+    }
+    const existing = document.querySelector(".bkn-tool-group");
+    if (existing) return existing;
+
     const span = getToolbarSpan();
     if (!span) return null;
 
