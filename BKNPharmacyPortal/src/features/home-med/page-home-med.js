@@ -272,8 +272,9 @@ function _cleanValue(value) {
 }
 
 /** Compose the default instruction text shown/edited in the How-to-take cell.
- * The report's `comment` already holds the full instruction line
- * (e.g. "Take วันละ 3 ครั้ง หลังอาหาร เช้า กลางวัน เย็น"), so prefer it as-is.
+ * The report's `comment` already holds the full English instruction line
+ * (e.g. "Take 1 Capsule Orally 1 Time Daily ..."), so prefer it as-is — the
+ * offline pattern engine localises the whole line to Thai on first load.
  * `route`/`dosage`/`frequency` are only fallbacks when comment is empty — and
  * we never prepend `route` to `comment` (it doubled the verb: "Take Take …"). */
 function _instructionText(med) {
@@ -285,12 +286,17 @@ function _instructionText(med) {
 
 /* ─────────────────────── Editable med-list state ──────────────────────── */
 // _meds is the single source of truth. Each item:
-//   { drug, instruction, note, quantity, code, provider }
+//   { drug, instruction, note, quantity, code, provider, frequencyTh }
 let _meds = [];
-// "How to take" defaults to Thai — the report emits the verb in English
-// ("Take …"); we auto-translate via the shared glossary so the patient-facing
-// instruction reads in Thai (รับประทาน …) without the user choosing a language.
+// "How to take" defaults to Thai. On first load we translate with the OFFLINE
+// engine only (medical-glossary patterns + frequency master), so the sheet reads
+// Thai — verb/unit/route/frequency/qty — without any Google Translate call.
+// Changing the language dropdown re-translates and DOES allow the Google
+// fallback (Layer 3) for residual English / other languages.
 let _currentLang = "th";
+// First render localises offline only (no network). User-chosen languages flip
+// this off so the full engine (incl. Google fallback) runs.
+let _offlineOnly = true;
 
 function _medFromReport(m) {
   return {
@@ -300,6 +306,9 @@ function _medFromReport(m) {
     quantity:    _cleanValue(m.quantity || ""),
     code:        norm(m.code || ""),
     provider:    norm(m.provider || ""),
+    // Authoritative Thai frequency phrase (BKN frequency master); when present
+    // it overrides the engine's frequency translation on the instruction line.
+    frequencyTh: norm(m.frequencyTh || ""),
   };
 }
 
@@ -334,11 +343,11 @@ ${photo}
     <td class="col-how">
       <div class="instruction-card">
         <span class="instruction-icon">${_medicineIcon(med)}</span>
-        <span class="instruction-text" contenteditable="true" data-field="instruction" data-ph="วิธีใช้ยา">${escapeHtml(med.instruction || "")}</span>
+        <span class="instruction-text" contenteditable="true" data-field="instruction" data-ph="วิธีใช้ยา"${med.frequencyTh ? ` data-freq-th="${escapeHtml(med.frequencyTh)}"` : ""}>${escapeHtml(med.instruction || "")}</span>
       </div>
       <div class="comment note-line" contenteditable="true" data-field="note" data-ph="หมายเหตุ (ถ้ามี)">${escapeHtml(med.note || "")}</div>
     </td>
-    <td class="col-qty">
+    <td class="col-qty" data-qty>
       <div class="qty-main" contenteditable="true" data-field="quantity" data-ph="จำนวน">${escapeHtml(med.quantity || "")}</div>
     </td>
   `;
@@ -360,10 +369,12 @@ async function renderMeds() {
   _bindMedicineImageFallbacks(tbody);
   _bindRowEditing(tbody);
 
-  // Re-init the translation engine on the freshly rendered table and re-apply
-  // the currently selected language (so edits/additions get translated too).
+  // Re-init the translation engine on the freshly rendered table and localise.
+  // First load runs offline-only (no Google) — the glossary patterns already
+  // produce full Thai. Later renders (after a language change / edits) allow the
+  // Google fallback so any residual English / other languages still translate.
   _initTranslate();
-  if (_currentLang) _applyTranslate(_currentLang);
+  if (_currentLang) await _applyTranslate(_currentLang, _offlineOnly);
 }
 
 /* ───────────────────────────── Translation ────────────────────────────── */
@@ -379,12 +390,12 @@ function _initTranslate() {
   if (root) HMTranslate.init(root, { glossary: window.MEDICAL_GLOSSARY || {} });
 }
 
-async function _applyTranslate(lang) {
+async function _applyTranslate(lang, offlineOnly = false) {
   if (typeof HMTranslate === "undefined") return;
   const root = _translateRoot();
   if (!root) return;
   HMTranslate.restore();
-  if (lang) await HMTranslate.translate(root, lang);
+  if (lang) await HMTranslate.translate(root, lang, { offlineOnly });
 }
 
 /** Build the trailing add-medicine row with a search box + suggestion list. */
@@ -616,6 +627,7 @@ async function fetchAndRender() {
       drug: norm(m.drug || ""), instruction: norm(m.instruction || ""),
       note: norm(m.note || ""), quantity: norm(m.quantity || ""),
       code: norm(m.code || ""), provider: norm(m.provider || ""),
+      frequencyTh: norm(m.frequencyTh || ""),
     }));
     _setStatus(`✅ ${_meds.length} รายการ (โหลดฉบับที่แก้ไขไว้)`);
   } else {
@@ -751,9 +763,10 @@ function bindLangControl() {
   sel.value = _currentLang;
   sel.addEventListener("change", async (e) => {
     _currentLang = e.target.value || "";
+    _offlineOnly = false;   // a user-chosen language may use the Google fallback
     const fetchEl = document.getElementById("fetchStatus");
     if (_currentLang && fetchEl) fetchEl.textContent = "⏳ กำลังแปล…";
-    await _applyTranslate(_currentLang);
+    await _applyTranslate(_currentLang, false);
     if (fetchEl) fetchEl.textContent = _currentLang ? "✅ แปลแล้ว" : "";
   });
 }

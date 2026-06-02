@@ -118,6 +118,89 @@ def _hm_norm(s):
     return re.sub(r'\s+', ' ', str(s or '').replace('\u00a0', ' ')).strip()
 
 
+# ── Local Thai mapping data (frequency master + per-item extra labels) ──────
+# These let the Home Medication Sheet render Thai instructions on first load
+# WITHOUT calling Google Translate. Built once, lazily, from scraped JSON kept
+# alongside the other rx master data. Missing/broken files degrade gracefully
+# to empty indices (the sheet then falls back to on-demand translation).
+FREQ_MASTER_FILE = RX_DIR / 'frequencymaster.json'
+EXTRALABEL_FILE  = RX_DIR / 'orderitem_extralabel.json'
+
+_freq_th_idx = None        # normalized freq name/code → Thai localLanguage
+_extralabel_idx = None     # item code → {'text': en, 'localLanguage': th}
+
+
+def _freq_key(s):
+    """Case-insensitive, whitespace-collapsed key for frequency name/code match."""
+    return _hm_norm(s).lower()
+
+
+def _load_freq_th_index():
+    """name/code (lowercased) → Thai localLanguage, from frequencymaster.json."""
+    global _freq_th_idx
+    if _freq_th_idx is not None:
+        return _freq_th_idx
+    idx = {}
+    try:
+        with open(FREQ_MASTER_FILE, encoding='utf-8') as f:
+            data = json.load(f)
+        for row in (data.get('rows') or []):
+            th = _hm_norm(((row.get('detail') or {}).get('localLanguage')) or '')
+            if not th:
+                continue
+            # Match on the human-readable frequency name (what the order item
+            # carries, e.g. "2 Time Daily Morning and Evening") and on the code.
+            for k in (row.get('name'), row.get('code')):
+                key = _freq_key(k)
+                if key and key not in idx:
+                    idx[key] = th
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        print(f'[freq-master] load failed: {e}', file=sys.stderr)
+    _freq_th_idx = idx
+    return idx
+
+
+def _load_extralabel_index():
+    """item code → {'text', 'localLanguage'} default note, from orderitem_extralabel.json.
+    Joins a code's instruction lines, preferring Thai (localLanguage) and falling
+    back to English text per line so a line is never dropped."""
+    global _extralabel_idx
+    if _extralabel_idx is not None:
+        return _extralabel_idx
+    idx = {}
+    try:
+        with open(EXTRALABEL_FILE, encoding='utf-8') as f:
+            data = json.load(f)
+        for r in (data.get('results') or []):
+            code = _hm_norm(r.get('code') or '')
+            inss = r.get('instructions') or []
+            if not code or not inss:
+                continue
+            th_parts, en_parts = [], []
+            for ins in inss:
+                th = _hm_norm(ins.get('localLanguage') or '')
+                en = _hm_norm(ins.get('text') or '')
+                if th:
+                    th_parts.append(th)
+                elif en:
+                    th_parts.append(en)   # no Thai for this line → keep English
+                if en:
+                    en_parts.append(en)
+            if th_parts or en_parts:
+                idx[code] = {
+                    'localLanguage': ' '.join(th_parts).strip(),
+                    'text': ' '.join(en_parts).strip(),
+                }
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        print(f'[extralabel] load failed: {e}', file=sys.stderr)
+    _extralabel_idx = idx
+    return idx
+
+
 # ── Home Medication Sheet (from ArcusAir getallorderitem API) ──
 ARCUS_BASE = 'https://arcusair.bdms.co.th'
 ARCUS_ORDERITEM_URL = ARCUS_BASE + '/ordermanagement/patientorder/getallorderitem'
@@ -374,7 +457,14 @@ def _arcus_item_to_med(it):
     dosage = poi.get('dosage')
     dose_unit = _hm_norm((_arc_first(poi.get('dosageUOM')) or {}).get('valuedescription') or '')
     route = _hm_norm((_arc_first(poi.get('routeuid')) or {}).get('valuedescription') or '')
-    freq = _hm_norm((_arc_first(poi.get('frequencyuid')) or {}).get('name') or '')
+    freq_uid = _arc_first(poi.get('frequencyuid')) or {}
+    freq = _hm_norm(freq_uid.get('name') or '')
+    freq_code = _hm_norm(freq_uid.get('code') or '')
+    # Authoritative Thai frequency phrase from the BKN frequency master, used by
+    # the client only as a fallback when its offline engine doesn't recognise the
+    # frequency (covers custom/odd frequencies without a Google Translate call).
+    _freq_idx = _load_freq_th_index()
+    freq_th = _freq_idx.get(_freq_key(freq)) or _freq_idx.get(_freq_key(freq_code)) or ''
     instr_parts = []
     if verb:
         instr_parts.append(verb)
@@ -384,6 +474,9 @@ def _arcus_item_to_med(it):
         instr_parts.append(route)
     if freq:
         instr_parts.append(freq)
+    # Keep the instruction fully English here. The client's offline pattern
+    # engine (matchMedicalPattern) localises the whole line — verb/unit/route/
+    # frequency — to Thai on first load without any Google Translate call.
     instruction = ' '.join(instr_parts).strip()
 
     qty_n = poi.get('quantity')
@@ -395,6 +488,14 @@ def _arcus_item_to_med(it):
         if ins.get('valuecode') == 'INSTYP1' and ins.get('instructiontext'):
             note = _hm_norm(ins['instructiontext'])
             break
+    # Append the curated per-item Thai extra label (by item code) so the note
+    # shows ready-made Thai. Show BOTH: the doctor's free-text note (if any) then
+    # the extra-label Thai, de-duplicated so we never repeat the same phrase.
+    if code:
+        extra = _load_extralabel_index().get(code)
+        extra_th = (extra or {}).get('localLanguage') or (extra or {}).get('text') or ''
+        if extra_th and extra_th != note:
+            note = (note + ' ' + extra_th).strip() if note else extra_th
 
     provider = _hm_norm((_arc_first(poi.get('careprovideruid')) or {}).get('name') or '')
     if not provider:
@@ -412,7 +513,7 @@ def _arcus_item_to_med(it):
     return {
         'drug': name, 'code': code, 'quantity': quantity,
         'comment': instruction, 'note': note,
-        'route': route, 'frequency': freq, 'dosage': str(dosage or ''),
+        'route': route, 'frequency': freq, 'frequencyTh': freq_th, 'dosage': str(dosage or ''),
         'provider': provider,
         'oral': bool(re.search(r'oral|\btake\b|รับประทาน', route + ' ' + verb, re.I)),
         'ordertype': ordertype, 'status': status, 'ordercat': ordercat,

@@ -32,7 +32,11 @@ const HMTranslate = (() => {
 
   /* ================= TRANSLATE ================= */
 
-  async function translate(root, lang) {
+  async function translate(root, lang, opts = {}) {
+
+    // offlineOnly: skip the Google Translate fallback (Layer 3). Used on the
+    // Home Med Sheet's first paint so it localises with zero network calls.
+    const offlineOnly = !!opts.offlineOnly;
 
     if (!root) return;
 
@@ -58,10 +62,24 @@ const HMTranslate = (() => {
       if (!text || text.trim().length < 2) continue;
       if (/^\d+$/.test(text)) continue;
 
+      // ── Quantity cells (marked data-qty) → bare "N unit" without a label ──
+      // The Home Med Sheet already has a "จำนวน" column header, so the labelled
+      // form ("จำนวน 7 เม็ด") would be redundant. Offline; no API call.
+      const inQtyCell = node.parentElement && node.parentElement.closest("[data-qty]");
+      if (inQtyCell && typeof window.matchQtyNoLabel === "function") {
+        const qtyResult = window.matchQtyNoLabel(text, lang);
+        if (qtyResult) { node.nodeValue = qtyResult; done++; continue; }
+      }
+
       // ── Layer 1: Pattern match (sentence-level, no API call) ──
+      // An instruction cell may carry data-freq-th (authoritative Thai frequency
+      // from the BKN frequency master) — pass it so it overrides the engine's
+      // own frequency translation for the th locale.
+      const freqHost = node.parentElement && node.parentElement.closest("[data-freq-th]");
+      const freqTh = (lang === "th" && freqHost) ? freqHost.getAttribute("data-freq-th") : "";
       const patternResult =
         typeof window.matchMedicalPattern === "function"
-          ? window.matchMedicalPattern(text, lang)
+          ? window.matchMedicalPattern(text, lang, freqTh ? { freqOverride: freqTh } : undefined)
           : null;
 
       if (patternResult) {
@@ -79,6 +97,13 @@ const HMTranslate = (() => {
       if (!stillEnglish) {
         node.nodeValue = text;
         done++;
+        continue;
+      }
+
+      // Offline-only mode (e.g. first paint): never hit the network. Keep the
+      // best offline result (glossary-substituted text) and move on.
+      if (offlineOnly) {
+        if (text !== original) { node.nodeValue = text; done++; }
         continue;
       }
 

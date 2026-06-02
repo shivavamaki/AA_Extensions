@@ -381,7 +381,7 @@ const MASTER_RE = new RegExp(
   "i"
 );
 
-function matchPattern(text, lang) {
+function matchPattern(text, lang, opts = {}) {
   const t = text.trim();
   const m = t.match(MASTER_RE);
   if (!m) return null;
@@ -404,11 +404,18 @@ function matchPattern(text, lang) {
   const takePart   = _take(qty, rawUnit, lang);
   if (!takePart) return null;
 
-  const freqPart   = rawFreq   ? _freq(rawFreq, lang)        : null;
-  // Try compound timing first, fall back to single timing
-  const timingPart = rawTiming
+  // The BKN frequency master (opts.freqOverride) is authoritative for Thai — it
+  // wins over the engine's own frequency translation whenever supplied. Covers
+  // the full PRN/timing phrasing the master encodes (e.g. "วันละ 1 ครั้ง เวลามีอาการ").
+  const freqOverride = (lang === "th" && opts.freqOverride) ? String(opts.freqOverride).trim() : "";
+  const freqPart   = freqOverride || (rawFreq ? _freq(rawFreq, lang) : null);
+  // The master frequency name embeds its own timing (e.g. "2 Time Daily Morning
+  // and Evening" → "วันละ 2 ครั้ง เช้า เย็น"). MASTER_RE captures that trailing
+  // timing separately, so when the override is used we must NOT re-append the
+  // engine's timing — it would duplicate ("... เช้า เย็น เช้า เย็น").
+  const timingPart = (freqOverride ? null : (rawTiming
     ? (_compoundTiming(rawTiming, lang) || _timing(rawTiming, lang))
-    : null;
+    : null));
   const daysPart   = rawDays   ? _days(rawDays, lang)        : null;
 
   // Assemble — language-specific word order
@@ -453,7 +460,7 @@ const QTY_LABEL = {
   es:"Cantidad",    pt:"Quantidade",    tr:"Miktar",         tl:"Dami",
 };
 
-function matchQtyPattern(text, lang) {
+function matchQtyPattern(text, lang, opts = {}) {
   const m = text.trim().match(QTY_RE);
   if (!m) return null;
   const n = m[1];
@@ -462,7 +469,6 @@ function matchQtyPattern(text, lang) {
   if (/^millilit/.test(unitRaw)) unitRaw = "ml";
   if (unitRaw === "caplet")      unitRaw = "tablet"; // caplet = tablet form
   const u = _unit(unitRaw, lang, parseInt(n));
-  const label = QTY_LABEL[lang];
   // Language-specific qty+unit order
   const QTY_TMPL = {
     ja: (n, u) => `${n}${u}`,
@@ -472,8 +478,17 @@ function matchQtyPattern(text, lang) {
   };
   const fn = QTY_TMPL[lang] || ((n, u) => `${n} ${u}`);
   const body = fn(n, u);
+  // Some callers (e.g. the Home Med Sheet's Qty column, which already has a
+  // "จำนวน" header) want the bare "7 เม็ด" without the per-language label.
+  if (opts.noLabel) return body;
+  const label = QTY_LABEL[lang];
   return label ? `${label} ${body}` : body;
 }
+
+// Bare quantity localiser ("7 Tablet" → "7 เม็ด"), no label prefix. Offline.
+window.matchQtyNoLabel = function (text, lang) {
+  return matchQtyPattern(text, lang, { noLabel: true });
+};
 
 /* ═══════════════════════════════════════════════════════════════
  * AUXILIARY-LABEL PHRASES
@@ -817,11 +832,13 @@ function matchInjectionPattern(text, lang) {
   return parts.join(" ");
 }
 
-/* Public entry point used by translate-core.js */
-window.matchMedicalPattern = function(text, lang) {
+/* Public entry point used by translate-core.js.
+ * opts.freqOverride — authoritative Thai frequency phrase (BKN frequency master)
+ * that replaces the engine's own frequency translation in matchPattern. */
+window.matchMedicalPattern = function(text, lang, opts = {}) {
   return matchAuxiliaryPhrase(text, lang)
       || matchInjectionPattern(text, lang)
-      || matchPattern(text, lang)
+      || matchPattern(text, lang, opts)
       || matchQtyPattern(text, lang)
       || null;
 };
