@@ -23,6 +23,13 @@
 
   const BANNER_ROOT_SEL = "patient-emr-banner";
 
+  const ORDER_SEL =
+    "body > div.full-height.ng-scope.layout-row > div > md-content > md-content" +
+    " > div > md-card > md-content.md-whiteframe-z2.padding-left-14-imp.margin-5" +
+    ".stickydiv.incus-border-1.overflow-x-hide.ng-scope._md.md-incustheme-theme" +
+    ".width-70-per > div.ng-isolate-scope.flex-initial" +
+    " > h4.margin-top-12.margin-bottom-10.font-weight-500-imp.ng-binding.ng-scope";
+
   function _getBannerRoot() {
     const banner = document.querySelector(BANNER_ROOT_SEL);
     if (!banner) return null;
@@ -61,25 +68,20 @@
     return "-";
   }
 
-  // Visit number — must start with I48 / O48 / E48 and follow the
-  // <prefix>48-<yy>-<6 digits> shape, e.g. "I48-26-005554". This is the value
-  // printed as the sticker barcode. It must NOT be confused with the Order
-  // Details id (e.g. "I2606020141"), which is a different identifier shown in
-  // the dispense workbench h4 heading.
-  const VISIT_NO_RE = /\b([IOE]48-\d{2}-\d{6})\b/i;
+  // Order number — letter prefix + 10 digits, no dashes, e.g. "I2606030109"
+  // (IYYMMDDxxxx). This is the value printed as the sticker barcode. It must
+  // NOT be confused with the visit number (I48-/O48-/E48-yy-nnnnnn).
+  const ORDER_NO_RE = /\b([IOE]\d{10})\b/i;
 
   function _extractOrderId(root) {
-    // 1) Preferred: the visit number lives in the main banner section as
-    //    "I48-26-005554 / 02-06-2026 01:28".
-    const section = root.querySelector(".main-banner-section");
-    if (section) {
-      for (const el of section.querySelectorAll("div.overme.ng-binding")) {
-        const m = _norm(el.textContent).match(VISIT_NO_RE);
-        if (m) return m[1].toUpperCase();
-      }
+    // 1) Preferred: the "Order Details (I2606030109)" h4 heading.
+    const h4 = document.querySelector(ORDER_SEL);
+    if (h4) {
+      const m = _norm(h4.innerText || h4.textContent).match(/\(([^)]*)\)/);
+      if (m && ORDER_NO_RE.test(m[1])) return m[1].toUpperCase();
     }
-    // 2) Fallback: scan the whole banner for the visit-number pattern.
-    const m2 = _norm(root.innerText || root.textContent).match(VISIT_NO_RE);
+    // 2) Fallback: scan the banner for the order-number pattern.
+    const m2 = _norm(root.innerText || root.textContent).match(ORDER_NO_RE);
     return m2 ? m2[1].toUpperCase() : "-";
   }
 
