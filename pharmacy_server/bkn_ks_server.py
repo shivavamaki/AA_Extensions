@@ -1043,24 +1043,24 @@ def _sep(l='╠', m='═', r='╣', width=_BW):
 
 
 class _MaprangGame:
-    """Auto-play ASCII game: Maprang (a little character with body, arms and
+    """Auto-play ASCII game: Maprang (a little character with a head, arms and
     legs) runs along the ground and catches falling items."""
     W = 40   # play area width (all ASCII = 1 col each)
-    H = 6    # rows items fall through before ground
+    H = 5    # rows items fall through before ground
 
     _SYMS = [('+', _CY), ('o', _RD), ('*', _YL), ('%', _MG)]
 
-    # Maprang sprite, 4 rows: face / arms / body / legs. Each animation frame is
-    # a 5-char-wide figure so it stays aligned. Arms & legs alternate to walk;
-    # when catching, arms go up (\o/). Anchor column is the character's centre.
+    # Maprang sprite, 3 rows: face / arms / legs. Each animation frame is a
+    # 5-char-wide figure so it stays aligned. Arms & legs alternate to walk;
+    # when catching, arms go up (\o o/). Anchor column is the character's centre.
     #   frames: 0 walk-A, 1 walk-B, 2 catch (arms up), 3 happy
     _SPRITE = {
         'face': ['(o_o)', '(^_^)', '(^o^)', '(>‿<)'],
         'arms': ['/| |\\', '\\| |/', '\\o o/', '\\| |/'],
-        'body': [' |_| ', ' |_| ', ' |_| ', ' |_| '],
         'legs': ['_/ \\_', '/\\_/\\', '_/ \\_', '/\\_/\\'],
     }
     _SPRITE_W = 5
+    _SPRITE_H = 3
 
     _MSGS = [
         _GN + 'มาปรางเก่งมาก!' + _RST,
@@ -1088,7 +1088,7 @@ class _MaprangGame:
         for item in self.items:
             item[1] += 1
         # Items are caught when they reach Maprang's face row (top of the sprite).
-        catch_row = self.H - 4
+        catch_row = self.H - self._SPRITE_H
         # Chase nearest item that hasn't reached the catch row yet.
         active = [i for i in self.items if i[1] < catch_row]
         if active:
@@ -1115,8 +1115,8 @@ class _MaprangGame:
 
     def render(self):
         """List of strings (with ANSI) for the play area including borders.
-        The bottom 4 rows draw Maprang (face/arms/body/legs); items fall through
-        the rows above and are caught on the face row."""
+        The bottom 3 rows draw Maprang (face/arms/legs); items fall through the
+        rows above and are caught on the face row."""
         # Pose: catch (arms up) if just caught, else walk frame, else happy.
         if self.catch_t > 0:
             pose = 2
@@ -1125,7 +1125,6 @@ class _MaprangGame:
         sprite_rows = [
             self._SPRITE['face'][pose],
             self._SPRITE['arms'][pose],
-            self._SPRITE['body'][pose],
             self._SPRITE['legs'][pose],
         ]
         sprite_top = self.H - len(sprite_rows)   # first row index occupied by sprite
