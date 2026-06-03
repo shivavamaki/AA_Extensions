@@ -163,9 +163,10 @@ def _load_freq_th_index():
 
 
 def _load_extralabel_index():
-    """item code → {'text', 'localLanguage'} default note, from orderitem_extralabel.json.
-    Joins a code's instruction lines, preferring Thai (localLanguage) and falling
-    back to English text per line so a line is never dropped."""
+    """item code → {'text', 'localLanguage'} note, from orderitem_extralabel.json.
+    Only "Patient Instruction" lines are used. 'localLanguage' is the Thai note
+    (default) and 'text' is the English note — kept separate, no cross-language
+    fallback, so each language stays pure."""
     global _extralabel_idx
     if _extralabel_idx is not None:
         return _extralabel_idx
@@ -180,12 +181,12 @@ def _load_extralabel_index():
                 continue
             th_parts, en_parts = [], []
             for ins in inss:
+                if (ins.get('type') or '').strip() != 'Patient Instruction':
+                    continue
                 th = _hm_norm(ins.get('localLanguage') or '')
                 en = _hm_norm(ins.get('text') or '')
                 if th:
                     th_parts.append(th)
-                elif en:
-                    th_parts.append(en)   # no Thai for this line → keep English
                 if en:
                     en_parts.append(en)
             if th_parts or en_parts:
@@ -490,21 +491,28 @@ def _arcus_item_to_med(it):
             live_note = _hm_norm(ins['instructiontext'])
             break
 
-    # The note-line must show the curated Thai (instructions > localLanguage)
-    # from orderitem_extralabel.json. Lead with that Thai label; only append the
-    # live English instruction if it adds something the Thai label doesn't
-    # already cover (its English `text` counterpart), so the line stays Thai and
-    # we don't print the same instruction twice in two languages.
-    note = ''
-    if code:
-        extra = _load_extralabel_index().get(code) or {}
-        extra_th = extra.get('localLanguage') or extra.get('text') or ''
-        extra_en = extra.get('text') or ''
-        note = extra_th
-        if live_note and live_note != extra_th and live_note != extra_en:
-            note = (note + ' ' + live_note).strip() if note else live_note
+    # Note-line: the curated "Patient Instruction" extra label by item code.
+    # localLanguage = Thai (default), text = English; build both so the client
+    # can swap with the language dropdown. The live order free-text is appended
+    # to each (de-duplicated) so doctor notes aren't lost.
+    extra = _load_extralabel_index().get(code) if code else None
+    extra = extra or {}
+    extra_th = extra.get('localLanguage') or ''
+    extra_en = extra.get('text') or ''
+
+    def _with_live(base):
+        if live_note and live_note != base:
+            return (base + ' ' + live_note).strip() if base else live_note
+        return base
+
+    note   = _with_live(extra_th)          # Thai note (default)
+    note_en = _with_live(extra_en)         # English note
+    # If a language has no label at all, fall back to the other so the line
+    # isn't blank.
     if not note:
-        note = live_note
+        note = note_en
+    if not note_en:
+        note_en = note
 
     provider = _hm_norm((_arc_first(poi.get('careprovideruid')) or {}).get('name') or '')
     if not provider:
@@ -521,7 +529,7 @@ def _arcus_item_to_med(it):
 
     return {
         'drug': name, 'code': code, 'quantity': quantity,
-        'comment': instruction, 'note': note,
+        'comment': instruction, 'note': note, 'noteEn': note_en,
         'route': route, 'frequency': freq, 'frequencyTh': freq_th, 'dosage': str(dosage or ''),
         'provider': provider,
         'oral': bool(re.search(r'oral|\btake\b|รับประทาน', route + ' ' + verb, re.I)),

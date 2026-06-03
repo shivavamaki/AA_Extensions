@@ -284,6 +284,28 @@ function _instructionText(med) {
   return parts.join(" ");
 }
 
+/** The note-line text for the current language: Thai (default) or English.
+ * Falls back to whichever is present so the line is never blank. */
+function _noteForLang(med) {
+  const th = norm(med.note || "");
+  const en = norm(med.noteEn || "");
+  return (_currentLang === "en") ? (en || th) : (th || en);
+}
+
+/** Swap each note-line to the current language without re-rendering the table.
+ * Only swaps cells the user hasn't manually edited (current text still matches
+ * one of the stored TH/EN variants). */
+function _applyNoteLang() {
+  document.querySelectorAll(".note-line[data-field='note']").forEach((el) => {
+    const th = el.dataset.noteTh || "";
+    const en = el.dataset.noteEn || "";
+    const cur = norm(el.textContent || "");
+    // Respect a user edit: leave it alone if it isn't one of the variants.
+    if (cur && cur !== norm(th) && cur !== norm(en)) return;
+    el.textContent = (_currentLang === "en") ? (en || th) : (th || en);
+  });
+}
+
 /* ─────────────────────── Editable med-list state ──────────────────────── */
 // _meds is the single source of truth. Each item:
 //   { drug, instruction, note, quantity, code, provider, frequencyTh }
@@ -302,7 +324,8 @@ function _medFromReport(m) {
   return {
     drug:        norm(m.drug || ""),
     instruction: _instructionText(m),
-    note:        norm(m.note || ""),   // ArcusAir free-text instruction line
+    note:        norm(m.note || ""),     // Patient Instruction note — Thai (default)
+    noteEn:      norm(m.noteEn || ""),   // same note in English (for lang switch)
     quantity:    _cleanValue(m.quantity || ""),
     code:        norm(m.code || ""),
     provider:    norm(m.provider || ""),
@@ -345,7 +368,7 @@ ${photo}
         <span class="instruction-icon">${_medicineIcon(med)}</span>
         <span class="instruction-text" contenteditable="true" data-field="instruction" data-ph="วิธีใช้ยา"${med.frequencyTh ? ` data-freq-th="${escapeHtml(med.frequencyTh)}"` : ""}>${escapeHtml(med.instruction || "")}</span>
       </div>
-      <div class="comment note-line" contenteditable="true" data-field="note" data-ph="หมายเหตุ (ถ้ามี)">${escapeHtml(med.note || "")}</div>
+      <div class="comment note-line" contenteditable="true" data-field="note" data-ph="หมายเหตุ (ถ้ามี)" data-no-translate translate="no" data-note-th="${escapeHtml(med.note || "")}" data-note-en="${escapeHtml(med.noteEn || "")}">${escapeHtml(_noteForLang(med))}</div>
     </td>
     <td class="col-qty" data-qty>
       <div class="qty-main" contenteditable="true" data-field="quantity" data-ph="จำนวน">${escapeHtml(med.quantity || "")}</div>
@@ -421,6 +444,8 @@ function _buildAddRow() {
 function _commitField(index, field, value) {
   if (index < 0 || index >= _meds.length) return;
   _meds[index][field] = norm(value);
+  // A manual note edit overrides both languages so switching lang keeps it.
+  if (field === "note") _meds[index].noteEn = norm(value);
   _persist();
 }
 
@@ -625,7 +650,8 @@ async function fetchAndRender() {
   if (saved && saved.length) {
     _meds = saved.map((m) => ({
       drug: norm(m.drug || ""), instruction: norm(m.instruction || ""),
-      note: norm(m.note || ""), quantity: norm(m.quantity || ""),
+      note: norm(m.note || ""), noteEn: norm(m.noteEn || ""),
+      quantity: norm(m.quantity || ""),
       code: norm(m.code || ""), provider: norm(m.provider || ""),
       frequencyTh: norm(m.frequencyTh || ""),
     }));
@@ -764,6 +790,9 @@ function bindLangControl() {
   sel.addEventListener("change", async (e) => {
     _currentLang = e.target.value || "";
     _offlineOnly = false;   // a user-chosen language may use the Google fallback
+    // Note-line uses the curated TH/EN Patient Instruction directly (it is
+    // data-no-translate), so swap it explicitly rather than via the engine.
+    _applyNoteLang();
     const fetchEl = document.getElementById("fetchStatus");
     if (_currentLang && fetchEl) fetchEl.textContent = "⏳ กำลังแปล…";
     await _applyTranslate(_currentLang, false);
