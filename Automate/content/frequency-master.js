@@ -181,6 +181,26 @@
     return waitFor(() => getOpenFrequencyDialog(), 12000, 200);
   }
 
+  // Wait until the open dialog actually shows THIS row's data. The Modify dialog
+  // is reused/animated, so a stale dialog (still showing the previous row) can be
+  // briefly visible — scraping it carries the previous row's detail forward.
+  // Gate on the dialog's own code/name field matching the row we clicked.
+  async function waitForDialogMatching(rowData) {
+    const want = (rowData.code || rowData.name || "").trim();
+    const dialog = await waitFor(() => {
+      const dlg = getOpenFrequencyDialog();
+      if (!dlg) return null;
+      const dc = (readInputValue("#frequencymastercode", dlg) || "").trim();
+      const dn = (readInputValue("#frequencymastername", dlg) || "").trim();
+      // Accept when the dialog's code OR name equals the row (some rows key on name).
+      if (!want || dc === (rowData.code || "").trim() || dn === (rowData.name || "").trim()) {
+        return dlg;
+      }
+      return null;
+    }, 12000, 150);
+    return dialog;
+  }
+
   function scrapeDialog(dialog) {
     return {
       code: readInputValue("#frequencymastercode", dialog),
@@ -223,13 +243,26 @@
     const btn = row.querySelector("button[id^='frequenctMasterFormModify']");
     if (!btn) throw new Error(`Modify button not found: ${rowData.code}`);
 
+    // Make sure no previous dialog is still open before we click — otherwise the
+    // stale dialog would satisfy waitForDialog() and we'd scrape the wrong row.
+    if (getOpenFrequencyDialog()) await closeDialog();
+
     setStatus(`Opening ${index + 1}: ${rowData.code || rowData.name}`);
     await clickLikeUser(btn);
-    const dialog = await waitForDialog();
-    if (!dialog) throw new Error(`Modify dialog did not open: ${rowData.code}`);
+    // Wait for the dialog that actually shows THIS row (guards carry-forward).
+    const dialog = await waitForDialogMatching(rowData);
+    if (!dialog) throw new Error(`Modify dialog did not open for: ${rowData.code || rowData.name}`);
     await sleep(250);
 
     const detail = scrapeDialog(dialog);
+    // Sanity: the scraped detail must belong to this row; never carry forward.
+    const dc = (detail.code || "").trim();
+    const dn = (detail.name || "").trim();
+    if ((rowData.code && dc && dc !== rowData.code.trim()) &&
+        (rowData.name && dn && dn !== rowData.name.trim())) {
+      await closeDialog();
+      throw new Error(`Dialog mismatch for ${rowData.code || rowData.name} (got ${dc || dn})`);
+    }
     await closeDialog();
     return { ...rowData, detail, scrapedAt: new Date().toISOString() };
   }
