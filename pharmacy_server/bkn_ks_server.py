@@ -90,6 +90,7 @@ KS_FILES_DIR  = DATA_DIR / 'ks' / 'files'
 SCHEDULE_DIR      = DATA_DIR / 'schedule'
 TEMP_REPORTS_DIR  = DATA_DIR / 'temp-reports'
 PATIENTS_DIR      = DATA_DIR / 'patients'
+LOGS_DIR          = DATA_DIR / 'logs'
 WWW_DIR           = Path(__file__).parent / 'www'
 KS_COLS       = {'faqs', 'items', 'vdos'}
 # All rx collections — GET is public; PUT requires editor/admin auth
@@ -561,6 +562,35 @@ def _is_medicine(med):
     return False
 
 
+def _log_home_med_fetch(ctx, raw, result):
+    """Append a record of one Home Medication Sheet fetch — the ArcusAir API
+    response summary and the meds we built from it — to data/logs so we can see
+    exactly what data the sheet received. Best-effort; never breaks the request."""
+    try:
+        LOGS_DIR.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now()
+        order_items = (raw or {}).get('orderitems') or []
+        meds = (result or {}).get('meds') or []
+        record = {
+            'at': ts.isoformat(),
+            'patientuid': ctx.get('patientuid', ''),
+            'patientvisituid': ctx.get('patientvisituid', ''),
+            'rawKeys': sorted((raw or {}).keys()) if isinstance(raw, dict) else None,
+            'rawOrderItemCount': len(order_items),
+            'builtMedCount': len(meds),
+            'patient': (result or {}).get('patient'),
+            'meds': meds,
+        }
+        # One file per day, JSON Lines (one record per line) for easy tailing.
+        log_path = LOGS_DIR / f'home-med-fetch-{ts:%Y-%m-%d}.jsonl'
+        with open(log_path, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(record, ensure_ascii=False) + '\n')
+        # Also surface a one-line summary on the dashboard's request stream.
+        _record_request('LOG', f'home-med {len(meds)} meds → {log_path.name}', 'ok')
+    except Exception as e:
+        print(f'[home-med-log] failed: {e}', file=sys.stderr)
+
+
 def build_home_med_from_arcus(data):
     """Map ArcusAir getallorderitem JSON → home-med rows: {patient, meds, allMeds}.
     Each item already IS a discharge med (server filtered)."""
@@ -979,6 +1009,9 @@ _ESC_HIDE  = '\033[?25l'
 _ESC_SHOW  = '\033[?25h'
 _ESC_HOME  = '\033[H'
 _ESC_CLEAR = '\033[2J'
+_ESC_ALT_ON  = '\033[?1049h'   # enter alternate screen buffer (no scrollback)
+_ESC_ALT_OFF = '\033[?1049l'   # leave alternate screen buffer
+_ESC_EOL     = '\033[K'        # erase to end of line
 _RST = '\033[0m'
 _CY  = '\033[1;36m'   # bright cyan
 _GN  = '\033[1;32m'   # bright green
@@ -1010,12 +1043,25 @@ def _sep(l='╠', m='═', r='╣', width=_BW):
 
 
 class _MaprangGame:
-    """Auto-play ASCII game: Maprang chases falling items."""
+    """Auto-play ASCII game: Maprang (a little character with body, arms and
+    legs) runs along the ground and catches falling items."""
     W = 40   # play area width (all ASCII = 1 col each)
-    H = 5    # rows items fall through before ground
+    H = 6    # rows items fall through before ground
 
     _SYMS = [('+', _CY), ('o', _RD), ('*', _YL), ('%', _MG)]
-    _WALK = ['(o^o)', '(^_^)', '(o^o)', '(-‿-)']
+
+    # Maprang sprite, 4 rows: face / arms / body / legs. Each animation frame is
+    # a 5-char-wide figure so it stays aligned. Arms & legs alternate to walk;
+    # when catching, arms go up (\o/). Anchor column is the character's centre.
+    #   frames: 0 walk-A, 1 walk-B, 2 catch (arms up), 3 happy
+    _SPRITE = {
+        'face': ['(o_o)', '(^_^)', '(^o^)', '(>‿<)'],
+        'arms': ['/| |\\', '\\| |/', '\\o o/', '\\| |/'],
+        'body': [' |_| ', ' |_| ', ' |_| ', ' |_| '],
+        'legs': ['_/ \\_', '/\\_/\\', '_/ \\_', '/\\_/\\'],
+    }
+    _SPRITE_W = 5
+
     _MSGS = [
         _GN + 'มาปรางเก่งมาก!' + _RST,
         _YL + 'やったー! ✨' + _RST,
@@ -1032,6 +1078,7 @@ class _MaprangGame:
         self.items = []   # [x, y, sym, color]
         self.tick  = 0
         self.walk  = 0
+        self.catch_t = 0   # frames left showing the "catch" pose
 
     def step(self):
         self.tick += 1
@@ -1040,45 +1087,64 @@ class _MaprangGame:
             self.items.append([random.randint(1, self.W - 2), 0, sym, col])
         for item in self.items:
             item[1] += 1
-        # Chase nearest active item
-        active = [i for i in self.items if i[1] < self.H]
+        # Items are caught when they reach Maprang's face row (top of the sprite).
+        catch_row = self.H - 4
+        # Chase nearest item that hasn't reached the catch row yet.
+        active = [i for i in self.items if i[1] < catch_row]
         if active:
             tx = min(active, key=lambda i: abs(i[0] - self.mx))[0]
             if tx < self.mx:
-                self.mx = max(1, self.mx - 1)
+                self.mx = max(2, self.mx - 1)
             elif tx > self.mx:
-                self.mx = min(self.W - 2, self.mx + 1)
-        # Catch items that reached ground
-        caught  = [i for i in self.items if i[1] >= self.H and abs(i[0] - self.mx) <= 1]
-        missed  = [i for i in self.items if i[1] >= self.H and i not in caught]
+                self.mx = min(self.W - 3, self.mx + 1)
+        # Catch items that reached the face row near Maprang's hands.
+        caught = [i for i in self.items if i[1] >= catch_row and abs(i[0] - self.mx) <= 2]
         if caught:
             self.score += len(caught)
             self.msg    = random.choice(self._MSGS)
             self.msg_t  = 20
-        self.items = [i for i in self.items if i[1] < self.H]
+            self.catch_t = 6   # show arms-up "catch" pose briefly
+        self.items = [i for i in self.items if i[1] < catch_row]
         if self.msg_t > 0:
             self.msg_t -= 1
         else:
             self.msg = ''
-        self.walk = (self.walk + 1) % 4
+        if self.catch_t > 0:
+            self.catch_t -= 1
+        self.walk = (self.walk + 1) % 2   # 0/1 walk cycle
 
     def render(self):
-        """List of strings (with ANSI) for the play area including borders."""
+        """List of strings (with ANSI) for the play area including borders.
+        The bottom 4 rows draw Maprang (face/arms/body/legs); items fall through
+        the rows above and are caught on the face row."""
+        # Pose: catch (arms up) if just caught, else walk frame, else happy.
+        if self.catch_t > 0:
+            pose = 2
+        else:
+            pose = self.walk            # 0 or 1
+        sprite_rows = [
+            self._SPRITE['face'][pose],
+            self._SPRITE['arms'][pose],
+            self._SPRITE['body'][pose],
+            self._SPRITE['legs'][pose],
+        ]
+        sprite_top = self.H - len(sprite_rows)   # first row index occupied by sprite
+
         lines = [_BL + '┌' + '─' * self.W + '┐' + _RST]
         for row in range(self.H):
             cells = [' '] * self.W
+            # Falling items.
             for x, y, sym, col in self.items:
                 if y == row and 0 <= x < self.W:
                     cells[x] = col + sym + _RST
+            # Maprang sprite occupies the bottom rows.
+            if row >= sprite_top:
+                line = sprite_rows[row - sprite_top]
+                for i, ch in enumerate(line):
+                    xi = self.mx - 2 + i
+                    if 0 <= xi < self.W and ch != ' ':
+                        cells[xi] = _GN + ch + _RST
             lines.append(_BL + '│' + _RST + ''.join(cells) + _BL + '│' + _RST)
-        # Ground row — Maprang
-        ground = [' '] * self.W
-        face   = self._WALK[self.walk]
-        for i, ch in enumerate(face):
-            xi = self.mx - 2 + i
-            if 0 <= xi < self.W:
-                ground[xi] = _GN + ch + _RST
-        lines.append(_BL + '│' + _RST + ''.join(ground) + _BL + '│' + _RST)
         lines.append(_BL + '└' + '─' * self.W + '┘' + _RST)
         return lines
 
@@ -1090,10 +1156,13 @@ def _enable_ansi():
 
 
 def _run_dashboard(ip, port):
-    """Background thread: redraws animated terminal dashboard at ~5 fps."""
+    """Background thread: redraws animated terminal dashboard at ~5 fps in a
+    fixed-size area using the alternate screen buffer (no scrolling)."""
     _enable_ansi()
     game = _MaprangGame()
-    sys.stdout.write(_ESC_HIDE)
+    # Alternate screen buffer keeps the dashboard pinned in place — frames redraw
+    # at the home position instead of scrolling new copies down the console.
+    sys.stdout.write(_ESC_ALT_ON + _ESC_HIDE + _ESC_CLEAR)
     sys.stdout.flush()
 
     def uptime_str():
@@ -1103,7 +1172,9 @@ def _run_dashboard(ip, port):
     while True:
         try:
             game.step()
-            out = [_ESC_HOME + _ESC_CLEAR]
+            # Home cursor each frame and erase each line as we redraw — fixed
+            # window, no full-clear flicker, no scrolling.
+            out = [_ESC_HOME]
 
             # ── Title ──────────────────────────────────────────────
             out.append(_BL + _sep('╔', '═', '╗') + _RST)
@@ -1152,7 +1223,11 @@ def _run_dashboard(ip, port):
             out.append(_bline(f'  {_WH}Press Ctrl+C to stop the server{_RST}'))
             out.append(_BL + _sep('╚', '═', '╝') + _RST)
 
-            sys.stdout.write('\n'.join(out) + '\n')
+            # out[0] is the cursor-home escape; the rest are content lines. Erase
+            # to end of each line so shorter frames don't leave stale characters,
+            # then erase everything below the frame.
+            body = (_ESC_EOL + '\n').join(out[1:])
+            sys.stdout.write(out[0] + body + _ESC_EOL + '\n' + '\033[J')
             sys.stdout.flush()
         except Exception:
             pass
@@ -1739,6 +1814,9 @@ class Handler(BaseHTTPRequestHandler):
                 result = build_home_med_from_arcus(data)
             except Exception as e:
                 self.send_json(500, {'error': f'Parse error: {e}'}); return
+            # Log exactly what the Home Medication Sheet received (API summary +
+            # built meds) to data/logs for inspection.
+            _log_home_med_fetch(ctx, data, result)
             # Allergies are supplementary — fetch best-effort, never fail the sheet.
             try:
                 result['allergies'] = build_allergies_from_arcus(fetch_arcus_allergies(ctx))
@@ -1939,6 +2017,7 @@ def main():
     SCHEDULE_DIR.mkdir(parents=True, exist_ok=True)
     TEMP_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     PATIENTS_DIR.mkdir(parents=True, exist_ok=True)
+    LOGS_DIR.mkdir(parents=True, exist_ok=True)
     WWW_DIR.mkdir(parents=True, exist_ok=True)
     for col in KS_COLS:
         p = ks_file(col)
@@ -1972,7 +2051,9 @@ def main():
             break
         except KeyboardInterrupt:
             if _ctrlc_armed:
-                sys.stdout.write(_ESC_SHOW + '\n  Server stopped.\n')
+                # Leave the alternate screen buffer so the normal console (with
+                # its scrollback) is restored before we exit.
+                sys.stdout.write(_ESC_ALT_OFF + _ESC_SHOW + '\n  Server stopped.\n')
                 sys.stdout.flush()
                 break
             _ctrlc_armed = True
