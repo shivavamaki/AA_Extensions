@@ -1818,6 +1818,81 @@ def get_local_ip():
         return '127.0.0.1'
 
 
+# ── Shutdown guard ─────────────────────────────────────────────
+# "Please do not stop — Maprang is playing the game!" Warn whoever tries to
+# close the server so it isn't killed by accident.
+_STOP_WARN = (
+    'Please do not stop the Pharmacy Server.\n'
+    'Maprang is still playing the game! 🎀\n\n'
+    'มาปรางกำลังเล่นเกมอยู่ กรุณาอย่าปิดเซิร์ฟเวอร์นะคะ 💖'
+)
+_ctrlc_armed = False  # first Ctrl+C only warns; second within the window stops
+
+def _disarm_ctrlc():
+    global _ctrlc_armed
+    _ctrlc_armed = False
+
+def _warn_console():
+    """Print the playful do-not-close warning into the console."""
+    try:
+        sys.stdout.write(
+            _ESC_SHOW + '\n'
+            + _YL + '╔══════════════════════════════════════════════════════╗' + _RST + '\n'
+            + _YL + '║ ' + _RST + _RD + '  อย่าปิดเซิร์ฟเวอร์นะคะ! / Please do NOT stop me!  ' + _RST + _YL + ' ║' + _RST + '\n'
+            + _YL + '║ ' + _RST + _MG + '  มาปรางกำลังเล่นเกมอยู่ 🎀  Maprang is playing! 💖  ' + _RST + _YL + '║' + _RST + '\n'
+            + _YL + '╚══════════════════════════════════════════════════════╝' + _RST + '\n'
+        )
+        sys.stdout.flush()
+    except Exception:
+        pass
+
+def _windows_message_box():
+    """Pop a Windows MessageBox so the warning is seen even if the console is
+    being closed (X button / logoff / shutdown)."""
+    try:
+        import ctypes
+        MB_ICONWARNING = 0x30
+        MB_TOPMOST = 0x40000
+        MB_SYSTEMMODAL = 0x1000
+        ctypes.windll.user32.MessageBoxW(
+            0, _STOP_WARN, 'BKN Pharmacy Server',
+            MB_ICONWARNING | MB_TOPMOST | MB_SYSTEMMODAL,
+        )
+    except Exception:
+        pass
+
+def _install_close_guard():
+    """On Windows, intercept console-close / logoff / shutdown events and show
+    the warning MessageBox (which also briefly blocks the close)."""
+    if os.name != 'nt':
+        return
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        # CTRL_C_EVENT=0, CTRL_BREAK_EVENT=1, CTRL_CLOSE_EVENT=2,
+        # CTRL_LOGOFF_EVENT=5, CTRL_SHUTDOWN_EVENT=6
+        HANDLER = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.DWORD)
+
+        def _handler(ctrl_type):
+            if ctrl_type in (2, 5, 6):          # close / logoff / shutdown
+                _warn_console()
+                _windows_message_box()
+                # Returning TRUE marks the event handled; the OS still ends the
+                # process shortly after, but the user has now been warned.
+                return True
+            return False                         # let Ctrl+C/Break flow normally
+
+        # Keep a reference so the callback isn't garbage-collected.
+        global _CTRL_HANDLER_REF
+        _CTRL_HANDLER_REF = HANDLER(_handler)
+        ctypes.windll.kernel32.SetConsoleCtrlHandler(_CTRL_HANDLER_REF, True)
+    except Exception:
+        pass
+
+_CTRL_HANDLER_REF = None
+
+
 # ── Main ───────────────────────────────────────────────────────
 def main():
     port = DEFAULT_PORT
@@ -1859,14 +1934,31 @@ def main():
 
     _SERVER_START = time.time()
     _enable_ansi()
+    _install_close_guard()
     t = threading.Thread(target=_run_dashboard, args=(ip, port), daemon=True)
     t.start()
 
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        sys.stdout.write(_ESC_SHOW + '\n  Server stopped.\n')
-        sys.stdout.flush()
+    # Ctrl+C: first press only warns ("don't stop Maprang!"); a second Ctrl+C
+    # within 5 seconds confirms and actually stops the server.
+    global _ctrlc_armed
+    while True:
+        try:
+            server.serve_forever()
+            break
+        except KeyboardInterrupt:
+            if _ctrlc_armed:
+                sys.stdout.write(_ESC_SHOW + '\n  Server stopped.\n')
+                sys.stdout.flush()
+                break
+            _ctrlc_armed = True
+            _warn_console()
+            sys.stdout.write(
+                _WH + '  Press Ctrl+C again within 5s to stop anyway…' + _RST + '\n'
+            )
+            sys.stdout.flush()
+            threading.Timer(5.0, _disarm_ctrlc).start()
+            # Resume serving; serve_forever returns on KeyboardInterrupt, so loop.
+            continue
 
 
 if __name__ == '__main__':
