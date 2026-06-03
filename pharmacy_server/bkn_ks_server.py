@@ -483,19 +483,28 @@ def _arcus_item_to_med(it):
     qty_unit = _hm_norm((_arc_first(poi.get('quantityUOM')) or {}).get('valuedescription') or '')
     quantity = (str(qty_n) + (' ' + qty_unit if qty_unit else '')) if qty_n is not None else ''
 
-    note = ''
+    # Live free-text patient instruction (English) from this order, if any.
+    live_note = ''
     for ins in (poi.get('instructions') or []):
         if ins.get('valuecode') == 'INSTYP1' and ins.get('instructiontext'):
-            note = _hm_norm(ins['instructiontext'])
+            live_note = _hm_norm(ins['instructiontext'])
             break
-    # Append the curated per-item Thai extra label (by item code) so the note
-    # shows ready-made Thai. Show BOTH: the doctor's free-text note (if any) then
-    # the extra-label Thai, de-duplicated so we never repeat the same phrase.
+
+    # The note-line must show the curated Thai (instructions > localLanguage)
+    # from orderitem_extralabel.json. Lead with that Thai label; only append the
+    # live English instruction if it adds something the Thai label doesn't
+    # already cover (its English `text` counterpart), so the line stays Thai and
+    # we don't print the same instruction twice in two languages.
+    note = ''
     if code:
-        extra = _load_extralabel_index().get(code)
-        extra_th = (extra or {}).get('localLanguage') or (extra or {}).get('text') or ''
-        if extra_th and extra_th != note:
-            note = (note + ' ' + extra_th).strip() if note else extra_th
+        extra = _load_extralabel_index().get(code) or {}
+        extra_th = extra.get('localLanguage') or extra.get('text') or ''
+        extra_en = extra.get('text') or ''
+        note = extra_th
+        if live_note and live_note != extra_th and live_note != extra_en:
+            note = (note + ' ' + live_note).strip() if note else live_note
+    if not note:
+        note = live_note
 
     provider = _hm_norm((_arc_first(poi.get('careprovideruid')) or {}).get('name') or '')
     if not provider:
