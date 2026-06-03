@@ -381,10 +381,47 @@ const MASTER_RE = new RegExp(
   "i"
 );
 
+// Loose fallback — just the leading "<Verb> N Unit [route...]" with whatever
+// trailing freq/timing text. Used when MASTER_RE can't parse the English tail
+// but we still have an authoritative Thai frequency (opts.freqOverride) to use,
+// so the dose verb is localised and the messy English tail is dropped.
+const TAKE_QTY_RE = new RegExp(
+  [
+    /^(?:Take|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put)\s+/i,
+    /(?:(?:to|in|into|onto)\s+(?:the\s+)?(?:mouth|throat|nose|nostril|nasal|eye|ear|skin|affected\s+area)\s+)?/i,
+    /(\d+(?:\.\d+)?|\bquarter\b|\bhalf\b|\bthree-quarter\b)\s+/,        // [1] qty
+    /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr)s?\b/i, // [2] unit
+  ].map(r => r.source).join(""),
+  "i"
+);
+
 function matchPattern(text, lang, opts = {}) {
   const t = text.trim();
+  const freqOverrideRaw = (lang === "th" && opts.freqOverride) ? String(opts.freqOverride).trim() : "";
+
   const m = t.match(MASTER_RE);
-  if (!m) return null;
+  if (!m) {
+    // No strict match. If we have an authoritative Thai frequency, salvage the
+    // dose verb from the loose pattern and append the Thai frequency — so the
+    // line is fully Thai instead of mixed (the unparsed English tail is dropped).
+    if (freqOverrideRaw) {
+      const lm = t.match(TAKE_QTY_RE);
+      if (lm) {
+        let unit = lm[2] || "tablet";
+        if (/^caplet/i.test(unit)) unit = "tablet";
+        let q = lm[1] || "1";
+        if (/^quarter$/i.test(q)) q = "¼";
+        else if (/^half$/i.test(q)) q = "½";
+        else if (/^three.quarter$/i.test(q)) q = "¾";
+        const take = _take(q, unit, lang);
+        if (take) return [take, freqOverrideRaw].filter(Boolean).join(" ");
+      }
+      // No dose verb/qty either (e.g. "As Directed (Nasal) As directed") —
+      // the Thai frequency alone is the whole instruction.
+      return freqOverrideRaw;
+    }
+    return null;
+  }
 
   const rawQty    = m[1] || "1";
   let   rawUnit   = m[2] || "tablet";
@@ -407,7 +444,7 @@ function matchPattern(text, lang, opts = {}) {
   // The BKN frequency master (opts.freqOverride) is authoritative for Thai — it
   // wins over the engine's own frequency translation whenever supplied. Covers
   // the full PRN/timing phrasing the master encodes (e.g. "วันละ 1 ครั้ง เวลามีอาการ").
-  const freqOverride = (lang === "th" && opts.freqOverride) ? String(opts.freqOverride).trim() : "";
+  const freqOverride = freqOverrideRaw;
   const freqPart   = freqOverride || (rawFreq ? _freq(rawFreq, lang) : null);
   // The master frequency name embeds its own timing (e.g. "2 Time Daily Morning
   // and Evening" → "วันละ 2 ครั้ง เช้า เย็น"). MASTER_RE captures that trailing
