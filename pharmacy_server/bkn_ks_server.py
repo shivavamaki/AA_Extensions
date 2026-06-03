@@ -124,7 +124,7 @@ def _hm_norm(s):
 # alongside the other rx master data. Missing/broken files degrade gracefully
 # to empty indices (the sheet then falls back to on-demand translation).
 FREQ_MASTER_FILE = RX_DIR / 'frequencymaster.json'
-EXTRALABEL_FILE  = RX_DIR / 'orderitem_extralabel.json'
+EXTRALABEL_FILE  = RX_DIR / 'medication-db.json'   # merged: per-item instructions (TH/EN)
 
 _freq_th_idx = None        # normalized freq name/code → Thai localLanguage
 _extralabel_idx = None     # item code → {'text': en, 'localLanguage': th}
@@ -163,37 +163,45 @@ def _load_freq_th_index():
 
 
 def _load_extralabel_index():
-    """item code → {'text', 'localLanguage'} note, from orderitem_extralabel.json.
-    Only "Patient Instruction" lines are used. 'localLanguage' is the Thai note
-    (default) and 'text' is the English note — kept separate, no cross-language
-    fallback, so each language stays pure."""
+    """item code → {'text', 'localLanguage'} note, from the merged
+    medication-db.json (each entry has an 'instructions' array with TH/EN).
+    Note-line source: prefer "Patient Instruction" lines; if a code has none
+    (e.g. dropped because a "Dispensing Instruction" exists), fall back to
+    "Dispensing Instruction". 'localLanguage' = Thai (default), 'text' = English,
+    kept separate so each language stays pure."""
     global _extralabel_idx
     if _extralabel_idx is not None:
         return _extralabel_idx
     idx = {}
+
+    def _collect(inss, want_type):
+        th_parts, en_parts = [], []
+        for ins in inss:
+            if (ins.get('type') or '').strip() != want_type:
+                continue
+            th = _hm_norm(ins.get('TH') or '')
+            en = _hm_norm(ins.get('EN') or '')
+            if th:
+                th_parts.append(th)
+            if en:
+                en_parts.append(en)
+        return ' '.join(th_parts).strip(), ' '.join(en_parts).strip()
+
     try:
         with open(EXTRALABEL_FILE, encoding='utf-8') as f:
             data = json.load(f)
-        for r in (data.get('results') or []):
-            code = _hm_norm(r.get('code') or '')
-            inss = r.get('instructions') or []
+        # Merged file is a dict keyed by code; each value has 'instructions'.
+        items = data.values() if isinstance(data, dict) else (data.get('results') or [])
+        for entry in items:
+            code = _hm_norm((entry or {}).get('code') or '')
+            inss = (entry or {}).get('instructions') or []
             if not code or not inss:
                 continue
-            th_parts, en_parts = [], []
-            for ins in inss:
-                if (ins.get('type') or '').strip() != 'Patient Instruction':
-                    continue
-                th = _hm_norm(ins.get('localLanguage') or '')
-                en = _hm_norm(ins.get('text') or '')
-                if th:
-                    th_parts.append(th)
-                if en:
-                    en_parts.append(en)
-            if th_parts or en_parts:
-                idx[code] = {
-                    'localLanguage': ' '.join(th_parts).strip(),
-                    'text': ' '.join(en_parts).strip(),
-                }
+            th, en = _collect(inss, 'Patient Instruction')
+            if not th and not en:
+                th, en = _collect(inss, 'Dispensing Instruction')
+            if th or en:
+                idx[code] = {'localLanguage': th, 'text': en}
     except FileNotFoundError:
         pass
     except Exception as e:
