@@ -32,7 +32,9 @@
         "content/automation.js",
         "content/boot.js",
         "content/ipfill_panel.js",
-        "content/drug-image.js"
+        "content/drug-image.js",
+        "content/frequency-master.js",
+        "content/order-item.js"
       ],
       "css": [
         "styles.css"

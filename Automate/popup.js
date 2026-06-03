@@ -7,6 +7,12 @@ const ARCUS_WORKBENCH_URL =
 const ARCUS_IPFILL_URL =
   "https://arcusair.bdms.co.th/#!/pharmacy/dispenseworkbench/pharmacy/ipfill";
 
+const ARCUS_FREQUENCY_MASTER_URL =
+  "https://arcusair.bdms.co.th/#!/ordermanagement/frequencymaster";
+
+const ARCUS_ORDER_ITEM_URL =
+  "https://arcusair.bdms.co.th/#!/ordermanagement/orderitem";
+
 function setStatus(id, msg, state = "") {
   const el = document.getElementById(id);
   if (!el) return;
@@ -113,5 +119,47 @@ document.getElementById("closeDrugImagePanel").addEventListener("click", async (
     setStatus("drugImageStatus", "Drug Image panel closed.", "done");
   } catch (err) {
     setStatus("drugImageStatus", `Failed: ${err?.message || "unknown error"}`, "error");
+  }
+});
+
+// Frequency Master Scraper
+
+document.getElementById("openFrequencyMaster")?.addEventListener("click", async () => {
+  const tabId = await openOrNavigate(ARCUS_FREQUENCY_MASTER_URL);
+  try { await executeInTab(tabId, () => window.dispatchEvent(new CustomEvent("arcus-toolkit:show-frequency-panel"))); } catch (_) {}
+  window.close();
+});
+
+document.getElementById("closeFrequencyPanel")?.addEventListener("click", async () => {
+  const tab = await getActiveArcusTab();
+  if (!tab) { setStatus("frequencyStatus", "No active tab found.", "error"); return; }
+  if (!tab.url?.includes("arcusair.bdms.co.th")) { setStatus("frequencyStatus", "Active tab is not Arcus Air.", "error"); return; }
+
+  try {
+    await executeInTab(tab.id, () => window.dispatchEvent(new CustomEvent("arcus-toolkit:remove-frequency-panel")));
+    setStatus("frequencyStatus", "Frequency scraper panel closed.", "done");
+  } catch (err) {
+    setStatus("frequencyStatus", `Failed: ${err?.message || "unknown error"}`, "error");
+  }
+});
+
+// Order Item Instruction Scraper
+
+document.getElementById("openOrderItem")?.addEventListener("click", async () => {
+  const tabId = await openOrNavigate(ARCUS_ORDER_ITEM_URL);
+  try { await executeInTab(tabId, () => window.dispatchEvent(new CustomEvent("arcus-toolkit:show-order-item-panel"))); } catch (_) {}
+  window.close();
+});
+
+document.getElementById("closeOrderItemPanel")?.addEventListener("click", async () => {
+  const tab = await getActiveArcusTab();
+  if (!tab) { setStatus("orderItemStatus", "No active tab found.", "error"); return; }
+  if (!tab.url?.includes("arcusair.bdms.co.th")) { setStatus("orderItemStatus", "Active tab is not Arcus Air.", "error"); return; }
+
+  try {
+    await executeInTab(tab.id, () => window.dispatchEvent(new CustomEvent("arcus-toolkit:remove-order-item-panel")));
+    setStatus("orderItemStatus", "Order Item scraper panel closed.", "done");
+  } catch (err) {
+    setStatus("orderItemStatus", `Failed: ${err?.message || "unknown error"}`, "error");
   }
 });

@@ -56,6 +56,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // keep channel open for async response
   }
 
+  if (message.type === "downloadJson") {
+    const filename = message.filename || "arcus-export.json";
+    const body = JSON.stringify(message.data ?? {}, null, 2);
+    const url = "data:application/json;charset=utf-8," + encodeURIComponent(body);
+    chrome.downloads.download({ url, filename, saveAs: true }, (downloadId) => {
+      const err = chrome.runtime.lastError;
+      sendResponse(err ? { ok: false, error: err.message } : { ok: true, downloadId });
+    });
+    return true;
+  }
+
   return false;
 });
 

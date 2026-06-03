@@ -1,11 +1,11 @@
 {
   "patientuid": "6a1982162d658c7769a41cd0",
   "createdAt": "2026-06-01T11:54:37.292079+00:00",
-  "updatedAt": "2026-06-01T11:56:41.152025+00:00",
+  "updatedAt": "2026-06-02T13:02:29.505674+00:00",
   "context": {
     "patientuid": "6a1982162d658c7769a41cd0",
     "patientvisituid": "6a19821703dce8e443beb34a",
-    "hn": "48-23-012646",
+    "hn": "48-23-014759",
     "patientName": "MR. KHANIT  SUDAKHAM"
   },
   "adrTimeline": {
@@ -13,5 +13,93 @@
     "customMedications": [],
     "adrEvent": null
   },
-  "medicationCache": {}
+  "medicationCache": {
+    "6a19821703dce8e443beb34a": {
+      "kind": "homeMedSheet",
+      "meds": [
+        {
+          "drug": "Cravit 750 Mg Tablet @#",
+          "instruction": "Take 1 Tablet Orally วันละ 1 ครั้ง เวลามีอาการ",
+          "note": "(Take Till Finished do not take with milk antacid calcium iron compound) , Antibiotic",
+          "quantity": "7 Tablet",
+          "code": "51101538000013",
+          "provider": "พิมพ์วิมล จันทร์แสง, พญ."
+        },
+        {
+          "drug": "Bilaxten TABLET (20 mg) @",
+          "instruction": "Take 1 Tablet Orally วันละ 1 ครั้ง ก่อนอาหารเช้า",
+          "note": "For Allergy-running Nose-itching, (Take 1 hour before meals or 2 hours after meals)",
+          "quantity": "7 Tablet",
+          "code": "51018060124004",
+          "provider": "พิมพ์วิมล จันทร์แสง, พญ."
+        },
+        {
+          "drug": "Arcoxia (90 mg) Tablet",
+          "instruction": "Take 1 Tablet Orally วันละ 1 ครั้ง เวลามีอาการ",
+          "note": "For pain (Anti-inflammatory-take after meal immediately)",
+          "quantity": "3 Tablet",
+          "code": "51142153000003",
+          "provider": "พิมพ์วิมล จันทร์แสง, พญ."
+        },
+        {
+          "drug": "Flunarizine 5 mg CAPSULE",
+          "instruction": "Take 1 Capsule Orally วันละ 1 ครั้ง ก่อนนอน เวลามีอาการ",
+          "note": "",
+          "quantity": "3 Capsule",
+          "code": "51014070301001",
+          "provider": "พิมพ์วิมล จันทร์แสง, พญ."
+        },
+        {
+          "drug": "Neurontin (100 Mg) Capsule //",
+          "instruction": "Take 1 Capsule Orally วันละ 1 ครั้ง ก่อนนอน เวลามีอาการ",
+          "note": "(Do not take with antacid) May cause drowsiness",
+          "quantity": "3 Capsule",
+          "code": "51141517000002",
+          "provider": "พิมพ์วิมล จันทร์แสง, พญ."
+        },
+        {
+          "drug": "Paracetamol 500 mg TABLET",
+          "instruction": "Take 1 Tablet Orally ทุก 6 ชั่วโมง เวลามีอาการ",
+          "note": "For Pain or Fever // Not take more than 6 tablets per day",
+          "quantity": "10 Tablet",
+          "code": "51142001000033",
+          "provider": "พิมพ์วิมล จันทร์แสง, พญ."
+        },
+        {
+          "drug": "Dextromethorphan 15 mg TABLET",
+          "instruction": "Take 1 Tablet Orally วันละ 3 ครั้ง หลังอาหาร เช้า เย็น ก่อนนอน",
+          "note": "For Cough",
+          "quantity": "10 Tablet",
+          "code": "51161808000002",
+          "provider": "พิมพ์วิมล จันทร์แสง, พญ."
+        },
+        {
+          "drug": "Pseudoephedrine Tablet (60 Mg) ><",
+          "instruction": "Take 1 Tablet Orally วันละ 3 ครั้ง หลังอาหาร เช้า เย็น ก่อนนอน",
+          "note": "Stuffy nose Or As Doctor Directed May cause palpitation",
+          "quantity": "10 Tablet",
+          "code": "51151743000003",
+          "provider": "พิมพ์วิมล จันทร์แสง, พญ."
+        },
+        {
+          "drug": "NasONEX (140 Dose) Nasal Spray",
+          "instruction": "Spray into the nostril 2 SPRAY(S) (Nasal) วันละ 2 ครั้ง เช้า ก่อนนอน",
+          "note": "( For External Use Only ) Shake well before use",
+          "quantity": "1 Bottle",
+          "code": "51181749000005",
+          "provider": "พิมพ์วิมล จันทร์แสง, พญ."
+        },
+        {
+          "drug": "Iliadin Nasal Metered SPRAY 0.05% (10 mL)",
+          "instruction": "Spray into Nostril 1 SPRAY(S) (Nasal) ทุก 6 ชั่วโมง เวลามีอาการคัดจมูก",
+          "note": "( When stuffy nose ) External Use Only, Do Not use more than 5 days.",
+          "quantity": "1 Bottle",
+          "code": "51161901000003",
+          "provider": "พิมพ์วิมล จันทร์แสง, พญ."
+        }
+      ],
+      "savedAt": "2026-06-02T12:41:48.753Z",
+      "fetchedAt": "2026-06-02T12:41:48.771166+00:00"
+    }
+  }
 }

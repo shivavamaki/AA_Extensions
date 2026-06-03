@@ -216,6 +216,48 @@
     </div>
   </div>
 
+  <!-- Frequency Master Scraper -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-icon">FM</span>
+      <span class="section-title">Frequency Master Scraper</span>
+      <span class="section-badge">SCRAPER</span>
+    </div>
+    <div class="section-body">
+      <p class="desc">Scrape Frequency Master rows and modify-dialog details into a JSON download.</p>
+      <div class="btn-row">
+        <button id="openFrequencyMaster" class="btn btn-primary">
+          <span class="btn-icon">Open</span> Frequency Master
+        </button>
+        <button id="closeFrequencyPanel" class="btn btn-danger">
+          <span class="btn-icon">X</span> Close Panel
+        </button>
+      </div>
+      <div id="frequencyStatus" class="status">Open Frequency Master - the scraper panel appears automatically.</div>
+    </div>
+  </div>
+
+  <!-- Order Item Instruction Scraper -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-icon">OI</span>
+      <span class="section-title">Order Item Scraper</span>
+      <span class="section-badge">SCRAPER</span>
+    </div>
+    <div class="section-body">
+      <p class="desc">Loop medication DB codes, open Order Item CRUD, and export all instruction rows to JSON.</p>
+      <div class="btn-row">
+        <button id="openOrderItem" class="btn btn-primary">
+          <span class="btn-icon">Open</span> Order Item
+        </button>
+        <button id="closeOrderItemPanel" class="btn btn-danger">
+          <span class="btn-icon">X</span> Close Panel
+        </button>
+      </div>
+      <div id="orderItemStatus" class="status">Open Order Item - the scraper panel appears automatically.</div>
+    </div>
+  </div>
+
   <div class="footer">arcusair.bdms.co.th &nbsp;·&nbsp; Pharmacy Automation</div>
 
   <script src="popup.js"></script>
