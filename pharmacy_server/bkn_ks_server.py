@@ -146,7 +146,10 @@ def _load_freq_th_index():
         with open(FREQ_MASTER_FILE, encoding='utf-8') as f:
             data = json.load(f)
         for row in (data.get('rows') or []):
-            th = _hm_norm(((row.get('detail') or {}).get('localLanguage')) or '')
+            # Slim shape: lang.TH (Thai) / lang.EN. Fall back to the older
+            # detail.localLanguage for backward compatibility.
+            th = _hm_norm((row.get('lang') or {}).get('TH')
+                          or ((row.get('detail') or {}).get('localLanguage')) or '')
             if not th:
                 continue
             # Match on the human-readable frequency name (what the order item

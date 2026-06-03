@@ -264,7 +264,17 @@
       throw new Error(`Dialog mismatch for ${rowData.code || rowData.name} (got ${dc || dn})`);
     }
     await closeDialog();
-    return { ...rowData, detail, scrapedAt: new Date().toISOString() };
+    // Slim output shape consumed by the pharmacy server:
+    //   { code, name, lang: { EN, TH }, scrapedAt }
+    // EN = English frequency name, TH = the dialog's local-language (Thai) label.
+    const en = (rowData.name || detail.name || "").trim();
+    const th = (detail.localLanguage || "").trim();
+    return {
+      code: (rowData.code || detail.code || "").trim(),
+      name: en,
+      lang: { EN: en, TH: th },
+      scrapedAt: new Date().toISOString(),
+    };
   }
 
   function hasMoreDataHint() {
@@ -351,7 +361,14 @@
             seen.add(key);
             pushLog("success", `Scraped ${detail.code || detail.name}`);
           } catch (err) {
-            state.rows.push({ ...rowData, error: err.message || String(err), scrapedAt: new Date().toISOString() });
+            const en = (rowData.name || "").trim();
+            state.rows.push({
+              code: (rowData.code || "").trim(),
+              name: en,
+              lang: { EN: en, TH: "" },
+              error: err.message || String(err),
+              scrapedAt: new Date().toISOString(),
+            });
             seen.add(key);
             pushLog("fail", `${rowData.code || rowData.name}: ${err.message || err}`);
             try { await closeDialog(); } catch (_) {}
