@@ -214,6 +214,88 @@ def _load_extralabel_index():
     return idx
 
 
+# ── Offline note translator (EN → TH) ──────────────────────────
+# Free-text order notes (warnings, drug classes) have no curated Thai for many
+# codes. Translate them offline from a glossary mined from the curated Patient
+# Instruction pairs + common warning/class terms — no network, no Google.
+NOTE_GLOSSARY_FILE = RX_DIR / 'note-glossary.json'
+_note_gloss = None
+
+def _load_note_glossary():
+    global _note_gloss
+    if _note_gloss is not None:
+        return _note_gloss
+    phrases, terms = {}, {}
+    try:
+        with open(NOTE_GLOSSARY_FILE, encoding='utf-8') as f:
+            data = json.load(f)
+        phrases = {(_hm_norm(k)).lower(): v for k, v in (data.get('phrases') or {}).items()}
+        # Longest terms first so multi-word phrases win over their sub-words.
+        terms = sorted(((k, v) for k, v in (data.get('terms') or {}).items()),
+                       key=lambda kv: -len(kv[0]))
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        print(f'[note-gloss] load failed: {e}', file=sys.stderr)
+    _note_gloss = (phrases, terms)
+    return _note_gloss
+
+def _translate_note(en):
+    """EN note → Thai. Exact curated phrase first; else substitute known terms.
+    Returns '' if nothing could be translated (caller keeps the English)."""
+    src = _hm_norm(en)
+    if not src or not re.search(r'[A-Za-z]', src):
+        return src                       # already Thai / empty
+    phrases, terms = _load_note_glossary()
+    exact = phrases.get(src.lower())
+    if exact:
+        return exact
+    # Component substitution: replace each known term (case-insensitive).
+    out = src
+    for term, th in terms:
+        out = re.sub(re.escape(term), th, out, flags=re.IGNORECASE)
+    out = _hm_norm(out)
+    # Only return if we actually localised something (no Latin left, or it
+    # changed meaningfully). If English remains, treat as a partial: keep it
+    # only when most letters were translated away.
+    if out and not re.search(r'[A-Za-z]', out):
+        return out
+    return out if out != src and len(re.findall(r'[A-Za-z]', out)) < len(re.findall(r'[A-Za-z]', src)) / 2 else ''
+
+
+_rx_note_lock = threading.Lock()
+
+def save_rx_note(code, th, en=''):
+    """Write a client-translated note for `code` into medication-db.json as a
+    synthesized "Patient Instruction" (TH/EN). Returns True if the code exists.
+    Invalidates the cached extralabel index so the new Thai is served at once."""
+    global _extralabel_idx
+    code = _hm_norm(code)
+    with _rx_note_lock:
+        db = load_rx('medication-db')
+        if not isinstance(db, dict) or code not in db:
+            return False
+        entry = db[code]
+        inss = entry.get('instructions')
+        if not isinstance(inss, list):
+            inss = []
+        # Replace any prior auto-note we wrote; keep other instruction types.
+        inss = [i for i in inss if not (isinstance(i, dict) and i.get('_auto'))]
+        inss.append({
+            'type': 'Patient Instruction',
+            'EN': en or th,
+            'TH': th,
+            '_auto': True,                 # marks a client-translated note
+            'autoAt': _now_iso(),
+        })
+        entry['instructions'] = inss
+        entry['instructionCount'] = len(inss)
+        db[code] = entry
+        save_rx('medication-db', db)
+        _extralabel_idx = None             # force rebuild on next read
+    return True
+
+
 # ── Home Medication Sheet (from ArcusAir getallorderitem API) ──
 ARCUS_BASE = 'https://arcusair.bdms.co.th'
 ARCUS_ORDERITEM_URL = ARCUS_BASE + '/ordermanagement/patientorder/getallorderitem'
@@ -512,13 +594,27 @@ def _arcus_item_to_med(it):
     extra_th = extra.get('localLanguage') or ''
     extra_en = extra.get('text') or ''
 
-    def _with_live(base):
-        if live_note and live_note != base:
-            return (base + ' ' + live_note).strip() if base else live_note
+    # For the Thai note, translate the live English instruction offline so the
+    # note-line isn't a mix of curated Thai + raw English.
+    live_note_th = _translate_note(live_note)
+    # Self-heal: if this code had no curated Thai and we just translated its live
+    # note to real Thai, persist it into medication-db.json so future fetches
+    # serve it as curated (and other patients benefit).
+    if code and live_note and live_note_th and not extra_th \
+            and not re.search(r'[A-Za-z]', live_note_th):
+        try:
+            save_rx_note(code, live_note_th, live_note)
+        except Exception as e:
+            print(f'[note-persist] {code}: {e}', file=sys.stderr)
+    live_note_th = live_note_th or live_note
+
+    def _with_live(base, live):
+        if live and live != base:
+            return (base + ' ' + live).strip() if base else live
         return base
 
-    note   = _with_live(extra_th)          # Thai note (default)
-    note_en = _with_live(extra_en)         # English note
+    note   = _with_live(extra_th, live_note_th)   # Thai note (default)
+    note_en = _with_live(extra_en, live_note)     # English note
     # If a language has no label at all, fall back to the other so the line
     # isn't blank.
     if not note:
@@ -1355,6 +1451,11 @@ class Handler(BaseHTTPRequestHandler):
         if parts == ['api', 'med-images-list']:
             return 'med-images-list', None, None
 
+        # /api/rx-note/:code — persist a client-translated note (TH/EN) into the
+        # medication-db.json entry as a synthesized Patient Instruction.
+        if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'rx-note':
+            return 'rx-note', urllib.parse.unquote(parts[2]), None
+
         # /api/med-images/:filename  — image upload
         if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'med-images':
             return 'med-image-upload', urllib.parse.unquote(parts[2]), None
@@ -1554,7 +1655,7 @@ class Handler(BaseHTTPRequestHandler):
         # Allow the trusted Chrome extension to write data routes without login.
         # User-management routes always require explicit auth.
         ext_data_write = self._is_trusted_extension() and rtype in (
-            'kpi-day', 'kpi-section', 'ks', 'rx',
+            'kpi-day', 'kpi-section', 'ks', 'rx', 'rx-note',
             'med-image-upload', 'ks-file-upload', 'schedule',
             'patient', 'patient-context', 'patient-adr', 'patient-medcache',
         )
@@ -1597,6 +1698,20 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(400, {'error': 'Body must be a JSON object'}); return
             save_kpi_day(key, body)
             self.send_json(200, {'ok': True})
+
+        elif rtype == 'rx-note':
+            # Persist a client-translated note (TH + optional EN) for an item code
+            # into medication-db.json, so next time the note is served as curated
+            # Thai instead of falling back to the live English order instruction.
+            if not isinstance(body, dict):
+                self.send_json(400, {'error': 'Body must be a JSON object'}); return
+            th = _hm_norm(body.get('TH') or '')
+            en = _hm_norm(body.get('EN') or '')
+            if not key or not th:
+                self.send_json(400, {'error': 'code (URL) and TH (body) required'}); return
+            ok = save_rx_note(key, th, en)
+            self.send_json(200 if ok else 404,
+                           {'ok': ok} if ok else {'error': 'Unknown item code'})
 
         elif rtype == 'kpi-section':
             field = SECTION_FIELD[extra]
