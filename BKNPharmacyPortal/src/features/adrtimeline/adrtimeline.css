@@ -56,7 +56,7 @@ body {
   flex-direction: column;
   gap: 5px;
   min-width: 220px;
-  max-width: 360px;
+  max-width: 640px;
 }
 
 .mj-adr-label {
@@ -65,7 +65,56 @@ body {
   color: #880e4f;
   text-transform: uppercase;
   letter-spacing: .4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
+
+/* + add-event / add-segment button */
+.mj-adr-add-btn {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  color: #ad1457;
+  background: #fff;
+  border: 1px solid #f48fb1;
+  border-radius: 5px;
+  padding: 1px 7px;
+  cursor: pointer;
+}
+.mj-adr-add-btn:hover { background: #f8bbd0; }
+
+/* Multiple ADR event cards laid out left→right */
+.mj-adr-evt-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mj-adr-evt-card {
+  position: relative;
+  flex: 1 1 200px;
+  min-width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(255,255,255,.4);
+  border: 1px dashed rgba(233,30,99,.4);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+.mj-adr-evt-del {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  color: #c62828;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.mj-adr-evt-del:hover { color: #7f0000; }
 
 .mj-adr-form-row {
   display: flex;
@@ -362,6 +411,54 @@ body {
   color: #c62828;
   white-space: nowrap;
   background: rgba(255,255,255,.85);
+  padding: 0 3px;
+  border-radius: 2px;
+}
+
+/* ── ADR event bar / marker in the Events row ─────────────────────────── */
+.mj-adr-bar {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 14px;
+  background: rgba(198,40,40,.18);
+  border: 1.5px solid #c62828;
+  border-radius: 7px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  min-width: 6px;
+}
+.mj-adr-bar-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  color: #c62828;
+  white-space: nowrap;
+  padding: 0 5px;
+  pointer-events: none;
+}
+.mj-adr-mark {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 9px;
+  height: 9px;
+  background: #c62828;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #c62828;
+  z-index: 6;
+}
+.mj-adr-mark-lbl {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  font-weight: 700;
+  color: #c62828;
+  white-space: nowrap;
+  background: rgba(255,255,255,.9);
   padding: 0 3px;
   border-radius: 2px;
 }

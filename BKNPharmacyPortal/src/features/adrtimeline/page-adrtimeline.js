@@ -41,7 +41,7 @@ function _persistAdrTimeline() {
     const payload = {
       customEvents:      _journeyData.customEvents      || [],
       customMedications: _journeyData.customMedications || [],
-      adrEvent:          _journeyData.adrEvent          || null,
+      adrEvents:         _adrEvents(_journeyData),
     };
     _bknServerFetch(`/api/patients/${encodeURIComponent(ctx.patientuid)}/adr-timeline`, {
       method: "PUT", headers: { "Content-Type": "application/json" },
@@ -58,6 +58,38 @@ function esc(str) {
 }
 function deepClone(obj) { return JSON.parse(JSON.stringify(obj)); }
 function _uid() { return Math.random().toString(36).slice(2, 9); }
+
+/* ── ADR events model ────────────────────────────────────────────────────
+ * Data model evolved from a single `adrEvent` { date, symptoms, details } to
+ * an array `adrEvents` [{ id, start, end, symptoms, details }]. `start` is the
+ * onset date; `end` is optional (when present the Events row draws a bar over
+ * the span instead of just a marker at the start). Old data is migrated in. */
+function _adrEvents(journeyData) {
+  const jd = journeyData || _journeyData || {};
+  if (!Array.isArray(jd.adrEvents)) {
+    const old = jd.adrEvent;
+    jd.adrEvents = (old && (old.date || old.symptoms || old.details))
+      ? [{ id: _uid(), start: old.date || "", end: "", symptoms: old.symptoms || "", details: old.details || "" }]
+      : [];
+    delete jd.adrEvent;
+  }
+  // Backfill ids / normalise keys.
+  jd.adrEvents.forEach(e => {
+    if (!e.id) e.id = _uid();
+    if (e.date && !e.start) { e.start = e.date; delete e.date; }
+    if (e.end == null) e.end = "";
+  });
+  return jd.adrEvents;
+}
+
+/* Multiple date ranges for one med. Falls back to the single
+ * startDateTime/endDateTime when `segments` is absent. */
+function _medSegments(med) {
+  if (Array.isArray(med.segments) && med.segments.length) {
+    return med.segments.filter(s => s && s.start);
+  }
+  return med.startDateTime ? [{ start: med.startDateTime, end: med.endDateTime || "" }] : [];
+}
 
 const EVT_PRESETS = [
   { val: "Hold medicine",   color: "#ef6c00", lbl: "⏸ Hold medicine"   },
@@ -291,66 +323,113 @@ function buildGanttRow(med, range, vlineHtml, atMap, rowEvents) {
   const stopX    = isStopped ? `<div class="mj-stop-x" style="left:calc(${lp}% + ${wp}% - 5px)">✕</div>` : "";
   const dashed   = med._isCustom ? "border:2px dashed rgba(255,255,255,.6)" : "";
 
+  /* Extra bars for additional date ranges (med.segments beyond the first). The
+   * primary bar above is segment[0]; segments[1..] each draw their own bar. */
+  let extraBars = "";
+  const segs = _medSegments(med);
+  for (let i = 1; i < segs.length; i++) {
+    const s2 = parseDate(segs[i].start);
+    if (!s2) continue;
+    const e2 = parseDate(segs[i].end) || s2;
+    const so = Math.max(0, Math.min(totalDays, diffDays(start, s2)));
+    const eo = Math.max(so + 0.3, Math.min(totalDays, diffDays(start, e2)));
+    extraBars += `<div class="mj-bar" style="left:${pct(so,totalDays)}%;width:${pct(eo-so,totalDays)}%;background:${color};opacity:${alpha};${dashed}"></div>`;
+  }
+
   return `<div class="mj-gantt-row" data-medkey="${medKey}">${drugCol}<div class="mj-bars-col">
     ${vlineHtml}
     <div class="mj-bar" style="left:${lp}%;width:${wp}%;background:${color};opacity:${alpha};${dashed}">${barLabel}</div>
-    ${stopX}${ticksHtml}${rowEvtHtml}
+    ${extraBars}${stopX}${ticksHtml}${rowEvtHtml}
   </div></div>`;
 }
 
 /* ── ADR callout with inline editable form ──────────────────────────────── */
-function buildAdrCalloutWithForm(adrEvent) {
-  const ae      = adrEvent || {};
-  const dateVal = ae.date    || "";
-  const sympVal = ae.symptoms|| "";
-  const detsVal = ae.details || "";
+const ADR_SYMP_OPTS = [
+  ["Rash",            "Rash (ผื่น)"],
+  ["Urticaria",       "Urticaria (ลมพิษ)"],
+  ["Angioedema",      "Angioedema"],
+  ["Anaphylaxis",     "Anaphylaxis"],
+  ["SJS",             "SJS"],
+  ["TEN",             "TEN"],
+  ["DRESS",           "DRESS"],
+  ["Fever",           "Fever (ไข้)"],
+  ["Nausea/Vomiting", "Nausea/Vomiting"],
+  ["Other",           "Other (อื่นๆ)"],
+];
 
-  const SYMP_OPTS = [
-    ["Rash",            "Rash (ผื่น)"],
-    ["Urticaria",       "Urticaria (ลมพิษ)"],
-    ["Angioedema",      "Angioedema"],
-    ["Anaphylaxis",     "Anaphylaxis"],
-    ["SJS",             "SJS"],
-    ["TEN",             "TEN"],
-    ["DRESS",           "DRESS"],
-    ["Fever",           "Fever (ไข้)"],
-    ["Nausea/Vomiting", "Nausea/Vomiting"],
-    ["Other",           "Other (อื่นๆ)"],
-  ];
-
-  const opts = SYMP_OPTS.map(([val, lbl]) =>
+/* One ADR event card. `idx` keys its inputs (mj-adr-{field}-{idx}). */
+function buildAdrEventCard(ev, idx) {
+  const startVal = ev.start   || "";
+  const endVal   = ev.end     || "";
+  const sympVal  = ev.symptoms|| "";
+  const detsVal  = ev.details || "";
+  const opts = ADR_SYMP_OPTS.map(([val, lbl]) =>
     `<option value="${esc(val)}"${sympVal===val?" selected":""}>${esc(lbl)}</option>`
   ).join("");
-
-  const onsetSummary = dateVal
-    ? `ADR onset: <strong>${esc(fmtDate(dateVal))}</strong>${sympVal ? ` — ${esc(sympVal)}` : ""}`
+  const delBtn = idx > 0
+    ? `<button class="mj-adr-evt-del" data-idx="${idx}" title="ลบเหตุการณ์นี้">×</button>`
     : "";
-
-  return `<div class="mj-adr-callout" id="mj-adr-callout">
-  <div class="mj-adr-label">⚠️ ADR Event</div>
-  <div class="mj-adr-form-row">
-    <label class="mj-adr-field-label">วันที่พบ ADR
-      <input type="date" id="mj-adr-date" class="mj-adr-input" value="${esc(dateVal)}">
-    </label>
+  return `<div class="mj-adr-evt-card" data-idx="${idx}">
+    ${delBtn}
+    <div class="mj-adr-form-row">
+      <label class="mj-adr-field-label">วันเริ่ม ADR
+        <input type="date" id="mj-adr-start-${idx}" class="mj-adr-input mj-adr-start" data-idx="${idx}" value="${esc(startVal)}">
+      </label>
+      <label class="mj-adr-field-label">วันสิ้นสุด
+        <input type="date" id="mj-adr-end-${idx}" class="mj-adr-input mj-adr-end" data-idx="${idx}" value="${esc(endVal)}">
+      </label>
+    </div>
     <label class="mj-adr-field-label">อาการ
-      <select id="mj-adr-symptoms" class="mj-adr-input">
+      <select id="mj-adr-symptoms-${idx}" class="mj-adr-input mj-adr-symptoms" data-idx="${idx}">
         <option value="">-- เลือก --</option>
         ${opts}
       </select>
     </label>
+    <input type="text" id="mj-adr-details-${idx}" class="mj-adr-input mj-adr-details-input mj-adr-details" data-idx="${idx}"
+      placeholder="รายละเอียดเพิ่มเติม..." value="${esc(detsVal)}">
+  </div>`;
+}
+
+function buildAdrCalloutWithForm(journeyData) {
+  const evts = _adrEvents(journeyData);
+  if (!evts.length) evts.push({ id: _uid(), start: "", end: "", symptoms: "", details: "" });
+  const cards = evts.map((ev, i) => buildAdrEventCard(ev, i)).join("");
+  return `<div class="mj-adr-callout" id="mj-adr-callout">
+  <div class="mj-adr-label">⚠️ ADR Event
+    <button id="mj-adr-add" class="mj-adr-add-btn" title="เพิ่มเหตุการณ์ ADR">＋</button>
   </div>
-  <input type="text" id="mj-adr-details" class="mj-adr-input mj-adr-details-input"
-    placeholder="รายละเอียดเพิ่มเติม..." value="${esc(detsVal)}">
-  <div class="mj-adr-onset" id="mj-adr-onset-summary"${onsetSummary?"":" style=\"display:none\""}>
-    ${onsetSummary}
-  </div>
+  <div class="mj-adr-evt-list" id="mj-adr-evt-list">${cards}</div>
 </div>`;
 }
 
 /* ── Custom events row ───────────────────────────────────────────────────── */
-function buildEventsRow(events, range, vlineHtml) {
+function buildEventsRow(events, range, vlineHtml, adrEvents) {
   const { start, totalDays } = range;
   let dots = vlineHtml;
+
+  /* ADR event bars — one per ADR event, spanning start→end (or a marker dot at
+   * start when no end), labelled with the event's details text. */
+  for (const ae of (adrEvents || [])) {
+    const sd = parseDate(ae.start);
+    if (!sd) continue;
+    const sOff = diffDays(start, sd);
+    if (sOff < 0 || sOff > totalDays) continue;
+    const ed = parseDate(ae.end);
+    const lbl = (ae.details || ae.symptoms || "ADR").trim();
+    if (ed && diffDays(start, ed) > sOff) {
+      const eOff = Math.min(totalDays, diffDays(start, ed));
+      const lp = pct(sOff, totalDays), wp = pct(eOff - sOff, totalDays);
+      dots += `<div class="mj-adr-bar" data-adrid="${esc(ae.id)}" style="left:${lp}%;width:${wp}%" title="${esc(lbl)}">
+        <span class="mj-adr-bar-lbl">${esc(lbl)}</span>
+      </div>`;
+    } else {
+      const lp = pct(sOff, totalDays);
+      dots += `<div class="mj-adr-mark" data-adrid="${esc(ae.id)}" style="left:${lp}%" title="${esc(lbl)}">
+        <span class="mj-adr-mark-lbl">${esc(lbl)}</span>
+      </div>`;
+    }
+  }
+
   for (const ev of (events || [])) {
     const d = parseDate(ev.date);
     if (!d) continue;
@@ -421,28 +500,24 @@ function buildGanttChart(journeyData) {
   _currentRange = range; /* store for dynamic ADR vline updates */
   const { start, totalDays } = range;
 
-  /* Vertical ADR event line — always rendered, show/hide via JS */
-  const ae = journeyData.adrEvent || {};
-  let vlineLp   = "0";
-  let vlineShow = "none";
-  if (ae.date) {
-    const ad  = parseDate(ae.date);
+  /* Vertical ADR markers — a thin line per ADR event onset, drawn in every row
+   * for visual alignment. NO "onset" text (the detail label lives in the Events
+   * row only). */
+  const adrEvents = _adrEvents(journeyData);
+  const vlineHtml = adrEvents.map(ev => {
+    const ad  = parseDate(ev.start);
     const off = ad ? diffDays(start, ad) : -1;
-    if (off >= 0 && off <= totalDays) {
-      vlineLp   = pct(off, totalDays);
-      vlineShow = "block";
-    }
-  }
-  const vlineHtml = `<div class="mj-vline" style="left:${vlineLp}%;display:${vlineShow}">
-    <span class="mj-vline-tip">onset</span>
-  </div>`;
+    const show = (off >= 0 && off <= totalDays) ? "block" : "none";
+    const lp   = (off >= 0 && off <= totalDays) ? pct(off, totalDays) : "0";
+    return `<div class="mj-vline" data-adrid="${esc(ev.id)}" style="left:${lp}%;display:${show}"></div>`;
+  }).join("");
 
   const atMap     = buildAdminTimesMap(journeyData);
   const dateHdr   = buildDateHeader(range);
 
-  /* General events row (no drugKey) */
+  /* General events row (no drugKey) — also hosts the ADR event bars + labels. */
   const generalEvts = (journeyData.customEvents || []).filter(ev => !ev.drugKey);
-  const eventsRow   = buildEventsRow(generalEvts, range, vlineHtml);
+  const eventsRow   = buildEventsRow(generalEvts, range, vlineHtml, adrEvents);
 
   /* Per-drug events */
   const rows = meds.map(m => {
@@ -499,14 +574,16 @@ function exportJourneyJson(journeyData) {
 
 function copySummaryText(journeyData) {
   const ctx = journeyData.patientContext || {};
-  const ae  = journeyData.adrEvent || {};
   const lines = [
     "=== ADR Drug Timeline ===",
     `ผู้ป่วย: ${ctx.patientName||"–"}  HN: ${ctx.hn||"–"}  AN: ${ctx.an||"–"}`,
     `แพทย์: ${ctx.doctor||"–"}  แผนก: ${ctx.dept||"–"}`,
   ];
-  if (ae.date) lines.push(`ADR onset: ${fmtDate(ae.date)}${ae.symptoms?" — "+ae.symptoms:""}`);
-  if (ae.details) lines.push(`รายละเอียด: ${ae.details}`);
+  for (const ae of _adrEvents(journeyData)) {
+    if (!ae.start) continue;
+    const span = ae.end ? `${fmtDate(ae.start)} – ${fmtDate(ae.end)}` : fmtDate(ae.start);
+    lines.push(`ADR: ${span}${ae.symptoms?" — "+ae.symptoms:""}${ae.details?" ("+ae.details+")":""}`);
+  }
   lines.push("");
   for (const m of getAllMeds(journeyData)) {
     lines.push(`• ${m.drugName}  ${m.displayDose||""}  ${fmtDateRange(m.startDateTime,m.endDateTime)}`);
@@ -640,13 +717,27 @@ function _showNotePopup(medKey, currentNote, clientX, clientY) {
 function _showEditMedPopup(med, medKey, clientX, clientY) {
   _closePopup("mj-float-popup");
   const isoFmt = d => d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}` : "";
-  const startIso = isoFmt(parseDate(med.startDateTime)) || med.startDateTime || "";
-  const endIso   = isoFmt(parseDate(med.endDateTime))   || med.endDateTime   || "";
+  const segIso = s => ({ start: isoFmt(parseDate(s.start)) || s.start || "", end: isoFmt(parseDate(s.end)) || s.end || "" });
+  let segs = _medSegments(med).map(segIso);
+  if (!segs.length) segs = [{ start: "", end: "" }];
+
+  /* One start/end row inside the popup. */
+  const segRow = (s, i) => `<div class="mj-ep-seg-row" data-idx="${i}" style="display:flex;gap:8px;align-items:flex-end;margin-bottom:6px">
+      <label style="flex:1;display:flex;flex-direction:column;font-size:9px;font-weight:700;color:#90a4ae;gap:2px">${i===0?"วันเริ่ม":""}
+        <input type="date" class="mj-adr-input mj-ep-start" value="${esc(s.start)}">
+      </label>
+      <label style="flex:1;display:flex;flex-direction:column;font-size:9px;font-weight:700;color:#90a4ae;gap:2px">${i===0?"วันสิ้นสุด":""}
+        <input type="date" class="mj-adr-input mj-ep-end" value="${esc(s.end)}">
+      </label>
+      ${i===0
+        ? `<button id="mj-ep-add-seg" class="mj-adr-add-btn" title="เพิ่มช่วงวันที่">＋</button>`
+        : `<button class="mj-ep-del-seg mj-adr-add-btn" data-idx="${i}" title="ลบช่วงนี้" style="background:#ffebee;color:#c62828;border-color:#ef9a9a">×</button>`}
+    </div>`;
 
   const pop = document.createElement("div");
   pop.id = "mj-float-popup";
   pop.className = "mj-float-popup";
-  pop.style.minWidth = "270px";
+  pop.style.minWidth = "300px";
   pop.innerHTML = `
     <div class="mj-fpop-title">✏️ แก้ไขยา</div>
     <label style="display:flex;flex-direction:column;font-size:9px;font-weight:700;color:#90a4ae;gap:2px;margin-bottom:6px">ชื่อยา
@@ -655,14 +746,7 @@ function _showEditMedPopup(med, medKey, clientX, clientY) {
     <label style="display:flex;flex-direction:column;font-size:9px;font-weight:700;color:#90a4ae;gap:2px;margin-bottom:6px">ขนาด / วิธีใช้
       <input id="mj-ep-dose" class="mj-adr-input" value="${esc(med.displayDose||"")}">
     </label>
-    <div style="display:flex;gap:8px;margin-bottom:6px">
-      <label style="flex:1;display:flex;flex-direction:column;font-size:9px;font-weight:700;color:#90a4ae;gap:2px">วันเริ่ม
-        <input type="date" id="mj-ep-start" class="mj-adr-input" value="${esc(startIso)}">
-      </label>
-      <label style="flex:1;display:flex;flex-direction:column;font-size:9px;font-weight:700;color:#90a4ae;gap:2px">วันสิ้นสุด
-        <input type="date" id="mj-ep-end" class="mj-adr-input" value="${esc(endIso)}">
-      </label>
-    </div>
+    <div id="mj-ep-segs">${segs.map(segRow).join("")}</div>
     <label style="display:flex;flex-direction:column;font-size:9px;font-weight:700;color:#90a4ae;gap:2px;margin-bottom:8px">บันทึก
       <input id="mj-ep-note" class="mj-adr-input" value="${esc(med.pharmacistNote||"")}">
     </label>
@@ -680,19 +764,54 @@ function _showEditMedPopup(med, medKey, clientX, clientY) {
   pop.style.left = left + "px";
   pop.style.top  = top  + "px";
 
+  /* Read the current segment rows out of the popup DOM. */
+  function _readSegs() {
+    const rows = [...pop.querySelectorAll(".mj-ep-seg-row")];
+    return rows.map(r => ({
+      start: (r.querySelector(".mj-ep-start").value || "").trim(),
+      end:   (r.querySelector(".mj-ep-end").value   || "").trim(),
+    })).filter(s => s.start);
+  }
+  /* Persist the typed name/dose/note/segments onto the med, then re-render. */
+  function _commit(rerender) {
+    med.drugName       = (document.getElementById("mj-ep-name").value || "").trim();
+    med.displayDose    = (document.getElementById("mj-ep-dose").value || "").trim();
+    med.pharmacistNote = (document.getElementById("mj-ep-note").value || "").trim();
+    const segs = _readSegs();
+    if (segs.length) {
+      med.segments      = segs;
+      med.startDateTime = segs[0].start;             // keep primary in sync
+      med.endDateTime   = segs[0].end || med.endDateTime;
+    }
+    if (rerender) renderMedicationJourney(_journeyData);
+  }
+
   document.getElementById("mj-ep-cancel").addEventListener("click", () => _closePopup("mj-float-popup"));
   document.getElementById("mj-ep-ok").addEventListener("click", () => {
-    med.drugName      = (document.getElementById("mj-ep-name") .value || "").trim();
-    med.displayDose   = (document.getElementById("mj-ep-dose") .value || "").trim();
-    med.startDateTime = document.getElementById("mj-ep-start").value || med.startDateTime;
-    med.endDateTime   = document.getElementById("mj-ep-end")  .value || med.endDateTime;
-    med.pharmacistNote= (document.getElementById("mj-ep-note") .value || "").trim();
+    _commit(true);
     _closePopup("mj-float-popup");
-    renderMedicationJourney(_journeyData);
   });
 
+  /* + add another date range: capture current edits, push a blank segment,
+   * reopen the popup at the same spot to re-render the rows. */
+  const addSegBtn = document.getElementById("mj-ep-add-seg");
+  if (addSegBtn) addSegBtn.addEventListener("click", () => {
+    _commit(false);
+    med.segments = [..._medSegments(med), { start: "", end: "" }];
+    _showEditMedPopup(med, medKey, clientX, clientY);
+  });
+  pop.querySelectorAll(".mj-ep-del-seg").forEach(btn => btn.addEventListener("click", () => {
+    _commit(false);
+    const i = Number(btn.dataset.idx);
+    const cur = _medSegments(med);
+    cur.splice(i, 1);
+    med.segments = cur;
+    med.startDateTime = (cur[0] && cur[0].start) || med.startDateTime;
+    _showEditMedPopup(med, medKey, clientX, clientY);
+  }));
+
   setTimeout(() => {
-    function _out(e) { if (!pop.contains(e.target)) { _closePopup("mj-float-popup"); document.removeEventListener("mousedown",_out); } }
+    function _out(e) { if (!pop.contains(e.target)) { _commit(true); _closePopup("mj-float-popup"); document.removeEventListener("mousedown",_out); } }
     document.addEventListener("mousedown", _out);
   }, 50);
 }
@@ -807,51 +926,51 @@ function wireInteractivity(journeyData) {
     renderEditPage();
   });
 
-  /* ── ADR event form ───────────────────────────────────────────────────── */
-  const adrDateEl = $("mj-adr-date");
-  const adrSympEl = $("mj-adr-symptoms");
-  const adrDetsEl = $("mj-adr-details");
+  /* ── ADR event form (multiple events) ─────────────────────────────────── */
+  const adrList = $("mj-adr-evt-list");
 
-  function _syncAdrEvent() {
-    const date    = adrDateEl ? adrDateEl.value           : "";
-    const symp    = adrSympEl ? adrSympEl.value           : "";
-    const details = adrDetsEl ? adrDetsEl.value.trim()    : "";
-
-    _journeyData.adrEvent = { date, symptoms: symp, details };
+  /* Read the event cards back into the model and re-render so the Events-row
+   * bars/markers reflect the new dates/labels. */
+  function _syncAdrEvents(rerender) {
+    const evts = _adrEvents(_journeyData);
+    document.querySelectorAll("#mj-adr-evt-list .mj-adr-evt-card").forEach(card => {
+      const i = Number(card.dataset.idx);
+      if (!evts[i]) return;
+      const g = sel => card.querySelector(sel);
+      evts[i].start    = g(".mj-adr-start")    ? g(".mj-adr-start").value    : "";
+      evts[i].end      = g(".mj-adr-end")      ? g(".mj-adr-end").value      : "";
+      evts[i].symptoms = g(".mj-adr-symptoms") ? g(".mj-adr-symptoms").value : "";
+      evts[i].details  = g(".mj-adr-details")  ? g(".mj-adr-details").value.trim() : "";
+    });
     _persistAdrTimeline();
-
-    /* Update onset summary line */
-    const summary = $("mj-adr-onset-summary");
-    if (summary) {
-      if (date) {
-        summary.style.display = "";
-        summary.innerHTML = `ADR onset: <strong>${esc(fmtDate(date))}</strong>${symp ? ` — ${esc(symp)}` : ""}`;
-      } else {
-        summary.style.display = "none";
-        summary.innerHTML = "";
-      }
-    }
-
-    /* Update all vline positions */
-    if (date && _currentRange) {
-      const ad  = parseDate(date);
-      const off = ad ? diffDays(_currentRange.start, ad) : -1;
-      document.querySelectorAll(".mj-vline").forEach(el => {
-        if (off >= 0 && off <= _currentRange.totalDays) {
-          el.style.left    = pct(off, _currentRange.totalDays) + "%";
-          el.style.display = "block";
-        } else {
-          el.style.display = "none";
-        }
-      });
-    } else {
-      document.querySelectorAll(".mj-vline").forEach(el => { el.style.display = "none"; });
-    }
+    if (rerender) renderMedicationJourney(_journeyData);
   }
 
-  if (adrDateEl) adrDateEl.addEventListener("change", _syncAdrEvent);
-  if (adrSympEl) adrSympEl.addEventListener("change", _syncAdrEvent);
-  if (adrDetsEl) adrDetsEl.addEventListener("input",  _syncAdrEvent);
+  if (adrList) {
+    /* Date/symptom changes alter bar geometry → re-render; details typing is
+     * live (label updates on next render, but persist immediately). */
+    adrList.addEventListener("change", (e) => {
+      if (e.target.closest(".mj-adr-start, .mj-adr-end, .mj-adr-symptoms")) _syncAdrEvents(true);
+    });
+    adrList.addEventListener("input", (e) => {
+      if (e.target.closest(".mj-adr-details")) _syncAdrEvents(false);
+    });
+    adrList.addEventListener("click", (e) => {
+      const del = e.target.closest(".mj-adr-evt-del");
+      if (del) {
+        const i = Number(del.dataset.idx);
+        const evts = _adrEvents(_journeyData);
+        if (evts[i]) { evts.splice(i, 1); _syncAdrEvents(true); }
+      }
+    });
+  }
+
+  /* + add another ADR event */
+  on("mj-adr-add", () => {
+    _syncAdrEvents(false);                       // capture current edits first
+    _adrEvents(_journeyData).push({ id: _uid(), start: "", end: "", symptoms: "", details: "" });
+    renderMedicationJourney(_journeyData);
+  });
 
   /* ── Date range controls ─────────────────────────────────────────────── */
   on("mj-range-apply", () => {
@@ -1029,7 +1148,7 @@ function renderMedicationJourney(journeyData) {
     ${sub   ? `<div class="mj-page-sub">${esc(sub)}</div>`   : ""}
     ${pharm ? `<div class="mj-page-sub" style="color:#7b1fa2;font-weight:600">💊 ${esc(pharm)}</div>` : ""}
   </div>
-  ${buildAdrCalloutWithForm(journeyData.adrEvent)}
+  ${buildAdrCalloutWithForm(journeyData)}
   <div class="mj-header-actions">
     <button id="mj-add-event-btn" class="mj-btn" style="background:#fff3e0;color:#e65100;border-color:#ffcc80">📌 เหตุการณ์</button>
     <button id="mj-add-med-btn"   class="mj-btn" style="background:#f3e5f5;color:#7b1fa2;border-color:#ce93d8">💊 ยา</button>

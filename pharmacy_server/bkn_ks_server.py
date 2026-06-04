@@ -1002,7 +1002,7 @@ def save_schedule(name, data):
 # Shape: {
 #   patientuid, updatedAt,
 #   context: { hn, patientName, bed, dept, doctor, ... },
-#   adrTimeline: { customEvents, customMedications, adrEvent },
+#   adrTimeline: { customEvents, customMedications, adrEvents },
 #   medicationCache: { "<patientvisituid>": { fetchedAt, orders, adminTimes } }
 # }
 _PUID_RE = re.compile(r'^[a-zA-Z0-9_-]{1,64}$')
@@ -1038,7 +1038,7 @@ def _empty_patient(puid):
         'adrTimeline': {
             'customEvents': [],
             'customMedications': [],
-            'adrEvent': None,
+            'adrEvents': [],
         },
         'medicationCache': {},
     }
@@ -1049,7 +1049,7 @@ def load_or_create_patient(puid):
         doc = _empty_patient(puid)
     # Backfill missing keys for older saved docs
     doc.setdefault('context', {})
-    doc.setdefault('adrTimeline', {'customEvents': [], 'customMedications': [], 'adrEvent': None})
+    doc.setdefault('adrTimeline', {'customEvents': [], 'customMedications': [], 'adrEvents': []})
     doc.setdefault('medicationCache', {})
     return doc
 
