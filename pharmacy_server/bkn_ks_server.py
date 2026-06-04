@@ -86,6 +86,12 @@ AUTH_FILE     = AUTH_DIR / 'users.json'
 MED_IMAGES_DIR = DATA_DIR / 'med-images'
 # Extensions probed (in order) by the /med-image/:code route before scanning.
 MED_IMAGE_EXTS = ('jpg', 'jpeg', 'png', 'jfif', 'webp', 'gif', 'jxl')
+# Explicit MIME types — Python's mimetypes returns None for webp/jxl/jfif.
+_IMAGE_MIME = {
+    '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.jfif': 'image/jpeg',
+    '.png': 'image/png', '.gif': 'image/gif',
+    '.webp': 'image/webp', '.jxl': 'image/jxl',
+}
 KS_FILES_DIR  = DATA_DIR / 'ks' / 'files'
 SCHEDULE_DIR      = DATA_DIR / 'schedule'
 TEMP_REPORTS_DIR  = DATA_DIR / 'temp-reports'
@@ -1640,7 +1646,12 @@ class Handler(BaseHTTPRequestHandler):
         p = Path(path)
         if not p.exists() or not p.is_file():
             self.send_json(404, {'error': 'File not found'}); return
-        ct = content_type or mimetypes.guess_type(str(p))[0] or 'application/octet-stream'
+        # Python's mimetypes doesn't know webp/jxl/jfif — map them explicitly so
+        # the browser renders med images in <img> instead of downloading them.
+        ct = (content_type
+              or _IMAGE_MIME.get(p.suffix.lower())
+              or mimetypes.guess_type(str(p))[0]
+              or 'application/octet-stream')
         self.send_response(200)
         self.send_header('Content-Type', ct)
         self.send_header('Content-Length', str(p.stat().st_size))
