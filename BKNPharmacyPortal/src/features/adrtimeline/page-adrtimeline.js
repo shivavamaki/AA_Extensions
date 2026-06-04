@@ -605,7 +605,15 @@ function _fallbackCopy(text) {
 /* ── Floating popup for click-to-add-event & note edit ──────────────────── */
 function _closePopup(id) {
   const el = document.getElementById(id);
-  if (el) el.remove();
+  if (el) {
+    // Remove any outside-click listener this popup registered, so a stale
+    // handler can't close a freshly-opened popup.
+    if (el._outHandler) {
+      document.removeEventListener("mousedown", el._outHandler);
+      el._outHandler = null;
+    }
+    el.remove();
+  }
 }
 
 function _showClickEventPopup(date, clientX, clientY, drugKey) {
@@ -792,26 +800,38 @@ function _showEditMedPopup(med, medKey, clientX, clientY) {
     _closePopup("mj-float-popup");
   });
 
-  /* + add another date range: capture current edits, push a blank segment,
-   * reopen the popup at the same spot to re-render the rows. */
-  const addSegBtn = document.getElementById("mj-ep-add-seg");
-  if (addSegBtn) addSegBtn.addEventListener("click", () => {
-    _commit(false);
-    med.segments = [..._medSegments(med), { start: "", end: "" }];
-    _showEditMedPopup(med, medKey, clientX, clientY);
-  });
-  pop.querySelectorAll(".mj-ep-del-seg").forEach(btn => btn.addEventListener("click", () => {
-    _commit(false);
-    const i = Number(btn.dataset.idx);
-    const cur = _medSegments(med);
-    cur.splice(i, 1);
-    med.segments = cur;
-    med.startDateTime = (cur[0] && cur[0].start) || med.startDateTime;
-    _showEditMedPopup(med, medKey, clientX, clientY);
-  }));
+  /* Read all current segment rows (including blanks) for in-place rebuild. */
+  function _readSegsRaw() {
+    return [...pop.querySelectorAll(".mj-ep-seg-row")].map(r => ({
+      start: (r.querySelector(".mj-ep-start").value || "").trim(),
+      end:   (r.querySelector(".mj-ep-end").value   || "").trim(),
+    }));
+  }
+  /* Rebuild just the segment rows in place (no popup reopen → no listener leak),
+   * then rebind the segment +/× buttons. */
+  function _renderSegs(list) {
+    const host = pop.querySelector("#mj-ep-segs");
+    if (!host) return;
+    host.innerHTML = (list.length ? list : [{ start: "", end: "" }]).map(segRow).join("");
+    _bindSegBtns();
+  }
+  function _bindSegBtns() {
+    const add = pop.querySelector("#mj-ep-add-seg");
+    if (add) add.addEventListener("click", () => {
+      _renderSegs([..._readSegsRaw(), { start: "", end: "" }]);
+    });
+    pop.querySelectorAll(".mj-ep-del-seg").forEach(btn => btn.addEventListener("click", () => {
+      const i = Number(btn.dataset.idx);
+      const cur = _readSegsRaw();
+      cur.splice(i, 1);
+      _renderSegs(cur);
+    }));
+  }
+  _bindSegBtns();
 
   setTimeout(() => {
     function _out(e) { if (!pop.contains(e.target)) { _commit(true); _closePopup("mj-float-popup"); document.removeEventListener("mousedown",_out); } }
+    pop._outHandler = _out;
     document.addEventListener("mousedown", _out);
   }, 50);
 }
@@ -823,10 +843,26 @@ function _adrFilename(ctx) {
   return hn + "_ADR_timeline";
 }
 
+/* Size the printed page to the actual content so the whole timeline lands on a
+ * SINGLE page (no breaks). Injects an @page rule with the measured dimensions
+ * (px → mm) plus a small margin; cleaned up after printing. */
+function _prepPrintOnePage() {
+  const page = document.querySelector(".mj-page");
+  if (!page) return;
+  const PX2MM = 25.4 / 96;        // CSS px → mm
+  const MARGIN = 6;               // mm
+  const w = Math.ceil(page.scrollWidth  * PX2MM) + MARGIN * 2;
+  const h = Math.ceil(page.scrollHeight * PX2MM) + MARGIN * 2;
+  let st = document.getElementById("mj-print-page-size");
+  if (!st) { st = document.createElement("style"); st.id = "mj-print-page-size"; document.head.appendChild(st); }
+  st.textContent = `@page { size: ${w}mm ${h}mm; margin: ${MARGIN}mm; }`;
+}
+
 function saveToPdf(journeyData) {
   const filename   = _adrFilename(journeyData.patientContext || {});
   const origTitle  = document.title;
   document.title   = filename;
+  _prepPrintOnePage();
   window.print();
   /* Restore title after print dialog opens */
   setTimeout(function () { document.title = origTitle; }, 1500);
@@ -909,7 +945,7 @@ function wireInteractivity(journeyData) {
   const $  = id => document.getElementById(id);
   const on = (id, fn) => { const el=$(id); if(el) el.addEventListener("click",fn); };
 
-  on("mj-print-btn",  () => window.print());
+  on("mj-print-btn",  () => { _prepPrintOnePage(); window.print(); });
   on("mj-pdf-btn",    () => saveToPdf(journeyData));
   on("mj-png-btn",    () => saveToPng(journeyData));
   on("mj-export-btn", ()=>exportJourneyJson(journeyData));

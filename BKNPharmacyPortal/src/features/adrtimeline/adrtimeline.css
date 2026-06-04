@@ -823,7 +823,9 @@ body {
 /* ════════════════════════════════════════════════════════════
    PRINT
 ════════════════════════════════════════════════════════════ */
-@page { size: A3 landscape; margin: 10mm; }
+/* Default @page; JS replaces this with a content-sized single page before
+   printing (see _prepPrintOnePage). */
+@page { size: A3 landscape; margin: 8mm; }
 
 @media print {
   body { background:#fff; }
@@ -834,4 +836,12 @@ body {
   .mj-page { padding:0; max-width:none; }
   .mj-adr-callout { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   .mj-bar { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* Keep everything on one page — never split rows, the chart, or the header. */
+  .mj-page, .mj-gantt-scroll, .mj-gantt, .mj-header,
+  .mj-gantt-row, .mj-cevt-row, .mj-gantt-hdr-row, .mj-adr-callout {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  .mj-gantt-row { break-after: auto; }
 }
