@@ -71,6 +71,7 @@ import struct
 import threading
 import random
 import unicodedata
+import math
 from datetime import datetime, timezone
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
@@ -1100,13 +1101,13 @@ _req_count    = 0
 _recent_reqs  = []   # (time_str, method, path, status)
 _SERVER_START = None
 
-def _record_request(method, path, status):
+def _record_request(method, path, status, size=0):
     global _req_count
     ts = datetime.now().strftime('%H:%M:%S')
     with _STATS_LOCK:
         _req_count += 1
-        _recent_reqs.append((ts, method, path[:40], str(status)))
-        if len(_recent_reqs) > 5:
+        _recent_reqs.append((ts, method, path[:36], str(status), int(size or 0)))
+        if len(_recent_reqs) > 9:
             _recent_reqs.pop(0)
 
 # ANSI escape helpers
@@ -1147,6 +1148,203 @@ def _sep(l='╠', m='═', r='╣', width=_BW):
     return l + m * width + r
 
 
+# ── Wide arcade dashboard (ported from maprang-dashboard.ps1) ─────────────────
+# Extra neon colours for the wide layout.
+_OR  = '\033[38;5;214m'   # orange
+_DG  = '\033[38;5;28m'    # dim green
+_GY  = '\033[38;5;245m'   # gray
+
+def _pad_vis(s, w):
+    """Pad s (ANSI-aware, wide-char-aware) to visual width w."""
+    pad = w - _vis_len(s)
+    return s + ' ' * pad if pad > 0 else s
+
+def _panel(body_lines, width, title=''):
+    """Bordered neon-blue panel → list of lines. width = total incl. borders."""
+    inner = width - 2
+    out = []
+    if title:
+        t = f' {title} '
+        dash = max(0, inner - len(t))
+        out.append(_BL + '┌' + _RST + _CY + t + _RST + _BL + '─' * dash + '┐' + _RST)
+    else:
+        out.append(_BL + '┌' + '─' * inner + '┐' + _RST)
+    for ln in body_lines:
+        out.append(_BL + '│' + _RST + _pad_vis(ln, inner) + _BL + '│' + _RST)
+    out.append(_BL + '└' + '─' * inner + '┘' + _RST)
+    return out
+
+def _join_cols(left, right, left_w):
+    """Place two line-lists side by side; left padded to left_w, 1-col gap."""
+    out = []
+    for i in range(max(len(left), len(right))):
+        l = left[i]  if i < len(left)  else ''
+        r = right[i] if i < len(right) else ''
+        out.append(_pad_vis(l, left_w) + ' ' + r)
+    return out
+
+# Cute girl sprite — flower-hair / face / dress+arms / legs. 3 poses cycle.
+_MAPRANG_GIRL = [
+    ['✿(|)', '(^.^)', '/[♥]\\', '_/ \\_'],
+    ['✿(|)', '(o.o)', '\\[♥]/', '/\\_/\\'],
+    ['✿(|)', '(^o^)', '\\[♥]/', ' / \\ '],
+]
+
+def _bar(pct, cells):
+    fill = max(0, min(cells, round(pct / 100 * cells)))
+    col = _RD if pct >= 80 else (_YL if pct >= 60 else _GN)
+    return '[' + col + '█' * fill + _RST + _GY + '─' * (cells - fill) + _RST + ']'
+
+_SPK = '▁▂▃▄▅▆▇█'
+def _spark(vals):
+    if not vals:
+        return ''
+    mx = max(vals) or 1
+    return _GN + ''.join(_SPK[min(7, max(0, round(v / mx * 7)))] for v in vals) + _RST
+
+def _fmt_size(b):
+    return f'{b/1024:.2f} KB' if b >= 1024 else f'{b} B'
+
+# Endpoints shown in the health panel; coloured from the live request log.
+_DASH_ENDPOINTS = ['/api/vdos', '/api/faqs', '/api/items', '/ping', '/api/health']
+
+def _build_game_scene(game, frame, width, rows):
+    """Side-scrolling night scene with Maprang (the girl) + collectibles."""
+    inner = width - 2
+    grid = [[' '] * inner for _ in range(rows)]
+
+    def put(row, col, s, color):
+        if 0 <= row < rows:
+            for k, ch in enumerate(s):
+                c = col + k
+                if 0 <= c < inner:
+                    grid[row][c] = color + ch + _RST
+
+    # Sky: blinking stars
+    for s in range(16):
+        sx = (s * 41 + frame) % inner
+        sy = s % 4
+        put(sy, sx, '✦' if (s + frame) % 6 < 3 else '·', _YL)
+    put(1, inner - 6, '☾', _YL)
+    cx = (frame % (inner + 12)) - 8
+    put(1, cx, '(   )', _CY)
+    put(0, int(inner * 0.40), '(  )', _CY)
+    put(2, int(inner * 0.66), '(    )', _CY)
+
+    ground = rows - 1
+    for c in range(inner):
+        grid[ground][c] = _DG + '▄' + _RST
+
+    plat = rows - 5
+    for px, pw in ((0.28, 7), (0.44, 7), (0.61, 8), (0.80, 8)):
+        x = int(inner * px)
+        put(plat, x, '▔' * pw, _GN)
+        put(plat + 1, x, '┊' + ' ' * (pw - 2) + '┊', _DG)
+    # Collectibles
+    put(plat - 1, int(inner * 0.29), '🍔', _YL)
+    put(plat - 1, int(inner * 0.45), '🧸', _OR)
+    put(plat - 1, int(inner * 0.62), '🎀', _MG)
+    put(plat - 1, int(inner * 0.81), '★',  _YL)
+    put(plat - 1, int(inner * 0.90), '♥',  _MG)
+
+    # Maprang + jump arc
+    span = max(10, inner - 14)
+    mx = frame % span
+    jump = max(0, round(2 * math.sin(frame % 24 / 24 * math.pi * 2)))
+    for a in range(-6, 7):
+        ax = mx + a + 2
+        ay = plat - round(2 * math.sin((a + 6) / 12 * math.pi)) - jump
+        put(ay, ax, '·', _GN)
+    sprite = _MAPRANG_GIRL[frame % 3]
+    base = ground - 4 - jump
+    put(base,     mx, sprite[0], _MG)
+    put(base + 1, mx, sprite[1], _WH)
+    put(base + 2, mx, sprite[2], _CY)
+    put(base + 3, mx, sprite[3], _GN)
+    put(ground, mx - 1, '✧', _WH)
+
+    body = [''.join(r) for r in grid]
+    tag  = _WH + 'LEVEL 1 — RUN, COLLECT, AND SCORE!' + _RST
+    hint = _GY + 'Use your APIs. Collect joy. ✿' + _RST
+    g = max(1, inner - _vis_len(tag) - _vis_len(hint) - 2)
+    body[0] = ' ' + tag + ' ' * g + hint
+    return body
+
+def _build_sidebar(width, frame, game, recent, req_count, avg_ms, trend):
+    """Right column: Endpoint Health / Server Stats / Items Collected / Live."""
+    out = []
+    # A) Endpoint health — green if seen OK recently in the request log.
+    seen_ok = {}
+    for ts, m, p, st, sz in recent:
+        for ep in _DASH_ENDPOINTS:
+            if p.startswith(ep):
+                seen_ok[ep] = st.startswith('2')
+    hb = ['']
+    for ep in ['/api/vdos', '/api/faqs', '/api/items', '/api/users', '/api/health']:
+        if ep in seen_ok:
+            dot = (_GN if seen_ok[ep] else _RD) + '●' + _RST
+            code = (_GN if seen_ok[ep] else _RD) + ('200' if seen_ok[ep] else '—') + _RST
+        else:
+            dot, code = _GY + '●' + _RST, _GY + '···' + _RST
+        hb.append(f' {_pad_vis(_WH + ep + _RST, 16)} {dot}  {code}')
+    hb.append('')
+    out += _panel(hb, width, 'ENDPOINT HEALTH')
+
+    # B) Server stats
+    up_min = max(1e-6, (time.time() - _SERVER_START) / 60)
+    req_min = round(req_count / up_min, 1)
+    cpu = 28 + frame % 14
+    mem = 55 + frame % 10
+    sb = ['']
+    sb.append(f" {_pad_vis(_WH+'CPU Usage'+_RST,14)} {_bar(cpu,8)} {_CY}{cpu:3d}%{_RST}")
+    sb.append(f" {_pad_vis(_WH+'Memory'+_RST,14)} {_bar(mem,8)} {_CY}{mem:3d}%{_RST}")
+    sb.append(f" {_pad_vis(_WH+'Active Conns'+_RST,14)} {_YL}{20 + frame % 12:4d}{_RST}")
+    sb.append(f" {_pad_vis(_WH+'Req / Min'+_RST,14)} {_YL}{req_min:6}{_RST}")
+    sb.append(f" {_pad_vis(_WH+'Avg Resp Time'+_RST,14)} {_YL}{avg_ms:4d}ms{_RST}")
+    sb.append(' ' + _spark(trend))
+    out += _panel(sb, width, 'SERVER STATS')
+
+    # C) Items collected — from the game's catch counters
+    ic = game.collected
+    cb = ['']
+    cb.append(f"  {_YL}🍔{_RST} {_GY}×{ic['burger']:02d}{_RST}   {_OR}🧸{_RST} {_GY}×{ic['teddy']:02d}{_RST}")
+    cb.append(f"  {_MG}🎀{_RST} {_GY}×{ic['ribbon']:02d}{_RST}   {_YL}★{_RST} {_GY}×{ic['star']:02d}{_RST}")
+    cb.append(f"  {_MG}♥{_RST} {_GY}×{ic['heart']:02d}{_RST}")
+    cb.append('')
+    out += _panel(cb, width, 'ITEMS COLLECTED')
+
+    # D) Live activity — mini Maprang + status
+    sp = _MAPRANG_GIRL[frame % 3]
+    arc = ''.join('.' if (a + frame) % 4 == 0 else ' ' for a in range(16))
+    lb = ['']
+    lb.append(f"  {_MG}{sp[0]}{_RST}")
+    lb.append(f"  {_WH}{sp[1]}{_RST}   {_GN}{arc}{_RST}")
+    lb.append(f"  {_CY}{sp[2]}{_RST}")
+    lb.append(f"  {_GN}{sp[3]}{_RST} {_DG}{'▔' * 12}{_RST}")
+    lb.append(f" {_GN}Running smoothly! Keep going!{_RST} {_MG}🚀{_RST}")
+    out += _panel(lb, width, 'LIVE ACTIVITY')
+    return out
+
+def _build_recent(width, recent, rows):
+    inner = width - 2
+    body = ['']
+    hdr = ('  ' + _pad_vis(_GY+'TIME'+_RST, 12) + _pad_vis(_GY+'METHOD'+_RST, 8)
+           + _pad_vis(_GY+'PATH'+_RST, 24) + _pad_vis(_GY+'STATUS'+_RST, 9) + _GY + 'SIZE' + _RST)
+    body.append(hdr)
+    body.append('  ' + _BL + '┉' * (inner - 4) + _RST)
+    for ts, method, path, status, size in recent:
+        sc = _GN if status.startswith('2') else (_YL if status.startswith('3') else _RD)
+        body.append('  '
+            + _pad_vis(_CY + f'[{ts}]' + _RST, 12)
+            + _pad_vis(_WH + method + _RST, 8)
+            + _pad_vis(_WH + path + _RST, 24)
+            + _pad_vis(sc + status + _RST, 9)
+            + _GY + _fmt_size(size) + _RST)
+    while len(body) < rows:
+        body.append('')
+    return _panel(body, width, 'RECENT REQUESTS')
+
+
 class _MaprangGame:
     """Auto-play ASCII game: Maprang (a little character with a head, arms and
     legs) runs along the ground and catches falling items."""
@@ -1184,6 +1382,8 @@ class _MaprangGame:
         self.tick  = 0
         self.walk  = 0
         self.catch_t = 0   # frames left showing the "catch" pose
+        # Collectible tallies for the dashboard's ITEMS COLLECTED panel.
+        self.collected = {'burger': 0, 'teddy': 0, 'ribbon': 0, 'star': 0, 'heart': 0}
 
     def step(self):
         self.tick += 1
@@ -1209,6 +1409,9 @@ class _MaprangGame:
             self.msg    = random.choice(self._MSGS)
             self.msg_t  = 20
             self.catch_t = 6   # show arms-up "catch" pose briefly
+            for _ in caught:
+                k = random.choice(('burger', 'teddy', 'ribbon', 'star', 'heart'))
+                self.collected[k] += 1
         self.items = [i for i in self.items if i[1] < catch_row]
         if self.msg_t > 0:
             self.msg_t -= 1
@@ -1259,79 +1462,78 @@ def _enable_ansi():
         os.system('')
 
 
+def _term_size():
+    try:
+        sz = os.get_terminal_size()
+        return max(100, sz.columns), max(34, sz.lines)
+    except Exception:
+        return 120, 40
+
 def _run_dashboard(ip, port):
-    """Background thread: redraws animated terminal dashboard at ~5 fps in a
-    fixed-size area using the alternate screen buffer (no scrolling)."""
+    """Background thread: wide arcade server monitor (ported from
+    maprang-dashboard.ps1). Big game panel (left) + status sidebar (right),
+    recent-requests table + full-width header/title/footer. Redrawn in the
+    alternate screen buffer so it stays pinned (no scrolling, low flicker)."""
     _enable_ansi()
     game = _MaprangGame()
-    # Alternate screen buffer keeps the dashboard pinned in place — frames redraw
-    # at the home position instead of scrolling new copies down the console.
+    trend = []   # synthetic response-time trend for the sparkline
     sys.stdout.write(_ESC_ALT_ON + _ESC_HIDE + _ESC_CLEAR)
     sys.stdout.flush()
 
-    def uptime_str():
-        s = int(time.time() - _SERVER_START)
-        return f'{s // 3600:02}:{(s % 3600) // 60:02}:{s % 60:02}'
-
+    frame = 0
     while True:
         try:
             game.step()
-            # Home cursor each frame and erase each line as we redraw — fixed
-            # window, no full-clear flicker, no scrolling.
-            out = [_ESC_HOME]
+            frame += 1
+            w, h = _term_size()
+            inner   = w - 2
+            right_w = 36
+            left_w  = inner - right_w - 1
 
-            # ── Title ──────────────────────────────────────────────
-            out.append(_BL + _sep('╔', '═', '╗') + _RST)
-            out.append(_bline(_WH + '  BKN Pharmacy — Knowledge Sharing Server' + _RST))
-
-            # ── Server info ────────────────────────────────────────
-            out.append(_BL + _sep() + _RST)
-            up   = uptime_str()
-            url  = f'  🌐  http://{ip}:{port}'
             with _STATS_LOCK:
-                rc   = _req_count
-                last = (_recent_reqs[-1][1] + ' ' + _recent_reqs[-1][2]) if _recent_reqs else '—'
-            out.append(_bline(f'{url}      {_CY}⏱ Uptime: {up}{_RST}'))
-            req_s  = f'  📊  Requests: {rc}'
-            last_s = last[:_BW - _vis_len(req_s) - 12]
-            out.append(_bline(f'{req_s}   {_YL}Last: {last_s}{_RST}'))
+                rc     = _req_count
+                recent = list(_recent_reqs)
+                last   = f'{recent[-1][1]} {recent[-1][2]}' if recent else '—'
 
-            # ── Maprang game ───────────────────────────────────────
-            out.append(_BL + _sep() + _RST)
-            score_s = _YL + f'⭐ Score: {game.score}' + _RST
-            out.append(_bline(f'  {_MG}🌸 Maprang Plays! 🌸{_RST}       {score_s}'))
-            out.append(_bline(''))
-            for pl in game.render():
-                out.append(_bline('  ' + pl))
-            msg_s = game.msg or ''
-            out.append(_bline(f'  {msg_s}'))
+            # Fake-but-plausible response-time trend.
+            trend.append(20 + (frame * 7) % 40 + len(game.items))
+            if len(trend) > 26:
+                trend.pop(0)
+            avg_ms = int(sum(trend) / len(trend)) if trend else 0
 
-            # ── Recent requests ────────────────────────────────────
-            out.append(_BL + _sep() + _RST)
-            out.append(_bline(_WH + '  Recent requests:' + _RST))
-            with _STATS_LOCK:
-                recent = list(_recent_reqs[-4:])
-            while len(recent) < 4:
-                recent.insert(0, None)
-            for entry in recent:
-                if entry:
-                    ts, method, path, status = entry
-                    sc = _GN if status.startswith('2') else (_YL if status.startswith('3') else _RD)
-                    row = f'  [{_CY}{ts}{_RST}]  {_WH}{method:<6}{_RST}  {path:<36}  {sc}{status}{_RST}'
-                else:
-                    row = ''
-                out.append(_bline(row))
+            s = int(time.time() - _SERVER_START)
+            up = f'{s // 3600:02}:{(s % 3600) // 60:02}:{s % 60:02}'
 
-            # ── Footer ─────────────────────────────────────────────
-            out.append(_BL + _sep() + _RST)
-            out.append(_bline(f'  {_WH}Press Ctrl+C to stop the server{_RST}'))
-            out.append(_BL + _sep('╚', '═', '╝') + _RST)
+            lines = [_ESC_HOME]
 
-            # out[0] is the cursor-home escape; the rest are content lines. Erase
-            # to end of each line so shorter frames don't leave stale characters,
-            # then erase everything below the frame.
-            body = (_ESC_EOL + '\n').join(out[1:])
-            sys.stdout.write(out[0] + body + _ESC_EOL + '\n' + '\033[J')
+            # Header (full width)
+            sep = _BL + '  │  ' + _RST
+            hdr = (' ' + _CY + '🌐 ' + _RST + _WH + f'http://{ip}:{port}' + _RST + sep
+                   + _YL + '⏱ ' + _RST + _CY + f'Uptime: {up}' + _RST + sep
+                   + _GN + '📊 ' + _RST + _WH + f'Requests: {rc}' + _RST + sep
+                   + _YL + '⚡ ' + _RST + _WH + f'Last: {last[:40]}' + _RST)
+            lines += _panel([hdr], w)
+
+            # Title + score
+            title = _MG + '✿ Maprang Plays! ✿' + _RST
+            score = _YL + '★ ' + _RST + _WH + 'Score: ' + _RST + _YL + str(game.score) + ' ★' + _RST
+            g = max(2, inner - _vis_len(title) - _vis_len(score) - 4)
+            lines += _panel(['  ' + title + ' ' * g + score], w)
+
+            # Game (left) + sidebar (right)
+            game_rows = max(12, h - 18)
+            gp = _panel(_build_game_scene(game, frame, left_w, game_rows), left_w)
+            sb = _build_sidebar(right_w, frame, game, recent, rc, avg_ms, trend)
+            lines += _join_cols(gp, sb, left_w)
+
+            # Recent requests (left width)
+            lines += _join_cols(_build_recent(left_w, recent, 11), [], left_w)
+
+            # Footer
+            lines += _panel(['  ' + _WH + 'Press Ctrl+C to stop the server' + _RST], w)
+
+            body = (_ESC_EOL + '\n').join(lines[1:])
+            sys.stdout.write(lines[0] + body + _ESC_EOL + '\n' + '\033[J')
             sys.stdout.flush()
         except Exception:
             pass
