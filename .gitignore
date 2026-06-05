@@ -2,6 +2,12 @@
 Thumbs.db
 **/Thumbs.db
 
+# Python build artifacts + local backup copies (not source)
+__pycache__/
+**/__pycache__/
+*.pyc
+pharmacy_server/backup_files/
+
 # ── Pharmacy server: production-written data (never overwrite from git) ──────
 # All runtime data under pharmacy_server/data is server-written. New files must
 # never be tracked. Files already committed stay tracked (ignore rules don't
