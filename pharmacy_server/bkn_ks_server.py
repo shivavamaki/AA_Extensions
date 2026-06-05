@@ -2326,6 +2326,48 @@ def _install_close_guard():
 _CTRL_HANDLER_REF = None
 
 
+# ── Server bootstrap (shared by CLI main + GUI app) ─────────────
+def _init_data_dirs():
+    """Create data folders + seed empty collections. Idempotent."""
+    KPI_DIR.mkdir(parents=True, exist_ok=True)
+    KS_DIR.mkdir(parents=True, exist_ok=True)
+    RX_DIR.mkdir(parents=True, exist_ok=True)
+    AUTH_DIR.mkdir(parents=True, exist_ok=True)
+    MED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    KS_FILES_DIR.mkdir(parents=True, exist_ok=True)
+    SCHEDULE_DIR.mkdir(parents=True, exist_ok=True)
+    TEMP_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    PATIENTS_DIR.mkdir(parents=True, exist_ok=True)
+    LOGS_DIR.mkdir(parents=True, exist_ok=True)
+    WWW_DIR.mkdir(parents=True, exist_ok=True)
+    for col in KS_COLS:
+        p = ks_file(col)
+        if not p.exists():
+            p.write_text('[]', encoding='utf-8')
+    for col in RX_COLS:
+        p = rx_file(col)
+        if not p.exists():
+            p.write_text('{}' if col in RX_DICT_COLS else '[]', encoding='utf-8')
+    _ensure_default_users()
+
+
+def start_server_background(port=None):
+    """Start the HTTP server in a daemon thread WITHOUT the terminal dashboard
+    or console handlers. Used by the desktop GUI (maprang_app.py), which renders
+    its own dashboard. Returns (server, ip, port)."""
+    global _SERVER_START
+    if port is None:
+        port = DEFAULT_PORT
+    _init_data_dirs()
+    ip = get_local_ip()
+    Handler._ip = ip
+    Handler._port = port
+    server = ThreadingHTTPServer(('0.0.0.0', port), Handler)
+    _SERVER_START = time.time()
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server, ip, port
+
+
 # ── Main ───────────────────────────────────────────────────────
 def main():
     port = DEFAULT_PORT
