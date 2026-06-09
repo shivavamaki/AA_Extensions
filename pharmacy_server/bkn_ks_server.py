@@ -1503,6 +1503,9 @@ class Handler(BaseHTTPRequestHandler):
         clean = urllib.parse.urlsplit(self.path).path
         if clean in ('/dashboard', '/dashboard.html'):
             self._serve_file(WWW_DIR / 'dashboard.html', 'text/html; charset=utf-8'); return
+        if clean in ('/index', '/home'):
+            # Explicit route to the legacy index.html (dashboard.html shadows it at /).
+            self._serve_file(WWW_DIR / 'index.html', 'text/html; charset=utf-8'); return
         if clean in ('/', '/index.html', ''):
             # Prefer the new Pixi dashboard when present; otherwise keep legacy index.html.
             dash = WWW_DIR / 'dashboard.html'
