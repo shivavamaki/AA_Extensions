@@ -1100,10 +1100,6 @@ _STATS_LOCK   = threading.Lock()
 _req_count    = 0
 _recent_reqs  = []   # (time_str, method, path, status, size, elapsed_ms, epoch)
 _SERVER_START = None
-_DASH_STATUS_CACHE = None
-_DASH_STATUS_CACHE_AT = 0.0
-_DASH_STATUS_CACHE_TTL = 12.0  # heavy module/file scans are refreshed at most every 12s
-_DASH_STATUS_CACHE_LOCK = threading.Lock()
 
 
 def _count_files_safe(path, pattern='*'):
@@ -1144,23 +1140,80 @@ def _record_request(method, path, status, size=0, elapsed_ms=None):
             _recent_reqs.pop(0)
 
 
+# Cache the expensive disk/JSON parts of dashboard_status. Polling clients hit
+# this often; re-globbing ~2000 med images + parsing the 1.4 MB medication DB on
+# every call (over an SMB share) takes ~5 s. Strategy: stale-while-revalidate —
+# always return the cached snapshot immediately and refresh in a background
+# thread when it gets old, so a poll never blocks on the scan.
+_DASH_CACHE = {'at': 0.0, 'endpoints': None, 'modules': None, 'dataOk': False}
+_DASH_TTL   = 30.0          # module counts change slowly; refresh at most every 30 s
+_dash_lock  = threading.Lock()
+_dash_refreshing = False
+
+def _dashboard_scan():
+    """Do the slow disk/JSON work and update the cache. Blocking — call in a
+    background thread (or once at startup) so request threads never wait."""
+    global _dash_refreshing
+    try:
+        data_ok = _data_dir_writable()
+        vdos  = load_ks('vdos');  faqs = load_ks('faqs');  items = load_ks('items')
+        users = _load_users();    med_db = load_rx('medication-db')
+        endpoints = {
+            '/api/vdos':   {'ok': isinstance(vdos, list),  'status': 200},
+            '/api/faqs':   {'ok': isinstance(faqs, list),  'status': 200},
+            '/api/items':  {'ok': isinstance(items, list), 'status': 200},
+            '/api/users':  {'ok': isinstance(users, dict), 'status': 200},
+            '/api/health': {'ok': True, 'status': 200},
+        }
+        modules = {
+            'KPI':           _count_files_safe(KPI_DIR, '????-??-??.json'),
+            'KS items':      len(items) if isinstance(items, list) else 0,
+            'FAQs':          len(faqs) if isinstance(faqs, list) else 0,
+            'Videos':        len(vdos) if isinstance(vdos, list) else 0,
+            'Medication DB': len(med_db) if isinstance(med_db, dict) else 0,
+            'Med images':    _count_files_safe(MED_IMAGES_DIR),
+            'Patients':      _count_files_safe(PATIENTS_DIR, '*.json'),
+            'Logs':          _count_files_safe(LOGS_DIR, '*.jsonl'),
+        }
+        with _dash_lock:
+            _DASH_CACHE.update(at=time.time(), endpoints=endpoints, modules=modules, dataOk=data_ok)
+    finally:
+        _dash_refreshing = False
+
+def _dashboard_heavy():
+    """Return (endpoints, modules, dataOk) from cache; never blocks once warmed.
+    Triggers a background refresh when the cache is stale."""
+    global _dash_refreshing
+    with _dash_lock:
+        have = _DASH_CACHE['endpoints'] is not None
+        stale = (time.time() - _DASH_CACHE['at']) >= _DASH_TTL
+        snap = (_DASH_CACHE['endpoints'], _DASH_CACHE['modules'], _DASH_CACHE['dataOk'])
+        need_refresh = (not have or stale) and not _dash_refreshing
+        if need_refresh:
+            _dash_refreshing = True
+    if need_refresh:
+        if have:
+            threading.Thread(target=_dashboard_scan, daemon=True).start()  # serve stale, refresh async
+        else:
+            _dashboard_scan()                                              # first call must populate
+            with _dash_lock:
+                snap = (_DASH_CACHE['endpoints'], _DASH_CACHE['modules'], _DASH_CACHE['dataOk'])
+    return snap
+
+
 def dashboard_status():
-    """Machine-readable status for the Tk dashboard and /api/health.
-    Uses only stdlib and local data, so it is safe on locked-down hospital PCs.
-    This endpoint powers the full dashboard workflow: health, modules, requests,
-    maintenance checks and quick troubleshooting.
-    """
+    """Machine-readable status for the Tk dashboard and /api/server-status.
+    Live counters are fresh each call; expensive disk scans are cached (~6s).
+    Uses only stdlib + local data, safe on locked-down hospital PCs."""
     now = time.time()
     with _STATS_LOCK:
         recent_raw = list(_recent_reqs)
         req_count = _req_count
-
     recent = []
     ok_count = 0
     err_count = 0
     elapsed_vals = []
-    last_error = None
-    for row in recent_raw[-30:]:
+    for row in recent_raw[-20:]:
         padded = list(row) + [0, now]
         ts, method, path, status, size, elapsed_ms, epoch = padded[:7]
         status_s = str(status)
@@ -1169,122 +1222,17 @@ def dashboard_status():
         err_count += 0 if ok else 1
         if elapsed_ms:
             elapsed_vals.append(int(elapsed_ms))
-        entry = {
+        recent.append({
             'time': ts, 'method': method, 'path': path, 'status': status_s,
             'size': int(size or 0), 'elapsedMs': int(elapsed_ms or 0), 'ok': ok,
-        }
-        if not ok:
-            last_error = entry
-        recent.append(entry)
-
+        })
     last_min = [r for r in recent_raw if len(r) >= 7 and (now - r[6]) <= 60]
     avg_ms = int(sum(elapsed_vals) / len(elapsed_vals)) if elapsed_vals else 0
-
-    # Performance guard: module status requires reading JSON master files and
-    # probing folders. The desktop dashboard may refresh often, so reuse the
-    # heavy part briefly while keeping request counters/recent activity live.
-    global _DASH_STATUS_CACHE, _DASH_STATUS_CACHE_AT
-    with _DASH_STATUS_CACHE_LOCK:
-        cached = _DASH_STATUS_CACHE if (now - _DASH_STATUS_CACHE_AT) < _DASH_STATUS_CACHE_TTL else None
-    if cached is not None:
-        out = dict(cached)
-        out.update({
-            'uptimeSec': int(now - (_SERVER_START or now)),
-            'requestCount': req_count,
-            'requestsPerMin': round(len(last_min), 1),
-            'avgResponseMs': avg_ms,
-            'activeThreads': threading.active_count(),
-            'recent': recent,
-            'okCountWindow': ok_count,
-            'errorCountWindow': err_count,
-            'lastError': last_error,
-            'generatedAt': datetime.now().isoformat(timespec='seconds'),
-            'cache': {'moduleStatusCached': True, 'moduleRefreshEverySec': _DASH_STATUS_CACHE_TTL},
-        })
-        if isinstance(out.get('maintenance'), dict):
-            out['maintenance'] = dict(out['maintenance'])
-            out['maintenance'].update({'errorCountWindow': err_count, 'avgResponseMs': avg_ms})
-        return out
-
-    def _dir_probe(path):
-        p = Path(path)
-        exists = p.exists()
-        writable = False
-        err = ''
-        try:
-            p.mkdir(parents=True, exist_ok=True)
-            probe = p / '.dashboard-write-test.tmp'
-            probe.write_text('ok', encoding='utf-8')
-            try:
-                probe.unlink()
-            except Exception:
-                pass
-            exists = True
-            writable = True
-        except Exception as e:
-            err = str(e)[:120]
-        return {'path': str(p), 'exists': exists, 'writable': writable, 'error': err}
-
-    vdos = load_ks('vdos')
-    faqs = load_ks('faqs')
-    items = load_ks('items')
-    users = _load_users()
-    med_db = load_rx('medication-db')
-    iv_drugs = load_rx('iv-drugs')
-    iv_staff = load_rx('iv-staff')
-    premix = load_rx('premix-drugs')
-    mixing = load_rx('mixing-protocols')
-
-    module_defs = [
-        ('KPI days', KPI_DIR, '????-??-??.json', _count_files_safe(KPI_DIR, '????-??-??.json')),
-        ('KS items', KS_DIR, 'items.json', len(items) if isinstance(items, list) else 0),
-        ('FAQs', KS_DIR, 'faqs.json', len(faqs) if isinstance(faqs, list) else 0),
-        ('Videos', KS_DIR, 'vdos.json', len(vdos) if isinstance(vdos, list) else 0),
-        ('Medication DB', RX_DIR, 'medication-db.json', len(med_db) if isinstance(med_db, dict) else 0),
-        ('IV drugs', RX_DIR, 'iv-drugs.json', len(iv_drugs) if isinstance(iv_drugs, list) else 0),
-        ('IV staff', RX_DIR, 'iv-staff.json', len(iv_staff) if isinstance(iv_staff, list) else 0),
-        ('Premix drugs', RX_DIR, 'premix-drugs.json', len(premix) if isinstance(premix, list) else 0),
-        ('Mixing protocols', RX_DIR, 'mixing-protocols.json', len(mixing) if isinstance(mixing, list) else 0),
-        ('Med images', MED_IMAGES_DIR, '*', _count_files_safe(MED_IMAGES_DIR)),
-        ('Patients', PATIENTS_DIR, '*.json', _count_files_safe(PATIENTS_DIR, '*.json')),
-        ('Schedule', SCHEDULE_DIR, '*.json', _count_files_safe(SCHEDULE_DIR, '*.json')),
-        ('Temp reports', TEMP_REPORTS_DIR, '*', _count_files_safe(TEMP_REPORTS_DIR)),
-        ('Logs', LOGS_DIR, '*.jsonl', _count_files_safe(LOGS_DIR, '*.jsonl')),
-    ]
-    modules_detail = []
-    modules = {}
-    all_module_ok = True
-    for name, path, pattern, count in module_defs:
-        probe = _dir_probe(path)
-        ok = bool(probe.get('exists') and probe.get('writable'))
-        all_module_ok = all_module_ok and ok
-        modules[name] = count
-        modules_detail.append({
-            'name': name, 'count': int(count or 0), 'ok': ok,
-            'path': probe.get('path'), 'pattern': pattern,
-            'writable': probe.get('writable'), 'error': probe.get('error') or '',
-        })
-
-    endpoints = {
-        '/api/vdos': {'ok': isinstance(vdos, list), 'status': 200 if isinstance(vdos, list) else 500, 'count': len(vdos) if isinstance(vdos, list) else 0},
-        '/api/faqs': {'ok': isinstance(faqs, list), 'status': 200 if isinstance(faqs, list) else 500, 'count': len(faqs) if isinstance(faqs, list) else 0},
-        '/api/items': {'ok': isinstance(items, list), 'status': 200 if isinstance(items, list) else 500, 'count': len(items) if isinstance(items, list) else 0},
-        '/api/users': {'ok': isinstance(users, dict), 'status': 200 if isinstance(users, dict) else 500, 'count': len(users) if isinstance(users, dict) else 0},
-        '/api/health': {'ok': True, 'status': 200, 'count': 1},
-        '/api/server-status': {'ok': True, 'status': 200, 'count': 1},
-    }
-    data_ok = all_module_ok
-    overall_ok = data_ok and all(v.get('ok') for v in endpoints.values())
-
-    result = {
-        'ok': overall_ok,
+    endpoints, modules, data_ok = _dashboard_heavy()
+    return {
+        'ok': data_ok and all(v.get('ok') for v in endpoints.values()),
         'server': 'BKN KS Server',
-        'version': 'dashboard-all-process-2026.06',
-        'pid': os.getpid(),
-        'python': sys.version.split()[0],
         'url': f'http://{getattr(Handler, "_ip", "127.0.0.1")}:{getattr(Handler, "_port", DEFAULT_PORT)}',
-        'dataDir': str(DATA_DIR),
-        'logsDir': str(LOGS_DIR),
         'uptimeSec': int(now - (_SERVER_START or now)),
         'requestCount': req_count,
         'requestsPerMin': round(len(last_min), 1),
@@ -1293,25 +1241,11 @@ def dashboard_status():
         'dataWritable': data_ok,
         'endpoints': endpoints,
         'modules': modules,
-        'modulesDetail': modules_detail,
         'recent': recent,
         'okCountWindow': ok_count,
         'errorCountWindow': err_count,
-        'lastError': last_error,
-        'maintenance': {
-            'dataWritable': data_ok,
-            'moduleCount': len(modules_detail),
-            'healthyModules': sum(1 for m in modules_detail if m.get('ok')),
-            'errorCountWindow': err_count,
-            'avgResponseMs': avg_ms,
-        },
         'generatedAt': datetime.now().isoformat(timespec='seconds'),
-        'cache': {'moduleStatusCached': False, 'moduleRefreshEverySec': _DASH_STATUS_CACHE_TTL},
     }
-    with _DASH_STATUS_CACHE_LOCK:
-        _DASH_STATUS_CACHE = dict(result)
-        _DASH_STATUS_CACHE_AT = now
-    return result
 
 # ANSI colour helpers (used by the terminal status line + Ctrl+C guard)
 _ESC_HIDE  = '\033[?25l'
@@ -1344,12 +1278,30 @@ def _run_dashboard(ip, port):
     sys.stdout.flush()
 
 
+# ── HTTP server ────────────────────────────────────────────────
+class _QuietHTTPServer(ThreadingHTTPServer):
+    """ThreadingHTTPServer that doesn't print a traceback when a client closes
+    the connection mid-response (common with the dashboard poller / browsers)."""
+    daemon_threads = True
+
+    def handle_error(self, request, client_address):
+        exc = sys.exc_info()[1]
+        if isinstance(exc, (ConnectionAbortedError, ConnectionResetError, BrokenPipeError)):
+            return  # client disconnected — ignore quietly
+        super().handle_error(request, client_address)
+
+
 # ── HTTP handler ───────────────────────────────────────────────
 class Handler(BaseHTTPRequestHandler):
 
     def handle_one_request(self):
         self._req_started = time.time()
-        return super().handle_one_request()
+        try:
+            return super().handle_one_request()
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
+            # Client (dashboard poller / browser) closed the socket mid-response.
+            # Harmless and common; don't spam the console with a traceback.
+            self.close_connection = True
 
     def log_message(self, fmt, *args):
         try:
@@ -1549,8 +1501,12 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         # ── Static webapp files ────────────────────────────────
         clean = urllib.parse.urlsplit(self.path).path
+        if clean in ('/dashboard', '/dashboard.html'):
+            self._serve_file(WWW_DIR / 'dashboard.html', 'text/html; charset=utf-8'); return
         if clean in ('/', '/index.html', ''):
-            self._serve_file(WWW_DIR / 'index.html', 'text/html; charset=utf-8'); return
+            # Prefer the new Pixi dashboard when present; otherwise keep legacy index.html.
+            dash = WWW_DIR / 'dashboard.html'
+            self._serve_file(dash if dash.exists() else (WWW_DIR / 'index.html'), 'text/html; charset=utf-8'); return
         if clean.startswith('/static/'):
             self._serve_file_under(WWW_DIR, urllib.parse.unquote(clean.lstrip('/')), None); return
 
@@ -2177,9 +2133,12 @@ def start_server_background(port=None):
     ip = get_local_ip()
     Handler._ip = ip
     Handler._port = port
-    server = ThreadingHTTPServer(('0.0.0.0', port), Handler)
+    server = _QuietHTTPServer(('0.0.0.0', port), Handler)
     _SERVER_START = time.time()
     threading.Thread(target=server.serve_forever, daemon=True).start()
+    # Warm the dashboard cache (the disk scan is slow over SMB) so the GUI's
+    # first poll doesn't hit a multi-second cold call.
+    threading.Thread(target=_dashboard_heavy, daemon=True).start()
     return server, ip, port
 
 
@@ -2221,7 +2180,7 @@ def main():
     ip = get_local_ip()
     Handler._ip   = ip
     Handler._port = port
-    server = ThreadingHTTPServer(('0.0.0.0', port), Handler)
+    server = _QuietHTTPServer(('0.0.0.0', port), Handler)
 
     _SERVER_START = time.time()
     _enable_ansi()
