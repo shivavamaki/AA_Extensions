@@ -307,6 +307,7 @@ def save_rx_note(code, th, en=''):
 ARCUS_BASE = 'https://arcusair.bdms.co.th'
 ARCUS_ORDERITEM_URL = ARCUS_BASE + '/ordermanagement/patientorder/getallorderitem'
 ARCUS_ALLERGY_URL   = ARCUS_BASE + '/emr/drugalergy/getallergies'
+ARCUS_VISITCOUNT_URL = ARCUS_BASE + '/ordermanagement/patientorder/searchfromvisitcount'
 ARCUS_DISCHARGE_ORDERTYPE_UID = '57ce9bc44ac9670b1c439ba9'  # DISCHARGE MEDICATION
 
 
@@ -726,6 +727,58 @@ def fetch_arcus_all_orders(ctx):
     })
 
 
+def fetch_arcus_visit_history(ctx, visitcount=10):
+    """POST searchfromvisitcount — MEDICINE orders across the patient's last N
+    visits. Used to fill the journey's 'Before / Admission' column with the most
+    recent prior medicines. Returns JSON (or {} on failure)."""
+    try:
+        return _arcus_post_json(ARCUS_VISITCOUNT_URL, ctx, {
+            'patientuid': ctx.get('patientuid', ''),
+            'ordercattype': ['MEDICINE'],
+            'visitcount': int(visitcount),
+        })
+    except Exception as e:
+        print(f'[visit-history] fetch failed: {e}', file=sys.stderr)
+        return {}
+
+
+def build_prev_meds_from_visits(data, current_visit_uid=''):
+    """From searchfromvisitcount JSON → {drug_key: {drug, code, info}} holding the
+    MOST RECENT prior order per distinct drug (excluding the current visit).
+    info = the patient-facing instruction/frequency line, suffixed '(last visit)'.
+    Shape note: items are patientorders[].patientorderitems[] (a flat list)."""
+    prev = {}            # key -> {drug, code, info, _when}
+    for po in ((data or {}).get('patientorders') or []):
+        vuid = po.get('patientvisituid') or ''
+        if current_visit_uid and vuid == current_visit_uid:
+            continue                      # skip the current visit
+        for poi in (po.get('patientorderitems') or []):
+            if (poi.get('ordercattype') or '').upper() != 'MEDICINE':
+                continue
+            name = _hm_norm(poi.get('orderitemname') or '')
+            if not name:
+                continue
+            code = _hm_norm(poi.get('chargecode') or '')
+            if not _is_medicine({'code': code}):   # drop supplies/labs (keep 51-prefix)
+                continue
+            # recency key: prefer startdate, fall back to enddate
+            when = poi.get('startdate') or poi.get('enddate') or ''
+            key = (name.lower(), code)
+            # patient instruction (Thai preferred) for the cell
+            instr_th = instr_en = ''
+            for ins in (poi.get('instructions') or []):
+                if ins.get('valuecode') == 'INSTYP1':
+                    instr_th = _hm_norm(ins.get('locallangtext') or '')
+                    instr_en = _hm_norm(ins.get('instructiontext') or '')
+                    break
+            freq = _hm_norm((poi.get('frequencyuid') or {}).get('name') or '')
+            info = instr_th or instr_en or freq or '—'
+            cur = prev.get(key)
+            if cur is None or (when and when > cur.get('_when', '')):
+                prev[key] = {'drug': name, 'code': code, 'info': info, '_when': when}
+    return prev
+
+
 def _journey_phase(ordertype):
     """Map an order-type label → journey phase column.
     admission = home/OPD meds (pre-admission) · ward = inpatient · home = discharge."""
@@ -737,13 +790,16 @@ def _journey_phase(ordertype):
     return 'ward'
 
 
-def build_med_journey_from_arcus(data, reconcile_meds=None):
+def build_med_journey_from_arcus(data, reconcile_meds=None, prev_meds=None):
     """Group all orders by drug into a continuity timeline.
     Returns {patient, rows:[{drug, code, admission, ward, home, status, note}]}.
 
-    When `reconcile_meds` (from medreconcile/getdetail) is provided, the patient's
-    pre-admission home meds fill the 'admission' column and their authoritative
-    reconcilestatus overrides the auto-guessed status. status stays editable.
+    Admission column = "Before / Admission". Filled (in priority order) by:
+      1. prev_meds — most recent prior order per drug from searchfromvisitcount
+         (last 10 visits), tagged "(last visit)" — PRIMARY.
+      2. reconcile_meds — pre-admission home meds from medreconcile/getdetail,
+         which also carry an authoritative reconcilestatus.
+    status stays editable.
     """
     items = (data or {}).get('orderitems') or []
     patient = {}
@@ -764,7 +820,14 @@ def build_med_journey_from_arcus(data, reconcile_meds=None):
             order_seen.append(key)
         return row
 
-    # 1) Reconcile (pre-admission home) meds first → admission column + status.
+    # 1) Visit-history (last 10 visits) → admission column. PRIMARY source.
+    for pm in (prev_meds or {}).values():
+        row = _row_for(pm['drug'], pm.get('code'))
+        info = pm.get('info') or '—'
+        row['admission'] = f"{info} (last visit)"
+        row['_phases'].add('admission')
+
+    # 2) Reconcile (pre-admission home) meds → fill admission gaps + status.
     for rm in (reconcile_meds or []):
         if not rm.get('drug'):
             continue
@@ -1944,6 +2007,15 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(502, {'error': f'ArcusAir HTTP {e.code} — token may be expired'}); return
             except Exception as e:
                 self.send_json(500, {'error': f'ArcusAir fetch error: {e}'}); return
+            # Best-effort: previous medicines from the last 10 visits → primary
+            # source for the 'Before / Admission' column (tagged "(last visit)").
+            prev_meds = None
+            try:
+                vh = fetch_arcus_visit_history(ctx, 10)
+                if vh:
+                    prev_meds = build_prev_meds_from_visits(vh, ctx.get('patientvisituid', ''))
+            except Exception:
+                prev_meds = None
             # Best-effort: pre-admission home meds + reconcile status, if the
             # pharmacist opened the Med Reconcile screen (gave us medreconcileuid).
             recon_meds = None
@@ -1954,10 +2026,11 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 recon_meds = None
             try:
-                result = build_med_journey_from_arcus(data, recon_meds)
+                result = build_med_journey_from_arcus(data, recon_meds, prev_meds)
             except Exception as e:
                 self.send_json(500, {'error': f'Parse error: {e}'}); return
             result['hasReconcile'] = bool(recon_meds)
+            result['hasVisitHistory'] = bool(prev_meds)
             try:
                 result['allergies'] = build_allergies_from_arcus(fetch_arcus_allergies(ctx))
             except Exception as e:
