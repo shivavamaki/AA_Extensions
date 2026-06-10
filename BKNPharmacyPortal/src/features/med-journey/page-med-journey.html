@@ -145,7 +145,9 @@
 
     /* ── Bottom drug timeline (own print page) ───────────────────────────── */
     .timeline-section { margin-top: 18px; }
-    .timeline-head { display: flex; align-items: baseline; gap: 10px; border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 10px; }
+    .timeline-head { display: flex; align-items: center; gap: 12px; border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 10px; }
+    .timeline-head .tt-logo img { height: 38px; max-height: 13mm; max-width: 38mm; width: auto; display: block; object-fit: contain; }
+    .timeline-head .th-titles { display: flex; flex-direction: column; }
     .timeline-head h2 { margin: 0; font-size: 18px; }
     .timeline-head .sub { font-size: 12px; color: #475569; }
     /* Date rail across the top: admission ── ward ── discharge */
@@ -273,13 +275,6 @@
       </div>
     </section>
 
-    <section class="legend" data-no-translate translate="no">
-      <span class="chip continued">ใช้ต่อ (continued)</span>
-      <span class="chip new">เริ่มใหม่ (new)</span>
-      <span class="chip changed">เปลี่ยน (changed)</span>
-      <span class="chip stopped">หยุด (stopped)</span>
-    </section>
-
     <table id="journeyTable">
       <colgroup>
         <col class="no-print" style="width:8mm">
@@ -307,8 +302,11 @@
     <!-- Drug timeline: starts on its own print page (page-break-before). -->
     <section class="timeline-section" id="timelineSection" data-no-translate translate="no">
       <div class="timeline-head">
-        <h2>📊 แผนเวลาการใช้ยา</h2>
-        <span class="sub">Drug Timeline · แรกรับ → จำหน่าย (Admission → Discharge)</span>
+        <div class="tt-logo"><img src="../patient-sticker/bkh-logo.png" alt="BKH" /></div>
+        <div class="th-titles">
+          <h2>📊 แผนเวลาการใช้ยา</h2>
+          <span class="sub">Drug Timeline · แรกรับ → จำหน่าย (Admission → Discharge)</span>
+        </div>
       </div>
       <div class="tl-rail">
         <div class="tl-railhead">ชื่อยา / Medicine</div>
@@ -324,8 +322,11 @@
     <!-- Daily Pill Journey Card: home meds grouped by meal slot. Own page. -->
     <section class="mealcard-section" id="mealcardSection" data-no-translate translate="no">
       <div class="timeline-head">
-        <h2>🍽️ ยากลับบ้าน — จัดตามมื้อ</h2>
-        <span class="sub">Daily Pill Journey Card · เวลาในการรับประทานยาที่บ้าน</span>
+        <div class="tt-logo"><img src="../patient-sticker/bkh-logo.png" alt="BKH" /></div>
+        <div class="th-titles">
+          <h2>🍽️ ยากลับบ้าน — จัดตามมื้อ</h2>
+          <span class="sub">Daily Pill Journey Card · เวลาในการรับประทานยาที่บ้าน</span>
+        </div>
       </div>
       <div class="mc-info">ℹ️ มียาหลายตัวในมื้อเดียวกัน โปรดสังเกตว่าตัวใดกินก่อนอาหาร และตัวใดกินหลังอาหาร</div>
       <div class="mc-grid" id="mealcardGrid"><!-- slots injected by JS --></div>
