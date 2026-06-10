@@ -75,14 +75,38 @@
     th .th-sub { display: block; font-size: 11px; font-weight: 500; color: #ccfbf1; }
     td { border: 1px solid #94a3b8; padding: 7px 8px; vertical-align: top; font-size: 13px; line-height: 1.3; word-break: break-word; }
 
-    .col-act { width: 9mm; text-align: center; }
-    .col-drug { width: 17%; }
-    .col-phase { width: 19%; }
-    .col-status { width: 11%; }
-    .col-note { width: 15%; }
+    .col-act { width: 8mm; text-align: center; }
+    .col-drug { width: 26%; }
+    .col-instr { width: 34%; }
+    .col-bar { width: 60mm; }
+    .col-status { width: 10%; }
+    .col-note { width: 18%; }
 
     .drug-name { font-weight: 800; font-size: 14px; }
     .drug-code { font-size: 10px; color: #6b7280; margin-top: 2px; }
+
+    /* ── Phase bar (Before · Ward · Home) ─────────────────────────── */
+    .phase-bar { display: flex; gap: 4px; align-items: stretch; }
+    .pb-seg {
+      flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center;
+      height: 26px; border-radius: 6px; border: 1.5px solid #e2e8f0; background: #f8fafc;
+      color: #cbd5e1; font-size: 10px; font-weight: 700; letter-spacing: .2px;
+      position: relative; transition: none;
+    }
+    .pb-seg .pb-lbl { opacity: .85; }
+    /* "present in this phase" — filled, tinted by the row's status colour */
+    .pb-seg.on { color: #fff; border-color: transparent; }
+    tr[data-status="continued"] .pb-seg.on { background: #22c55e; }
+    tr[data-status="new"]       .pb-seg.on { background: #3b82f6; }
+    tr[data-status="changed"]   .pb-seg.on { background: #f59e0b; }
+    tr[data-status="stopped"]   .pb-seg.on { background: #ef4444; }
+    tr:not([data-status]) .pb-seg.on,
+    tr[data-status=""] .pb-seg.on { background: #64748b; }
+    /* connector dot between filled adjacent segments reads as continuity */
+    .pb-seg.on + .pb-seg.on::before {
+      content: ""; position: absolute; left: -5px; top: 50%; width: 6px; height: 2px;
+      background: currentColor; transform: translateY(-50%);
+    }
 
     [contenteditable] { outline: none; border-radius: 5px; padding: 1px 3px; min-height: 1.1em; cursor: text; }
     [contenteditable]:hover { background: #f1f5f9; }
@@ -128,6 +152,10 @@
       .add-suggest { display: none !important; }
       [contenteditable] { background: none !important; box-shadow: none !important; }
       [contenteditable]:empty::before { content: "" !important; }
+      /* Keep the phase-bar colours when printing / saving PDF. */
+      .pb-seg, .pb-seg.on, .col-status {
+        -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+      }
       /* Replace the status <select> with its text value for print (set by JS). */
       .status-sel { display: none !important; }
       .status-print { display: inline !important; }
@@ -192,17 +220,16 @@
 
     <table id="journeyTable">
       <colgroup>
-        <col class="no-print" style="width:9mm">
-        <col style="width:17%"><col style="width:19%"><col style="width:19%">
-        <col style="width:19%"><col style="width:10%"><col style="width:16%">
+        <col class="no-print" style="width:8mm">
+        <col style="width:26%"><col style="width:34%">
+        <col style="width:60mm"><col style="width:10%"><col style="width:18%">
       </colgroup>
       <thead>
         <tr>
           <th class="col-act no-print"></th>
           <th class="col-drug">ชื่อยา<span class="th-sub">Medicine</span></th>
-          <th class="col-phase">ก่อน/แรกรับ<span class="th-sub">Before / Admission</span></th>
-          <th class="col-phase">ระหว่างนอน รพ.<span class="th-sub">During ward</span></th>
-          <th class="col-phase">แพทย์สั่งกลับบ้าน<span class="th-sub">Discharge / Home</span></th>
+          <th class="col-instr">วิธีใช้<span class="th-sub">Instruction</span></th>
+          <th class="col-bar">ช่วงการใช้ยา<span class="th-sub">Before · Ward · Home</span></th>
           <th class="col-status">สถานะ<span class="th-sub">Status</span></th>
           <th class="col-note">หมายเหตุ<span class="th-sub">Note</span></th>
         </tr>

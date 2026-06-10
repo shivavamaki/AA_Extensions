@@ -88,20 +88,48 @@ function _statusOptions(sel) {
   ).join("");
 }
 
+/* Phase metadata in display order: key, Thai label, short tag. */
+const PHASES = [
+  { key: "admission", label: "ก่อน/แรกรับ", short: "ก่อน" },
+  { key: "ward",      label: "ระหว่างนอน รพ.", short: "ward" },
+  { key: "home",      label: "กลับบ้าน", short: "home" },
+];
+
+/** Pick the representative instruction for a drug: prefer home → ward → admission
+ * (the most patient-relevant non-empty phase). Returns {text, freqTh}. */
+function _repInstruction(row) {
+  if (row.home)      return { text: row.home, freqTh: "" };
+  if (row.ward)      return { text: row.ward, freqTh: "" };
+  if (row.admission) return { text: row.admission, freqTh: row.admissionFreqTh || "" };
+  return { text: "", freqTh: "" };
+}
+
+/** Compact phase bar: 3 segments (ก่อน│ward│home), filled when the drug is
+ * present in that phase, tinted by status. Each segment tooltips its own text. */
+function _phaseBar(row) {
+  const segs = PHASES.map((p) => {
+    const v = norm(row[p.key] || "");
+    const on = v ? "on" : "";
+    const tip = v ? `${p.label}: ${v}` : `${p.label}: —`;
+    return `<span class="pb-seg ${on}" data-no-translate translate="no" title="${escapeHtml(tip)}"><span class="pb-lbl">${p.short}</span></span>`;
+  }).join("");
+  return `<div class="phase-bar" data-no-translate translate="no">${segs}</div>`;
+}
+
 function _buildRow(row, i) {
   const tr = document.createElement("tr");
   tr.className = "j-row";
   tr.dataset.index = String(i);
   tr.dataset.status = row.status || "";
+  const rep = _repInstruction(row);
   tr.innerHTML = `
     <td class="col-act no-print"><button type="button" class="row-del" title="Remove">−</button></td>
     <td class="col-drug">
       <div class="drug-name" contenteditable="true" data-field="drug" data-ph="ชื่อยา" data-no-translate translate="no">${escapeHtml(row.drug || "")}</div>
-      ${row.code ? `<div class="drug-code">Code: ${escapeHtml(row.code)}</div>` : ""}
+      ${row.code ? `<div class="drug-code" data-no-translate translate="no">Code: ${escapeHtml(row.code)}</div>` : ""}
     </td>
-    <td class="col-phase" contenteditable="true" data-field="admission" data-ph="—"${row.admissionFreqTh ? ` data-freq-th="${escapeHtml(row.admissionFreqTh)}"` : ""}>${escapeHtml(row.admission || "")}${row.admissionTag ? ` <span class="phase-tag" data-no-translate translate="no">${escapeHtml(row.admissionTag)}</span>` : ""}</td>
-    <td class="col-phase" contenteditable="true" data-field="ward" data-ph="—">${escapeHtml(row.ward || "")}</td>
-    <td class="col-phase" contenteditable="true" data-field="home" data-ph="—">${escapeHtml(row.home || "")}</td>
+    <td class="col-instr" contenteditable="true" data-field="${escapeHtml(_repField(row))}" data-ph="—"${rep.freqTh ? ` data-freq-th="${escapeHtml(rep.freqTh)}"` : ""}>${escapeHtml(rep.text)}</td>
+    <td class="col-bar">${_phaseBar(row)}</td>
     <td class="col-status">
       <select class="status-sel no-print" data-field="status">${_statusOptions(row.status)}</select>
       <span class="status-print" data-no-translate translate="no">${escapeHtml(STATUS_TH[row.status] || row.status || "")}</span>
@@ -111,12 +139,19 @@ function _buildRow(row, i) {
   return tr;
 }
 
+/** Which field the representative instruction edits (so blur commits the right one). */
+function _repField(row) {
+  if (row.home)      return "home";
+  if (row.ward)      return "ward";
+  return "admission";
+}
+
 function _buildAddRow() {
   const tr = document.createElement("tr");
   tr.className = "add-row no-print";
   tr.innerHTML = `
     <td class="col-act"><button type="button" class="row-add" title="Add">+</button></td>
-    <td colspan="6">
+    <td colspan="5">
       <div class="add-wrap">
         <input type="text" class="add-input" placeholder="พิมพ์ชื่อยาเพื่อเพิ่ม… (type a medicine to add)" autocomplete="off" />
         <div class="add-suggest" hidden></div>
@@ -131,7 +166,7 @@ async function renderRows() {
   tbody.innerHTML = "";
   if (!_rows.length) {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="7" class="empty">ไม่พบรายการยา — เพิ่มด้านล่าง (No orders found — add below)</td>`;
+    tr.innerHTML = `<td colspan="6" class="empty">ไม่พบรายการยา — เพิ่มด้านล่าง (No orders found — add below)</td>`;
     tbody.appendChild(tr);
   }
   _rows.forEach((r, i) => tbody.appendChild(_buildRow(r, i)));
