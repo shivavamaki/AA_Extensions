@@ -172,6 +172,7 @@ function renderRows() {
   tbody.appendChild(_buildAddRow());
   _bindEditing(tbody);
   renderTimeline();  // keep the bottom timeline in sync with the row set
+  renderMealCard();  // and the by-meal home-med card
 }
 
 /* ───────────────────────── Drug timeline (bottom page) ────────────────── */
@@ -222,6 +223,109 @@ function renderTimeline() {
   }).join("");
 }
 
+/* ─────────────────── Daily Pill Journey Card (by meal) ─────────────────── */
+// Thai instructions use a list shorthand where a leading ก่อน/หลังอาหาร applies
+// to several meals: "หลังอาหาร เช้า เย็น" = after breakfast AND after dinner.
+// _mealQualifier walks the text token by token, carrying the last seen
+// ก่อน/หลัง qualifier forward across meal words until a new one appears. For the
+// given meal word it returns "before" | "after" | "" (unqualified).
+const _MEAL_WORDS = ["เช้า", "กลางวัน", "เที่ยง", "เย็น"];
+function _mealQualifier(txt, mealWord) {
+  // Tokenise into qualifier / meal markers in order of appearance.
+  const re = /(ก่อน|หลัง)|(เช้า|กลางวัน|เที่ยง|เย็น)/g;
+  let m, qual = "";
+  while ((m = re.exec(txt)) !== null) {
+    if (m[1]) { qual = m[1]; continue; }           // ก่อน / หลัง — update carry
+    if (m[2] === mealWord) return qual === "ก่อน" ? "before" : (qual === "หลัง" ? "after" : "");
+    // a different meal word: the carried qualifier still applies to it too
+    // (list shorthand), so keep `qual` as-is and continue.
+  }
+  return "";
+}
+
+// Meal slots in day order. `test(txt)` decides if a home instruction belongs in
+// this slot, matching the Thai frequency phrase (and a few English fallbacks).
+// A drug can land in several slots (e.g. BID = after-breakfast + after-dinner).
+// Unqualified meal words (no ก่อน/หลัง) default to "after" — the common Thai
+// convention for oral meds taken with a meal.
+const _hasMeal = (t, thWord, enWord) => new RegExp(`${thWord}|${enWord}`, "i").test(t);
+const MEAL_SLOTS = [
+  { key: "bbf", cls: "t-bbf", ico: "🌅", th: "ก่อนอาหารเช้า", en: "Before breakfast",
+    test: (t) => (_hasMeal(t, "เช้า", "breakfast") && _mealQualifier(t, "เช้า") === "before") || /before\s+breakfast/i.test(t) },
+  { key: "abf", cls: "t-abf", ico: "☀️", th: "หลังอาหารเช้า", en: "After breakfast",
+    test: (t) => (_hasMeal(t, "เช้า", "breakfast") && _mealQualifier(t, "เช้า") !== "before") || /after\s+breakfast/i.test(t) },
+  { key: "mid", cls: "t-mid", ico: "🌤️", th: "กลางวัน", en: "Midday",
+    test: (t) => /กลางวัน|เที่ยง|lunch|midday|noon/i.test(t) },
+  { key: "bdn", cls: "t-bdn", ico: "🌆", th: "ก่อนอาหารเย็น", en: "Before dinner",
+    test: (t) => (_hasMeal(t, "เย็น", "dinner|supper") && _mealQualifier(t, "เย็น") === "before") || /before\s+(dinner|supper)/i.test(t) },
+  { key: "adn", cls: "t-adn", ico: "🌙", th: "หลังอาหารเย็น", en: "After dinner",
+    test: (t) => (_hasMeal(t, "เย็น", "dinner|supper") && _mealQualifier(t, "เย็น") !== "before") || /after\s+(dinner|supper)/i.test(t) },
+  { key: "bed", cls: "t-bed", ico: "🛏️", th: "ก่อนนอน", en: "Bedtime",
+    test: (t) => /ก่อนนอน|ก่อนเข้านอน|bedtime|\bhs\b|at\s+night/i.test(t) },
+  { key: "prn", cls: "t-prn", ico: "⭐", th: "เมื่อมีอาการ", en: "When needed (PRN)",
+    test: (t) => /เมื่อมีอาการ|เวลามีอาการ|เมื่อปวด|เมื่อจำเป็น|\bprn\b|if\s+needed|as\s+needed|when\s+required/i.test(t) },
+];
+
+/** Pull a short dose phrase ("1 เม็ด", "1 PUFF", "5 มล.") from the instruction
+ * for the compact meal-card line. Falls back to "" (drug name carries it). */
+function _doseSnippet(txt) {
+  const t = norm(txt || "");
+  const m = t.match(/(\d+(?:[.,]\d+)?(?:\/\d+)?)\s*(เม็ด|แคปซูล|ซอง|มล\.?|ml|puff|หยด|drop|ช้อน|tab|cap|amp|vial|มก\.?|mg|มิลลิกรัม)/i);
+  return m ? m[0] : "";
+}
+
+/** Home meds only, excluding stopped — these are what the patient takes home. */
+function _homeMeds() {
+  return _rows.filter((r) => (r.phases && r.phases.home) && r.status !== "stopped");
+}
+
+function renderMealCard() {
+  const host = document.getElementById("mealcardGrid");
+  if (!host) return;
+  const meds = _homeMeds();
+  if (!meds.length) {
+    host.innerHTML = `<div class="mc-emptyall">ไม่มียากลับบ้าน (no home medications)</div>`;
+    return;
+  }
+  // Bucket each home med into every slot it matches.
+  const buckets = Object.fromEntries(MEAL_SLOTS.map((s) => [s.key, []]));
+  const unslotted = [];
+  meds.forEach((r) => {
+    const txt = norm(r.home || r.ward || r.admission || "");
+    const dose = _doseSnippet(txt);
+    let matched = false;
+    MEAL_SLOTS.forEach((s) => {
+      if (s.test(txt)) { buckets[s.key].push({ drug: r.drug, dose, prn: s.key === "prn", txt }); matched = true; }
+    });
+    if (!matched) unslotted.push({ drug: r.drug, dose, txt });
+  });
+
+  const itemHtml = (it) => {
+    const dose = it.dose ? ` <span class="mc-dose">${escapeHtml(it.dose)}</span>` : "";
+    return `<div class="mc-item"><span class="mc-drug">${escapeHtml(it.drug)}</span>${dose}</div>`;
+  };
+
+  let html = MEAL_SLOTS.map((s) => {
+    const items = buckets[s.key];
+    const body = items.length
+      ? items.map(itemHtml).join("")
+      : `<div class="mc-empty-slot">— ไม่มียา</div>`;
+    return `<div class="mc-slot ${s.cls}">
+      <div class="mc-slot-head"><span class="mc-ico">${s.ico}</span><span>${s.th}</span><span class="mc-en">${s.en}</span></div>
+      <div class="mc-list">${body}</div>
+    </div>`;
+  }).join("");
+
+  // Any home med whose schedule we couldn't classify → "อื่นๆ / ตามแพทย์สั่ง".
+  if (unslotted.length) {
+    html += `<div class="mc-slot t-prn">
+      <div class="mc-slot-head"><span class="mc-ico">📋</span><span>อื่นๆ / ตามแพทย์สั่ง</span><span class="mc-en">Other / as directed</span></div>
+      <div class="mc-list">${unslotted.map(itemHtml).join("")}</div>
+    </div>`;
+  }
+  host.innerHTML = html;
+}
+
 /* ───────────────────────── Editing / add / remove ─────────────────────── */
 function _commit(i, field, value) {
   if (i < 0 || i >= _rows.length) return;
@@ -246,6 +350,7 @@ function _bindEditing(tbody) {
       const sp = tr.querySelector(".status-print");
       if (sp) sp.textContent = STATUS_TH[sel.value] || sel.value;
       renderTimeline();  // recolour the matching bar on the timeline page
+      renderMealCard();  // stopped meds drop out of the by-meal card
     });
   });
   tbody.querySelectorAll(".row-del").forEach((b) => {

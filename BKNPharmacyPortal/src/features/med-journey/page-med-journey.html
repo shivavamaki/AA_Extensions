@@ -173,6 +173,31 @@
     .tl-track::after  { left: 66.666%; }
     .timeline-empty { color: #6b7280; font-style: italic; padding: 10px 2px; }
 
+    /* ── Daily Pill Journey Card (home meds by meal) ─────────────────────── */
+    .mealcard-section { margin-top: 18px; }
+    .mc-info { background: #eff6ff; color: #1e3a8a; border: 1px solid #dbeafe; border-radius: 8px; padding: 7px 12px; font-size: 12px; margin-bottom: 12px; }
+    .mc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .mc-slot { border: 1.5px solid #cbd5e1; border-radius: 10px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; }
+    .mc-slot-head { display: flex; align-items: center; gap: 8px; padding: 7px 12px; font-weight: 800; font-size: 13px; color: #fff; }
+    .mc-slot-head .mc-ico { font-size: 16px; line-height: 1; }
+    .mc-slot-head .mc-en { font-weight: 500; font-size: 10px; opacity: .9; margin-left: auto; }
+    /* Slot accent colours — morning warm, midday bright, evening/night cool. */
+    .mc-slot.t-bbf .mc-slot-head { background: #f59e0b; }
+    .mc-slot.t-abf .mc-slot-head { background: #f97316; }
+    .mc-slot.t-mid .mc-slot-head { background: #0ea5e9; }
+    .mc-slot.t-bdn .mc-slot-head { background: #6366f1; }
+    .mc-slot.t-adn .mc-slot-head { background: #4f46e5; }
+    .mc-slot.t-bed .mc-slot-head { background: #1e293b; }
+    .mc-slot.t-prn .mc-slot-head { background: #0d9488; }
+    .mc-list { padding: 6px 10px; }
+    .mc-item { display: flex; align-items: baseline; gap: 6px; padding: 4px 0; border-bottom: 1px dashed #e5e7eb; font-size: 12px; }
+    .mc-item:last-child { border-bottom: 0; }
+    .mc-item .mc-drug { font-weight: 700; }
+    .mc-item .mc-dose { color: #475569; }
+    .mc-item .mc-prn-cond { color: #92400e; font-style: italic; }
+    .mc-empty-slot { color: #9ca3af; font-style: italic; font-size: 12px; padding: 4px 0; }
+    .mc-emptyall { color: #6b7280; font-style: italic; padding: 10px 2px; }
+
     @page { size: A4 landscape; margin: 8mm; }
     @media print {
       body { background: #fff; }
@@ -189,12 +214,14 @@
       [contenteditable]:empty::before { content: "" !important; }
       /* Keep the phase-bar colours when printing / saving PDF. */
       .pb-seg, .pb-seg.on, .col-status,
-      .tl-zone, .tl-bar, .tl-track {
+      .tl-zone, .tl-bar, .tl-track,
+      .mc-slot-head, .mc-info {
         -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
       }
-      /* Timeline gets its own page after the table. */
+      /* Timeline and meal card each get their own page after the table. */
       .timeline-section { break-before: page; page-break-before: always; }
       .tl-row { break-inside: avoid; page-break-inside: avoid; }
+      .mealcard-section { break-before: page; page-break-before: always; }
       /* Replace the status <select> with its text value for print (set by JS). */
       .status-sel { display: none !important; }
       .status-print { display: inline !important; }
@@ -285,6 +312,16 @@
         </div>
       </div>
       <div class="tl-rows" id="timelineRows"><!-- injected by JS --></div>
+    </section>
+
+    <!-- Daily Pill Journey Card: home meds grouped by meal slot. Own page. -->
+    <section class="mealcard-section" id="mealcardSection" data-no-translate translate="no">
+      <div class="timeline-head">
+        <h2>🍽️ ยากลับบ้าน — จัดตามมื้อ</h2>
+        <span class="sub">Daily Pill Journey Card · เวลาในการรับประทานยาที่บ้าน</span>
+      </div>
+      <div class="mc-info">ℹ️ มียาหลายตัวในมื้อเดียวกัน โปรดสังเกตว่าตัวใดกินก่อนอาหาร และตัวใดกินหลังอาหาร</div>
+      <div class="mc-grid" id="mealcardGrid"><!-- slots injected by JS --></div>
     </section>
   </main>
   </div>
