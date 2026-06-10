@@ -61,6 +61,7 @@ import secrets
 import shutil
 import sys
 import socket
+import ssl
 import tempfile
 import time
 import urllib.error
@@ -334,16 +335,46 @@ def _arcus_headers(ctx, extra=None):
     return h
 
 
-def _arcus_post_json(url, ctx, payload):
-    """POST JSON to an ArcusAir endpoint with session headers; return parsed JSON."""
+def _is_transient_net_err(exc):
+    """True for errors worth retrying: slow/failed TLS handshake, timeouts, resets."""
+    if isinstance(exc, (socket.timeout, TimeoutError, ssl.SSLError, ConnectionError)):
+        return True
+    if isinstance(exc, urllib.error.URLError):
+        reason = getattr(exc, 'reason', None)
+        if isinstance(reason, (socket.timeout, TimeoutError, ssl.SSLError, ConnectionError)):
+            return True
+        # SSL handshake timeout surfaces as URLError wrapping an ssl.SSLError whose
+        # text contains "handshake operation timed out" / "_ssl.c".
+        if 'handshake' in str(exc).lower() or 'timed out' in str(exc).lower():
+            return True
+    return False
+
+
+def _arcus_post_json(url, ctx, payload, retries=2):
+    """POST JSON to an ArcusAir endpoint with session headers; return parsed JSON.
+
+    Retries on transient network errors (e.g. the occasional slow TLS handshake to
+    arcusair.bdms.co.th, which otherwise surfaces as
+    '_ssl.c:993: The handshake operation timed out').
+    """
     body = json.dumps(payload).encode('utf-8')
-    req = urllib.request.Request(url, data=body, headers=_arcus_headers(ctx), method='POST')
-    with urllib.request.urlopen(req, timeout=30) as r:
-        raw = r.read()
-        if raw[:2] == b'\x1f\x8b':
-            import gzip
-            raw = gzip.decompress(raw)
-    return json.loads(raw.decode('utf-8'))
+    last_exc = None
+    for attempt in range(retries + 1):
+        req = urllib.request.Request(url, data=body, headers=_arcus_headers(ctx), method='POST')
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                raw = r.read()
+                if raw[:2] == b'\x1f\x8b':
+                    import gzip
+                    raw = gzip.decompress(raw)
+            return json.loads(raw.decode('utf-8'))
+        except Exception as exc:  # noqa: BLE001 — re-raised below if not retryable
+            last_exc = exc
+            if attempt < retries and _is_transient_net_err(exc):
+                time.sleep(0.6 * (attempt + 1))
+                continue
+            raise
+    raise last_exc  # pragma: no cover
 
 
 def fetch_arcus_discharge_meds(ctx):
@@ -859,6 +890,9 @@ def build_med_journey_from_arcus(data, reconcile_meds=None, prev_meds=None):
 
     # 2) Inpatient/discharge orders → ward/home columns. Medicines only
     #    (drop supplies/services/food/labs — code prefix 51 / cat Medicine).
+    #    Track the earliest/latest order dates → admission / discharge endpoints
+    #    for the bottom drug-timeline (phase-based bars labelled with real dates).
+    order_dates = []
     for it in items:
         med = _arcus_item_to_med(it)
         if not med:
@@ -867,6 +901,9 @@ def build_med_journey_from_arcus(data, reconcile_meds=None, prev_meds=None):
             patient = _arcus_patient_header(it)
         if not _is_medicine(med):
             continue
+        d = (med.get('orderdate') or med.get('startdate') or '').strip()
+        if d:
+            order_dates.append(d)
         phase = _journey_phase(med.get('ordertype'))
         row = _row_for(med['drug'], med.get('code'))
         cell = med.get('comment') or med.get('route') or ''
@@ -892,9 +929,24 @@ def build_med_journey_from_arcus(data, reconcile_meds=None, prev_meds=None):
             row['status'] = 'continued' if (phases & {'admission', 'ward'}) else 'new'
         elif phases:
             row['status'] = 'stopped'
+        # Phase presence flags — let the client draw the timeline bar without
+        # re-deriving "is this phase filled?" from the localised cell text.
+        row['phases'] = {
+            'admission': 'admission' in phases,
+            'ward': 'ward' in phases,
+            'home': 'home' in phases,
+        }
         rows.append(row)
 
-    return {'patient': patient, 'rows': rows, 'allRows': len(rows)}
+    # ISO order dates sort lexicographically; admission = earliest, discharge =
+    # latest. Both may be empty if the API omitted dates (client falls back).
+    order_dates = sorted(d for d in order_dates if d)
+    dates = {
+        'admission': order_dates[0] if order_dates else '',
+        'discharge': order_dates[-1] if order_dates else '',
+    }
+
+    return {'patient': patient, 'rows': rows, 'allRows': len(rows), 'dates': dates}
 
 
 # ── KPI helpers (per-day files) ────────────────────────────────
@@ -2024,6 +2076,8 @@ class Handler(BaseHTTPRequestHandler):
             except urllib.error.HTTPError as e:
                 self.send_json(502, {'error': f'ArcusAir HTTP {e.code} — token may be expired'}); return
             except Exception as e:
+                if _is_transient_net_err(e):
+                    self.send_json(504, {'error': 'ArcusAir ตอบช้า/เชื่อมต่อไม่ได้ (TLS timeout) — ลองใหม่อีกครั้ง'}); return
                 self.send_json(500, {'error': f'ArcusAir fetch error: {e}'}); return
             # Best-effort: previous medicines from the last 10 visits → primary
             # source for the 'Before / Admission' column (tagged "(last visit)").

@@ -11,7 +11,8 @@ const { norm, escapeHtml, safeSetText } = window.CoreDom;
 const { MSG } = window.CoreMessages;
 
 let _context = null;
-let _rows = [];            // [{drug, code, admission, ward, home, status, note, provider}]
+let _rows = [];            // [{drug, code, admission, ward, home, status, note, provider, phases}]
+let _dates = { admission: "", discharge: "" };  // timeline endpoints
 let _currentLang = "th";   // instructions default to Thai (shared glossary)
 
 const STATUSES = ["continued", "new", "changed", "stopped"];
@@ -174,6 +175,55 @@ async function renderRows() {
   _bindEditing(tbody);
   _initTranslate();
   if (_currentLang) await _applyTranslate(_currentLang);
+  renderTimeline();  // keep the bottom timeline in sync with the row set
+}
+
+/* ───────────────────────── Drug timeline (bottom page) ────────────────── */
+/** Format an ISO date (or anything Date can parse) as dd/mm/BBBB (Thai year). */
+function _fmtDate(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("th-TH", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+/** Phase span → {left%, width%} across the 3 equal zones [Before|Ward|Home].
+ * Bar runs from the first present phase to the last present phase, so a
+ * continued drug fills end-to-end and a stopped one ends at the ward zone. */
+const _ZONE_IDX = { admission: 0, ward: 1, home: 2 };
+function _barSpan(phases) {
+  const present = ["admission", "ward", "home"].filter((k) => phases && phases[k]);
+  if (!present.length) return null;
+  const first = _ZONE_IDX[present[0]];
+  const last = _ZONE_IDX[present[present.length - 1]];
+  const left = (first / 3) * 100;
+  const width = ((last - first + 1) / 3) * 100;
+  return { left, width };
+}
+
+function renderTimeline() {
+  const host = document.getElementById("timelineRows");
+  if (!host) return;
+  safeSetText("tlDateAdm", _fmtDate(_dates.admission));
+  safeSetText("tlDateDc", _fmtDate(_dates.discharge));
+
+  if (!_rows.length) {
+    host.innerHTML = `<div class="timeline-empty">ไม่มีรายการยา (no medications)</div>`;
+    return;
+  }
+  host.innerHTML = _rows.map((row) => {
+    const span = _barSpan(row.phases);
+    const cls = "s-" + (row.status || "");
+    const tag = STATUS_TH[row.status] || "";
+    const bar = span
+      ? `<div class="tl-bar ${cls}" style="left:${span.left}%;width:${span.width}%" title="${escapeHtml(row.drug + " — " + tag)}">${escapeHtml(tag)}</div>`
+      : "";
+    const code = row.code ? ` <span class="tl-code">${escapeHtml(row.code)}</span>` : "";
+    return `<div class="tl-row">
+      <div class="tl-name" title="${escapeHtml(row.drug)}">${escapeHtml(row.drug)}${code}</div>
+      <div class="tl-track">${bar}</div>
+    </div>`;
+  }).join("");
 }
 
 /* ───────────────────────── Editing / add / remove ─────────────────────── */
@@ -199,6 +249,7 @@ function _bindEditing(tbody) {
       tr.dataset.status = sel.value;
       const sp = tr.querySelector(".status-print");
       if (sp) sp.textContent = STATUS_TH[sel.value] || sel.value;
+      renderTimeline();  // recolour the matching bar on the timeline page
     });
   });
   tbody.querySelectorAll(".row-del").forEach((b) => {
@@ -337,12 +388,22 @@ async function fetchAndRender() {
   await _loadMedDb();
 
   let resp = null;
-  try {
-    resp = await window.BKNData.serverFetch("/api/report/med-journey", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ context: _context }),
-    });
-  } catch (e) { console.error("[med-journey] serverFetch threw:", e); }
+  // Retry on gateway/handshake timeouts (504): the ArcusAir TLS handshake is
+  // occasionally slow, and one slow handshake shouldn't fail the whole report.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      resp = await window.BKNData.serverFetch("/api/report/med-journey", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ context: _context }),
+      });
+    } catch (e) { console.error("[med-journey] serverFetch threw:", e); resp = null; }
+    const isTimeout = resp && resp.status === 504;
+    if (!isTimeout) break;
+    if (attempt < 2) {
+      _setStatus(`⏳ ArcusAir ตอบช้า — ลองใหม่ (${attempt + 2}/3)...`);
+      await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+    }
+  }
 
   console.log("[med-journey] server response:", resp);
   window.__MJ_RESP__ = resp;
@@ -360,6 +421,11 @@ async function fetchAndRender() {
     admission: norm(r.admission || ""), ward: norm(r.ward || ""), home: norm(r.home || ""),
     admissionFreqTh: norm(r.admissionFreqTh || ""), admissionTag: norm(r.admissionTag || ""),
     status: r.status || "", note: norm(r.note || ""), provider: norm(r.provider || ""),
+    // Phase presence (from server flags, or derived from the cell text for
+    // saved/edited rows that predate the flags).
+    phases: r.phases || {
+      admission: !!norm(r.admission || ""), ward: !!norm(r.ward || ""), home: !!norm(r.home || ""),
+    },
   });
   if (saved && saved.length) {
     _rows = saved.map(_mapRow);
@@ -369,11 +435,12 @@ async function fetchAndRender() {
     _setStatus(`✅ ${_rows.length} รายการยา — แก้ไข/เพิ่ม/ลบได้`);
   }
   _sortRows();
+  _dates = (data.dates && typeof data.dates === "object") ? data.dates : { admission: "", discharge: "" };
 
   populateHeader(data.patient || {}, _context);
   renderDiagnosis(_context && _context.diagnosis);
   renderAllergies(data.allergies);
-  await renderRows();
+  await renderRows();   // renderRows() also draws the bottom timeline
 }
 
 /* ───────────────────────── Toolbar ────────────────────────────────────── */

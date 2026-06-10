@@ -138,6 +138,41 @@
     .footer-note { margin-top: 12px; padding-top: 8px; border-top: 1px solid #d1d5db; display: grid; grid-template-columns: 2fr 1fr; gap: 10px; font-size: 12px; color: #374151; }
     .sign-box { border: 1px dashed #9ca3af; border-radius: 8px; padding: 6px 8px; }
 
+    /* ── Bottom drug timeline (own print page) ───────────────────────────── */
+    .timeline-section { margin-top: 18px; }
+    .timeline-head { display: flex; align-items: baseline; gap: 10px; border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 10px; }
+    .timeline-head h2 { margin: 0; font-size: 18px; }
+    .timeline-head .sub { font-size: 12px; color: #475569; }
+    /* Date rail across the top: admission ── ward ── discharge */
+    .tl-rail { display: grid; grid-template-columns: 110mm 1fr; gap: 0; margin-bottom: 6px; }
+    .tl-rail-zones { display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 11px; }
+    .tl-zone { text-align: center; padding: 4px 2px; font-weight: 700; color: #fff; }
+    .tl-zone.z-before { background: #94a3b8; border-radius: 6px 0 0 6px; }
+    .tl-zone.z-ward   { background: #0f766e; }
+    .tl-zone.z-home   { background: #0d9488; border-radius: 0 6px 6px 0; }
+    .tl-zone .zdate { display: block; font-weight: 500; font-size: 9px; opacity: .9; }
+    .tl-railhead { font-size: 11px; color: #64748b; font-weight: 700; align-self: center; padding-left: 2px; }
+
+    .tl-rows { display: flex; flex-direction: column; gap: 3px; }
+    .tl-row { display: grid; grid-template-columns: 110mm 1fr; align-items: center; gap: 0; min-height: 22px; }
+    .tl-name { font-size: 12px; font-weight: 700; padding-right: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tl-name .tl-code { font-weight: 400; color: #94a3b8; font-size: 9px; }
+    .tl-track { position: relative; height: 16px; background: #f1f5f9; border-radius: 8px; }
+    /* The bar fills only the phase zones the drug is present in. We position it
+       across the 3 equal zones (Before|Ward|Home) by left%/width%. */
+    .tl-bar { position: absolute; top: 0; bottom: 0; border-radius: 8px; display: flex; align-items: center; padding: 0 7px;
+      font-size: 9px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; }
+    .tl-bar.s-continued { background: #22c55e; }
+    .tl-bar.s-new       { background: #3b82f6; }
+    .tl-bar.s-changed   { background: #f59e0b; }
+    .tl-bar.s-stopped   { background: #ef4444; }
+    .tl-bar.s-           { background: #64748b; }
+    /* Faint zone dividers behind the bars for read-off alignment. */
+    .tl-track::before, .tl-track::after { content: ""; position: absolute; top: -2px; bottom: -2px; width: 1px; background: #e2e8f0; }
+    .tl-track::before { left: 33.333%; }
+    .tl-track::after  { left: 66.666%; }
+    .timeline-empty { color: #6b7280; font-style: italic; padding: 10px 2px; }
+
     @page { size: A4 landscape; margin: 8mm; }
     @media print {
       body { background: #fff; }
@@ -153,9 +188,13 @@
       [contenteditable] { background: none !important; box-shadow: none !important; }
       [contenteditable]:empty::before { content: "" !important; }
       /* Keep the phase-bar colours when printing / saving PDF. */
-      .pb-seg, .pb-seg.on, .col-status {
+      .pb-seg, .pb-seg.on, .col-status,
+      .tl-zone, .tl-bar, .tl-track {
         -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
       }
+      /* Timeline gets its own page after the table. */
+      .timeline-section { break-before: page; page-break-before: always; }
+      .tl-row { break-inside: avoid; page-break-inside: avoid; }
       /* Replace the status <select> with its text value for print (set by JS). */
       .status-sel { display: none !important; }
       .status-print { display: inline !important; }
@@ -240,6 +279,23 @@
     <section class="footer-note">
       <div class="sign-box"><strong>คำแนะนำ / Note</strong><br/>หากไม่แน่ใจวิธีใช้ยา กรุณาปรึกษาเภสัชกรก่อนกลับบ้าน</div>
       <div class="sign-box"><strong>เภสัชกร (Pharmacist)</strong><br/><span id="pharmacistName">-</span></div>
+    </section>
+
+    <!-- Drug timeline: starts on its own print page (page-break-before). -->
+    <section class="timeline-section" id="timelineSection" data-no-translate translate="no">
+      <div class="timeline-head">
+        <h2>📊 แผนเวลาการใช้ยา</h2>
+        <span class="sub">Drug Timeline · แรกรับ → จำหน่าย (Admission → Discharge)</span>
+      </div>
+      <div class="tl-rail">
+        <div class="tl-railhead">ชื่อยา / Medicine</div>
+        <div class="tl-rail-zones">
+          <div class="tl-zone z-before">ก่อน/แรกรับ<span class="zdate" id="tlDateAdm">—</span></div>
+          <div class="tl-zone z-ward">ระหว่างนอน รพ.<span class="zdate">Ward</span></div>
+          <div class="tl-zone z-home">กลับบ้าน<span class="zdate" id="tlDateDc">—</span></div>
+        </div>
+      </div>
+      <div class="tl-rows" id="timelineRows"><!-- injected by JS --></div>
     </section>
   </main>
   </div>
