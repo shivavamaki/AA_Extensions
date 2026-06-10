@@ -17,6 +17,18 @@ let _currentLang = "th";   // instructions default to Thai (shared glossary)
 const STATUSES = ["continued", "new", "changed", "stopped"];
 const STATUS_TH = { continued: "ใช้ต่อ", new: "เริ่มใหม่", changed: "เปลี่ยน", stopped: "หยุด" };
 
+/** Group rows by status (legend order), then alphabetically by medicine name. */
+function _sortRows() {
+  const order = (s) => {
+    const i = STATUSES.indexOf(s);
+    return i === -1 ? STATUSES.length : i;
+  };
+  _rows.sort((a, b) =>
+    order(a.status) - order(b.status) ||
+    (a.drug || "").localeCompare(b.drug || "", "en", { sensitivity: "base" })
+  );
+}
+
 /* ───────────────────────── Server access ──────────────────────────────── */
 async function _serverBase() {
   try { if (window.BKNData?.getServerUrl) return (await window.BKNData.getServerUrl()) || ""; }
@@ -87,7 +99,7 @@ function _buildRow(row, i) {
       <div class="drug-name" contenteditable="true" data-field="drug" data-ph="ชื่อยา" data-no-translate translate="no">${escapeHtml(row.drug || "")}</div>
       ${row.code ? `<div class="drug-code">Code: ${escapeHtml(row.code)}</div>` : ""}
     </td>
-    <td class="col-phase" contenteditable="true" data-field="admission" data-ph="—">${escapeHtml(row.admission || "")}</td>
+    <td class="col-phase" contenteditable="true" data-field="admission" data-ph="—"${row.admissionFreqTh ? ` data-freq-th="${escapeHtml(row.admissionFreqTh)}"` : ""}>${escapeHtml(row.admission || "")}${row.admissionTag ? ` <span class="phase-tag" data-no-translate translate="no">${escapeHtml(row.admissionTag)}</span>` : ""}</td>
     <td class="col-phase" contenteditable="true" data-field="ward" data-ph="—">${escapeHtml(row.ward || "")}</td>
     <td class="col-phase" contenteditable="true" data-field="home" data-ph="—">${escapeHtml(row.home || "")}</td>
     <td class="col-status">
@@ -308,21 +320,20 @@ async function fetchAndRender() {
 
   const data = resp.json;
   const saved = await _loadSaved();
+  const _mapRow = (r) => ({
+    drug: norm(r.drug || ""), code: norm(r.code || ""),
+    admission: norm(r.admission || ""), ward: norm(r.ward || ""), home: norm(r.home || ""),
+    admissionFreqTh: norm(r.admissionFreqTh || ""), admissionTag: norm(r.admissionTag || ""),
+    status: r.status || "", note: norm(r.note || ""), provider: norm(r.provider || ""),
+  });
   if (saved && saved.length) {
-    _rows = saved.map((r) => ({
-      drug: norm(r.drug || ""), code: norm(r.code || ""),
-      admission: norm(r.admission || ""), ward: norm(r.ward || ""), home: norm(r.home || ""),
-      status: r.status || "", note: norm(r.note || ""), provider: norm(r.provider || ""),
-    }));
+    _rows = saved.map(_mapRow);
     _setStatus(`✅ ${_rows.length} รายการ (โหลดฉบับที่แก้ไขไว้)`);
   } else {
-    _rows = (data.rows || []).map((r) => ({
-      drug: norm(r.drug || ""), code: norm(r.code || ""),
-      admission: norm(r.admission || ""), ward: norm(r.ward || ""), home: norm(r.home || ""),
-      status: r.status || "", note: norm(r.note || ""), provider: norm(r.provider || ""),
-    }));
+    _rows = (data.rows || []).map(_mapRow);
     _setStatus(`✅ ${_rows.length} รายการยา — แก้ไข/เพิ่ม/ลบได้`);
   }
+  _sortRows();
 
   populateHeader(data.patient || {}, _context);
   renderDiagnosis(_context && _context.diagnosis);
@@ -346,6 +357,8 @@ function bindToolbar() {
   if (p) p.onclick = () => { document.title = buildFileName(); window.print(); };
   if (pdf) pdf.onclick = () => { document.title = buildFileName(); window.print(); };
   if (rev) rev.onclick = () => location.reload();
+  const reg = document.getElementById("btnRegroup");
+  if (reg) reg.onclick = () => { _sortRows(); renderRows(); };
   const sel = document.getElementById("lang");
   if (sel) {
     sel.value = _currentLang;

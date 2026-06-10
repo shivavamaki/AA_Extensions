@@ -743,11 +743,14 @@ def fetch_arcus_visit_history(ctx, visitcount=10):
 
 
 def build_prev_meds_from_visits(data, current_visit_uid=''):
-    """From searchfromvisitcount JSON → {drug_key: {drug, code, info}} holding the
-    MOST RECENT prior order per distinct drug (excluding the current visit).
-    info = the patient-facing instruction/frequency line, suffixed '(last visit)'.
+    """From searchfromvisitcount JSON → {drug_key: {drug, code, info, freqTh}}
+    holding the MOST RECENT prior order per distinct drug (excluding the current
+    visit). `info` is the English dose+frequency line (verb / dosage / route /
+    frequency name) so the client localises it to Thai the same way as the ward/
+    home columns; `freqTh` is the authoritative Thai frequency fallback.
     Shape note: items are patientorders[].patientorderitems[] (a flat list)."""
-    prev = {}            # key -> {drug, code, info, _when}
+    freq_idx = _load_freq_th_index()
+    prev = {}            # key -> {drug, code, info, freqTh, _when}
     for po in ((data or {}).get('patientorders') or []):
         vuid = po.get('patientvisituid') or ''
         if current_visit_uid and vuid == current_visit_uid:
@@ -761,21 +764,30 @@ def build_prev_meds_from_visits(data, current_visit_uid=''):
             code = _hm_norm(poi.get('chargecode') or '')
             if not _is_medicine({'code': code}):   # drop supplies/labs (keep 51-prefix)
                 continue
-            # recency key: prefer startdate, fall back to enddate
-            when = poi.get('startdate') or poi.get('enddate') or ''
+            when = poi.get('startdate') or poi.get('enddate') or ''   # recency key
             key = (name.lower(), code)
-            # patient instruction (Thai preferred) for the cell
-            instr_th = instr_en = ''
-            for ins in (poi.get('instructions') or []):
-                if ins.get('valuecode') == 'INSTYP1':
-                    instr_th = _hm_norm(ins.get('locallangtext') or '')
-                    instr_en = _hm_norm(ins.get('instructiontext') or '')
-                    break
-            freq = _hm_norm((poi.get('frequencyuid') or {}).get('name') or '')
-            info = instr_th or instr_en or freq or '—'
+
+            # Build the instruction line the same shape as _arcus_item_to_med:
+            #   <verb> <dosage unit> <route> <frequency name>
+            verb = _hm_norm((_arc_first(poi.get('instructionuid')) or {}).get('valuedescription') or '')
+            dosage = poi.get('dosage')
+            dose_unit = _hm_norm((_arc_first(poi.get('dosageUOM')) or {}).get('valuedescription') or '')
+            route = _hm_norm((_arc_first(poi.get('routeuid')) or {}).get('valuedescription') or '')
+            fq = _arc_first(poi.get('frequencyuid')) or {}
+            freq = _hm_norm(fq.get('name') or '')
+            freq_code = _hm_norm(fq.get('code') or '')
+            freq_th = freq_idx.get(_freq_key(freq)) or freq_idx.get(_freq_key(freq_code)) or ''
+            parts = []
+            if verb: parts.append(verb)
+            if dosage: parts.append(str(dosage) + (' ' + dose_unit if dose_unit else ''))
+            if route: parts.append(route)
+            if freq: parts.append(freq)
+            info = ' '.join(parts).strip() or freq or '—'
+
             cur = prev.get(key)
             if cur is None or (when and when > cur.get('_when', '')):
-                prev[key] = {'drug': name, 'code': code, 'info': info, '_when': when}
+                prev[key] = {'drug': name, 'code': code, 'info': info,
+                             'freqTh': freq_th, '_when': when}
     return prev
 
 
@@ -821,10 +833,16 @@ def build_med_journey_from_arcus(data, reconcile_meds=None, prev_meds=None):
         return row
 
     # 1) Visit-history (last 10 visits) → admission column. PRIMARY source.
+    #    `info` is the English dose+frequency line; the client localises it to
+    #    Thai like the ward/home columns. freqTh gives the authoritative Thai
+    #    frequency via data-freq-th. The "(ครั้งก่อน)" tag stays Thai so it isn't
+    #    mangled by translation.
     for pm in (prev_meds or {}).values():
         row = _row_for(pm['drug'], pm.get('code'))
         info = pm.get('info') or '—'
-        row['admission'] = f"{info} (last visit)"
+        row['admission'] = info
+        row['admissionFreqTh'] = pm.get('freqTh') or ''
+        row['admissionTag'] = '(ครั้งก่อน)'
         row['_phases'].add('admission')
 
     # 2) Reconcile (pre-admission home) meds → fill admission gaps + status.
