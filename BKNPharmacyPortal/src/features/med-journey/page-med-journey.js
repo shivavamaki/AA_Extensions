@@ -13,12 +13,8 @@ const { MSG } = window.CoreMessages;
 let _context = null;
 let _rows = [];            // [{drug, code, admission, ward, home, status, note, provider, phases}]
 let _dates = { admission: "", discharge: "" };  // timeline endpoints
-let _currentLang = "th";   // instructions default to Thai (shared glossary)
-// First render localises offline only — pure text replacement via the
-// medical-glossary patterns + frequency master, with NO Google call (same as
-// the Home Med Sheet). A user-chosen language flips this off so the full engine
-// (incl. the Google fallback for residual English) can run.
-let _offlineOnly = true;
+// Instructions are shown exactly as the server sends them (English). No client
+// translation — the report is intentionally not localised.
 
 const STATUSES = ["continued", "new", "changed", "stopped"];
 const STATUS_TH = { continued: "ใช้ต่อ", new: "เริ่มใหม่", changed: "เปลี่ยน", stopped: "หยุด" };
@@ -102,12 +98,9 @@ const PHASES = [
 ];
 
 /** Pick the representative instruction for a drug: prefer home → ward → admission
- * (the most patient-relevant non-empty phase). Returns {text, freqTh}. */
+ * (the most patient-relevant non-empty phase). Shown as-is (no translation). */
 function _repInstruction(row) {
-  if (row.home)      return { text: row.home, freqTh: "" };
-  if (row.ward)      return { text: row.ward, freqTh: "" };
-  if (row.admission) return { text: row.admission, freqTh: row.admissionFreqTh || "" };
-  return { text: "", freqTh: "" };
+  return row.home || row.ward || row.admission || "";
 }
 
 /** Compact phase bar: 3 segments (ก่อน│ward│home), filled when the drug is
@@ -127,14 +120,14 @@ function _buildRow(row, i) {
   tr.className = "j-row";
   tr.dataset.index = String(i);
   tr.dataset.status = row.status || "";
-  const rep = _repInstruction(row);
+  const repText = _repInstruction(row);
   tr.innerHTML = `
     <td class="col-act no-print"><button type="button" class="row-del" title="Remove">−</button></td>
     <td class="col-drug">
       <div class="drug-name" contenteditable="true" data-field="drug" data-ph="ชื่อยา" data-no-translate translate="no">${escapeHtml(row.drug || "")}</div>
       ${row.code ? `<div class="drug-code" data-no-translate translate="no">Code: ${escapeHtml(row.code)}</div>` : ""}
     </td>
-    <td class="col-instr" contenteditable="true" data-field="${escapeHtml(_repField(row))}" data-ph="—"${rep.freqTh ? ` data-freq-th="${escapeHtml(rep.freqTh)}"` : ""}>${escapeHtml(rep.text)}</td>
+    <td class="col-instr" contenteditable="true" data-field="${escapeHtml(_repField(row))}" data-ph="—">${escapeHtml(repText)}</td>
     <td class="col-bar">${_phaseBar(row)}</td>
     <td class="col-status">
       <select class="status-sel no-print" data-field="status">${_statusOptions(row.status)}</select>
@@ -166,7 +159,7 @@ function _buildAddRow() {
   return tr;
 }
 
-async function renderRows() {
+function renderRows() {
   const tbody = document.querySelector("#journeyTable tbody");
   if (!tbody) return;
   tbody.innerHTML = "";
@@ -178,10 +171,6 @@ async function renderRows() {
   _rows.forEach((r, i) => tbody.appendChild(_buildRow(r, i)));
   tbody.appendChild(_buildAddRow());
   _bindEditing(tbody);
-  _initTranslate();
-  // First load runs offline-only (no Google) — glossary + frequency master
-  // already render the instruction line in Thai via text replacement.
-  if (_currentLang) await _applyTranslate(_currentLang, _offlineOnly);
   renderTimeline();  // keep the bottom timeline in sync with the row set
 }
 
@@ -335,20 +324,6 @@ function _searchMeds(query, limit = 12) {
   return [...starts, ...contains].slice(0, limit);
 }
 
-/* ───────────────────────── Translation (instructions only) ────────────── */
-function _translateRoot() { return document.querySelector("#journeyTable tbody"); }
-function _initTranslate() {
-  if (typeof HMTranslate === "undefined") return;
-  const root = _translateRoot();
-  if (root) HMTranslate.init(root, { glossary: window.MEDICAL_GLOSSARY || {} });
-}
-async function _applyTranslate(lang, offlineOnly = false) {
-  if (typeof HMTranslate === "undefined") return;
-  const root = _translateRoot(); if (!root) return;
-  HMTranslate.restore();
-  if (lang) await HMTranslate.translate(root, lang, { offlineOnly });
-}
-
 /* ───────────────────────── Persistence (per visit) ────────────────────── */
 // Journey edits persist under a visituid suffixed with "__journey" so they do
 // NOT collide with the Home Med sheet's cache (same patient/visit). The suffix
@@ -447,7 +422,7 @@ async function fetchAndRender() {
   populateHeader(data.patient || {}, _context);
   renderDiagnosis(_context && _context.diagnosis);
   renderAllergies(data.allergies);
-  await renderRows();   // renderRows() also draws the bottom timeline
+  renderRows();   // renderRows() also draws the bottom timeline
 }
 
 /* ───────────────────────── Toolbar ────────────────────────────────────── */
@@ -468,17 +443,6 @@ function bindToolbar() {
   if (rev) rev.onclick = () => location.reload();
   const reg = document.getElementById("btnRegroup");
   if (reg) reg.onclick = () => { _sortRows(); renderRows(); };
-  const sel = document.getElementById("lang");
-  if (sel) {
-    sel.value = _currentLang;
-    sel.addEventListener("change", async (e) => {
-      _currentLang = e.target.value || "";
-      _offlineOnly = false;   // a user-chosen language may use the Google fallback
-      _setStatus(_currentLang ? "⏳ กำลังแปล…" : "");
-      await _applyTranslate(_currentLang, false);
-      _setStatus(_currentLang ? "✅ แปลแล้ว" : "");
-    });
-  }
 }
 
 /* ───────────────────────────── Boot ───────────────────────────────────── */
