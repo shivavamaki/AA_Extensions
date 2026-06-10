@@ -224,53 +224,67 @@ function renderTimeline() {
 }
 
 /* ─────────────────── Daily Pill Journey Card (by meal) ─────────────────── */
-// Thai instructions use a list shorthand where a leading ก่อน/หลังอาหาร applies
-// to several meals: "หลังอาหาร เช้า เย็น" = after breakfast AND after dinner.
-// _mealQualifier walks the text token by token, carrying the last seen
-// ก่อน/หลัง qualifier forward across meal words until a new one appears. For the
-// given meal word it returns "before" | "after" | "" (unqualified).
-const _MEAL_WORDS = ["เช้า", "กลางวัน", "เที่ยง", "เย็น"];
+// A med can take a meal "before" or "after". Instructions list several meals
+// under one qualifier — Thai "หลังอาหาร เช้า เย็น" or English "Before Breakfast
+// and Dinner" = the qualifier applies to every meal in the run. _mealQualifier
+// finds, for ONE meal word, the nearest preceding before/after qualifier
+// (Thai ก่อน/หลัง or English before/after), carrying it across a meal list.
+// Returns "before" | "after" | "" (unqualified). Works in both languages.
+const _MEAL_RE = "เช้า|กลางวัน|เที่ยง|เย็น|breakfast|lunch|noon|midday|dinner|supper|evening|morning";
+const _QUAL_RE = "ก่อน|หลัง|before|after|\\bac\\b|\\bpc\\b";
+function _qualOf(tok) {
+  const t = tok.toLowerCase();
+  if (t === "ก่อน" || t === "before" || t === "ac") return "before";
+  if (t === "หลัง" || t === "after" || t === "pc") return "after";
+  return "";
+}
 function _mealQualifier(txt, mealWord) {
-  // Tokenise into qualifier / meal markers in order of appearance.
-  const re = /(ก่อน|หลัง)|(เช้า|กลางวัน|เที่ยง|เย็น)/g;
+  const re = new RegExp(`(${_QUAL_RE})|(${_MEAL_RE})`, "gi");
   let m, qual = "";
   while ((m = re.exec(txt)) !== null) {
-    if (m[1]) { qual = m[1]; continue; }           // ก่อน / หลัง — update carry
-    if (m[2] === mealWord) return qual === "ก่อน" ? "before" : (qual === "หลัง" ? "after" : "");
-    // a different meal word: the carried qualifier still applies to it too
-    // (list shorthand), so keep `qual` as-is and continue.
+    if (m[1]) { qual = _qualOf(m[1]); continue; }   // before/after — carry it
+    if (m[2] && new RegExp(mealWord, "i").test(m[2])) return qual;  // this meal
+    // other meal word in the same run: keep the carried qualifier and continue.
   }
   return "";
 }
+// True if the instruction mentions this meal at all (Thai or English).
+const _hasMeal = (t, re) => new RegExp(re, "i").test(t);
 
-// Meal slots in day order. `test(txt)` decides if a home instruction belongs in
-// this slot, matching the Thai frequency phrase (and a few English fallbacks).
-// A drug can land in several slots (e.g. BID = after-breakfast + after-dinner).
-// Unqualified meal words (no ก่อน/หลัง) default to "after" — the common Thai
-// convention for oral meds taken with a meal.
-const _hasMeal = (t, thWord, enWord) => new RegExp(`${thWord}|${enWord}`, "i").test(t);
+// Meal slots in day order: before/after × breakfast/lunch/dinner, then bedtime
+// and PRN. A drug lands in every slot it matches (BID = two slots). Unqualified
+// meal words default to "after" — the common convention for meds taken w/ food.
+function _mealSlotTest(mealRe, mealWord, wantBefore) {
+  return (t) => {
+    if (!_hasMeal(t, mealRe)) return false;
+    const q = _mealQualifier(t, mealWord);
+    return wantBefore ? q === "before" : q !== "before";  // unqualified → after
+  };
+}
 const MEAL_SLOTS = [
-  { key: "bbf", cls: "t-bbf", ico: "🌅", th: "ก่อนอาหารเช้า", en: "Before breakfast",
-    test: (t) => (_hasMeal(t, "เช้า", "breakfast") && _mealQualifier(t, "เช้า") === "before") || /before\s+breakfast/i.test(t) },
-  { key: "abf", cls: "t-abf", ico: "☀️", th: "หลังอาหารเช้า", en: "After breakfast",
-    test: (t) => (_hasMeal(t, "เช้า", "breakfast") && _mealQualifier(t, "เช้า") !== "before") || /after\s+breakfast/i.test(t) },
-  { key: "mid", cls: "t-mid", ico: "🌤️", th: "กลางวัน", en: "Midday",
-    test: (t) => /กลางวัน|เที่ยง|lunch|midday|noon/i.test(t) },
-  { key: "bdn", cls: "t-bdn", ico: "🌆", th: "ก่อนอาหารเย็น", en: "Before dinner",
-    test: (t) => (_hasMeal(t, "เย็น", "dinner|supper") && _mealQualifier(t, "เย็น") === "before") || /before\s+(dinner|supper)/i.test(t) },
-  { key: "adn", cls: "t-adn", ico: "🌙", th: "หลังอาหารเย็น", en: "After dinner",
-    test: (t) => (_hasMeal(t, "เย็น", "dinner|supper") && _mealQualifier(t, "เย็น") !== "before") || /after\s+(dinner|supper)/i.test(t) },
-  { key: "bed", cls: "t-bed", ico: "🛏️", th: "ก่อนนอน", en: "Bedtime",
-    test: (t) => /ก่อนนอน|ก่อนเข้านอน|bedtime|\bhs\b|at\s+night/i.test(t) },
-  { key: "prn", cls: "t-prn", ico: "⭐", th: "เมื่อมีอาการ", en: "When needed (PRN)",
+  { key: "bbf", cls: "t-bbf", ico: "🌅", th: "ก่อนอาหารเช้า",  en: "Before breakfast",
+    test: _mealSlotTest("เช้า|breakfast|morning", "เช้า|breakfast|morning", true) },
+  { key: "abf", cls: "t-abf", ico: "☀️", th: "หลังอาหารเช้า",   en: "After breakfast",
+    test: _mealSlotTest("เช้า|breakfast|morning", "เช้า|breakfast|morning", false) },
+  { key: "blu", cls: "t-blu", ico: "🌤️", th: "ก่อนอาหารกลางวัน", en: "Before lunch",
+    test: _mealSlotTest("กลางวัน|เที่ยง|lunch|noon|midday", "กลางวัน|เที่ยง|lunch|noon|midday", true) },
+  { key: "alu", cls: "t-alu", ico: "🌞", th: "หลังอาหารกลางวัน",  en: "After lunch",
+    test: _mealSlotTest("กลางวัน|เที่ยง|lunch|noon|midday", "กลางวัน|เที่ยง|lunch|noon|midday", false) },
+  { key: "bdn", cls: "t-bdn", ico: "🌆", th: "ก่อนอาหารเย็น",  en: "Before dinner",
+    test: _mealSlotTest("เย็น|dinner|supper|evening", "เย็น|dinner|supper|evening", true) },
+  { key: "adn", cls: "t-adn", ico: "🌙", th: "หลังอาหารเย็น",   en: "After dinner",
+    test: _mealSlotTest("เย็น|dinner|supper|evening", "เย็น|dinner|supper|evening", false) },
+  { key: "bed", cls: "t-bed", ico: "🛏️", th: "ก่อนนอน",        en: "Bedtime",
+    test: (t) => /ก่อนนอน|ก่อนเข้านอน|bedtime|bed\s*time|\bhs\b|at\s+night/i.test(t) },
+  { key: "prn", cls: "t-prn", ico: "⭐", th: "เมื่อมีอาการ",     en: "When needed (PRN)",
     test: (t) => /เมื่อมีอาการ|เวลามีอาการ|เมื่อปวด|เมื่อจำเป็น|\bprn\b|if\s+needed|as\s+needed|when\s+required/i.test(t) },
 ];
 
-/** Pull a short dose phrase ("1 เม็ด", "1 PUFF", "5 มล.") from the instruction
+/** Pull a short dose phrase ("1 เม็ด", "1 Tablet", "1 PUFF") from the instruction
  * for the compact meal-card line. Falls back to "" (drug name carries it). */
 function _doseSnippet(txt) {
   const t = norm(txt || "");
-  const m = t.match(/(\d+(?:[.,]\d+)?(?:\/\d+)?)\s*(เม็ด|แคปซูล|ซอง|มล\.?|ml|puff|หยด|drop|ช้อน|tab|cap|amp|vial|มก\.?|mg|มิลลิกรัม)/i);
+  const m = t.match(/(\d+(?:[.,]\d+)?(?:\/\d+)?)\s*(เม็ด|แคปซูล|ซอง|มล\.?|ml|puff|spray\(?s?\)?|หยด|drops?|ช้อน|tablets?|capsules?|tab|cap|amp|vial|มก\.?|mg|มิลลิกรัม)/i);
   return m ? m[0] : "";
 }
 
@@ -309,7 +323,7 @@ function renderMealCard() {
     const items = buckets[s.key];
     const body = items.length
       ? items.map(itemHtml).join("")
-      : `<div class="mc-empty-slot">— ไม่มียา</div>`;
+      : `<div class="mc-empty-slot">-</div>`;
     return `<div class="mc-slot ${s.cls}">
       <div class="mc-slot-head"><span class="mc-ico">${s.ico}</span><span>${s.th}</span><span class="mc-en">${s.en}</span></div>
       <div class="mc-list">${body}</div>
