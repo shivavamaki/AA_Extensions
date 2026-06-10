@@ -14,6 +14,11 @@ let _context = null;
 let _rows = [];            // [{drug, code, admission, ward, home, status, note, provider, phases}]
 let _dates = { admission: "", discharge: "" };  // timeline endpoints
 let _currentLang = "th";   // instructions default to Thai (shared glossary)
+// First render localises offline only — pure text replacement via the
+// medical-glossary patterns + frequency master, with NO Google call (same as
+// the Home Med Sheet). A user-chosen language flips this off so the full engine
+// (incl. the Google fallback for residual English) can run.
+let _offlineOnly = true;
 
 const STATUSES = ["continued", "new", "changed", "stopped"];
 const STATUS_TH = { continued: "ใช้ต่อ", new: "เริ่มใหม่", changed: "เปลี่ยน", stopped: "หยุด" };
@@ -174,7 +179,9 @@ async function renderRows() {
   tbody.appendChild(_buildAddRow());
   _bindEditing(tbody);
   _initTranslate();
-  if (_currentLang) await _applyTranslate(_currentLang);
+  // First load runs offline-only (no Google) — glossary + frequency master
+  // already render the instruction line in Thai via text replacement.
+  if (_currentLang) await _applyTranslate(_currentLang, _offlineOnly);
   renderTimeline();  // keep the bottom timeline in sync with the row set
 }
 
@@ -335,11 +342,11 @@ function _initTranslate() {
   const root = _translateRoot();
   if (root) HMTranslate.init(root, { glossary: window.MEDICAL_GLOSSARY || {} });
 }
-async function _applyTranslate(lang) {
+async function _applyTranslate(lang, offlineOnly = false) {
   if (typeof HMTranslate === "undefined") return;
   const root = _translateRoot(); if (!root) return;
   HMTranslate.restore();
-  if (lang) await HMTranslate.translate(root, lang);
+  if (lang) await HMTranslate.translate(root, lang, { offlineOnly });
 }
 
 /* ───────────────────────── Persistence (per visit) ────────────────────── */
@@ -466,8 +473,9 @@ function bindToolbar() {
     sel.value = _currentLang;
     sel.addEventListener("change", async (e) => {
       _currentLang = e.target.value || "";
+      _offlineOnly = false;   // a user-chosen language may use the Google fallback
       _setStatus(_currentLang ? "⏳ กำลังแปล…" : "");
-      await _applyTranslate(_currentLang);
+      await _applyTranslate(_currentLang, false);
       _setStatus(_currentLang ? "✅ แปลแล้ว" : "");
     });
   }
