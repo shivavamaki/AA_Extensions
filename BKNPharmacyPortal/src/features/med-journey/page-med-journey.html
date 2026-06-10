@@ -45,9 +45,14 @@
       background: #fff; box-shadow: 0 4px 18px rgba(15,23,42,.12);
     }
 
-    .top-title { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px; }
+    .top-title { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; column-gap: 10px;
+      border-bottom: 3px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px; }
     .top-title h1 { margin: 0; font-size: 24px; }
     .top-title .subtitle { font-size: 13px; color: #475569; }
+    .top-title .tt-logo { justify-self: start; }
+    .top-title .tt-logo img { height: 42px; max-height: 14mm; max-width: 40mm; width: auto; display: block; object-fit: contain; }
+    .top-title .tt-center { text-align: center; }
+    .top-title .tt-date { justify-self: end; text-align: right; }
 
     .patient-card { display: grid; grid-template-columns: 2fr 1fr 1.3fr 1fr; gap: 6px; padding: 9px 10px; border: 1.5px solid #0f172a; border-radius: 10px; background: #f8fafc; margin-bottom: 10px; }
     .patient-field .label { font-size: 10px; color: #6b7280; font-weight: 700; text-transform: uppercase; }
@@ -242,11 +247,12 @@
   <div class="sheet-wrap">
   <main class="sheet">
     <section class="top-title">
-      <div>
+      <div class="tt-logo"><img src="../patient-sticker/bkh-logo.png" alt="BKH" /></div>
+      <div class="tt-center">
         <h1>🗺️ Medication Journey</h1>
         <div class="subtitle">เส้นทางยา: จากโรงพยาบาลสู่บ้าน · Medication Continuity Timeline</div>
       </div>
-      <div class="subtitle"><strong>Date:</strong> <span id="sheetDate">-</span></div>
+      <div class="tt-date subtitle"><strong>Date:</strong> <span id="sheetDate">-</span></div>
     </section>
 
     <section class="patient-card">
