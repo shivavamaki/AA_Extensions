@@ -53,6 +53,7 @@ Data layout:
 """
 
 import hashlib
+import hmac
 import json
 import mimetypes
 import os
@@ -77,6 +78,10 @@ from pathlib import Path
 
 # ── Config ─────────────────────────────────────────────────────
 DEFAULT_PORT  = 8765
+MAX_BODY         = 10 * 1024 * 1024   # 10 MB max request body
+SESSION_TTL      = 8 * 3600           # 8-hour session (one shift)
+LOGIN_RATE_LIMIT = 10                 # max login attempts per window per IP
+LOGIN_RATE_WINDOW = 60                # seconds
 DATA_DIR      = Path(__file__).parent / 'data'
 KPI_DIR       = DATA_DIR / 'kpi'
 KS_DIR        = DATA_DIR / 'ks'
@@ -1055,13 +1060,50 @@ def load_or_create_patient(puid):
 
 
 # ── Auth helpers ───────────────────────────────────────────────
-# In-memory sessions: token → {username, role}
+# In-memory sessions: token → {username, role, exp}
 _sessions = {}
+
+# Login rate limiter: ip → [timestamps of recent attempts]
+_LOGIN_RATE_LOCK = threading.Lock()
+_login_attempts: dict = {}
+
+def _check_login_rate(ip):
+    """Return True if IP is under the rate limit, False if blocked."""
+    now    = time.time()
+    cutoff = now - LOGIN_RATE_WINDOW
+    with _LOGIN_RATE_LOCK:
+        times = [t for t in _login_attempts.get(ip, []) if t > cutoff]
+        if len(times) >= LOGIN_RATE_LIMIT:
+            _login_attempts[ip] = times
+            return False
+        times.append(now)
+        _login_attempts[ip] = times
+        return True
 
 ROLES = ('super_admin', 'admin', 'editor', 'user')
 
 def _hash_pw(pw):
-    return hashlib.sha256(pw.encode('utf-8')).hexdigest()
+    """Hash with PBKDF2-HMAC-SHA256 + random salt.
+    Format: pbkdf2:sha256:260000:<hex-salt>:<hex-dk>"""
+    salt = secrets.token_hex(16)
+    dk   = hashlib.pbkdf2_hmac('sha256', pw.encode('utf-8'), salt.encode('utf-8'), 260000)
+    return f'pbkdf2:sha256:260000:{salt}:{dk.hex()}'
+
+def _verify_pw(pw, stored):
+    """Verify password against stored hash. Accepts both PBKDF2 (new) and
+    bare SHA-256 hex (legacy) so existing accounts keep working."""
+    if not stored:
+        return False
+    if ':' not in stored:
+        # Legacy bare sha256 — constant-time compare
+        return hmac.compare_digest(
+            hashlib.sha256(pw.encode('utf-8')).hexdigest(), stored)
+    try:
+        _, algo, iters_s, salt, dk_hex = stored.split(':', 4)
+        dk = hashlib.pbkdf2_hmac(algo, pw.encode('utf-8'), salt.encode('utf-8'), int(iters_s))
+        return hmac.compare_digest(dk.hex(), dk_hex)
+    except Exception:
+        return False
 
 def _load_users():
     if not AUTH_FILE.exists():
@@ -1076,21 +1118,20 @@ def _save_users(users):
 
 def _ensure_default_users():
     users = _load_users()
-    changed = False
     if not users:
-        users['admin'] = {'password_hash': _hash_pw('admin1234'), 'role': 'admin'}
-        print('  Default admin created  →  username: admin  password: admin1234')
-        changed = True
-    if 'Makin' not in users:
-        users['Makin'] = {'password_hash': _hash_pw('0128662'), 'role': 'super_admin'}
-        print('  Super-admin created   →  username: Makin  password: 0128662')
-        changed = True
-    if changed:
+        pw = secrets.token_urlsafe(12)
+        users['admin'] = {'password_hash': _hash_pw(pw), 'role': 'admin'}
+        print('  ╔══════════════════════════════════════════╗')
+        print('  ║  First-run: admin account created        ║')
+        print('  ║  Username : admin                        ║')
+        print(f'  ║  Password : {pw:<30}║')
+        print('  ║  Save this — it will not be shown again  ║')
+        print('  ╚══════════════════════════════════════════╝')
         _save_users(users)
 
 def _create_session(username, role):
     token = secrets.token_hex(32)
-    _sessions[token] = {'username': username, 'role': role}
+    _sessions[token] = {'username': username, 'role': role, 'exp': time.time() + SESSION_TTL}
     return token
 
 
@@ -1370,10 +1411,15 @@ class Handler(BaseHTTPRequestHandler):
         return client_ip in ('127.0.0.1', '::1', 'localhost')
 
     def _session(self):
-        """Return session dict {username, role} or None."""
+        """Return session dict {username, role} or None. Evicts expired tokens."""
         h = self.headers.get('Authorization', '')
         if h.startswith('Bearer '):
-            return _sessions.get(h[7:])
+            tok = h[7:]
+            s   = _sessions.get(tok)
+            if s:
+                if time.time() < s.get('exp', 0):
+                    return s
+                del _sessions[tok]   # expired — evict
         return None
 
     def _role(self):
@@ -1400,6 +1446,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def _read_json_body(self):
         length = int(self.headers.get('Content-Length', 0))
+        if length > MAX_BODY:
+            raise ValueError(f'Request body too large ({length:,} bytes; limit {MAX_BODY:,})')
         return json.loads(self.rfile.read(length))
 
     def parse_route(self):
@@ -1828,11 +1876,13 @@ class Handler(BaseHTTPRequestHandler):
 
         # ── Auth: login (public) ───────────────────────────────
         if rtype == 'auth' and key == 'login':
+            if not _check_login_rate(self.client_address[0]):
+                self.send_json(429, {'error': 'Too many login attempts — wait a minute'}); return
             username = body.get('username', '').strip()
             password = body.get('password', '')
             users = _load_users()
             u = users.get(username)
-            if not u or u.get('password_hash') != _hash_pw(password):
+            if not u or not _verify_pw(password, u.get('password_hash', '')):
                 self.send_json(401, {'error': 'Invalid credentials'}); return
             token = _create_session(username, u['role'])
             self.send_json(200, {'token': token, 'username': username, 'role': u['role']}); return
