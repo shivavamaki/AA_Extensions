@@ -79,7 +79,7 @@ function updateFolderUI(isActive, labelText) {
 }
 
 // ── ADMIN: edit this URL if the server moves ──────────────────
-const SERVER_URL = 'http://10.134.10.70:8765';
+const SERVER_URL = 'http://10.134.110.81:8765';
 
 async function pingServer(url, timeoutMs = 3000) {
   const ctrl = new AbortController();

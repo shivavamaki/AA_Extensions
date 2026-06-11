@@ -53,7 +53,7 @@ cd pharmacy_server
 python bkn_ks_server.py            # default port 8765 (or --port 9000)
 ```
 
-Python 3.6+, stdlib only. `start_server.bat` on Windows. The extension reaches it at `http://10.134.10.70:8765`.
+Python 3.6+, stdlib only. `start_server.bat` on Windows. The extension reaches it at `http://10.134.110.81:8765`.
 
 **Verification:** no tests/lints/types exist. For UI work, reload the extension and exercise the feature in Chrome — the user expects browser verification.
 

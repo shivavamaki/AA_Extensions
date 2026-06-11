@@ -11,7 +11,7 @@
 
 [CmdletBinding()]
 param(
-    [string] $ServerUrl = "http://10.134.10.70:8765",
+    [string] $ServerUrl = "http://10.134.110.81:8765",
     [int]    $RefreshMs = 200
 )
 
@@ -452,11 +452,11 @@ Main-Loop
 
 <#
   ── USAGE ───────────────────────────────────────────────────────────────────
-  # Default (polls http://10.134.10.70:8765 every 200 ms):
+  # Default (polls http://10.134.110.81:8765 every 200 ms):
   powershell -ExecutionPolicy Bypass -File .\maprang-dashboard.ps1
 
   # Custom server + refresh interval:
-  powershell -ExecutionPolicy Bypass -File .\maprang-dashboard.ps1 -ServerUrl "http://10.134.10.70:8765" -RefreshMs 150
+  powershell -ExecutionPolicy Bypass -File .\maprang-dashboard.ps1 -ServerUrl "http://10.134.110.81:8765" -RefreshMs 150
 
   Notes:
   - Best in Windows Terminal (full Unicode + ANSI); plain conhost also works.

@@ -7,7 +7,7 @@
 'use strict';
 
 // ── SERVER CONFIG ─────────────────────────────────────────────────────────
-const _PHARMACY_SERVER_DEFAULT = 'http://10.134.10.70:8765';
+const _PHARMACY_SERVER_DEFAULT = 'http://10.134.110.81:8765';
 function _serverUrl() {
   return (localStorage.getItem('pharmacyServerUrl') || _PHARMACY_SERVER_DEFAULT).replace(/\/$/, '');
 }

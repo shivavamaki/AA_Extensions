@@ -89,12 +89,12 @@ function loadRules() {
 function saveRules() {
   localStorage.setItem(RULES_STORAGE_KEY, JSON.stringify(bookingRules));
   /* Push to server so every workstation gets the same rules */
-  fetch('http://10.134.10.70:8765/api/schedule/state', { method: 'GET' })
+  fetch('http://10.134.110.81:8765/api/schedule/state', { method: 'GET' })
     .then(r => r.ok ? r.json() : {})
     .then(state => {
       const merged = (state && typeof state === 'object' && !Array.isArray(state)) ? state : {};
       merged.bookingRules = { ...bookingRules };
-      return fetch('http://10.134.10.70:8765/api/schedule/state', {
+      return fetch('http://10.134.110.81:8765/api/schedule/state', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(merged),
@@ -112,7 +112,7 @@ function renderRuleText() {
 
 function saveBookings() {
   localStorage.setItem(BOOKING_STORAGE_KEY, JSON.stringify(bookings));
-  fetch('http://10.134.10.70:8765/api/schedule/bookings', {
+  fetch('http://10.134.110.81:8765/api/schedule/bookings', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(bookings)
@@ -427,7 +427,7 @@ function init() {
 
   const loadBookingsFromServer = () => {
     if (!localStorage.getItem(BOOKING_STORAGE_KEY)) {
-      fetch('http://10.134.10.70:8765/api/schedule/bookings')
+      fetch('http://10.134.110.81:8765/api/schedule/bookings')
         .then(r => r.ok ? r.json() : null)
         .then(data => {
           if (data && typeof data === 'object' && !Array.isArray(data)) {
@@ -443,7 +443,7 @@ function init() {
     }
   };
 
-  fetch('http://10.134.10.70:8765/api/schedule/state')
+  fetch('http://10.134.110.81:8765/api/schedule/state')
     .then(r => r.ok ? r.json() : null)
     .then(state => {
       if (state && typeof state === 'object') {
