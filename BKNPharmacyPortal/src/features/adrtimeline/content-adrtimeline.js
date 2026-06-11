@@ -14,6 +14,15 @@
      API calls made during SPA navigation before the button is clicked */
   try { chrome.runtime.sendMessage({ type: "MJ_SETUP_XHR_TAP" }); } catch (_) {}
 
+  /* Security bridge: relay auth headers posted from MAIN-world XHR tap to
+     background session storage.  The incus-token never sits in window where
+     page scripts or XSS can read it — it travels directly here and is stored
+     in chrome.storage.session (inaccessible from MAIN world). */
+  window.addEventListener('message', function (e) {
+    if (e.source !== window || !e.data || !e.data.__bkn_sec__ || !e.data.k || !e.data.v) return;
+    try { chrome.runtime.sendMessage({ type: 'BKN_SEC_HDR_RELAY', k: e.data.k, v: e.data.v }); } catch (_) {}
+  }, false);
+
   /* ── Status toast ────────────────────────────────────────────────────── */
   const TOAST_COLORS = {
     info: "#1565c0",
