@@ -6,5 +6,9 @@
   "Makin": {
     "password_hash": "ec410e0372692704fe7940dbd31541956218b5def093f5f11d98c12aad65e7b6",
     "role": "super_admin"
+  },
+  "Maprang": {
+    "password_hash": "700eb8f7378def18c717f64c902cda1ed5ae32da94177776366cf2ec322ae60a",
+    "role": "editor"
   }
 }

@@ -3,11 +3,11 @@
     "code": "11001",
     "name": "ยานอกบัญชี",
     "base_uom": "UNT",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/11001.jpg",
+    "image_file": "11001.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -125,11 +125,11 @@
     "code": "51000000000081",
     "name": "Phosphate SOLUTION 2.29 mEq/1 mL",
     "base_uom": "ML",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51000000000081.jpg",
+    "image_file": "51000000000081.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -138,11 +138,11 @@
     "code": "51000000000136",
     "name": "Phosphate SOLUTION(0.05 mmol/mL)(1000mL)",
     "base_uom": "BOT",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51000000000136.jpg",
+    "image_file": "51000000000136.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -151,11 +151,11 @@
     "code": "51000000000142",
     "name": "Phosphate SOLUTION (0.5 mmol/mL)(1000mL)",
     "base_uom": "BOT",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51000000000142.jpg",
+    "image_file": "51000000000142.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -209,8 +209,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "Antispasmodic",
+        "TH": "แก้ปวดท้อง",
+        "_auto": true,
+        "autoAt": "2026-06-05T02:47:31.012998+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51001020106012": {
     "code": "51001020106012",
@@ -353,8 +361,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "antireflux and antacids",
+        "TH": "บรรเทาอาการกรดไหลย้อน ปวดแสบท้อง",
+        "_auto": true,
+        "autoAt": "2026-06-10T10:22:56.005773+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51001020224014": {
     "code": "51001020224014",
@@ -956,11 +972,11 @@
     "code": "51001100204021",
     "name": "Zemimet SR(50/1000 mg) TABLET(28'S)",
     "base_uom": "BOX",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51001100204021.jpg",
+    "image_file": "51001100204021.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -1082,11 +1098,11 @@
     "code": "51001100208017",
     "name": "Zafatek FC TABLET 100 mg (Trelagliptin)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51001100208017.jpg",
+    "image_file": "51001100208017.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -1134,11 +1150,11 @@
     "code": "51001100210003",
     "name": "Trulicity Prefilled Pen (1.5 mg/0.5 mL)(ยานอกบัญชี)",
     "base_uom": "SET",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51001100210003.jpg",
+    "image_file": "51001100210003.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -1186,19 +1202,27 @@
         "EN": "High Alert Drug",
         "TH": "High Alert Drug",
         "rawText": "Type High Alert Drug Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 3,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept in a Refrigerator (Not freeze),After opened  keep in room temperature not more than 30 days",
+        "TH": "เก็บไว้ในตู้เย็น ห้ามแช่แข็ง,เปิดใช้แล้วเก็บที่อุณหภูมิห้องได้ไม่เกิน 30 วัน",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51001100224003": {
     "code": "51001100224003",
     "name": "Kombiglyze XR TABLET(5 mg/1000 mg) (ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51001100224003.jpg",
+    "image_file": "51001100224003.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -1256,9 +1280,17 @@
         "EN": "ยานี้อยู่ในโครงการเฝ้าระวังความปลอดภัย(SMP)",
         "TH": "ยานี้อยู่ในโครงการเฝ้าระวังความปลอดภัย(SMP)",
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 2,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Antidiabetic",
+        "TH": "ยารักษาเบาหวาน",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51001100224013": {
     "code": "51001100224013",
@@ -1278,9 +1310,17 @@
         "EN": "ยานี้อยู่ในโครงการเฝ้าระวังความปลอดภัย(SMP)",
         "TH": "ยานี้อยู่ในโครงการเฝ้าระวังความปลอดภัย(SMP)",
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 2,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Antidiabetic",
+        "TH": "ยารักษาเบาหวาน",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51001100224017": {
     "code": "51001100224017",
@@ -1338,11 +1378,11 @@
     "code": "51001100224020",
     "name": "Saxenda INJ 18 mg/3mL (Liraglutide) Prefilled Pen",
     "base_uom": "SET",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51001100224020.jpg",
+    "image_file": "51001100224020.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -1351,11 +1391,11 @@
     "code": "51001100224021",
     "name": "Xultophy Prefilled Pen 3 mL (insulin degludec 100 iu/1 mL+ liraglutide 3.6 mg/1 mL)",
     "base_uom": "SET",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51001100224021.jpg",
+    "image_file": "51001100224021.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -1773,9 +1813,17 @@
         "EN": "Y",
         "TH": "Y",
         "rawText": "Type LASA Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 3,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Vitamin With Mineral",
+        "TH": "วิตามิน-ยาบำรุง",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51001110303001": {
     "code": "51001110303001",
@@ -1816,9 +1864,17 @@
         "EN": "Y",
         "TH": "Y",
         "rawText": "Type LASA Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 3,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Calcium/with Vitamins",
+        "TH": "แคลเซียม/ with vitamins",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51001120124004": {
     "code": "51001120124004",
@@ -1880,11 +1936,11 @@
     "code": "51001160124001",
     "name": "Thiogamma TABLET (600 mg)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51001160124001.jpg",
+    "image_file": "51001160124001.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -1902,11 +1958,11 @@
     "code": "51002010102001",
     "name": "Vessel Capsule (250 Lsu)",
     "base_uom": "CAP",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002010102001.jpg",
+    "image_file": "51002010102001.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -1928,11 +1984,11 @@
     "code": "51002010103003",
     "name": "Dorner 20 Mcg Tab(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002010103003.jpg",
+    "image_file": "51002010103003.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -1941,11 +1997,11 @@
     "code": "51002010103004",
     "name": "Effient Tablet (10 Mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002010103004.jpg",
+    "image_file": "51002010103004.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -1963,11 +2019,11 @@
     "code": "51002010103008",
     "name": "Ilomedin 20 Mcg/Ml Inj (ยานอกบัญชี)",
     "base_uom": "TUB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002010103008.jpg",
+    "image_file": "51002010103008.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -1976,11 +2032,11 @@
     "code": "51002010104001",
     "name": "Opalmon TABLET 5 mcg",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002010104001.jpg",
+    "image_file": "51002010104001.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -1998,11 +2054,11 @@
     "code": "51002010105001",
     "name": "Pradaxa Capsule (110 Mg)(ยานอกบัญชี)",
     "base_uom": "CAP",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002010105001.jpg",
+    "image_file": "51002010105001.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -2036,11 +2092,11 @@
     "code": "51002010105002",
     "name": "Pradaxa Capsule (150 Mg)(ยานอกบัญชี)",
     "base_uom": "CAP",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002010105002.jpg",
+    "image_file": "51002010105002.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -2074,11 +2130,11 @@
     "code": "51002010105003",
     "name": "Pradaxa Capsule (75 Mg)  (ยานอกบัญชี)",
     "base_uom": "CAP",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002010105003.jpg",
+    "image_file": "51002010105003.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -2194,11 +2250,11 @@
     "code": "51002010124004",
     "name": "Lixiana Tablet (60 Mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002010124004.jpg",
+    "image_file": "51002010124004.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -2216,11 +2272,11 @@
     "code": "51002010124010",
     "name": "Rivaroxaban 10 mg TABLET(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002010124010.jpg",
+    "image_file": "51002010124010.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -2229,11 +2285,11 @@
     "code": "51002010124011",
     "name": "Rivaroxaban 20 mg TABLET(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002010124011.jpg",
+    "image_file": "51002010124011.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -2251,11 +2307,11 @@
     "code": "51002010124015",
     "name": "Rivaroxaban 15 mg TABLET(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002010124015.jpg",
+    "image_file": "51002010124015.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -2264,11 +2320,11 @@
     "code": "51002020224001",
     "name": "Revolade Tablet(25 Mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002020224001.jpg",
+    "image_file": "51002020224001.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -2286,11 +2342,11 @@
     "code": "51002020224004",
     "name": "Tisseel Fibrin Sealant With Synthetic Aprotinin 2 mL",
     "base_uom": "BOX",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002020224004.jpg",
+    "image_file": "51002020224004.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -2299,11 +2355,11 @@
     "code": "51002020224006",
     "name": "Tisseel Fibrin Sealant with Aprotinin4mL",
     "base_uom": "BOX",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002020224006.jpg",
+    "image_file": "51002020224006.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -2325,11 +2381,11 @@
     "code": "51002030104001",
     "name": "Maltofer  Fol Tablet",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002030104001.jpg",
+    "image_file": "51002030104001.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -2351,11 +2407,11 @@
     "code": "51002030105004",
     "name": "Fero-B-Cal Tab (Local)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002030105004.jpg",
+    "image_file": "51002030105004.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -2386,11 +2442,11 @@
     "code": "51002030105007",
     "name": "Nataral-Ez TABLET",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002030105007.jpg",
+    "image_file": "51002030105007.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -2430,9 +2486,9 @@
     "code": "51002030201004",
     "name": "Mecobalamin 500 mcg TABLET",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -2452,11 +2508,11 @@
     "code": "51002030201012",
     "name": "Fercirol (folic acid 550 mcg + iron 100 mg) CAPSULE",
     "base_uom": "CAP",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51002030201012.jpg",
+    "image_file": "51002030201012.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -2612,9 +2668,9 @@
     "code": "51002052401004",
     "name": "Glycophos Concentrate (20Ml) Vial",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -2647,9 +2703,9 @@
     "code": "51003010224004",
     "name": "Caduet (10/40 Mg) Tab",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -2669,9 +2725,9 @@
     "code": "51003010502003",
     "name": "Coralan Tablet (5 Mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -2691,9 +2747,9 @@
     "code": "51003010502005",
     "name": "Esafosfina  5 Gm  Inj(ยานอกบัญชี)",
     "base_uom": "BOX",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -2704,9 +2760,9 @@
     "code": "51003010502013",
     "name": "Ranexa TABLET (500 mg) (ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -2717,9 +2773,9 @@
     "code": "51003010502015",
     "name": "Simdax INJ (12.5 mg/5mL) Vial(ยานอกบัญชี)",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -2782,9 +2838,9 @@
     "code": "51003050101001",
     "name": "Scheriproct N Cream 10 Gm",
     "base_uom": "TUB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -2817,9 +2873,9 @@
     "code": "51003050101005",
     "name": "Doproct Ointment",
     "base_uom": "TUB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -2865,14 +2921,22 @@
     "code": "51003080301001",
     "name": "Madiplot 10 Mg Tab",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "Hypertension",
+        "TH": "รักษาโรคความดันโลหิตสูง",
+        "_auto": true,
+        "autoAt": "2026-06-10T11:36:44.002330+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51003080301002": {
     "code": "51003080301002",
@@ -3013,9 +3077,9 @@
     "code": "51003090401006",
     "name": "Micardis Plus (80/12.5 Mg) Tab(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3039,9 +3103,9 @@
     "code": "51003090401014",
     "name": "Co-Diovan 80/12.5 Tab (ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3052,9 +3116,9 @@
     "code": "51003090402002",
     "name": "Exforge (5/160Mg) Tab",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3082,9 +3146,9 @@
     "code": "51003090402003",
     "name": "Twynsta Tablet (40/5 Mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3108,9 +3172,9 @@
     "code": "51003090402008",
     "name": "Normetec Tablet (5 Mg/20 Mg)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3130,9 +3194,9 @@
     "code": "51003090424002",
     "name": "Exforge Hct Tablet (5/160/12.5 Mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3178,9 +3242,9 @@
     "code": "51003090424012",
     "name": "Entresto 50 mg TABLET sacubitril/valsartan (24/26)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3191,9 +3255,9 @@
     "code": "51003090424013",
     "name": "Entresto 100 mg TABLET(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3204,9 +3268,9 @@
     "code": "51003090424014",
     "name": "Entresto 200 mg TABLET(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3230,9 +3294,9 @@
     "code": "51003100101001",
     "name": "Livalo Tablet(2 Mg)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3324,9 +3388,9 @@
     "code": "51003100124012",
     "name": "Sybrava 284mg/1.5mL INJ PFS(ยานอกบัญชี)",
     "base_uom": "SYR",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3337,9 +3401,9 @@
     "code": "51003100201001",
     "name": "Vytorin 10/10 Mg Tab(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3380,9 +3444,9 @@
     "code": "51003100201003",
     "name": "Vytorin Tablet(10/40 Mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3402,9 +3466,9 @@
     "code": "51003100201008",
     "name": "Repatha INJ (140 mg/1mL) (Evolocumab Prefilled Autoinjector)ยานอกบัญชี",
     "base_uom": "SET",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3415,9 +3479,9 @@
     "code": "51003100201009",
     "name": "Atozet FC TABLET (10 mg/10mg)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3450,9 +3514,9 @@
     "code": "51003100201011",
     "name": "Atozet 10/40 mg FC TABLET",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3472,9 +3536,9 @@
     "code": "51003100201012",
     "name": "Nexlizet (180/10 mg) TABLET(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3485,9 +3549,9 @@
     "code": "51003100201013",
     "name": "Nexletol 180 mg TABLET(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3524,9 +3588,9 @@
     "code": "51004010103011",
     "name": "Zalain CREAM 5 g",
     "base_uom": "TUB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3550,9 +3614,9 @@
     "code": "51004010105008",
     "name": "Zalain 300 mg Vaginal SUPPO",
     "base_uom": "BOX",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3611,9 +3675,9 @@
     "code": "51004020124010",
     "name": "Ezerra Cream (50 g)",
     "base_uom": "TUB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3637,9 +3701,9 @@
     "code": "51004030124005",
     "name": "Iodoflex  5 G (6X4 Cm)",
     "base_uom": "PCS",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3650,9 +3714,9 @@
     "code": "51004030124006",
     "name": "Iodoflex  10 G (8X6 Cm)",
     "base_uom": "PCS",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3685,9 +3749,9 @@
     "code": "51004030124008",
     "name": "Mebo Ointment 0.25% (10 G)(ยานอกบัญชี)",
     "base_uom": "TUB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -3875,8 +3939,15 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "( For External Use Only )",
+        "TH": "( ยาใช้ภายนอก ห้ามรับประทาน )",
+        "_fixed": true
+      }
+    ],
+    "instructionCount": 1
   },
   "51004070302014": {
     "code": "51004070302014",
@@ -3888,8 +3959,15 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "( For External Use Only )",
+        "TH": "( ยาใช้ภายนอก ห้ามรับประทาน )",
+        "_fixed": true
+      }
+    ],
+    "instructionCount": 1
   },
   "51004070302021": {
     "code": "51004070302021",
@@ -4183,11 +4261,11 @@
     "code": "51007010101005",
     "name": "Neo-Penotran Forte Vaginal Suppository",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "YES",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "has_image": true,
+    "image_path": "images/51007010101005.jpg",
+    "image_file": "51007010101005.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -4509,6 +4587,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "ยายุติการตั้งครรภ์, อาจมีอาการคลื่นใส้ อาเจียน ปวดศรีษะ",
+        "TH": "ยายุติการตั้งครรภ์, อาจมีอาการคลื่นใส้ อาเจียน ปวดศรีษะ",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 2",
@@ -4525,7 +4611,7 @@
         "rawText": "Type Warning Dispense Instruction Instruction Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51007040203001": {
     "code": "51007040203001",
@@ -4662,11 +4748,11 @@
     "code": "51007040324007",
     "name": "Beova 50 mg TABLET (นอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51007040324007.jpg",
+    "image_file": "51007040324007.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -4684,11 +4770,11 @@
     "code": "51008010101002",
     "name": "Synacthen Inj (0.25 Mg / 1Ml) Amp(ยานอกบัญชี)",
     "base_uom": "AMP",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51008010101002.jpg",
+    "image_file": "51008010101002.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -4697,11 +4783,11 @@
     "code": "51008010201001",
     "name": "Glypressin 1Mg Injection(ยานอกบัญชี)",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51008010201001.jpg",
+    "image_file": "51008010201001.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -4710,11 +4796,11 @@
     "code": "51008010303002",
     "name": "Cetrotide 0.25 Mg Inj(ยานอกบัญชี)",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51008010303002.jpg",
+    "image_file": "51008010303002.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -4723,9 +4809,9 @@
     "code": "51008010303003",
     "name": "Duratocin INJ (100 mcg/mL) Vial",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -4736,11 +4822,11 @@
     "code": "51008020102001",
     "name": "Diprospan Inj 1 Ml(ยานอกบัญชี)",
     "base_uom": "AMP",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51008020102001.jpg",
+    "image_file": "51008020102001.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -4749,11 +4835,11 @@
     "code": "51008030301007",
     "name": "Lugol'S Solution (mL) (ยานอกบัญชี)",
     "base_uom": "ML",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51008030301007.jpg",
+    "image_file": "51008030301007.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -4857,6 +4943,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "(Take Until Finished) Antibiotic",
+        "TH": "(ทานยาติดต่อกันทุกวันจนยาหมด) ยาฆ่าเชื้อ",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -4881,19 +4975,27 @@
         "rawText": "Type Parameter Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 3
+    "instructionCount": 4
   },
   "51010010318006": {
     "code": "51010010318006",
     "name": "Amoxi/Clav 1000 mg TABLET",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "YES",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
     "instructions": [
+      {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "(Take Until Finished)(Store in the original package), Antibiotic",
+        "TH": "(ทานยาติดต่อกันทุกวันจนยาหมด),(ถ้ายังไม่ทาน-อย่าแกะเม็ดยาออกจากแผง)ยาฆ่าเชื้อ",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
       {
         "index": 2,
         "type": "Dispensing Instruction",
@@ -4919,7 +5021,7 @@
         "rawText": "Type Parameter Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 3
+    "instructionCount": 4
   },
   "51010010318007": {
     "code": "51010010318007",
@@ -4932,6 +5034,14 @@
     "image_file": "",
     "original_image_file": "",
     "instructions": [
+      {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "(Take Until Finished)(Store in the original package), Antibiotic",
+        "TH": "(ทานยาติดต่อกันทุกวันจนยาหมด),(ถ้ายังไม่ทาน-อย่าแกะเม็ดยาออกจากแผง)ยาฆ่าเชื้อ",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
       {
         "index": 2,
         "type": "Dispensing Instruction",
@@ -4957,15 +5067,15 @@
         "rawText": "Type Parameter Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 3
+    "instructionCount": 4
   },
   "51010010318012": {
     "code": "51010010318012",
     "name": "Amoxi/Clav ES 642.9 mg/5mL SUSP 70 mL",
     "base_uom": "BOT",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "YES",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -5264,6 +5374,14 @@
         "rawText": "Type Extra on Label Instruction Order Instruction 1 Text Local Language Other Language"
       },
       {
+        "index": 2,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Administration-IV infuse over 30 mins or I.M",
+        "TH": "Administration-IV infuse over 30 mins or I.M",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 3,
         "type": "Solvents for KAROTTE 4",
         "instruction": "Order Instruction 1",
@@ -5288,7 +5406,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 4
+    "instructionCount": 5
   },
   "51010010505003": {
     "code": "51010010505003",
@@ -6116,9 +6234,17 @@
         "EN": "Exp:_____________",
         "TH": "Exp:_____________",
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 2,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept in a Refrigerator (Not freeze)",
+        "TH": "เก็บไว้ในตู้เย็น ห้ามแช่แช็ง",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51010070202007": {
     "code": "51010070202007",
@@ -6132,6 +6258,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept in a Refrigerator (Not freeze)",
+        "TH": "เก็บไว้ในตู้เย็น ห้ามแช่แข็ง,",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -6140,7 +6274,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51010070202008": {
     "code": "51010070202008",
@@ -6154,6 +6288,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept in a Refrigerator (Not freeze)",
+        "TH": "เก็บไว้ในตู้เย็น ห้ามแช่แข็ง",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -6162,7 +6304,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51010070202011": {
     "code": "51010070202011",
@@ -6189,6 +6331,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept in a Refrigerator (Not freeze)",
+        "TH": "เก็บไว้ในตู้เย็น ห้ามแช่แช็ง",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -6197,7 +6347,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51010070203001": {
     "code": "51010070203001",
@@ -6241,6 +6391,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "DTP+Polio Kept in a Refrigerator (Not freeze)",
+        "TH": "DTP+Polio เก็บไว้ในตู้เย็น ห้ามแช่แช็ง",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -6249,7 +6407,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51010070301004": {
     "code": "51010070301004",
@@ -6263,6 +6421,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Infanrix-IPV+Hib Vaccine (0.5 mL)",
+        "TH": "DTP+IPV+Hib",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -6271,7 +6437,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51010070301005": {
     "code": "51010070301005",
@@ -6291,9 +6457,17 @@
         "EN": "Exp:_____________",
         "TH": "Exp:_____________",
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 2,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept in a Refrigerator (Not freeze)",
+        "TH": "เก็บไว้ในตู้เย็น ห้ามแช่แช็ง",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51010070301006": {
     "code": "51010070301006",
@@ -6307,6 +6481,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "DTaP + IPV + HiB",
+        "TH": "DTaP + IPV + HiB",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -6315,7 +6497,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51010070301007": {
     "code": "51010070301007",
@@ -6329,6 +6511,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "DTaP + IPV",
+        "TH": "DTaP + IPV",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -6337,7 +6527,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51010070301009": {
     "code": "51010070301009",
@@ -6351,6 +6541,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "DTPa+IPV+Hib+Hep B Vaccine",
+        "TH": "DTPa+IPV+Hib+Hep B Vaccine",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -6359,7 +6557,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51010070301010": {
     "code": "51010070301010",
@@ -6381,6 +6579,14 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 2 Text Local Language Other Language"
       },
       {
+        "index": 2,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "DTPa+IPV+Hib+Hep B Vaccine",
+        "TH": "DTPa+IPV+Hib+Hep B Vaccine",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 3,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -6389,7 +6595,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51010070301015": {
     "code": "51010070301015",
@@ -6403,6 +6609,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Keep in a refrigerator",
+        "TH": "เก็บในตู้เย็น",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -6411,7 +6625,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51012010203001": {
     "code": "51012010203001",
@@ -7465,6 +7679,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "For pain (Anti-inflammatory-Take after meal immediately)",
+        "TH": "แก้ปวด ลดอักเสบของข้อและกล้ามเนื้อ (ทานหลังอาหารทันที)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -7473,7 +7695,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51013010108001": {
     "code": "51013010108001",
@@ -7522,6 +7744,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Take after meal immediately) For Pain-Fever-Inflammation",
+        "TH": "(ทานหลังอาหารทันที) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Parameter",
         "instruction": "Order Instruction 1",
@@ -7538,7 +7768,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51013010124007": {
     "code": "51013010124007",
@@ -7551,6 +7781,14 @@
     "image_file": "",
     "original_image_file": "",
     "instructions": [
+      {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Reconstitution with 2 mL with SWI , IM or IV bolus",
+        "TH": "Reconstitution with 2 mL with SWI , IM or IV bolus",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
       {
         "index": 2,
         "type": "Extra on Label",
@@ -7568,7 +7806,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 2 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51013010124009": {
     "code": "51013010124009",
@@ -7582,6 +7820,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "For moderate to severe pain",
+        "TH": "บรรเทาอาการปวดชนิดเฉียบพลันระดับรุนแรงปานกลางถึงรุนแรง",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -7590,7 +7836,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51013020103005": {
     "code": "51013020103005",
@@ -7831,6 +8077,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "( Drink A Lot Of Water)",
+        "TH": "ทานยานี้แล้วให้ดื่มน้ำตามมากๆ)  ยาลดกรดยูริค",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -7839,7 +8093,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51013050224001": {
     "code": "51013050224001",
@@ -8105,6 +8359,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept In A Refrigerator ,Expired after opening for 3 days",
+        "TH": "เก็บไว้ในตู้เย็น มีอายุ 3 วันหลังเปิดใช้",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "LASA",
         "instruction": "Order Instruction 1",
@@ -8121,7 +8383,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51014010202033": {
     "code": "51014010202033",
@@ -8149,9 +8411,17 @@
         "EN": "Y",
         "TH": "Y",
         "rawText": "Type LASA Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 3,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept In A Refrigerator ,Expired after opening for 7 days",
+        "TH": "เก็บไว้ในตู้เย็น มีอายุ 7 วันหลังเปิดใช้",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51014010202039": {
     "code": "51014010202039",
@@ -8243,6 +8513,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "(It may cause drowsiness and constipation), Not take more than 10  tablets per day",
+        "TH": "(อาจทำให้ง่วงนอน ท้องผูก), ไม่ควรทานเกิน 10 เม็ดต่อวัน",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -8251,7 +8529,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51014020124001": {
     "code": "51014020124001",
@@ -8806,8 +9084,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "External Use Only",
+        "TH": "( ยาใช้ภายนอก ห้ามรับประทาน )",
+        "_auto": true,
+        "autoAt": "2026-06-11T03:18:00.425707+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51018010124034": {
     "code": "51018010124034",
@@ -9291,6 +9577,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Should  gargle with water after inhale",
+        "TH": "บ้วนปากด้วยน้ำหลังสูดยาทุกครั้ง",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -9299,7 +9593,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51018030424004": {
     "code": "51018030424004",
@@ -9592,6 +9886,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "For Allergy-running Nose-itching, (Take 1 hour before meals or 2 hours after meals)",
+        "TH": "ยาแก้แพ้-ลดน้ำมูก-แก้คัน, (ควรทานก่อนอาหาร 1 ชม. หรือ หลังอาหาร 2 ชม.)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -9600,7 +9902,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51018060124006": {
     "code": "51018060124006",
@@ -9614,6 +9916,14 @@
     "original_image_file": "51018060124006.PNG",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "For Allergy-running Nose-itching, (Take 1 hour before meals or 2 hours after meals)",
+        "TH": "ยาแก้แพ้-ลดน้ำมูก-แก้คัน, (ควรทานก่อนอาหาร 1 ชม. หรือ หลังอาหาร 2 ชม.)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -9622,7 +9932,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51019010101002": {
     "code": "51019010101002",
@@ -9716,9 +10026,17 @@
         "EN": "Y",
         "TH": "Y",
         "rawText": "Type LASA Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 3,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "(Shake Well Before Use)(Do Not Use After Opening 1 Month)",
+        "TH": "(เขย่าขวดก่อนใช้ยา) ไม่เก็บยาไว้เกิน 1 เดือน หลังเปิดขวดใช้แล้ว",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51019010301010": {
     "code": "51019010301010",
@@ -10089,6 +10407,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Store in a refrigerator (2 °C - 8 °C). Do not freeze",
+        "TH": "รักษาภาวะจอประสาทตาเสื่อม; ยาแช่เย็น",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -10097,7 +10423,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51019012401004": {
     "code": "51019012401004",
@@ -12134,8 +12460,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "1 Scoop To Each 30 cc. Of Water",
+        "TH": "1 ช้อนตวงปาดผสมน้ำ 30 ซีซี (1 ออนซ์)",
+        "_auto": true,
+        "autoAt": "2026-06-11T03:20:41.569917+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51022060406008": {
     "code": "51022060406008",
@@ -12454,6 +12788,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "1 Scoop To Each 30 cc. Of Water",
+        "TH": "ผลิตภัณฑ์นม 1 ช้อนตวงปาดผสมน้ำ 30 ซีซี (1 ออนซ์)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 2",
@@ -12462,7 +12804,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 2 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51022070125019": {
     "code": "51022070125019",
@@ -12698,6 +13040,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "",
+        "TH": "ห้ามใช้ในผู้ที่แพ้ไอโอดีนหรือมีภาวะต่อมไทรอยด์เป็นพิษ",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "High Alert Drug",
         "instruction": "Order Instruction 1",
@@ -12714,7 +13064,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51022080301001": {
     "code": "51022080301001",
@@ -13478,6 +13828,14 @@
         "rawText": "Type LASA Instruction Order Instruction 1 Text Local Language Other Language"
       },
       {
+        "index": 3,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "(Take Until Finished)  Antibiotic Kept in refrigerator after mixing 14 days",
+        "TH": "(ทานติดต่อกันจนหมด) ยาฆ่าเชื้อ เก็บในตู้เย็นหลังผสมได้ 14 วัน",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 4,
         "type": "Parameter",
         "instruction": "Order Instruction 2",
@@ -13486,7 +13844,7 @@
         "rawText": "Type Parameter Instruction Order Instruction 2 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 3
+    "instructionCount": 4
   },
   "51101512000001": {
     "code": "51101512000001",
@@ -14029,8 +14387,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "(Take Till Finished do not take with milk antacid calcium iron compound) , Antibiotic",
+        "TH": "ยาฆ่าเชื้อ(ทานจนหมด ไม่ทานพร้อมนม-แคลเซียม-ยาเคลือบกระเพาะ)",
+        "_auto": true,
+        "autoAt": "2026-06-10T11:36:43.795175+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51101538000017": {
     "code": "51101538000017",
@@ -14170,11 +14536,11 @@
     "code": "51101548000004",
     "name": "Fosfomicin 2 g INJ Vial",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51101548000004.jpg",
+    "image_file": "51101548000004.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -14183,11 +14549,11 @@
     "code": "51101549000001",
     "name": "Zyvox 600 Mg Tab(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51101549000001.jpg",
+    "image_file": "51101549000001.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -14340,6 +14706,14 @@
         "rawText": "Type Extra on Label Instruction Order Instruction 1 Text Local Language Other Language"
       },
       {
+        "index": 4,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Reconstitution-SWFI (diluent in pakage) stability 25C 24hrs,Dilution-NSS 50 ml stability 2-8C 7days IVinfuse30-60 mins",
+        "TH": "Reconstitution-SWFI (diluent in pakage) stability 25C 24 hrs, Dilution-NSS 100 ml stability 2-8C 7 days IV infuse 30-60 mins, ห้ามผสมในสารละลายที่มี calcium เป็นส่วนประกอบ",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 5,
         "type": "Solvents for KAROTTE 4",
         "instruction": "Order Instruction 1",
@@ -14356,7 +14730,7 @@
         "rawText": "Type Parameter Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 5
+    "instructionCount": 6
   },
   "51101551000007": {
     "code": "51101551000007",
@@ -14691,9 +15065,17 @@
         "EN": "(Take Until Finished)(Store in the original package), Antibiotic",
         "TH": "(ทานยาติดต่อกันทุกวันจนยาหมด),(ถ้ายังไม่ทาน-อย่าแกะเม็ดยาออกจากแผง)ยาฆ่าเชื้อ",
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 2,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "(Take 1 Hour Before Meal  Take Until Finished) Antibiotic",
+        "TH": "(ก่อนอาหาร 1 ชั่วโมง  ทานติดต่อกันทุกวันจนยาหมด) ยาฆ่าเชื้อ",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51101572000003": {
     "code": "51101572000003",
@@ -14748,8 +15130,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "Antibiotic (Take 1 Hour Before Meal and Take Until Finished), kept in room temperature after mixing 10 days",
+        "TH": "ยาฆ่าเชื้อ (ทานติดต่อกันจนหมด, ก่อนอาหาร 1 ชั่วโมง, เก็บที่อุณหภูมิห้องหลังผสมอยู่ได้ 10 วัน)",
+        "_auto": true,
+        "autoAt": "2026-06-11T05:09:27.956115+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51101572000011": {
     "code": "51101572000011",
@@ -14761,8 +15151,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "(Take 1 Hour Before Meal Take Until Finished) Antibiotic",
+        "TH": "(ก่อนอาหาร 1 ชั่วโมง ทานติดต่อกันทุกวันจนยาหมด) ยาฆ่าเชื้อ",
+        "_auto": true,
+        "autoAt": "2026-06-05T02:27:27.921494+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51101572000016": {
     "code": "51101572000016",
@@ -14901,11 +15299,11 @@
     "code": "51101581000008",
     "name": "Distaclor (250Mg/5Ml) Susp 60Ml  (ยานอกบัญชี)",
     "base_uom": "BOT",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51101581000008.jpg",
+    "image_file": "51101581000008.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -14933,8 +15331,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "Take until finished antibiotic",
+        "TH": "รับประทานยาให้หมด ยาปฏิชีวนะ",
+        "_auto": true,
+        "autoAt": "2026-06-09T02:50:23.085013+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51101583000002": {
     "code": "51101583000002",
@@ -15355,11 +15761,11 @@
     "code": "51101603000012",
     "name": "Robaz Gel 0.75% (30 G) (ยานอกบัญชี)",
     "base_uom": "TUB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51101603000012.jpg",
+    "image_file": "51101603000012.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -15418,6 +15824,14 @@
         "rawText": "Type Extra on Label Instruction Order Instruction 2 Text Local Language Other Language"
       },
       {
+        "index": 3,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Reconstitution-SWFI 5 ml stability 2-8C 12hrs,Dilution-NSS  50 ml stability 2-8C 2 days IV infuse15-30min",
+        "TH": "Reconstitution-SWFI 5 ml stability 2-8C 12hrs,Dilution-NSS  50 ml stability 2-8C 2 days IV infuse15-30min",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 4,
         "type": "Solvents for KAROTTE 4",
         "instruction": "Order Instruction 1",
@@ -15450,7 +15864,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 6
+    "instructionCount": 7
   },
   "51101617000003": {
     "code": "51101617000003",
@@ -15591,11 +16005,11 @@
     "code": "51101718000003",
     "name": "Benzyl Benzoate(25%) Lotion (ยานอกบัญชี)",
     "base_uom": "BOT",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51101718000003.jpg",
+    "image_file": "51101718000003.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -15643,11 +16057,11 @@
     "code": "51101801000006",
     "name": "Ambisome 50 Mg Inj(ยานอกบัญชี)",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51101801000006.jpg",
+    "image_file": "51101801000006.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -15717,11 +16131,11 @@
     "code": "51101804000002",
     "name": "Loprox Sol 8Ml (ยานอกบัญชี)",
     "base_uom": "BOT",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51101804000002.jpg",
+    "image_file": "51101804000002.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -15756,11 +16170,11 @@
     "code": "51101805000010",
     "name": "Canesten Cream(20 G)(ยานอกบัญชี)",
     "base_uom": "TUB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51101805000010.jpg",
+    "image_file": "51101805000010.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -15917,11 +16331,11 @@
     "code": "51101811000007",
     "name": "Nizoral Shampoo 100 Ml(ยานอกบัญชี)",
     "base_uom": "BOT",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "YES",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "has_image": true,
+    "image_path": "images/51101811000007.jpg",
+    "image_file": "51101811000007.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -15943,11 +16357,11 @@
     "code": "51101812000005",
     "name": "Daktarin Oral-Gel",
     "base_uom": "TUB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51101812000005.jpg",
+    "image_file": "51101812000005.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -15956,11 +16370,11 @@
     "code": "51101814000001",
     "name": "Natacyn 5% Ophth Drop 15 Ml(ยานอกบัญชี)",
     "base_uom": "BOT",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51101814000001.jpg",
+    "image_file": "51101814000001.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -16056,11 +16470,11 @@
     "code": "51101832000001",
     "name": "Vfend 200 Mg TABLET (ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51101832000001.jpg",
+    "image_file": "51101832000001.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -16069,11 +16483,11 @@
     "code": "51101832000002",
     "name": "Vfend 200 Mg Inj (ยานอกบัญชี)",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51101832000002.jpg",
+    "image_file": "51101832000002.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -16388,11 +16802,11 @@
     "code": "51102211000001",
     "name": "Xatral Xl 10 Mg Tab",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "YES",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "has_image": true,
+    "image_path": "images/51102211000001.jpg",
+    "image_file": "51102211000001.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -16604,11 +17018,11 @@
     "code": "51102312000001",
     "name": "Copegus 200 Mg Tab (Ribavirin)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51102312000001.jpg",
+    "image_file": "51102312000001.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -19262,9 +19676,17 @@
         "EN": "High Alert Drug",
         "TH": "High Alert Drug",
         "rawText": "Type High Alert Drug Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 5,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Dilution-D5W 250 ml stability 25C 24 hrs (only 2 hrs in viaflex),IV by infusion pump conc < 2 mg/ml",
+        "TH": "Dilution-D5W 250 ml stability 25C 24 hrs (only 2 hrs in viaflex),IV by infusion pump conc < 2 mg/ml",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 4
+    "instructionCount": 5
   },
   "51121511000006": {
     "code": "51121511000006",
@@ -20433,8 +20855,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "Antihypertensive drug",
+        "TH": "ยาลดความโลหิต",
+        "_auto": true,
+        "autoAt": "2026-06-08T07:47:00.024859+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51121763000001": {
     "code": "51121763000001",
@@ -20844,9 +21274,9 @@
     "code": "51121810000007",
     "name": "Lipitor **80** Mg Tab(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -20857,9 +21287,9 @@
     "code": "51121810000008",
     "name": "Xarator TABLET (20mg)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -20870,9 +21300,9 @@
     "code": "51121810000009",
     "name": "Xarator TABLET (40 mg)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -20883,9 +21313,9 @@
     "code": "51121817000002",
     "name": "Resincolestiramina POWDER 4 g Sachet",
     "base_uom": "PCK",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -20953,9 +21383,9 @@
     "code": "51121823000002",
     "name": "Crestor  20 Mg Tab",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21039,9 +21469,9 @@
     "code": "51121902000001",
     "name": "Primacor Inj (10 Mg/ 10 Ml)Amp><",
     "base_uom": "AMP",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21115,7 +21545,7 @@
     "base_uom": "VIA",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21126,9 +21556,9 @@
     "code": "51122113000001",
     "name": "Niaspan Er Tablet(500 Mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21139,9 +21569,9 @@
     "code": "51122113000003",
     "name": "Nicotinic Acid 50 Mg Tab(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21152,9 +21582,9 @@
     "code": "51122301000001",
     "name": "Cardioplegia (20 Ml) Inj",
     "base_uom": "AMP",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21178,9 +21608,9 @@
     "code": "51131500000001",
     "name": "Reblozyl 75 mg INJ Vial(ยานอกบัญชี)",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21191,9 +21621,9 @@
     "code": "51131500000002",
     "name": "Reblozyl 25 mg INJ Vial(ยานอกบัญชี)",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21217,9 +21647,9 @@
     "code": "51131505000001",
     "name": "Androlic 50 Mg Tab(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21300,9 +21730,9 @@
     "code": "51131508000007",
     "name": "Eprex Inj (40,000 Unit/Ml) Pfs(ยานอกบัญชี)",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21344,9 +21774,9 @@
     "code": "51131508000019",
     "name": "Espogen Inj (4,000 Iu) Prefilled Syring(ยานอกบัญชี)",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21357,9 +21787,9 @@
     "code": "51131508000021",
     "name": "Espogen Inj (4,000 Iu/Ml) Vial (ยานอกบัญชี)",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21379,9 +21809,9 @@
     "code": "51131508000031",
     "name": "Hema Plus 4000 Unit INJ Vial",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21401,9 +21831,9 @@
     "code": "51131508000039",
     "name": "Leuco Plus 300 mcg/mL PFS",
     "base_uom": "SYR",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21423,9 +21853,9 @@
     "code": "51131508000040",
     "name": "Hema Plus 10000 Unit INJ PFS(ยานอกบัญชี)",
     "base_uom": "SYR",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21445,9 +21875,9 @@
     "code": "51131508000041",
     "name": "Hema Plus 4000 Unit INJ PFS",
     "base_uom": "SYR",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21467,9 +21897,9 @@
     "code": "51131508000063",
     "name": "Binocrit (40,000 IU/mL) Inj PFS(ยานอกบัญชี)",
     "base_uom": "SYR",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21502,9 +21932,9 @@
     "code": "51131508000067",
     "name": "Hema Plus 40000 Unit INJ PFS(ยานอกบัญชี)",
     "base_uom": "SET",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21598,9 +22028,9 @@
     "code": "51131516000005",
     "name": "Ferinject 500 mg/10 mL INJ Vial",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -21676,9 +22106,17 @@
         "EN": "High Alert Drug",
         "TH": "High Alert Drug",
         "rawText": "Type High Alert Drug Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 4,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "หลังเปิดขวดคงตัวนาน 14 วัน,Dilution-20000-30000 iu/ NSS1000 ml stability 25C 24 hrs",
+        "TH": "หลังเปิดขวดคงตัวนาน 14 วัน,Dilution-20000-30000 iu/ NSS1000 ml stability 25C 24 hrs",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 3
+    "instructionCount": 4
   },
   "51131604000001": {
     "code": "51131604000001",
@@ -22002,9 +22440,9 @@
     "code": "51131607000003",
     "name": "Clexane 80 Mg Prefilled Syringe(ยานอกบัญชี)",
     "base_uom": "SET",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -22037,9 +22475,9 @@
     "code": "51131616000004",
     "name": "Innohep INJ (4,500 units/0.45mL) PFS(ยานอกบัญชี)",
     "base_uom": "SET",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -22050,9 +22488,9 @@
     "code": "51131701000001",
     "name": "Abciximab Inj (10Mg/5Ml) Vial(ยานอกบัญชี)",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -22127,9 +22565,9 @@
     "code": "51131708000005",
     "name": "Pletaal SR CAPSULES (100 mg)(ยานอกบัญชี)",
     "base_uom": "CAP",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -22162,9 +22600,9 @@
     "code": "51131709000004",
     "name": "Apolets 75 mg TABLET",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -22240,13 +22678,21 @@
     "code": "51131800000001",
     "name": "Prothromplex 600 IU Injection(ยานอกบัญชี)",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
     "instructions": [
+      {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept in a Refrigerator 2-8C (Not freeze)",
+        "TH": "เก็บไว้ในตู้เย็น 2-8 C ห้ามแช่แช็ง",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
       {
         "index": 2,
         "type": "Dispensing Instruction",
@@ -22256,7 +22702,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51131800150000": {
     "code": "51131800150000",
@@ -22275,9 +22721,9 @@
     "code": "51131802000001",
     "name": "Novoseven Inj(1Mg/ 1Ml)Vial",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -22297,9 +22743,9 @@
     "code": "51131802000002",
     "name": "Alphanate (250IU/5mL) Injection",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -22310,9 +22756,9 @@
     "code": "51131802000007",
     "name": "Profilnine (500IU/5mL) Injection",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -22395,7 +22841,7 @@
     "base_uom": "BOT",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -22406,9 +22852,9 @@
     "code": "51131903000001",
     "name": "Gelofusine Infusion 500 Ml",
     "base_uom": "BOT",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -22484,9 +22930,9 @@
     "code": "51141500000001",
     "name": "Tarlige 5 mg TABLET",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -22497,9 +22943,9 @@
     "code": "51141500000002",
     "name": "Tarlige 10 mg TABLET",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -22567,9 +23013,9 @@
     "code": "51141504000002",
     "name": "Lamictal  50 Mg  Tab(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -22580,9 +23026,9 @@
     "code": "51141504000003",
     "name": "Lamictal  100 Mg Tab(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -22644,6 +23090,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "D  protect from light and keep in temp below 25 C",
+        "TH": "สามารถหักแบ่ง บด เคี้ยวเม็ดยาได้ และรับประทานห่างจากอาหาร 1 ชั่วโมง",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -22652,15 +23106,15 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51141509000001": {
     "code": "51141509000001",
     "name": "Sabril 500 Mg Tab(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -23109,9 +23563,9 @@
     "code": "51141534000002",
     "name": "Lyrica (150 Mg) Capsule",
     "base_uom": "CAP",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -23182,9 +23636,9 @@
     "code": "51141541000001",
     "name": "Ebixa 10 Mg Tab(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -23255,9 +23709,9 @@
     "code": "51141600000001",
     "name": "Abilify Maintena 400mg Prefilled Syringe(ยานอกบัญชี)",
     "base_uom": "SET",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -23312,11 +23766,11 @@
     "code": "51141604000001",
     "name": "Remeron 15 Mg Soltab (ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141604000001.jpg",
+    "image_file": "51141604000001.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -23360,11 +23814,11 @@
     "code": "51141605000001",
     "name": "Seroxat Tab(20 mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141605000001.jpg",
+    "image_file": "51141605000001.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -23434,9 +23888,9 @@
     "code": "51141618000004",
     "name": "Fluoxetine TABLET (20 mg)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -23473,11 +23927,11 @@
     "code": "51141619000003",
     "name": "Zoloft Tablet (100 Mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141619000003.jpg",
+    "image_file": "51141619000003.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -23551,19 +24005,27 @@
         "EN": "Y",
         "TH": "Y",
         "rawText": "Type LASA Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 3,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "D",
+        "TH": "D",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51141631000001": {
     "code": "51141631000001",
     "name": "Quomem 150 Mg Tab(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141631000001.jpg",
+    "image_file": "51141631000001.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -23572,9 +24034,9 @@
     "code": "51141631000002",
     "name": "Wellbutrin Xl Tablet (150 Mg) (ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -23585,9 +24047,9 @@
     "code": "51141631000003",
     "name": "Wellbutrin Xl (24 Hour) Tablet (300 Mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -23620,9 +24082,9 @@
     "code": "51141633000005",
     "name": "Lexapro Oral Drops (20mg/ml)(15 mL)(ยานอกบัญชี)",
     "base_uom": "BOT",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -23642,11 +24104,11 @@
     "code": "51141634000002",
     "name": "Abilify Discmelt Tablet (10 mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141634000002.jpg",
+    "image_file": "51141634000002.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -23655,11 +24117,11 @@
     "code": "51141634000003",
     "name": "Abilify Discmelt Tablet (15 mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141634000003.jpg",
+    "image_file": "51141634000003.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -23668,11 +24130,11 @@
     "code": "51141634000004",
     "name": "Abilify Oral Solution(1 Mg/Ml) (150 Ml)",
     "base_uom": "BOT",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141634000004.jpg",
+    "image_file": "51141634000004.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -23681,11 +24143,11 @@
     "code": "51141634000007",
     "name": "Abilify TABLET (2 mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141634000007.jpg",
+    "image_file": "51141634000007.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -23703,11 +24165,11 @@
     "code": "51141634000009",
     "name": "Rexulti TABLET (1 mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141634000009.jpg",
+    "image_file": "51141634000009.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -23725,11 +24187,11 @@
     "code": "51141635000001",
     "name": "Cymbalta 30 Mg Cap",
     "base_uom": "CAP",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141635000001.jpg",
+    "image_file": "51141635000001.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -23738,11 +24200,11 @@
     "code": "51141636000002",
     "name": "Efexor-Xr 75 Mg  Cap(ยานอกบัญชี)",
     "base_uom": "CAP",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141636000002.jpg",
+    "image_file": "51141636000002.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -23751,11 +24213,11 @@
     "code": "51141636000003",
     "name": "Efexor-Xr 150 Mg  Cap(ยานอกบัญชี)",
     "base_uom": "CAP",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141636000003.jpg",
+    "image_file": "51141636000003.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -23781,11 +24243,11 @@
     "code": "51141636000004",
     "name": "Efexor Xr 37.5 Mg Cap(ยานอกบัญชี)",
     "base_uom": "CAP",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141636000004.jpg",
+    "image_file": "51141636000004.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -23803,11 +24265,11 @@
     "code": "51141639000001",
     "name": "Pristiq Tablet (50 Mg)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141639000001.jpg",
+    "image_file": "51141639000001.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -23960,11 +24422,11 @@
     "code": "51141706000002",
     "name": "Somazina 1000 Mg Inj",
     "base_uom": "AMP",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141706000002.jpg",
+    "image_file": "51141706000002.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -23982,9 +24444,9 @@
     "code": "51141714000003",
     "name": "Nootropil TABLET (800 mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -24043,11 +24505,11 @@
     "code": "51141722000001",
     "name": "Seroquel 25 Mg Tab",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141722000001.jpg",
+    "image_file": "51141722000001.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -24056,11 +24518,11 @@
     "code": "51141722000002",
     "name": "Seroquel 100 Mg Tab(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141722000002.jpg",
+    "image_file": "51141722000002.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -24069,11 +24531,11 @@
     "code": "51141722000007",
     "name": "Seroquel Xr Tablet (50  Mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141722000007.jpg",
+    "image_file": "51141722000007.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -24108,11 +24570,11 @@
     "code": "51141722000010",
     "name": "Seroquel XR TABLET (150 mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141722000010.jpg",
+    "image_file": "51141722000010.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -24134,11 +24596,11 @@
     "code": "51141732000010",
     "name": "Latuda TABLET (40 mg)(ยานอกบัญชี)",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141732000010.jpg",
+    "image_file": "51141732000010.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -24163,6 +24625,14 @@
         "rawText": "Type High Alert Drug Instruction Order Instruction 1 Text Local Language Other Language"
       },
       {
+        "index": 2,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept in a Refrigerator",
+        "TH": "เก็บไว้ในตู้เย็น ไม่ใช้ยานี้ถ้าเริ่มเปลี่ยนเป็นสีชมพู",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 3,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 2",
@@ -24171,7 +24641,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 2 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51141803000005": {
     "code": "51141803000005",
@@ -24198,6 +24668,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "( For Insomnia ) (Do not take with food contained high lipid)",
+        "TH": "(ทานเวลานอนไม่หลับ) ยานอนหลับ (ไม่ทานพร้อมอาหารที่มีไขมันสูง)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -24206,7 +24684,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51141808000001": {
     "code": "51141808000001",
@@ -24260,11 +24738,11 @@
     "code": "51141812000006",
     "name": "Dayvigo 5 mg TABLET",
     "base_uom": "TAB",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141812000006.jpg",
+    "image_file": "51141812000006.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -24352,9 +24830,17 @@
         "EN": "Y",
         "TH": "Y",
         "rawText": "Type LASA Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 3,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "D (Do not take with food contained high lipid)",
+        "TH": "D (ไม่ทานพร้อมอาหารที่มีไขมันสูง)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51141916000002": {
     "code": "51141916000002",
@@ -24433,11 +24919,11 @@
     "code": "51141916000009",
     "name": "Stresam Capsule (50 Mg)(ยานอกบัญชี)",
     "base_uom": "CAP",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51141916000009.jpg",
+    "image_file": "51141916000009.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -24637,11 +25123,11 @@
     "code": "51142001000010",
     "name": "Tempra-Drops (15 mL)",
     "base_uom": "BOT",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51142001000010.jpg",
+    "image_file": "51142001000010.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -24656,8 +25142,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "(Shake Well Before Use) For Pain Or Fever",
+        "TH": "(เขย่าขวดก่อนใช้ยา) ยาแก้ปวด-ลดไข้",
+        "_auto": true,
+        "autoAt": "2026-06-11T03:18:00.128601+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51142001000016": {
     "code": "51142001000016",
@@ -24693,9 +25187,9 @@
     "code": "51142001000018",
     "name": "Tylenol 160Mg/5Ml Susp 60Ml",
     "base_uom": "BOT",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -24896,11 +25390,11 @@
     "code": "51142001000039",
     "name": "Sara SUSP (Grape) (160 mg/5mL)(60mL)",
     "base_uom": "BOT",
-    "itemimage_name": "ไม่มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "itemimage_name": "มีรูปภาพ",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51142001000039.jpg",
+    "image_file": "51142001000039.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -24928,8 +25422,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "(Shake Well Before Use) For Pain Or Fever",
+        "TH": "(เขย่าขวดก่อนใช้ยา) ยาแก้ปวด-ลดไข้",
+        "_auto": true,
+        "autoAt": "2026-06-11T03:20:41.764610+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51142001000061": {
     "code": "51142001000061",
@@ -25113,6 +25615,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "For pain (Anti-inflammatory-Take after meal immediately)",
+        "TH": "แก้ปวด ลดอักเสบของข้อและกล้ามเนื้อ (ทานหลังอาหารทันที)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Parameter",
         "instruction": "Order Instruction 1",
@@ -25129,7 +25639,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51142103000002": {
     "code": "51142103000002",
@@ -25142,6 +25652,14 @@
     "image_file": "",
     "original_image_file": "",
     "instructions": [
+      {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "For pain (Anti-inflammatory-Take after meal immediately)",
+        "TH": "แก้ปวด ลดอักเสบของข้อและกล้ามเนื้อ (ทานหลังอาหารทันที)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
       {
         "index": 2,
         "type": "Parameter",
@@ -25159,7 +25677,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51142104000002": {
     "code": "51142104000002",
@@ -25173,6 +25691,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "For pain (Anti-inflammatory-Take after meal immediately)",
+        "TH": "แก้ปวด ลดอักเสบของข้อและกล้ามเนื้อ (ทานหลังอาหารทันที)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -25181,7 +25707,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51142104000004": {
     "code": "51142104000004",
@@ -25201,10 +25727,10 @@
     "name": "VOLTAREN EMULGEL 50 GM",
     "base_uom": "TUB",
     "itemimage_name": "มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51142104000014.jpg",
+    "image_file": "51142104000014.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -25214,10 +25740,10 @@
     "name": "Voltaren (75Mg/3Ml) Inj(ยานอกบัญชี)",
     "base_uom": "AMP",
     "itemimage_name": "มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51142104000017.jpg",
+    "image_file": "51142104000017.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -25260,6 +25786,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "(Take after meal immediately) For Pain-Fever-Inflammation",
+        "TH": "(ทานหลังอาหารทันที) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Parameter",
         "instruction": "Order Instruction 1",
@@ -25276,7 +25810,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51142106000003": {
     "code": "51142106000003",
@@ -25290,6 +25824,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "(Take after meal immediately) For Pain-Fever-Inflammation",
+        "TH": "(ทานหลังอาหารทันที) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -25298,7 +25840,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51142106000009": {
     "code": "51142106000009",
@@ -25336,8 +25878,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "(Take after meal immediately) For pain-fever-inflammation",
+        "TH": "(ทานหลังอาหารทันที) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ",
+        "_auto": true,
+        "autoAt": "2026-06-04T03:40:07.806466+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51142107000001": {
     "code": "51142107000001",
@@ -25351,6 +25901,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "For pain (Anti-inflammatory-Take after meal immediately)",
+        "TH": "แก้ปวด ลดอักเสบของข้อและกล้ามเนื้อ (ทานหลังอาหารทันที)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -25359,7 +25917,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51142107000004": {
     "code": "51142107000004",
@@ -25389,7 +25947,7 @@
     "base_uom": "TUB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -25434,6 +25992,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "For pain (Anti-inflammatory-Take after meal immediately)",
+        "TH": "แก้ปวด ลดอักเสบของข้อและกล้ามเนื้อ (ทานหลังอาหารทันที)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -25442,7 +26008,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51142114000003": {
     "code": "51142114000003",
@@ -25532,10 +26098,10 @@
     "name": "Feldene 10 Mg Cap(ยานอกบัญชี)",
     "base_uom": "CAP",
     "itemimage_name": "มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51142128000002.jpg",
+    "image_file": "51142128000002.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -25563,8 +26129,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "For pain (Anti-inflammatory-Take after meal immediately)",
+        "TH": "แก้ปวด ลดอักเสบของข้อและกล้ามเนื้อ (ทานหลังอาหารทันที)",
+        "_auto": true,
+        "autoAt": "2026-06-11T06:23:24.217071+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51142131000002": {
     "code": "51142131000002",
@@ -25577,6 +26151,14 @@
     "image_file": "",
     "original_image_file": "",
     "instructions": [
+      {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "For pain (Anti-inflammatory-Take after meal immediately)",
+        "TH": "แก้ปวด ลดอักเสบของข้อและกล้ามเนื้อ (ทานหลังอาหารทันที)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
       {
         "index": 2,
         "type": "Dispensing Instruction",
@@ -25594,7 +26176,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 2 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51142131000003": {
     "code": "51142131000003",
@@ -25607,6 +26189,14 @@
     "image_file": "",
     "original_image_file": "",
     "instructions": [
+      {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "For pain (Anti-inflammatory-Take after meal immediately)",
+        "TH": "แก้ปวด ลดอักเสบของข้อและกล้ามเนื้อ (ทานหลังอาหารทันที)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
       {
         "index": 2,
         "type": "Parameter",
@@ -25624,7 +26214,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51142131000005": {
     "code": "51142131000005",
@@ -25994,6 +26584,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "For pain (Anti-inflammatory-take after meal immediately)",
+        "TH": "แก้ปวด ลดอักเสบของข้อและกล้ามเนื้อ (ทานหลังอาหารทันที)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -26018,7 +26616,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 2 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 3
+    "instructionCount": 4
   },
   "51142153000003": {
     "code": "51142153000003",
@@ -26031,6 +26629,14 @@
     "image_file": "",
     "original_image_file": "",
     "instructions": [
+      {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "For pain (Anti-inflammatory-take after meal immediately)",
+        "TH": "แก้ปวด ลดอักเสบของข้อและกล้ามเนื้อ (ทานหลังอาหารทันที)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
       {
         "index": 2,
         "type": "Dispensing Instruction",
@@ -26048,7 +26654,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 2 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51142153000004": {
     "code": "51142153000004",
@@ -26070,6 +26676,14 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       },
       {
+        "index": 2,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "For pain (Anti-inflammatory-take after meal immediately)",
+        "TH": "แก้ปวด ลดอักเสบของข้อและกล้ามเนื้อ (ทานหลังอาหารทันที)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 3,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 2",
@@ -26086,7 +26700,7 @@
         "rawText": "Type Parameter Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 3
+    "instructionCount": 4
   },
   "51142153000005": {
     "code": "51142153000005",
@@ -26111,8 +26725,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "For pain (Anti-inflammatory-take after meal immediately)",
+        "TH": "แก้ปวด ลดอักเสบของข้อและกล้ามเนื้อ (ทานหลังอาหารทันที)",
+        "_auto": true,
+        "autoAt": "2026-06-10T02:42:49.008954+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51142205000001": {
     "code": "51142205000001",
@@ -26523,9 +27145,17 @@
         "EN": "High Alert Drug",
         "TH": "High Alert Drug",
         "rawText": "Type High Alert Drug Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 3,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "ห้ามฉีดเข้าไขสันหลัง",
+        "TH": "ห้ามฉีดเข้าไขสันหลัง",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51142226000001": {
     "code": "51142226000001",
@@ -26547,6 +27177,14 @@
         "rawText": "Type Parameter Instruction Order Instruction 1 Text Local Language Other Language"
       },
       {
+        "index": 2,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "For pain // May cause nausea, vomiting, constipation.",
+        "TH": "รักษาอาการปวด//  อาจมีอาการคลื่นไส้ อาเจียน ท้องผูก",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 3,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -26555,7 +27193,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51142235000001": {
     "code": "51142235000001",
@@ -26967,6 +27605,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "(May cause palpitation, insomnia)",
+        "TH": "(ยานี้อาจทำให้นอนไม่หลับ)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -26975,7 +27621,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51142618000002": {
     "code": "51142618000002",
@@ -26989,6 +27635,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "(May cause palpitation, insomnia)",
+        "TH": "(ยานี้อาจทำให้นอนไม่หลับ)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -26997,7 +27651,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51142618000003": {
     "code": "51142618000003",
@@ -27046,6 +27700,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "(May cause palpitation, insomnia)",
+        "TH": "(ยานี้อาจทำให้นอนไม่หลับ)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -27054,7 +27716,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51142618000013": {
     "code": "51142618000013",
@@ -27076,6 +27738,14 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       },
       {
+        "index": 2,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "30 Capsules per bot",
+        "TH": "ขวดละ 30 เม็ด",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 3,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 2",
@@ -27084,7 +27754,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 2 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51142618000017": {
     "code": "51142618000017",
@@ -27492,6 +28162,14 @@
         "rawText": "Type LASA Instruction Order Instruction 1 Text Local Language Other Language"
       },
       {
+        "index": 3,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "มีอายุ 3 วันหลังเปิดใช้",
+        "TH": "มีอายุ 3 วันหลังเปิดใช้",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 4,
         "type": "Parameter",
         "instruction": "Order Instruction 1",
@@ -27500,7 +28178,7 @@
         "rawText": "Type Parameter Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 3
+    "instructionCount": 4
   },
   "51142937000015": {
     "code": "51142937000015",
@@ -28046,9 +28724,17 @@
         "EN": "Y",
         "TH": "Y",
         "rawText": "Type LASA Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 3,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "(Do Not Use After Opening 1 Month)",
+        "TH": "ไม่เก็บยาไว้เกิน 1 เดือน หลังเปิดขวดใช้แล้ว",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51151606000006": {
     "code": "51151606000006",
@@ -28377,9 +29063,17 @@
         "EN": "High Alert Drug",
         "TH": "High Alert Drug",
         "rawText": "Type High Alert Drug Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 5,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "**Not recommend dilute in NSSและ sodium bicarbonate**,Dilution-D5W 1000ml stability 25C 24hrs",
+        "TH": "**Not recommend dilute in NSSและ sodium bicarbonate**,Dilution-D5W 1000ml stability 25C 24hrs",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 4
+    "instructionCount": 5
   },
   "51151727000004": {
     "code": "51151727000004",
@@ -29206,7 +29900,7 @@
     "base_uom": "TAB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -29402,7 +30096,7 @@
     "base_uom": "TAB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -29437,7 +30131,7 @@
     "base_uom": "TAB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -29467,8 +30161,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "For Allergy-Runny Nose-Itching",
+        "TH": "ยาแก้แพ้-ลดน้ำมูก-แก้คัน",
+        "_auto": true,
+        "autoAt": "2026-06-11T04:00:01.011072+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51161621000006": {
     "code": "51161621000006",
@@ -30118,7 +30820,7 @@
     "base_uom": "TAB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -30140,7 +30842,7 @@
     "base_uom": "TUB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -30160,9 +30862,17 @@
         "EN": "Y",
         "TH": "Y",
         "rawText": "Type LASA Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 3,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "(1 Tablet Dissolve 1/2 Glass Of water)  Mucolytic",
+        "TH": "(ยา 1 เม็ด ละลายน้ำ ครึ่ง แก้วแล้วดื่ม)  ยาละลายเสมหะ",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51161701000012": {
     "code": "51161701000012",
@@ -30310,8 +31020,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "Should Gargle With Water after inhale",
+        "TH": "บ้วนปากด้วยน้ำหลังพ่นยาทุกครั้ง",
+        "_auto": true,
+        "autoAt": "2026-06-10T02:40:07.298756+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51161703000013": {
     "code": "51161703000013",
@@ -30344,10 +31062,10 @@
     "name": "Flemex (375 mg) Tablet",
     "base_uom": "TAB",
     "itemimage_name": "มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51161805000001.jpg",
+    "image_file": "51161805000001.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -30449,8 +31167,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "(Shake Well Before Use) Mucolytic",
+        "TH": "(เขย่าขวดก่อนรับประทาน)ยาละลายเสมหะ",
+        "_auto": true,
+        "autoAt": "2026-06-07T02:10:46.438407+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51161805000008": {
     "code": "51161805000008",
@@ -30462,8 +31188,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "(Shake Well Before Use) Mucolytic",
+        "TH": "(เขย่าขวดก่อนรับประทาน)ยาละลายเสมหะ",
+        "_auto": true,
+        "autoAt": "2026-06-05T00:55:57.064525+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51161808000002": {
     "code": "51161808000002",
@@ -30584,8 +31318,16 @@
     "image_path": "images/51161903000001.jpg",
     "image_file": "51161903000001.jpg",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "( When stuffy nose ) External Use Only,Do Not use more than 5 days.",
+        "TH": "( เวลาคัดแน่นจมูก ) ไม่ควรใช้ติดต่อกันเกิน 5 วัน",
+        "_auto": true,
+        "autoAt": "2026-06-05T02:30:11.542845+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51161903000002": {
     "code": "51161903000002",
@@ -30757,7 +31499,7 @@
     "base_uom": "TAB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -30809,7 +31551,7 @@
     "base_uom": "BOT",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -31029,7 +31771,7 @@
     "base_uom": "TAB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -31064,7 +31806,7 @@
     "base_uom": "TAB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -31148,7 +31890,7 @@
         "type": "Patient Instruction",
         "instruction": "Order Instruction 1",
         "EN": "( FOR EXTERNAL USE ONLY )",
-        "TH": "( ยาใชัภายนอก ห้ามรับประทาน ), แกะยาออกจากซองก่อนเหน็บ และเก็บในที่เย็น",
+        "TH": "( ยาใช้ภายนอก ห้ามรับประทาน ), แกะยาออกจากซองก่อนเหน็บ และเก็บในที่เย็น",
         "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
@@ -31324,9 +32066,9 @@
     "code": "51171704000003",
     "name": "Erfuzide Syr 30 Ml",
     "base_uom": "BOT",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -31425,9 +32167,17 @@
         "EN": "Y",
         "TH": "Y",
         "rawText": "Type LASA Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 3,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Administration-IM or IV push >2-5 mins or IV infusion>15 mins,Dilution-Nss 50 ml stability 25C 7days",
+        "TH": "Administration-IM or IV push >2-5 mins or IV infusion>15 mins,Dilution-Nss 50 ml stability 25C 7days",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51171806000001": {
     "code": "51171806000001",
@@ -31500,7 +32250,7 @@
     "base_uom": "TAB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -31912,7 +32662,7 @@
     "base_uom": "BOT",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -31925,7 +32675,7 @@
     "base_uom": "TAB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -31938,7 +32688,7 @@
     "base_uom": "TAB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -32113,7 +32863,7 @@
     "base_uom": "CAP",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -32135,7 +32885,7 @@
     "base_uom": "PCK",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -32179,7 +32929,7 @@
     "base_uom": "TAB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -32950,7 +33700,7 @@
     "base_uom": "TAB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -33234,7 +33984,7 @@
     "base_uom": "TUB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -33251,8 +34001,16 @@
     "image_path": "images/51181722000001.jpg",
     "image_file": "51181722000001.jpg",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "The first time: spray in the air (away from you) 6 times ,(For External Use Only) Shake well before use",
+        "TH": "สำหรับการใช้ครั้งแรก ให้พ่นยาทิ้งก่อน 6 ครั้ง ,(ยาใชัภายนอก ห้ามรับประทาน) เขย่าขวดก่อนใช้",
+        "_auto": true,
+        "autoAt": "2026-06-05T00:55:57.283197+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51181722000002": {
     "code": "51181722000002",
@@ -33264,8 +34022,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "The first time: spray in the air (away from you) 6 times ,(For External Use Only) Shake well before use",
+        "TH": "สำหรับการใช้ครั้งแรก ให้พ่นยาทิ้งก่อน 6 ครั้ง ,(ยาใชัภายนอก ห้ามรับประทาน) เขย่าขวดก่อนใช้",
+        "_auto": true,
+        "autoAt": "2026-06-07T02:42:29.042670+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51181722000004": {
     "code": "51181722000004",
@@ -33273,7 +34039,7 @@
     "base_uom": "BOT",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -33308,7 +34074,7 @@
     "base_uom": "TUB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -33325,8 +34091,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "The first time: spray in the air (away from you) 6 times ,(For External Use Only) Shake well before use",
+        "TH": "สำหรับการใช้ครั้งแรก ให้พ่นยาทิ้งก่อน 6 ครั้ง ,(ยาใชัภายนอก ห้ามรับประทาน) เขย่าขวดก่อนใช้",
+        "_auto": true,
+        "autoAt": "2026-06-05T02:30:11.155974+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51181726000003": {
     "code": "51181726000003",
@@ -33386,7 +34160,7 @@
     "base_uom": "BOT",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -33526,7 +34300,7 @@
     "base_uom": "AMP",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -33721,8 +34495,16 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "( For External Use Only ) Shake well before use",
+        "TH": "( ยาใชัภายนอก ห้ามรับประทาน ) เขย่าขวดก่อนใช้",
+        "_auto": true,
+        "autoAt": "2026-06-05T02:44:32.148930+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51181749000006": {
     "code": "51181749000006",
@@ -34010,6 +34792,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "X",
+        "TH": "X",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -34018,7 +34808,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51181813000004": {
     "code": "51181813000004",
@@ -34032,6 +34822,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "X",
+        "TH": "X",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -34040,7 +34838,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51181813000006": {
     "code": "51181813000006",
@@ -34068,9 +34866,17 @@
         "EN": "Y",
         "TH": "Y",
         "rawText": "Type LASA Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 3,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "X   1 measure = 2.5 gm  ( For External Use Only )",
+        "TH": "X   1 ช่วงวัด =2.5 กรัม (ยาใช้ภายนอก ห้ามรับประทาน)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51181813000007": {
     "code": "51181813000007",
@@ -34443,7 +35249,7 @@
     "base_uom": "CAP",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -36888,7 +37694,7 @@
     "base_uom": "TAB",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -37137,7 +37943,7 @@
     "base_uom": "BOT",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -37302,7 +38108,7 @@
     "base_uom": "BOT",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -37509,9 +38315,9 @@
     "code": "51201502000002",
     "name": "Sandimmun-25 Cap(ยานอกบัญชี)",
     "base_uom": "CAP",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -37522,9 +38328,9 @@
     "code": "51201502000004",
     "name": "Sandimmun-100 Cap(ยานอกบัญชี)",
     "base_uom": "CAP",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -37644,6 +38450,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "( For External Use Only )",
+        "TH": "( ยาใชัภายนอก ห้ามรับประทาน )",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -37652,7 +38466,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201605000004": {
     "code": "51201605000004",
@@ -37673,11 +38487,19 @@
     "base_uom": "VIA",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
     "instructions": [
+      {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Keep in refrigerator",
+        "TH": "เก็บในตู้เย็น  หลังผสมต้องใช้ภายใน 1 ชั่วโมง",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
       {
         "index": 2,
         "type": "Dispensing Instruction",
@@ -37687,7 +38509,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201607000001": {
     "code": "51201607000001",
@@ -37813,6 +38635,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Keep in refrigerator (Hepatitis B vaccine) 0,1,6 mo",
+        "TH": "เก็บไว้ในตู้เย็น วัคซีนตับอักเสบบี  0,1,6 mo",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -37821,7 +38651,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201608000021": {
     "code": "51201608000021",
@@ -38134,6 +38964,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept in a Refrigerator (Not freeze)",
+        "TH": "เก็บไว้ในตู้เย็น ห้ามแช่แช็ง",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -38150,7 +38988,7 @@
         "rawText": "Type Ordering Instruction Instruction Order Instruction 2 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 2
+    "instructionCount": 3
   },
   "51201608000064": {
     "code": "51201608000064",
@@ -38177,6 +39015,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept in a Refrigerator (Not freeze)",
+        "TH": "เก็บไว้ในตู้เย็น ห้ามแช่แช็ง",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -38185,7 +39031,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201608000068": {
     "code": "51201608000068",
@@ -38255,6 +39101,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept in a Refrigerator (Not freeze)",
+        "TH": "เก็บไว้ในตู้เย็น ห้ามแช่แช็ง",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -38263,7 +39117,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201608150000": {
     "code": "51201608150000",
@@ -38282,9 +39136,9 @@
     "code": "51201608150001",
     "name": "SKYCellflu NH VACCINE INJ PFS 0.5 mL",
     "base_uom": "SYR",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -38407,6 +39261,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Pneumococcal vaccine",
+        "TH": "Pneumococcal vaccine",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -38415,7 +39277,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201616000001": {
     "code": "51201616000001",
@@ -38462,7 +39324,7 @@
     "base_uom": "VIA",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -38481,6 +39343,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Rabies Vaccine ( Kept in a Refrigerator )",
+        "TH": "Rabies Vaccine ( เก็บไว้ในตู้เย็น)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -38489,7 +39359,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201618000001": {
     "code": "51201618000001",
@@ -38503,6 +39373,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Rotavirus Vaccine",
+        "TH": "ป้องกันไวรัสโรตา",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -38511,7 +39389,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201618000002": {
     "code": "51201618000002",
@@ -38525,6 +39403,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Rotavirus Vaccine",
+        "TH": "ป้องกันไวรัสโรตา",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -38533,7 +39419,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201621000002": {
     "code": "51201621000002",
@@ -38577,6 +39463,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept in a Refrigerator",
+        "TH": "เก็บไว้ในตู้เย็น",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -38585,7 +39479,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201624000005": {
     "code": "51201624000005",
@@ -38599,6 +39493,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept in a Refrigerator. Use immediately after reconstitute",
+        "TH": "เก็บไว้ในตู้เย็น ใช้ทันทีหลังผสม",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -38607,7 +39509,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201624000010": {
     "code": "51201624000010",
@@ -38615,7 +39517,7 @@
     "base_uom": "VIA",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -38665,6 +39567,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept in a Refrigerator",
+        "TH": "เก็บไว้ในตู้เย็น",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -38673,7 +39583,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201627000002": {
     "code": "51201627000002",
@@ -38769,6 +39679,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "MMr keep in a refrigerator",
+        "TH": "MMR เก็บในตู้เย็น",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -38777,7 +39695,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201629000001": {
     "code": "51201629000001",
@@ -38866,9 +39784,17 @@
         "EN": "Exp:_____________",
         "TH": "Exp:_____________",
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 2,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Kept in a Refrigerator (Not freeze)",
+        "TH": "เก็บไว้ในตู้เย็น ห้ามแช่แช็ง",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201635000001": {
     "code": "51201635000001",
@@ -38882,6 +39808,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "วัคซีนไวรัสตับอักเสบ เอKept In A Refrigerator",
+        "TH": "วัคซีนไวรัสตับอักเสบ เอเก็บไว้ในตู้เย็น",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -38890,7 +39824,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201635000004": {
     "code": "51201635000004",
@@ -38904,6 +39838,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "วัคซีนไวรัสตับอักเสบ เอKept In A Refrigerator",
+        "TH": "วัคซีนไวรัสตับอักเสบ เอเก็บไว้ในตู้เย็น",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -38912,7 +39854,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201635000007": {
     "code": "51201635000007",
@@ -39047,6 +39989,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Keep in refrigerator",
+        "TH": "เก็บในตู้เย็น",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -39055,7 +40005,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201649000006": {
     "code": "51201649000006",
@@ -39069,6 +40019,14 @@
     "original_image_file": "",
     "instructions": [
       {
+        "index": 1,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Keep in refrigerator",
+        "TH": "เก็บในตู้เย็น",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 2,
         "type": "Dispensing Instruction",
         "instruction": "Order Instruction 1",
@@ -39077,7 +40035,7 @@
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51201649000007": {
     "code": "51201649000007",
@@ -39641,10 +40599,10 @@
     "name": "Anexate (0.5Mg/5Ml)Inj",
     "base_uom": "VIA",
     "itemimage_name": "มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51211606000001.jpg",
+    "image_file": "51211606000001.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -39755,7 +40713,7 @@
     "base_uom": "VIA",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -39916,10 +40874,10 @@
     "name": "Reducof TABLET (10’S)",
     "base_uom": "PCK",
     "itemimage_name": "มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51212000000017.jpg",
+    "image_file": "51212000000017.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -39960,10 +40918,10 @@
     "name": "Reparil 20 Mg Tab",
     "base_uom": "TAB",
     "itemimage_name": "มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51212004000001.jpg",
+    "image_file": "51212004000001.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -39983,6 +40941,14 @@
         "rawText": "Type LASA Instruction Order Instruction 1 Text Local Language Other Language"
       },
       {
+        "index": 3,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Anti-Inflammatory",
+        "TH": "ลดการบวม-การอักเสบ",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
         "index": 4,
         "type": "Special Dosage Form",
         "instruction": "Order Instruction 1",
@@ -39991,7 +40957,7 @@
         "rawText": "Type Special Dosage Form Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 3
+    "instructionCount": 4
   },
   "51212022000004": {
     "code": "51212022000004",
@@ -40059,10 +41025,10 @@
     "name": "Capsika Gel 35 Gm (Capsaicin 0.0125%)",
     "base_uom": "TUB",
     "itemimage_name": "มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51212034000004.jpg",
+    "image_file": "51212034000004.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -40103,10 +41069,10 @@
     "name": "Legalon 140 mg CAPSULE",
     "base_uom": "CAP",
     "itemimage_name": "มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51212035000002.jpg",
+    "image_file": "51212035000002.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -40387,7 +41353,7 @@
     "base_uom": "AMP",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -40411,9 +41377,9 @@
     "code": "51212504000006",
     "name": "Primovist 10 Ml Inj",
     "base_uom": "VIA",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "YES",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -40526,7 +41492,7 @@
     "base_uom": "GM",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -40723,7 +41689,7 @@
     "base_uom": "GM",
     "itemimage_name": "มีรูปภาพ",
     "files_status": "NOT",
-    "has_image": false,
+    "has_image": true,
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
@@ -40748,10 +41714,10 @@
     "name": "Fucidin Cream 5 Gm",
     "base_uom": "TUB",
     "itemimage_name": "มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51241234000006.jpg",
+    "image_file": "51241234000006.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -40761,10 +41727,10 @@
     "name": "Fucithalmic Eye Drops (ยานอกบัญชี)",
     "base_uom": "TUB",
     "itemimage_name": "มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51241234000009.jpg",
+    "image_file": "51241234000009.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -40787,10 +41753,10 @@
     "name": "OmeGACIN INJ (300 mg) Vial",
     "base_uom": "VIA",
     "itemimage_name": "มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/51284601000001.jpg",
+    "image_file": "51284601000001.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -40891,9 +41857,17 @@
         "EN": "ขายเป็นกล่อง กล่องละ 28 เม็ด",
         "TH": "ขายเป็นกล่อง กล่องละ 28 เม็ด",
         "rawText": "Type Dispensing Instruction Instruction Order Instruction 1 Text Local Language Other Language"
+      },
+      {
+        "index": 2,
+        "type": "Patient Instruction",
+        "instruction": "Order Instruction 1",
+        "EN": "Reduce estrogen levels (should take the medicine continuously)",
+        "TH": "ช่วยลดระดับฮอร์โมนเอสโตรเจน (ควรรับประทานยาต่อเนื่อง)",
+        "rawText": "Type Patient Instruction Instruction Order Instruction 1 Text Local Language Other Language"
       }
     ],
-    "instructionCount": 1
+    "instructionCount": 2
   },
   "51362604150000": {
     "code": "51362604150000",
@@ -41218,10 +42192,10 @@
     "name": "Atopiclair Cream(40 Ml)(ยานอกบัญชี)",
     "base_uom": "TUB",
     "itemimage_name": "มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/53131613000218.jpg",
+    "image_file": "53131613000218.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -41244,10 +42218,10 @@
     "name": "Ezerra Cream (25 G)",
     "base_uom": "TUB",
     "itemimage_name": "มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/53131613000275.jpg",
+    "image_file": "53131613000275.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -41308,11 +42282,11 @@
     "code": "53131613000551",
     "name": "LRP Cicaplast Baume B5+ 40 mL(ยานอกบัญชี)",
     "base_uom": "TUB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "YES",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "has_image": true,
+    "image_path": "images/53131613000551.jpg",
+    "image_file": "53131613000551.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -41439,11 +42413,11 @@
     "code": "53131613000846",
     "name": "EUC Aquaphor Soothing Skin BALM 7 mL",
     "base_uom": "TUB",
-    "itemimage_name": "ไม่มีรูปภาพ",
+    "itemimage_name": "มีรูปภาพ",
     "files_status": "YES",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "has_image": true,
+    "image_path": "images/53131613000846.jpg",
+    "image_file": "53131613000846.jpg",
     "original_image_file": "",
     "instructions": [
       {
@@ -41654,10 +42628,10 @@
     "name": "Cavilon Durable Barrier Cream 1 Oz",
     "base_uom": "TUB",
     "itemimage_name": "มีรูปภาพ",
-    "files_status": "NOT",
-    "has_image": false,
-    "image_path": "",
-    "image_file": "",
+    "files_status": "YES",
+    "has_image": true,
+    "image_path": "images/42312105000002.jpg",
+    "image_file": "42312105000002.jpg",
     "original_image_file": "",
     "instructions": [],
     "instructionCount": 0
@@ -41671,7 +42645,17 @@
     "files_status": "NOT",
     "image_path": "",
     "image_file": "",
-    "original_image_file": ""
+    "original_image_file": "",
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "External Use Only",
+        "TH": "( ยาใช้ภายนอก ห้ามรับประทาน )",
+        "_auto": true,
+        "autoAt": "2026-06-07T04:00:00.622914+00:00"
+      }
+    ],
+    "instructionCount": 1
   },
   "51121810000013": {
     "code": "51121810000013",

@@ -61,6 +61,7 @@ import secrets
 import shutil
 import sys
 import socket
+import ssl
 import tempfile
 import time
 import urllib.error
@@ -71,6 +72,7 @@ import struct
 import threading
 import random
 import unicodedata
+import math
 from datetime import datetime, timezone
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
@@ -306,6 +308,7 @@ def save_rx_note(code, th, en=''):
 ARCUS_BASE = 'https://arcusair.bdms.co.th'
 ARCUS_ORDERITEM_URL = ARCUS_BASE + '/ordermanagement/patientorder/getallorderitem'
 ARCUS_ALLERGY_URL   = ARCUS_BASE + '/emr/drugalergy/getallergies'
+ARCUS_VISITCOUNT_URL = ARCUS_BASE + '/ordermanagement/patientorder/searchfromvisitcount'
 ARCUS_DISCHARGE_ORDERTYPE_UID = '57ce9bc44ac9670b1c439ba9'  # DISCHARGE MEDICATION
 
 
@@ -332,16 +335,46 @@ def _arcus_headers(ctx, extra=None):
     return h
 
 
-def _arcus_post_json(url, ctx, payload):
-    """POST JSON to an ArcusAir endpoint with session headers; return parsed JSON."""
+def _is_transient_net_err(exc):
+    """True for errors worth retrying: slow/failed TLS handshake, timeouts, resets."""
+    if isinstance(exc, (socket.timeout, TimeoutError, ssl.SSLError, ConnectionError)):
+        return True
+    if isinstance(exc, urllib.error.URLError):
+        reason = getattr(exc, 'reason', None)
+        if isinstance(reason, (socket.timeout, TimeoutError, ssl.SSLError, ConnectionError)):
+            return True
+        # SSL handshake timeout surfaces as URLError wrapping an ssl.SSLError whose
+        # text contains "handshake operation timed out" / "_ssl.c".
+        if 'handshake' in str(exc).lower() or 'timed out' in str(exc).lower():
+            return True
+    return False
+
+
+def _arcus_post_json(url, ctx, payload, retries=2):
+    """POST JSON to an ArcusAir endpoint with session headers; return parsed JSON.
+
+    Retries on transient network errors (e.g. the occasional slow TLS handshake to
+    arcusair.bdms.co.th, which otherwise surfaces as
+    '_ssl.c:993: The handshake operation timed out').
+    """
     body = json.dumps(payload).encode('utf-8')
-    req = urllib.request.Request(url, data=body, headers=_arcus_headers(ctx), method='POST')
-    with urllib.request.urlopen(req, timeout=30) as r:
-        raw = r.read()
-        if raw[:2] == b'\x1f\x8b':
-            import gzip
-            raw = gzip.decompress(raw)
-    return json.loads(raw.decode('utf-8'))
+    last_exc = None
+    for attempt in range(retries + 1):
+        req = urllib.request.Request(url, data=body, headers=_arcus_headers(ctx), method='POST')
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                raw = r.read()
+                if raw[:2] == b'\x1f\x8b':
+                    import gzip
+                    raw = gzip.decompress(raw)
+            return json.loads(raw.decode('utf-8'))
+        except Exception as exc:  # noqa: BLE001 — re-raised below if not retryable
+            last_exc = exc
+            if attempt < retries and _is_transient_net_err(exc):
+                time.sleep(0.6 * (attempt + 1))
+                continue
+            raise
+    raise last_exc  # pragma: no cover
 
 
 def fetch_arcus_discharge_meds(ctx):
@@ -725,6 +758,70 @@ def fetch_arcus_all_orders(ctx):
     })
 
 
+def fetch_arcus_visit_history(ctx, visitcount=10):
+    """POST searchfromvisitcount — MEDICINE orders across the patient's last N
+    visits. Used to fill the journey's 'Before / Admission' column with the most
+    recent prior medicines. Returns JSON (or {} on failure)."""
+    try:
+        return _arcus_post_json(ARCUS_VISITCOUNT_URL, ctx, {
+            'patientuid': ctx.get('patientuid', ''),
+            'ordercattype': ['MEDICINE'],
+            'visitcount': int(visitcount),
+        })
+    except Exception as e:
+        print(f'[visit-history] fetch failed: {e}', file=sys.stderr)
+        return {}
+
+
+def build_prev_meds_from_visits(data, current_visit_uid=''):
+    """From searchfromvisitcount JSON → {drug_key: {drug, code, info, freqTh}}
+    holding the MOST RECENT prior order per distinct drug (excluding the current
+    visit). `info` is the English dose+frequency line (verb / dosage / route /
+    frequency name) so the client localises it to Thai the same way as the ward/
+    home columns; `freqTh` is the authoritative Thai frequency fallback.
+    Shape note: items are patientorders[].patientorderitems[] (a flat list)."""
+    freq_idx = _load_freq_th_index()
+    prev = {}            # key -> {drug, code, info, freqTh, _when}
+    for po in ((data or {}).get('patientorders') or []):
+        vuid = po.get('patientvisituid') or ''
+        if current_visit_uid and vuid == current_visit_uid:
+            continue                      # skip the current visit
+        for poi in (po.get('patientorderitems') or []):
+            if (poi.get('ordercattype') or '').upper() != 'MEDICINE':
+                continue
+            name = _hm_norm(poi.get('orderitemname') or '')
+            if not name:
+                continue
+            code = _hm_norm(poi.get('chargecode') or '')
+            if not _is_medicine({'code': code}):   # drop supplies/labs (keep 51-prefix)
+                continue
+            when = poi.get('startdate') or poi.get('enddate') or ''   # recency key
+            key = (name.lower(), code)
+
+            # Build the instruction line the same shape as _arcus_item_to_med:
+            #   <verb> <dosage unit> <route> <frequency name>
+            verb = _hm_norm((_arc_first(poi.get('instructionuid')) or {}).get('valuedescription') or '')
+            dosage = poi.get('dosage')
+            dose_unit = _hm_norm((_arc_first(poi.get('dosageUOM')) or {}).get('valuedescription') or '')
+            route = _hm_norm((_arc_first(poi.get('routeuid')) or {}).get('valuedescription') or '')
+            fq = _arc_first(poi.get('frequencyuid')) or {}
+            freq = _hm_norm(fq.get('name') or '')
+            freq_code = _hm_norm(fq.get('code') or '')
+            freq_th = freq_idx.get(_freq_key(freq)) or freq_idx.get(_freq_key(freq_code)) or ''
+            parts = []
+            if verb: parts.append(verb)
+            if dosage: parts.append(str(dosage) + (' ' + dose_unit if dose_unit else ''))
+            if route: parts.append(route)
+            if freq: parts.append(freq)
+            info = ' '.join(parts).strip() or freq or '—'
+
+            cur = prev.get(key)
+            if cur is None or (when and when > cur.get('_when', '')):
+                prev[key] = {'drug': name, 'code': code, 'info': info,
+                             'freqTh': freq_th, '_when': when}
+    return prev
+
+
 def _journey_phase(ordertype):
     """Map an order-type label → journey phase column.
     admission = home/OPD meds (pre-admission) · ward = inpatient · home = discharge."""
@@ -736,13 +833,16 @@ def _journey_phase(ordertype):
     return 'ward'
 
 
-def build_med_journey_from_arcus(data, reconcile_meds=None):
+def build_med_journey_from_arcus(data, reconcile_meds=None, prev_meds=None):
     """Group all orders by drug into a continuity timeline.
     Returns {patient, rows:[{drug, code, admission, ward, home, status, note}]}.
 
-    When `reconcile_meds` (from medreconcile/getdetail) is provided, the patient's
-    pre-admission home meds fill the 'admission' column and their authoritative
-    reconcilestatus overrides the auto-guessed status. status stays editable.
+    Admission column = "Before / Admission". Filled (in priority order) by:
+      1. prev_meds — most recent prior order per drug from searchfromvisitcount
+         (last 10 visits), tagged "(last visit)" — PRIMARY.
+      2. reconcile_meds — pre-admission home meds from medreconcile/getdetail,
+         which also carry an authoritative reconcilestatus.
+    status stays editable.
     """
     items = (data or {}).get('orderitems') or []
     patient = {}
@@ -763,7 +863,20 @@ def build_med_journey_from_arcus(data, reconcile_meds=None):
             order_seen.append(key)
         return row
 
-    # 1) Reconcile (pre-admission home) meds first → admission column + status.
+    # 1) Visit-history (last 10 visits) → admission column. PRIMARY source.
+    #    `info` is the English dose+frequency line; the client localises it to
+    #    Thai like the ward/home columns. freqTh gives the authoritative Thai
+    #    frequency via data-freq-th. The "(ครั้งก่อน)" tag stays Thai so it isn't
+    #    mangled by translation.
+    for pm in (prev_meds or {}).values():
+        row = _row_for(pm['drug'], pm.get('code'))
+        info = pm.get('info') or '—'
+        row['admission'] = info
+        row['admissionFreqTh'] = pm.get('freqTh') or ''
+        row['admissionTag'] = '(ครั้งก่อน)'
+        row['_phases'].add('admission')
+
+    # 2) Reconcile (pre-admission home) meds → fill admission gaps + status.
     for rm in (reconcile_meds or []):
         if not rm.get('drug'):
             continue
@@ -777,6 +890,9 @@ def build_med_journey_from_arcus(data, reconcile_meds=None):
 
     # 2) Inpatient/discharge orders → ward/home columns. Medicines only
     #    (drop supplies/services/food/labs — code prefix 51 / cat Medicine).
+    #    Track the earliest/latest order dates → admission / discharge endpoints
+    #    for the bottom drug-timeline (phase-based bars labelled with real dates).
+    order_dates = []
     for it in items:
         med = _arcus_item_to_med(it)
         if not med:
@@ -785,6 +901,9 @@ def build_med_journey_from_arcus(data, reconcile_meds=None):
             patient = _arcus_patient_header(it)
         if not _is_medicine(med):
             continue
+        d = (med.get('orderdate') or med.get('startdate') or '').strip()
+        if d:
+            order_dates.append(d)
         phase = _journey_phase(med.get('ordertype'))
         row = _row_for(med['drug'], med.get('code'))
         cell = med.get('comment') or med.get('route') or ''
@@ -810,9 +929,24 @@ def build_med_journey_from_arcus(data, reconcile_meds=None):
             row['status'] = 'continued' if (phases & {'admission', 'ward'}) else 'new'
         elif phases:
             row['status'] = 'stopped'
+        # Phase presence flags — let the client draw the timeline bar without
+        # re-deriving "is this phase filled?" from the localised cell text.
+        row['phases'] = {
+            'admission': 'admission' in phases,
+            'ward': 'ward' in phases,
+            'home': 'home' in phases,
+        }
         rows.append(row)
 
-    return {'patient': patient, 'rows': rows, 'allRows': len(rows)}
+    # ISO order dates sort lexicographically; admission = earliest, discharge =
+    # latest. Both may be empty if the API omitted dates (client falls back).
+    order_dates = sorted(d for d in order_dates if d)
+    dates = {
+        'admission': order_dates[0] if order_dates else '',
+        'discharge': order_dates[-1] if order_dates else '',
+    }
+
+    return {'patient': patient, 'rows': rows, 'allRows': len(rows), 'dates': dates}
 
 
 # ── KPI helpers (per-day files) ────────────────────────────────
@@ -1097,26 +1231,158 @@ def _create_session(username, role):
 # ── Live dashboard ──────────────────────────────────────────────
 _STATS_LOCK   = threading.Lock()
 _req_count    = 0
-_recent_reqs  = []   # (time_str, method, path, status)
+_recent_reqs  = []   # (time_str, method, path, status, size, elapsed_ms, epoch)
 _SERVER_START = None
 
-def _record_request(method, path, status):
+
+def _count_files_safe(path, pattern='*'):
+    try:
+        return sum(1 for p in Path(path).glob(pattern) if p.is_file())
+    except Exception:
+        return 0
+
+
+def _data_dir_writable():
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        probe = DATA_DIR / '.dashboard-write-test.tmp'
+        probe.write_text('ok', encoding='utf-8')
+        try:
+            probe.unlink()
+        except Exception:
+            pass
+        return True
+    except Exception:
+        return False
+
+
+def _record_request(method, path, status, size=0, elapsed_ms=None):
+    """Record one request for both terminal and desktop dashboards.
+    Keeps a small in-memory rolling window only; no patient data is persisted here.
+    """
     global _req_count
     ts = datetime.now().strftime('%H:%M:%S')
+    try:
+        elapsed_ms = int(elapsed_ms) if elapsed_ms is not None else 0
+    except Exception:
+        elapsed_ms = 0
     with _STATS_LOCK:
         _req_count += 1
-        _recent_reqs.append((ts, method, path[:40], str(status)))
-        if len(_recent_reqs) > 5:
+        _recent_reqs.append((ts, str(method), str(path)[:96], str(status), int(size or 0), elapsed_ms, time.time()))
+        if len(_recent_reqs) > 60:
             _recent_reqs.pop(0)
 
-# ANSI escape helpers
+
+# Cache the expensive disk/JSON parts of dashboard_status. Polling clients hit
+# this often; re-globbing ~2000 med images + parsing the 1.4 MB medication DB on
+# every call (over an SMB share) takes ~5 s. Strategy: stale-while-revalidate —
+# always return the cached snapshot immediately and refresh in a background
+# thread when it gets old, so a poll never blocks on the scan.
+_DASH_CACHE = {'at': 0.0, 'endpoints': None, 'modules': None, 'dataOk': False}
+_DASH_TTL   = 30.0          # module counts change slowly; refresh at most every 30 s
+_dash_lock  = threading.Lock()
+_dash_refreshing = False
+
+def _dashboard_scan():
+    """Do the slow disk/JSON work and update the cache. Blocking — call in a
+    background thread (or once at startup) so request threads never wait."""
+    global _dash_refreshing
+    try:
+        data_ok = _data_dir_writable()
+        vdos  = load_ks('vdos');  faqs = load_ks('faqs');  items = load_ks('items')
+        users = _load_users();    med_db = load_rx('medication-db')
+        endpoints = {
+            '/api/vdos':   {'ok': isinstance(vdos, list),  'status': 200},
+            '/api/faqs':   {'ok': isinstance(faqs, list),  'status': 200},
+            '/api/items':  {'ok': isinstance(items, list), 'status': 200},
+            '/api/users':  {'ok': isinstance(users, dict), 'status': 200},
+            '/api/health': {'ok': True, 'status': 200},
+        }
+        modules = {
+            'KPI':           _count_files_safe(KPI_DIR, '????-??-??.json'),
+            'KS items':      len(items) if isinstance(items, list) else 0,
+            'FAQs':          len(faqs) if isinstance(faqs, list) else 0,
+            'Videos':        len(vdos) if isinstance(vdos, list) else 0,
+            'Medication DB': len(med_db) if isinstance(med_db, dict) else 0,
+            'Med images':    _count_files_safe(MED_IMAGES_DIR),
+            'Patients':      _count_files_safe(PATIENTS_DIR, '*.json'),
+            'Logs':          _count_files_safe(LOGS_DIR, '*.jsonl'),
+        }
+        with _dash_lock:
+            _DASH_CACHE.update(at=time.time(), endpoints=endpoints, modules=modules, dataOk=data_ok)
+    finally:
+        _dash_refreshing = False
+
+def _dashboard_heavy():
+    """Return (endpoints, modules, dataOk) from cache; never blocks once warmed.
+    Triggers a background refresh when the cache is stale."""
+    global _dash_refreshing
+    with _dash_lock:
+        have = _DASH_CACHE['endpoints'] is not None
+        stale = (time.time() - _DASH_CACHE['at']) >= _DASH_TTL
+        snap = (_DASH_CACHE['endpoints'], _DASH_CACHE['modules'], _DASH_CACHE['dataOk'])
+        need_refresh = (not have or stale) and not _dash_refreshing
+        if need_refresh:
+            _dash_refreshing = True
+    if need_refresh:
+        if have:
+            threading.Thread(target=_dashboard_scan, daemon=True).start()  # serve stale, refresh async
+        else:
+            _dashboard_scan()                                              # first call must populate
+            with _dash_lock:
+                snap = (_DASH_CACHE['endpoints'], _DASH_CACHE['modules'], _DASH_CACHE['dataOk'])
+    return snap
+
+
+def dashboard_status():
+    """Machine-readable status for the Tk dashboard and /api/server-status.
+    Live counters are fresh each call; expensive disk scans are cached (~6s).
+    Uses only stdlib + local data, safe on locked-down hospital PCs."""
+    now = time.time()
+    with _STATS_LOCK:
+        recent_raw = list(_recent_reqs)
+        req_count = _req_count
+    recent = []
+    ok_count = 0
+    err_count = 0
+    elapsed_vals = []
+    for row in recent_raw[-20:]:
+        padded = list(row) + [0, now]
+        ts, method, path, status, size, elapsed_ms, epoch = padded[:7]
+        status_s = str(status)
+        ok = status_s.startswith('2') or status_s == 'ok'
+        ok_count += 1 if ok else 0
+        err_count += 0 if ok else 1
+        if elapsed_ms:
+            elapsed_vals.append(int(elapsed_ms))
+        recent.append({
+            'time': ts, 'method': method, 'path': path, 'status': status_s,
+            'size': int(size or 0), 'elapsedMs': int(elapsed_ms or 0), 'ok': ok,
+        })
+    last_min = [r for r in recent_raw if len(r) >= 7 and (now - r[6]) <= 60]
+    avg_ms = int(sum(elapsed_vals) / len(elapsed_vals)) if elapsed_vals else 0
+    endpoints, modules, data_ok = _dashboard_heavy()
+    return {
+        'ok': data_ok and all(v.get('ok') for v in endpoints.values()),
+        'server': 'BKN KS Server',
+        'url': f'http://{getattr(Handler, "_ip", "127.0.0.1")}:{getattr(Handler, "_port", DEFAULT_PORT)}',
+        'uptimeSec': int(now - (_SERVER_START or now)),
+        'requestCount': req_count,
+        'requestsPerMin': round(len(last_min), 1),
+        'avgResponseMs': avg_ms,
+        'activeThreads': threading.active_count(),
+        'dataWritable': data_ok,
+        'endpoints': endpoints,
+        'modules': modules,
+        'recent': recent,
+        'okCountWindow': ok_count,
+        'errorCountWindow': err_count,
+        'generatedAt': datetime.now().isoformat(timespec='seconds'),
+    }
+
+# ANSI colour helpers (used by the terminal status line + Ctrl+C guard)
 _ESC_HIDE  = '\033[?25l'
 _ESC_SHOW  = '\033[?25h'
-_ESC_HOME  = '\033[H'
-_ESC_CLEAR = '\033[2J'
-_ESC_ALT_ON  = '\033[?1049h'   # enter alternate screen buffer (no scrollback)
-_ESC_ALT_OFF = '\033[?1049l'   # leave alternate screen buffer
-_ESC_EOL     = '\033[K'        # erase to end of line
 _RST = '\033[0m'
 _CY  = '\033[1;36m'   # bright cyan
 _GN  = '\033[1;32m'   # bright green
@@ -1125,132 +1391,7 @@ _YL  = '\033[1;33m'   # bright yellow
 _BL  = '\033[0;34m'   # blue
 _MG  = '\033[1;35m'   # bright magenta
 _WH  = '\033[1;37m'   # bright white
-
-# Box width (chars between ║ walls)
-_BW = 62
-
-def _vis_len(s):
-    """Display column width of s, stripping ANSI escapes and counting wide chars."""
-    plain = re.sub(r'\033\[[^m]*m', '', s)
-    w = 0
-    for c in plain:
-        eaw = unicodedata.east_asian_width(c)
-        w += 2 if eaw in ('W', 'F') else 1
-    return w
-
-def _bline(content, width=_BW):
-    """Pad content to visual width and wrap in ║...║."""
-    pad = max(0, width - _vis_len(content))
-    return '║' + content + ' ' * pad + '║'
-
-def _sep(l='╠', m='═', r='╣', width=_BW):
-    return l + m * width + r
-
-
-class _MaprangGame:
-    """Auto-play ASCII game: Maprang (a little character with a head, arms and
-    legs) runs along the ground and catches falling items."""
-    W = 40   # play area width (all ASCII = 1 col each)
-    H = 5    # rows items fall through before ground
-
-    _SYMS = [('+', _CY), ('o', _RD), ('*', _YL), ('%', _MG)]
-
-    # Maprang sprite, 3 rows: face / arms / legs. Each animation frame is a
-    # 5-char-wide figure so it stays aligned. Arms & legs alternate to walk;
-    # when catching, arms go up (\o o/). Anchor column is the character's centre.
-    #   frames: 0 walk-A, 1 walk-B, 2 catch (arms up), 3 happy
-    _SPRITE = {
-        'face': ['(o_o)', '(^_^)', '(^o^)', '(>‿<)'],
-        'arms': ['/| |\\', '\\| |/', '\\o o/', '\\| |/'],
-        'legs': ['_/ \\_', '/\\_/\\', '_/ \\_', '/\\_/\\'],
-    }
-    _SPRITE_W = 5
-    _SPRITE_H = 3
-
-    _MSGS = [
-        _GN + 'มาปรางเก่งมาก!' + _RST,
-        _YL + 'やったー! ✨' + _RST,
-        _CY + 'Catch it! 💖' + _RST,
-        _MG + 'สู้ๆนะ มาปราง! 🎀' + _RST,
-        _WH + 'Yes!! 🎉' + _RST,
-    ]
-
-    def __init__(self):
-        self.mx    = self.W // 2
-        self.score = 0
-        self.msg   = ''
-        self.msg_t = 0
-        self.items = []   # [x, y, sym, color]
-        self.tick  = 0
-        self.walk  = 0
-        self.catch_t = 0   # frames left showing the "catch" pose
-
-    def step(self):
-        self.tick += 1
-        if self.tick % 18 == 0 and len(self.items) < 6:
-            sym, col = random.choice(self._SYMS)
-            self.items.append([random.randint(1, self.W - 2), 0, sym, col])
-        for item in self.items:
-            item[1] += 1
-        # Items are caught when they reach Maprang's face row (top of the sprite).
-        catch_row = self.H - self._SPRITE_H
-        # Chase nearest item that hasn't reached the catch row yet.
-        active = [i for i in self.items if i[1] < catch_row]
-        if active:
-            tx = min(active, key=lambda i: abs(i[0] - self.mx))[0]
-            if tx < self.mx:
-                self.mx = max(2, self.mx - 1)
-            elif tx > self.mx:
-                self.mx = min(self.W - 3, self.mx + 1)
-        # Catch items that reached the face row near Maprang's hands.
-        caught = [i for i in self.items if i[1] >= catch_row and abs(i[0] - self.mx) <= 2]
-        if caught:
-            self.score += len(caught)
-            self.msg    = random.choice(self._MSGS)
-            self.msg_t  = 20
-            self.catch_t = 6   # show arms-up "catch" pose briefly
-        self.items = [i for i in self.items if i[1] < catch_row]
-        if self.msg_t > 0:
-            self.msg_t -= 1
-        else:
-            self.msg = ''
-        if self.catch_t > 0:
-            self.catch_t -= 1
-        self.walk = (self.walk + 1) % 2   # 0/1 walk cycle
-
-    def render(self):
-        """List of strings (with ANSI) for the play area including borders.
-        The bottom 3 rows draw Maprang (face/arms/legs); items fall through the
-        rows above and are caught on the face row."""
-        # Pose: catch (arms up) if just caught, else walk frame, else happy.
-        if self.catch_t > 0:
-            pose = 2
-        else:
-            pose = self.walk            # 0 or 1
-        sprite_rows = [
-            self._SPRITE['face'][pose],
-            self._SPRITE['arms'][pose],
-            self._SPRITE['legs'][pose],
-        ]
-        sprite_top = self.H - len(sprite_rows)   # first row index occupied by sprite
-
-        lines = [_BL + '┌' + '─' * self.W + '┐' + _RST]
-        for row in range(self.H):
-            cells = [' '] * self.W
-            # Falling items.
-            for x, y, sym, col in self.items:
-                if y == row and 0 <= x < self.W:
-                    cells[x] = col + sym + _RST
-            # Maprang sprite occupies the bottom rows.
-            if row >= sprite_top:
-                line = sprite_rows[row - sprite_top]
-                for i, ch in enumerate(line):
-                    xi = self.mx - 2 + i
-                    if 0 <= xi < self.W and ch != ' ':
-                        cells[xi] = _GN + ch + _RST
-            lines.append(_BL + '│' + _RST + ''.join(cells) + _BL + '│' + _RST)
-        lines.append(_BL + '└' + '─' * self.W + '┘' + _RST)
-        return lines
+_GY  = '\033[38;5;245m'  # gray
 
 
 def _enable_ansi():
@@ -1260,90 +1401,47 @@ def _enable_ansi():
 
 
 def _run_dashboard(ip, port):
-    """Background thread: redraws animated terminal dashboard at ~5 fps in a
-    fixed-size area using the alternate screen buffer (no scrolling)."""
-    _enable_ansi()
-    game = _MaprangGame()
-    # Alternate screen buffer keeps the dashboard pinned in place — frames redraw
-    # at the home position instead of scrolling new copies down the console.
-    sys.stdout.write(_ESC_ALT_ON + _ESC_HIDE + _ESC_CLEAR)
+    """Terminal mode: print a one-line status and stay quiet. The rich animated
+    dashboard now lives in the desktop GUI (maprang_app.py / start_dashboard.bat)."""
+    sys.stdout.write(
+        f'\n  {_WH}BKN Pharmacy Server{_RST}  ->  {_CY}http://{ip}:{port}{_RST}\n'
+        f'  {_GY}Serving... desktop dashboard: run start_dashboard.bat{_RST}\n'
+        f'  {_WH}Press Ctrl+C to stop the server{_RST}\n\n'
+    )
     sys.stdout.flush()
 
-    def uptime_str():
-        s = int(time.time() - _SERVER_START)
-        return f'{s // 3600:02}:{(s % 3600) // 60:02}:{s % 60:02}'
 
-    while True:
-        try:
-            game.step()
-            # Home cursor each frame and erase each line as we redraw — fixed
-            # window, no full-clear flicker, no scrolling.
-            out = [_ESC_HOME]
+# ── HTTP server ────────────────────────────────────────────────
+class _QuietHTTPServer(ThreadingHTTPServer):
+    """ThreadingHTTPServer that doesn't print a traceback when a client closes
+    the connection mid-response (common with the dashboard poller / browsers)."""
+    daemon_threads = True
 
-            # ── Title ──────────────────────────────────────────────
-            out.append(_BL + _sep('╔', '═', '╗') + _RST)
-            out.append(_bline(_WH + '  BKN Pharmacy — Knowledge Sharing Server' + _RST))
-
-            # ── Server info ────────────────────────────────────────
-            out.append(_BL + _sep() + _RST)
-            up   = uptime_str()
-            url  = f'  🌐  http://{ip}:{port}'
-            with _STATS_LOCK:
-                rc   = _req_count
-                last = (_recent_reqs[-1][1] + ' ' + _recent_reqs[-1][2]) if _recent_reqs else '—'
-            out.append(_bline(f'{url}      {_CY}⏱ Uptime: {up}{_RST}'))
-            req_s  = f'  📊  Requests: {rc}'
-            last_s = last[:_BW - _vis_len(req_s) - 12]
-            out.append(_bline(f'{req_s}   {_YL}Last: {last_s}{_RST}'))
-
-            # ── Maprang game ───────────────────────────────────────
-            out.append(_BL + _sep() + _RST)
-            score_s = _YL + f'⭐ Score: {game.score}' + _RST
-            out.append(_bline(f'  {_MG}🌸 Maprang Plays! 🌸{_RST}       {score_s}'))
-            out.append(_bline(''))
-            for pl in game.render():
-                out.append(_bline('  ' + pl))
-            msg_s = game.msg or ''
-            out.append(_bline(f'  {msg_s}'))
-
-            # ── Recent requests ────────────────────────────────────
-            out.append(_BL + _sep() + _RST)
-            out.append(_bline(_WH + '  Recent requests:' + _RST))
-            with _STATS_LOCK:
-                recent = list(_recent_reqs[-4:])
-            while len(recent) < 4:
-                recent.insert(0, None)
-            for entry in recent:
-                if entry:
-                    ts, method, path, status = entry
-                    sc = _GN if status.startswith('2') else (_YL if status.startswith('3') else _RD)
-                    row = f'  [{_CY}{ts}{_RST}]  {_WH}{method:<6}{_RST}  {path:<36}  {sc}{status}{_RST}'
-                else:
-                    row = ''
-                out.append(_bline(row))
-
-            # ── Footer ─────────────────────────────────────────────
-            out.append(_BL + _sep() + _RST)
-            out.append(_bline(f'  {_WH}Press Ctrl+C to stop the server{_RST}'))
-            out.append(_BL + _sep('╚', '═', '╝') + _RST)
-
-            # out[0] is the cursor-home escape; the rest are content lines. Erase
-            # to end of each line so shorter frames don't leave stale characters,
-            # then erase everything below the frame.
-            body = (_ESC_EOL + '\n').join(out[1:])
-            sys.stdout.write(out[0] + body + _ESC_EOL + '\n' + '\033[J')
-            sys.stdout.flush()
-        except Exception:
-            pass
-        time.sleep(0.2)
+    def handle_error(self, request, client_address):
+        exc = sys.exc_info()[1]
+        if isinstance(exc, (ConnectionAbortedError, ConnectionResetError, BrokenPipeError)):
+            return  # client disconnected — ignore quietly
+        super().handle_error(request, client_address)
 
 
 # ── HTTP handler ───────────────────────────────────────────────
 class Handler(BaseHTTPRequestHandler):
 
+    def handle_one_request(self):
+        self._req_started = time.time()
+        try:
+            return super().handle_one_request()
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
+            # Client (dashboard poller / browser) closed the socket mid-response.
+            # Harmless and common; don't spam the console with a traceback.
+            self.close_connection = True
+
     def log_message(self, fmt, *args):
         try:
-            _record_request(self.command, self.path, args[1] if len(args) > 1 else '?')
+            status = args[1] if len(args) > 1 else '?'
+            size = args[2] if len(args) > 2 and str(args[2]).isdigit() else 0
+            elapsed = (time.time() - getattr(self, '_req_started', time.time())) * 1000
+            _record_request(self.command, urllib.parse.urlsplit(self.path).path, status, size, elapsed)
         except Exception:
             pass
         # Suppress default stderr output — the dashboard shows it.
@@ -1536,8 +1634,15 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         # ── Static webapp files ────────────────────────────────
         clean = urllib.parse.urlsplit(self.path).path
-        if clean in ('/', '/index.html', ''):
+        if clean in ('/dashboard', '/dashboard.html'):
+            self._serve_file(WWW_DIR / 'dashboard.html', 'text/html; charset=utf-8'); return
+        if clean in ('/index', '/home'):
+            # Explicit route to the legacy index.html (dashboard.html shadows it at /).
             self._serve_file(WWW_DIR / 'index.html', 'text/html; charset=utf-8'); return
+        if clean in ('/', '/index.html', ''):
+            # Prefer the new Pixi dashboard when present; otherwise keep legacy index.html.
+            dash = WWW_DIR / 'dashboard.html'
+            self._serve_file(dash if dash.exists() else (WWW_DIR / 'index.html'), 'text/html; charset=utf-8'); return
         if clean.startswith('/static/'):
             self._serve_file_under(WWW_DIR, urllib.parse.unquote(clean.lstrip('/')), None); return
 
@@ -1581,6 +1686,10 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_file(KS_FILES_DIR / fname, None); return
 
         # ── API ────────────────────────────────────────────────
+        if clean in ('/api/health', '/api/server-status'):
+            self.send_json(200, dashboard_status())
+            return
+
         if self.path == '/ping':
             self.send_json(200, {
                 'ok': True, 'server': 'BKN KS Server',
@@ -1967,7 +2076,18 @@ class Handler(BaseHTTPRequestHandler):
             except urllib.error.HTTPError as e:
                 self.send_json(502, {'error': f'ArcusAir HTTP {e.code} — token may be expired'}); return
             except Exception as e:
+                if _is_transient_net_err(e):
+                    self.send_json(504, {'error': 'ArcusAir ตอบช้า/เชื่อมต่อไม่ได้ (TLS timeout) — ลองใหม่อีกครั้ง'}); return
                 self.send_json(500, {'error': f'ArcusAir fetch error: {e}'}); return
+            # Best-effort: previous medicines from the last 10 visits → primary
+            # source for the 'Before / Admission' column (tagged "(last visit)").
+            prev_meds = None
+            try:
+                vh = fetch_arcus_visit_history(ctx, 10)
+                if vh:
+                    prev_meds = build_prev_meds_from_visits(vh, ctx.get('patientvisituid', ''))
+            except Exception:
+                prev_meds = None
             # Best-effort: pre-admission home meds + reconcile status, if the
             # pharmacist opened the Med Reconcile screen (gave us medreconcileuid).
             recon_meds = None
@@ -1978,10 +2098,11 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 recon_meds = None
             try:
-                result = build_med_journey_from_arcus(data, recon_meds)
+                result = build_med_journey_from_arcus(data, recon_meds, prev_meds)
             except Exception as e:
                 self.send_json(500, {'error': f'Parse error: {e}'}); return
             result['hasReconcile'] = bool(recon_meds)
+            result['hasVisitHistory'] = bool(prev_meds)
             try:
                 result['allergies'] = build_allergies_from_arcus(fetch_arcus_allergies(ctx))
             except Exception as e:
@@ -2124,6 +2245,51 @@ def _install_close_guard():
 _CTRL_HANDLER_REF = None
 
 
+# ── Server bootstrap (shared by CLI main + GUI app) ─────────────
+def _init_data_dirs():
+    """Create data folders + seed empty collections. Idempotent."""
+    KPI_DIR.mkdir(parents=True, exist_ok=True)
+    KS_DIR.mkdir(parents=True, exist_ok=True)
+    RX_DIR.mkdir(parents=True, exist_ok=True)
+    AUTH_DIR.mkdir(parents=True, exist_ok=True)
+    MED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    KS_FILES_DIR.mkdir(parents=True, exist_ok=True)
+    SCHEDULE_DIR.mkdir(parents=True, exist_ok=True)
+    TEMP_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    PATIENTS_DIR.mkdir(parents=True, exist_ok=True)
+    LOGS_DIR.mkdir(parents=True, exist_ok=True)
+    WWW_DIR.mkdir(parents=True, exist_ok=True)
+    for col in KS_COLS:
+        p = ks_file(col)
+        if not p.exists():
+            p.write_text('[]', encoding='utf-8')
+    for col in RX_COLS:
+        p = rx_file(col)
+        if not p.exists():
+            p.write_text('{}' if col in RX_DICT_COLS else '[]', encoding='utf-8')
+    _ensure_default_users()
+
+
+def start_server_background(port=None):
+    """Start the HTTP server in a daemon thread WITHOUT the terminal dashboard
+    or console handlers. Used by the desktop GUI (maprang_app.py), which renders
+    its own dashboard. Returns (server, ip, port)."""
+    global _SERVER_START
+    if port is None:
+        port = DEFAULT_PORT
+    _init_data_dirs()
+    ip = get_local_ip()
+    Handler._ip = ip
+    Handler._port = port
+    server = _QuietHTTPServer(('0.0.0.0', port), Handler)
+    _SERVER_START = time.time()
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    # Warm the dashboard cache (the disk scan is slow over SMB) so the GUI's
+    # first poll doesn't hit a multi-second cold call.
+    threading.Thread(target=_dashboard_heavy, daemon=True).start()
+    return server, ip, port
+
+
 # ── Main ───────────────────────────────────────────────────────
 def main():
     port = DEFAULT_PORT
@@ -2162,13 +2328,12 @@ def main():
     ip = get_local_ip()
     Handler._ip   = ip
     Handler._port = port
-    server = ThreadingHTTPServer(('0.0.0.0', port), Handler)
+    server = _QuietHTTPServer(('0.0.0.0', port), Handler)
 
     _SERVER_START = time.time()
     _enable_ansi()
     _install_close_guard()
-    t = threading.Thread(target=_run_dashboard, args=(ip, port), daemon=True)
-    t.start()
+    _run_dashboard(ip, port)   # one-time status line (GUI dashboard is separate)
 
     # Ctrl+C: first press only warns ("don't stop Maprang!"); a second Ctrl+C
     # within 5 seconds confirms and actually stops the server.
@@ -2179,9 +2344,7 @@ def main():
             break
         except KeyboardInterrupt:
             if _ctrlc_armed:
-                # Leave the alternate screen buffer so the normal console (with
-                # its scrollback) is restored before we exit.
-                sys.stdout.write(_ESC_ALT_OFF + _ESC_SHOW + '\n  Server stopped.\n')
+                sys.stdout.write(_ESC_SHOW + '\n  Server stopped.\n')
                 sys.stdout.flush()
                 break
             _ctrlc_armed = True

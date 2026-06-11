@@ -223,10 +223,36 @@ function _renderNoImageSlot(icon) {
   return `<span class="med-photo-icon">${icon}</span><span class="med-photo-label">รูปยา</span>`;
 }
 
+// Pick a dosage-form emoji from the drug name / instruction / quantity text.
+// Ordered most-specific → least; the first matching pattern wins.
+const _FORM_ICONS = [
+  // Injections
+  [/\b(injection|inj\b|vial|ampoule|ampul|amp\b|syringe|prefilled|pen\b|subcut|s\.?c\.?\b|intramuscular|i\.?m\.?\b|intravenous|i\.?v\.?\b|inject)\b/i, "💉"],
+  // Eye / ear / nasal
+  [/\b(eye|ophthalmic|ophth)\b/i, "👁️"],
+  [/\b(ear|otic)\b/i, "👂"],
+  [/\b(nasal|nose|nostril|intranasal)\b/i, "👃"],
+  // Inhaled
+  [/\b(inhaler|inhalation|inhale|mdi|turbuhaler|accuhaler|evohaler|respule|nebul|nebule|puff|dpi|hfa)\b/i, "🫁"],
+  // Topical (gel matches emulgel/hydrogel too)
+  [/\b(cream|lotion|ointment|topical|paste|balm|apply to (the )?(skin|area)|external use)\b/i, "🧴"],
+  [/gel\b/i, "🧴"],
+  // Suppository / rectal / vaginal
+  [/\b(suppositor|rectal|pessary|vaginal|per rectum|pr\b)\b/i, "💊"],
+  // Patch
+  [/\b(patch|transdermal)\b/i, "🩹"],
+  // Oral solids
+  [/\b(tablet|tab\b|capsule|cap\b|caplet|chewable|lozenge|troche|sublingual|orodispersible|odt)\b/i, "💊"],
+  // Liquids (oral)
+  [/\b(syrup|syr\b|solution|suspension|susp\b|elixir|drop|drops|sachet|powder|granule|ml|millilit(re|er)|bottle|mixture|liquid)\b/i, "🧪"],
+];
+
 function _medicineIcon(med) {
-  const text = `${med?.dosage || ""} ${med?.drug || ""} ${med?.quantity || ""}`.toLowerCase();
-  if (/\b(ml|millilitre|milliliter|syrup|syr\b|solution|suspension|elixir|bottle|spray|drop)\b/i.test(text)) return "🧪";
-  return "💊";
+  const text = `${med?.drug || ""} ${med?.instruction || ""} ${med?.note || ""} ${med?.dosage || ""} ${med?.quantity || ""}`.toLowerCase();
+  for (const [re, icon] of _FORM_ICONS) {
+    if (re.test(text)) return icon;
+  }
+  return "💊";   // default: oral
 }
 
 function _buildMedicinePhotoSlot(med, candidates) {

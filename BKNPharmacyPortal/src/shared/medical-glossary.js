@@ -369,7 +369,7 @@ const MASTER_RE = new RegExp(
   [
     /^(?:Take|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put)\s+/i,
     /(\d+(?:\.\d+)?|\bquarter\b|\bhalf\b|\bthree-quarter\b)\s+/,  // [1] qty
-    /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr)s?\s*/i,   // [2] unit
+    /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr|pack|sachet|bottle|vial|tube|ampoule|ampule|amp|piece|pcs|pc)s?\s*/i,   // [2] unit
     // Optional route phrase ("orally" / "in mouth" / "in nostril" / "in eye" / ...)
     /(?:(?:orally|in\s+(?:the\s+)?(?:mouth|throat|nose|nostril|nasal|eye|ear|rectum|vagina|affected\s+area))\s*)?/i,
     // [3] freq: "N times a day" OR canonical forms, optionally suffixed with PRN
@@ -390,10 +390,27 @@ const TAKE_QTY_RE = new RegExp(
     /^(?:Take|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put)\s+/i,
     /(?:(?:to|in|into|onto)\s+(?:the\s+)?(?:mouth|throat|nose|nostril|nasal|eye|ear|skin|affected\s+area)\s+)?/i,
     /(\d+(?:\.\d+)?|\bquarter\b|\bhalf\b|\bthree-quarter\b)\s+/,        // [1] qty
-    /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr)s?\b/i, // [2] unit
+    /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr|pack|sachet|bottle|vial|tube|ampoule|ampule|amp|piece|pcs|pc)s?\b/i, // [2] unit
   ].map(r => r.source).join(""),
   "i"
 );
+
+// Topical application verbs for instructions that have no quantity+unit, e.g.
+// "Apply to the Affected Area (Topical) ..." / "Apply on Dry Skin ...". Returns
+// the localised verb phrase, or "" if `t` isn't a topical-apply instruction.
+function _applyVerb(t, lang) {
+  if (/^apply\s+on\s+dry\s+skin/i.test(t)) {
+    const M = { th:"ทาบริเวณผิวที่แห้ง", lo:"ທາບໍລິເວນຜິວທີ່ແຫ້ງ", en:"Apply on dry skin",
+                "zh-CN":"涂抹于干燥皮肤", my:"ခြောက်သွေ့သောအသားအရေတွင် လိမ်းပါ", km:"លាបលើស្បែកស្ងួត" };
+    return M[lang] || M.en;
+  }
+  if (/^apply\s+(to|on|over)\b/i.test(t)) {
+    // Reuse the curated auxiliary phrase for "apply to affected area".
+    const g = AUXILIARY_PHRASES["apply to affected area"];
+    return (g && g[lang]) || "Apply to the affected area";
+  }
+  return "";
+}
 
 function matchPattern(text, lang, opts = {}) {
   const t = text.trim();
@@ -416,6 +433,11 @@ function matchPattern(text, lang, opts = {}) {
         const take = _take(q, unit, lang);
         if (take) return [take, freqOverrideRaw].filter(Boolean).join(" ");
       }
+      // Topical "Apply ..." instructions carry no qty+unit, so TAKE_QTY_RE
+      // misses them. Salvage the application verb (ทา ...) so it isn't reduced
+      // to a bare frequency. The "(Topical)" route marker is dropped.
+      const ap = _applyVerb(t, lang);
+      if (ap) return [ap, freqOverrideRaw].filter(Boolean).join(" ");
       // No dose verb/qty either (e.g. "As Directed (Nasal) As directed") —
       // the Thai frequency alone is the whole instruction.
       return freqOverrideRaw;
