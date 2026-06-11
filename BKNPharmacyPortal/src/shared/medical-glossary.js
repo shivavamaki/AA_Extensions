@@ -369,7 +369,7 @@ const MASTER_RE = new RegExp(
   [
     /^(?:Take|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put)\s+/i,
     /(\d+(?:\.\d+)?|\bquarter\b|\bhalf\b|\bthree-quarter\b)\s+/,  // [1] qty
-    /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr)s?\s*/i,   // [2] unit
+    /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr|pack|sachet|bottle|vial|tube|ampoule|ampule|amp|piece|pcs|pc)s?\s*/i,   // [2] unit
     // Optional route phrase ("orally" / "in mouth" / "in nostril" / "in eye" / ...)
     /(?:(?:orally|in\s+(?:the\s+)?(?:mouth|throat|nose|nostril|nasal|eye|ear|rectum|vagina|affected\s+area))\s*)?/i,
     // [3] freq: "N times a day" OR canonical forms, optionally suffixed with PRN
@@ -390,7 +390,7 @@ const TAKE_QTY_RE = new RegExp(
     /^(?:Take|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put)\s+/i,
     /(?:(?:to|in|into|onto)\s+(?:the\s+)?(?:mouth|throat|nose|nostril|nasal|eye|ear|skin|affected\s+area)\s+)?/i,
     /(\d+(?:\.\d+)?|\bquarter\b|\bhalf\b|\bthree-quarter\b)\s+/,        // [1] qty
-    /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr)s?\b/i, // [2] unit
+    /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr|pack|sachet|bottle|vial|tube|ampoule|ampule|amp|piece|pcs|pc)s?\b/i, // [2] unit
   ].map(r => r.source).join(""),
   "i"
 );
