@@ -644,16 +644,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return false;
   }
 
-  if (msg && msg.action === 'triggerFunction') {
-    const url = 'https://script.google.com/macros/s/AKfycbwk0PsLdtR7a37iEzMLS15YBUlw25UPp92IQYRy2sYRRU-3LFb17HSvBZsIjA_tGTvyYQ/exec';
-    fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data0: 'value0', data1: 'value1' }) })
-      .then(r => r.json())
-      .then(() => sendResponse({ success: true, message: 'Function triggered!' }))
-      .catch(() => sendResponse({ success: false, message: 'Failed to trigger function.' }));
-    return true;
-  }
-
   return false;
 });
 

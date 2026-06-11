@@ -673,9 +673,9 @@ def _is_medicine(med):
 
 
 def _log_home_med_fetch(ctx, raw, result):
-    """Append a record of one Home Medication Sheet fetch — the ArcusAir API
-    response summary and the meds we built from it — to data/logs so we can see
-    exactly what data the sheet received. Best-effort; never breaks the request."""
+    """Append a metadata-only record of one Home Medication Sheet fetch to
+    data/logs (counts + IDs only — no patient name, drug names, or other PHI).
+    Best-effort; never breaks the request."""
     try:
         LOGS_DIR.mkdir(parents=True, exist_ok=True)
         ts = datetime.now()
@@ -688,8 +688,6 @@ def _log_home_med_fetch(ctx, raw, result):
             'rawKeys': sorted((raw or {}).keys()) if isinstance(raw, dict) else None,
             'rawOrderItemCount': len(order_items),
             'builtMedCount': len(meds),
-            'patient': (result or {}).get('patient'),
-            'meds': meds,
         }
         # One file per day, JSON Lines (one record per line) for easy tailing.
         log_path = LOGS_DIR / f'home-med-fetch-{ts:%Y-%m-%d}.jsonl'
@@ -1390,7 +1388,10 @@ class Handler(BaseHTTPRequestHandler):
         # Suppress default stderr output — the dashboard shows it.
 
     def _cors(self):
-        self.send_header('Access-Control-Allow-Origin',  '*')
+        origin  = self.headers.get('Origin', '')
+        allowed = origin if origin.startswith('chrome-extension://') else 'null'
+        self.send_header('Access-Control-Allow-Origin',  allowed)
+        self.send_header('Vary',                         'Origin')
         self.send_header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         self.send_header('Access-Control-Max-Age',       '86400')
