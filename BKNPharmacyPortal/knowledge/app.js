@@ -8,7 +8,7 @@ const KEYS = {
 };
 
 // ── Server URL ────────────────────────────────────────────────
-const SERVER_URL = 'http://10.134.110.81:8765';
+const SERVER_URL = 'http://10.134.10.70:8765';
 
 // ── Built-in category presets (label + badge colour) ──────────
 const FAQ_CAT_PRESETS = {

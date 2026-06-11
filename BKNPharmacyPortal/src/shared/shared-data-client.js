@@ -25,7 +25,7 @@
   /* Default pharmacy server — same host the rest of the extension hardcodes
      (popup.js REPORT_SERVER, kpi/knowledge/schedule apps). Used when the user
      has not explicitly configured bknks.serverUrl. */
-  const SERVER_DEFAULT = "http://10.134.110.81:8765";
+  const SERVER_DEFAULT = "http://10.134.10.70:8765";
 
   let _serverUrlCache = null;
   let _patientCache   = null;

@@ -1,7 +1,7 @@
 const KPI_SCHEMA_VERSION = '1.0.0';
 const KPI_APP_NAME = 'pharmacy-kpi-data-system';
 
-const APP_UPDATE_SOURCE_PATH = '\\\\10.134.10.5\\BKNinfo\\24 Pharmacy\\EXT\\pharmacy';
+const APP_UPDATE_SOURCE_PATH = '\\\\10.134.10.70\\Pharmacy\\pharmacy';
 const APP_TARGET_PATH = 'D:\\pharmacy';
 const APP_FILE_NAME = 'pharmacy-data-app.html';
 
@@ -79,7 +79,7 @@ function updateFolderUI(isActive, labelText) {
 }
 
 // ── ADMIN: edit this URL if the server moves ──────────────────
-const SERVER_URL = 'http://10.134.110.81:8765';
+const SERVER_URL = 'http://10.134.10.70:8765';
 
 async function pingServer(url, timeoutMs = 3000) {
   const ctrl = new AbortController();

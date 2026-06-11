@@ -19,7 +19,7 @@
 
 const STORAGE_KEY_ROWS = 'ipdQueue_rows';
 const STORAGE_KEY_SENT = 'ipdQueue_sent';
-const REPORT_SERVER    = 'http://10.134.110.81:8765';
+const REPORT_SERVER    = 'http://10.134.10.70:8765';
 
 // ── Report server-side fetch utilities ────────────────────────────────────────
 function parseXlsBuffer(buffer) {
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initWorkspaceSections();
 
   document.getElementById('btnAdminConsole')?.addEventListener('click', () => {
-    chrome.tabs.create({ url: 'http://10.134.110.81:8765/' });
+    chrome.tabs.create({ url: 'http://10.134.10.70:8765/' });
   });
 });
 
@@ -2988,7 +2988,7 @@ function initKpiApp() {
 }
 
 // ── Shift Schedule auth ───────────────────────────────────────────────────────
-const SCHEDULE_SERVER        = 'http://10.134.110.81:8765';
+const SCHEDULE_SERVER        = 'http://10.134.10.70:8765';
 const SCHEDULE_ALLOWED_ROLES = ['editor', 'admin', 'super_admin'];
 const SCHED_TOKEN_KEY        = 'scheduleAuthToken';
 

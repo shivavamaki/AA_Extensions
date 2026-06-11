@@ -913,7 +913,7 @@ function clearDirty() {
 }
 
 function scheduleStateUrl() {
-  return `http://10.134.110.81:8765/api/schedule/state?month=${encodeURIComponent(SCHEDULE_MONTH_KEY)}`;
+  return `http://10.134.10.70:8765/api/schedule/state?month=${encodeURIComponent(SCHEDULE_MONTH_KEY)}`;
 }
 
 function stateTimestamp(state) {
@@ -1430,7 +1430,7 @@ function loadMonthlyBookingsIntoSchedule() {
 
   /* 2. Always check server too — bookings may have been made on another
         workstation since the last localStorage sync. */
-  fetch('http://10.134.110.81:8765/api/schedule/bookings')
+  fetch('http://10.134.10.70:8765/api/schedule/bookings')
     .then(r => r.ok ? r.json() : null)
     .then(serverAll => {
       if (!serverAll || typeof serverAll !== "object") return;

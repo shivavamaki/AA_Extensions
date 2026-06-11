@@ -12,7 +12,7 @@ param(
     [switch]$Quiet
 )
 
-$DIR = "\\10.134.10.5\BKNinfo\24 Pharmacy\EXT\pharmacy_server\data\temp-reports"
+$DIR = "\\10.134.10.70\Pharmacy\pharmacy_server\data\temp-reports"
 
 function Clean-TempReports {
     param([string]$Path, [bool]$DryRun, [bool]$Silent)
