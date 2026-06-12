@@ -168,7 +168,9 @@ function renderRows() {
     tr.innerHTML = `<td colspan="6" class="empty">ไม่พบรายการยา — เพิ่มด้านล่าง (No orders found — add below)</td>`;
     tbody.appendChild(tr);
   }
-  _rows.forEach((r, i) => tbody.appendChild(_buildRow(r, i)));
+  _rows.forEach((r, i) => {
+    if (_hasAnyPhase(r)) tbody.appendChild(_buildRow(r, i));
+  });
   tbody.appendChild(_buildAddRow());
   _bindEditing(tbody);
   renderTimeline();  // keep the bottom timeline in sync with the row set
@@ -188,6 +190,15 @@ function _fmtDate(iso) {
  * Bar runs from the first present phase to the last present phase, so a
  * continued drug fills end-to-end and a stopped one ends at the ward zone. */
 const _ZONE_IDX = { admission: 0, ward: 1, home: 2 };
+
+/** True only when a row has at least one phase — items like "Alcohol Sheet" that
+ * weren't dispensed in any tracked phase are filtered out of all views.
+ * Rows without a phases key (manually added) are always shown. */
+function _hasAnyPhase(r) {
+  if (!r.phases) return true; // no phase metadata → manually added, always show
+  return !!(r.phases.admission || r.phases.ward || r.phases.home);
+}
+
 function _barSpan(phases) {
   const present = ["admission", "ward", "home"].filter((k) => phases && phases[k]);
   if (!present.length) return null;
@@ -204,11 +215,13 @@ function renderTimeline() {
   safeSetText("tlDateAdm", _fmtDate(_dates.admission));
   safeSetText("tlDateDc", _fmtDate(_dates.discharge));
 
-  if (!_rows.length) {
+  const displayed = _rows.filter(_hasAnyPhase);
+  if (!displayed.length) {
     host.innerHTML = `<div class="timeline-empty">ไม่มีรายการยา (no medications)</div>`;
     return;
   }
-  host.innerHTML = _rows.map((row) => {
+
+  const _tlBarRow = (row) => {
     const span = _barSpan(row.phases);
     const cls = "s-" + (row.status || "");
     const tag = STATUS_TH[row.status] || "";
@@ -220,7 +233,42 @@ function renderTimeline() {
       <div class="tl-name" title="${escapeHtml(row.drug)}">${escapeHtml(row.drug)}${code}</div>
       <div class="tl-track">${bar}</div>
     </div>`;
-  }).join("");
+  };
+
+  let html = "";
+
+  // Active status groups — render with full track bars (zone header above applies).
+  for (const [key, label, emoji] of [
+    ["continued", "ใช้ต่อ",  "✅"],
+    ["new",       "เริ่มใหม่", "🔵"],
+    ["changed",   "เปลี่ยน",  "🟡"],
+  ]) {
+    const group = displayed.filter((r) => r.status === key);
+    if (!group.length) continue;
+    html += `<div class="tl-section-head s-${key}">${emoji} ${label} (${group.length} รายการ)</div>`;
+    html += group.map(_tlBarRow).join("");
+  }
+
+  // Stopped drugs — compact 3-column name list (bars would be identical: ward-only red).
+  const stopped = displayed.filter((r) => r.status === "stopped");
+  if (stopped.length) {
+    html += `<div class="tl-section-head s-stopped">🔴 หยุด (${stopped.length} รายการ)</div>`;
+    html += `<div class="tl-stopped-grid">` +
+      stopped.map((row) => {
+        const code = row.code ? ` <span class="tl-code">${escapeHtml(row.code)}</span>` : "";
+        return `<div class="tl-stopped-item"><span class="tl-stopped-dot"></span><span class="tl-stopped-name" title="${escapeHtml(row.drug)}">${escapeHtml(row.drug)}${code}</span></div>`;
+      }).join("") +
+    `</div>`;
+  }
+
+  // Any unrecognised status
+  const other = displayed.filter((r) => r.status && !STATUSES.includes(r.status));
+  if (other.length) {
+    html += `<div class="tl-section-head s-">อื่นๆ (${other.length})</div>`;
+    html += other.map(_tlBarRow).join("");
+  }
+
+  host.innerHTML = html;
 }
 
 /* ─────────────────── Daily Pill Journey Card (by meal) ─────────────────── */
@@ -301,6 +349,7 @@ function renderMealCard() {
     host.innerHTML = `<div class="mc-emptyall">ไม่มียากลับบ้าน (no home medications)</div>`;
     return;
   }
+
   // Bucket each home med into every slot it matches.
   const buckets = Object.fromEntries(MEAL_SLOTS.map((s) => [s.key, []]));
   const unslotted = [];
@@ -309,35 +358,66 @@ function renderMealCard() {
     const dose = _doseSnippet(txt);
     let matched = false;
     MEAL_SLOTS.forEach((s) => {
-      if (s.test(txt)) { buckets[s.key].push({ drug: r.drug, dose, prn: s.key === "prn", txt }); matched = true; }
+      if (s.test(txt)) { buckets[s.key].push({ drug: r.drug, dose }); matched = true; }
     });
-    if (!matched) unslotted.push({ drug: r.drug, dose, txt });
+    if (!matched) unslotted.push({ drug: r.drug, dose });
   });
 
-  const itemHtml = (it) => {
-    const dose = it.dose ? ` <span class="mc-dose">${escapeHtml(it.dose)}</span>` : "";
-    return `<div class="mc-item"><span class="mc-drug">${escapeHtml(it.drug)}</span>${dose}</div>`;
+  // Render a single item line with an optional timing chip.
+  const _item = (it, timing) => {
+    const chip = timing ? `<span class="mc-timing-chip ${timing}">${timing === "before" ? "ก่อน" : "หลัง"}</span>` : "";
+    const dose = it.dose ? `<span class="mc-dose">${escapeHtml(it.dose)}</span>` : "";
+    return `<div class="mc-item"><div class="mc-item-left">${chip}<span class="mc-drug">${escapeHtml(it.drug)}</span></div>${dose}</div>`;
   };
 
-  let html = MEAL_SLOTS.map((s) => {
-    const items = buckets[s.key];
-    const body = items.length
-      ? items.map(itemHtml).join("")
-      : `<div class="mc-empty-slot">-</div>`;
-    return `<div class="mc-slot ${s.cls}">
-      <div class="mc-slot-head"><span class="mc-ico">${s.ico}</span><span>${s.th}</span><span class="mc-en">${s.en}</span></div>
-      <div class="mc-list">${body}</div>
-    </div>`;
-  }).join("");
+  // Three main meal blocks: เช้า / กลางวัน / เย็น
+  // before+after for each meal are merged into one block with chips.
+  const MEAL_BLOCKS = [
+    { ico: "☀️",  th: "เช้า",      en: "Breakfast", cls: "h-breakfast", before: "bbf", after: "abf" },
+    { ico: "🌞",  th: "กลางวัน",   en: "Lunch",     cls: "h-lunch",     before: "blu", after: "alu" },
+    { ico: "🌙",  th: "เย็น",      en: "Dinner",    cls: "h-dinner",    before: "bdn", after: "adn" },
+  ];
 
-  // Any home med whose schedule we couldn't classify → "อื่นๆ / ตามแพทย์สั่ง".
+  let mealHtml = "";
+  MEAL_BLOCKS.forEach((mb) => {
+    const bItems = buckets[mb.before];
+    const aItems = buckets[mb.after];
+    if (!bItems.length && !aItems.length) return; // skip empty meal
+    const sep = (bItems.length && aItems.length) ? '<div class="mc-group-sep"></div>' : "";
+    const body =
+      bItems.map((it) => _item(it, "before")).join("") +
+      sep +
+      aItems.map((it) => _item(it, "after")).join("");
+    mealHtml += `<div class="mc-meal-block">
+      <div class="mc-meal-head ${mb.cls}">${mb.ico} <span class="mc-meal-th">${mb.th}</span><span class="mc-en">${mb.en}</span></div>
+      <div class="mc-meal-list">${body}</div>
+    </div>`;
+  });
+
+  // Extra slots: bedtime, PRN, and any unclassified meds.
+  const EXTRAS = [
+    { key: "bed", ico: "🛏️", th: "ก่อนนอน",      en: "Bedtime",           cls: "h-bedtime" },
+    { key: "prn", ico: "⭐",  th: "เมื่อมีอาการ",  en: "When needed (PRN)", cls: "h-prn" },
+  ];
+  let extraHtml = "";
+  EXTRAS.forEach((ex) => {
+    const items = buckets[ex.key];
+    if (!items.length) return;
+    extraHtml += `<div class="mc-meal-block">
+      <div class="mc-meal-head ${ex.cls}">${ex.ico} <span class="mc-meal-th">${ex.th}</span><span class="mc-en">${ex.en}</span></div>
+      <div class="mc-meal-list">${items.map((it) => _item(it, "")).join("")}</div>
+    </div>`;
+  });
   if (unslotted.length) {
-    html += `<div class="mc-slot t-prn">
-      <div class="mc-slot-head"><span class="mc-ico">📋</span><span>อื่นๆ / ตามแพทย์สั่ง</span><span class="mc-en">Other / as directed</span></div>
-      <div class="mc-list">${unslotted.map(itemHtml).join("")}</div>
+    extraHtml += `<div class="mc-meal-block">
+      <div class="mc-meal-head h-other">📋 <span class="mc-meal-th">อื่นๆ</span><span class="mc-en">Other / as directed</span></div>
+      <div class="mc-meal-list">${unslotted.map((it) => _item(it, "")).join("")}</div>
     </div>`;
   }
-  host.innerHTML = html;
+
+  host.innerHTML =
+    (mealHtml  ? `<div class="mc-meal-grid">${mealHtml}</div>`   : "") +
+    (extraHtml ? `<div class="mc-extra-row">${extraHtml}</div>` : "");
 }
 
 /* ───────────────────────── Editing / add / remove ─────────────────────── */
