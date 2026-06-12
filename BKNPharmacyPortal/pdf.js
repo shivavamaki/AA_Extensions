@@ -71,36 +71,44 @@ async function loadBeedeeCostMap() {
 
   const rows = await fetchJsonAny(urls);
   if (!Array.isArray(rows)) throw new Error('beedee_report.json must be an array');
+  if (rows.length > 0) console.log('🔍 JSON row[0] keys:', JSON.stringify(Object.keys(rows[0])), 'values:', JSON.stringify(Object.values(rows[0])));
 
   const map = new Map();
   rows.forEach(row => {
-    const code = normalizeCode(
-      row['Hospital Code'] ??
-      row['HospitalCode'] ??
-      row['hospitalCode'] ??
-      row['Code'] ??
-      row.code ??
-      row.itemCode
-    );
-    if (!code) return;
+    const rawVal = row['Hospital Code'] ?? row['HospitalCode'] ?? row['hospitalCode'] ?? row['Code'] ?? row.code ?? row.itemCode;
+    if (rawVal == null) return;
 
-    const unitCost = parseMoney(
-      row['ราคาต้นทุน'] ??
-      row['ต้นทุน'] ??
-      row['UnitCost'] ??
-      row.unitCost ??
-      row.cost
-    );
+    const rawStr  = String(rawVal).trim();
+    const normStr = normalizeCode(rawVal);
+    if (!rawStr) return;
 
-    const unit = cleanText(row['หน่วย'] ?? row['Unit'] ?? row.unit ?? row.units ?? '');
+    // Dynamically find cost — avoids Thai field-name encoding mismatches.
+    // Hospital codes are 14-digit numbers (>> 1e8); drug prices are never that large.
+    let unitCost = 0;
+    for (const val of Object.values(row)) {
+      if (typeof val === 'number' && val > 1e8) continue;
+      const n = parseMoney(val);
+      if (n > 0) { unitCost = n; break; }
+    }
 
-    // If duplicated code exists, prefer a non-zero cost.
-    const old = map.get(code);
-    if (!old || (old.unitCost === 0 && unitCost > 0)) {
-      map.set(code, { unitCost, unit, raw: row });
+    // Dynamically find unit — first short, all-letter string value (TAB, CAP, BOT, Pack…).
+    let unit = '';
+    for (const val of Object.values(row)) {
+      if (typeof val !== 'string') continue;
+      const s = val.trim();
+      if (s.length >= 1 && s.length <= 12 && !/[\d\s]/.test(s)) { unit = cleanText(s); break; }
+    }
+    const entry = { unitCost, unit, raw: row };
+
+    // Index by both raw trimmed string and digits-only string so either format matches.
+    for (const key of [rawStr, normStr]) {
+      if (!key) continue;
+      const old = map.get(key);
+      if (!old || (old.unitCost === 0 && unitCost > 0)) map.set(key, entry);
     }
   });
 
+  console.log(`💰 Cost map: ${map.size} keys from ${rows.length} JSON records`);
   return map;
 }
 
@@ -131,8 +139,14 @@ function cleanText(value) {
 }
 
 function resolveCost(item, costMap) {
-  const code = normalizeCode(item.code ?? item.itemCode ?? item['Code'] ?? item['Hospital Code']);
-  const fromJson = costMap.get(code);
+  // Use || (not ??) so empty strings fall through to the next candidate.
+  const rawCode   = item.code || item.itemCode || item['Code'] || item['Hospital Code'] || '';
+  const normCode  = normalizeCode(rawCode);
+  const trimCode  = String(rawCode).trim();
+
+  // Try both the digits-only key and the raw trimmed key.
+  const fromJson = costMap.get(normCode) ?? costMap.get(trimCode) ?? undefined;
+  const code = normCode || trimCode;
 
   const unitCost = Number(fromJson?.unitCost || 0);
 
@@ -145,8 +159,8 @@ function resolveCost(item, costMap) {
     ''
   );
 
-  if (unitCost === 0) {
-    console.warn('⚠️ No cost found for item:', { code, item, fromJson });
+  if (unitCost === 0 && code) {
+    console.warn('⚠️ No cost for code:', JSON.stringify(code), '| normCode:', JSON.stringify(normCode), '| found:', fromJson);
   }
 
   return { code, unitCost, unit };
