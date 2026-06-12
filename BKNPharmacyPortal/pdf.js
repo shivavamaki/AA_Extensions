@@ -134,9 +134,7 @@ function resolveCost(item, costMap) {
   const code = normalizeCode(item.code ?? item.itemCode ?? item['Code'] ?? item['Hospital Code']);
   const fromJson = costMap.get(code);
 
-  const jsonCost = Number(fromJson?.unitCost || 0);
-  const itemCost = parseMoney(item.unitCost ?? item.UnitCost ?? item.cost ?? item['ราคาต้นทุน'] ?? 0);
-  const unitCost = jsonCost > 0 ? jsonCost : itemCost;
+  const unitCost = Number(fromJson?.unitCost || 0);
 
   const unit = cleanText(
     fromJson?.unit ||
@@ -232,7 +230,7 @@ function generatePDF(data, costMap = new Map()) {
     columnStyles: {
       0: { halign: 'center', cellWidth: 10 },
       1: { cellWidth: 31 },
-      2: { cellWidth: 100 },
+      2: { cellWidth: 102 },
       3: { cellWidth: 31 },
       4: { cellWidth: 28 },
       5: { halign: 'right', cellWidth: 13 },

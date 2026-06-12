@@ -80,6 +80,7 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "beedee_report.json",
         "cdnjs/jspdf.umd.min.js",
         "cdnjs/jspdf.min.js",
         "cdnjs/jspdf.plugin.autotable.min.js",

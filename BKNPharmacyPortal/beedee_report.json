@@ -2,1882 +2,2258 @@
   {
     "Hospital Code": 51151604000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.24"
+    "ราคาต้นทุน": "0.24",
+    "Medical Name": "Trihexyphenidyl 2 mg (Pozhexol)"
   },
   {
     "Hospital Code": 51161606000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.28"
+    "ราคาต้นทุน": "0.28",
+    "Medical Name": "Loratadine 10 Mg Tab"
   },
   {
     "Hospital Code": 51014070301001,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "0.36"
+    "ราคาต้นทุน": "0.36",
+    "Medical Name": "Flunarizine CAPSULE (5 mg)"
   },
   {
     "Hospital Code": 51010010318006,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "3.30"
+    "ราคาต้นทุน": "3.30",
+    "Medical Name": "Amoxicillin/Clavulanic Acid TABLET (1,000 mg)"
   },
   {
     "Hospital Code": 51142503000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "11.18"
+    "ราคาต้นทุน": "11.18",
+    "Medical Name": "Madopar 250 Mg Tab"
   },
   {
     "Hospital Code": 51010050124062,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "11.88"
+    "ราคาต้นทุน": "11.88",
+    "Medical Name": "Molnupiravir 200 mg CAP"
   },
   {
     "Hospital Code": 51161701000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "13.57"
+    "ราคาต้นทุน": "13.57",
+    "Medical Name": "Fluimucil A 600 Mg Tab"
   },
   {
     "Hospital Code": 51161701000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "13.57"
+    "ราคาต้นทุน": "13.57",
+    "Medical Name": "Fluimucil A 600 Mg Tab"
   },
   {
     "Hospital Code": 51003090402003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "21.40"
+    "ราคาต้นทุน": "21.40",
+    "Medical Name": "Twynsta Tablet (40/5 Mg)"
   },
   {
     "Hospital Code": 51003090424006,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "21.40"
+    "ราคาต้นทุน": "21.40",
+    "Medical Name": "Favotan TABLET (5/50 mg)"
   },
   {
     "Hospital Code": 51142001000048,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "21.40"
+    "ราคาต้นทุน": "21.40",
+    "Medical Name": "Bakamol Syrup (120 mg/5 mL)(60 mL)"
   },
   {
     "Hospital Code": 51161515000006,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "26.75"
+    "ราคาต้นทุน": "26.75",
+    "Medical Name": "Singulair 4 Mg Granules"
   },
   {
     "Hospital Code": 51171923000001,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "28.00"
+    "ราคาต้นทุน": "28.00",
+    "Medical Name": "Hidrasec Capsule (100 Mg)"
   },
   {
     "Hospital Code": 51101583000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "32.00"
+    "ราคาต้นทุน": "32.00",
+    "Medical Name": "Meiact 100 Mg Tab"
   },
   {
     "Hospital Code": 51141528000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "39.53"
+    "ราคาต้นทุน": "39.53",
+    "Medical Name": "Topamax 100 Mg Tab"
   },
   {
     "Hospital Code": 51142131000002,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "39.59"
+    "ราคาต้นทุน": "39.59",
+    "Medical Name": "Celebrex 400 Mg Cap"
   },
   {
     "Hospital Code": 51003100124001,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "41.70"
+    "ราคาต้นทุน": "41.70",
+    "Medical Name": "Omacor Capsule (1000 Mg)"
   },
   {
     "Hospital Code": 51141619000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "43.79"
+    "ราคาต้นทุน": "43.79",
+    "Medical Name": "Zoloft 50 Mg Tab"
   },
   {
     "Hospital Code": 51182001000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "48.33"
+    "ราคาต้นทุน": "48.33",
+    "Medical Name": "Proscar 5 Mg Tab"
   },
   {
     "Hospital Code": 51001100224011,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "55.00"
+    "ราคาต้นทุน": "55.00",
+    "Medical Name": "Jardiance TABLET (10 mg)"
   },
   {
     "Hospital Code": 51141722000010,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "107.00"
+    "ราคาต้นทุน": "107.00",
+    "Medical Name": "Seroquel XR TABLET (150mg)"
   },
   {
     "Hospital Code": 51161805000008,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "185.00"
+    "ราคาต้นทุน": "185.00",
+    "Medical Name": "Fluifort (9 Gm/100 Ml) Syr 120 Ml"
   },
   {
     "Hospital Code": 51101599000005,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "239.68"
+    "ราคาต้นทุน": "239.68",
+    "Medical Name": "Cefspan (100 Mg/5Ml) Sus 30 Ml"
   },
   {
     "Hospital Code": 51022060406028,
     "หน่วย": "TIN",
-    "ราคาต้นทุน": "740.00"
+    "ราคาต้นทุน": "740.00",
+    "Medical Name": "Fresubin Whey Protein Isolate  Powder (300 g)"
   },
   {
     "Hospital Code": 51161630000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.06"
+    "ราคาต้นทุน": "0.06",
+    "Medical Name": "Chlorpheniramine 4 mg Tablet (*)"
   },
   {
     "Hospital Code": 51161811000007,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.09"
+    "ราคาต้นทุน": "0.09",
+    "Medical Name": "Mucocin 8 Mg Tab"
   },
   {
     "Hospital Code": 51161508000013,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.15"
+    "ราคาต้นทุน": "0.15",
+    "Medical Name": "Salbutamol 2 Mg Tab"
   },
   {
     "Hospital Code": 51191515000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.18"
+    "ราคาต้นทุน": "0.18",
+    "Medical Name": "Hydrochlorothiazide TABLET (25 mg)"
   },
   {
     "Hospital Code": 51171806000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.22"
+    "ราคาต้นทุน": "0.22",
+    "Medical Name": "Metoclopramide 10 Mg Tab"
   },
   {
     "Hospital Code": 51191905000013,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.26"
+    "ราคาต้นทุน": "0.26",
+    "Medical Name": "Vitamin B Complex TABLET"
   },
   {
     "Hospital Code": 51002030105003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.28"
+    "ราคาต้นทุน": "0.28",
+    "Medical Name": "Ferli-6 Tab"
   },
   {
     "Hospital Code": 51142001000033,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.33"
+    "ราคาต้นทุน": "0.33",
+    "Medical Name": "Paracetamol TABLET (500mg)(Bakamol)"
   },
   {
     "Hospital Code": 51181708000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.34"
+    "ราคาต้นทุน": "0.34",
+    "Medical Name": "Prednisolone 5 Mg Tab"
   },
   {
     "Hospital Code": 51161808000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.35"
+    "ราคาต้นทุน": "0.35",
+    "Medical Name": "Dextromethophan 15 Mg Tab"
   },
   {
     "Hospital Code": 51121743000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.38"
+    "ราคาต้นทุน": "0.38",
+    "Medical Name": "Amlopine 5 Mg Tab"
   },
   {
     "Hospital Code": 51151812000007,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.40"
+    "ราคาต้นทุน": "0.40",
+    "Medical Name": "Betalol 10 Mg Tab"
   },
   {
     "Hospital Code": 51181606000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.43"
+    "ราคาต้นทุน": "0.43",
+    "Medical Name": "Propylthiouracil 50 Mg Tablet"
   },
   {
     "Hospital Code": 51013030203001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.47"
+    "ราคาต้นทุน": "0.47",
+    "Medical Name": "Paracetamol/Orphenadrine Tablet"
   },
   {
     "Hospital Code": 51121602000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.48"
+    "ราคาต้นทุน": "0.48",
+    "Medical Name": "Isosorbide Dinitrate 5 mg"
   },
   {
     "Hospital Code": 51151812000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.48"
+    "ราคาต้นทุน": "0.48",
+    "Medical Name": "Betalol  40 Mg Tab"
   },
   {
     "Hospital Code": 51151801000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.52"
+    "ราคาต้นทุน": "0.52",
+    "Medical Name": "Atenolol TABLET (25 mg)"
   },
   {
     "Hospital Code": 51151801000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.54"
+    "ราคาต้นทุน": "0.54",
+    "Medical Name": "Atenolol TABLET (50 mg)"
   },
   {
     "Hospital Code": 51191905000032,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.54"
+    "ราคาต้นทุน": "0.54",
+    "Medical Name": "Vitamin B1-6-12 TABLET"
   },
   {
     "Hospital Code": 51181601000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.58"
+    "ราคาต้นทุน": "0.58",
+    "Medical Name": "Euthyrox 50 Mcg Tab"
   },
   {
     "Hospital Code": 51018010201027,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.62"
+    "ราคาต้นทุน": "0.62",
+    "Medical Name": "Sinufen (Bromphe/Phenylephrine) Tablet"
   },
   {
     "Hospital Code": 51001020124002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.65"
+    "ราคาต้นทุน": "0.65",
+    "Medical Name": "Magesto-F Tab"
   },
   {
     "Hospital Code": 51142012000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.67"
+    "ราคาต้นทุน": "0.67",
+    "Medical Name": "Mefenamic Acid Tablet(500 Mg)"
   },
   {
     "Hospital Code": 51142002000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.71"
+    "ราคาต้นทุน": "0.71",
+    "Medical Name": "Aspirin Gr.5 TABLET"
   },
   {
     "Hospital Code": 51171909000001,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "0.75"
+    "ราคาต้นทุน": "0.75",
+    "Medical Name": "Omeprazole Cap"
   },
   {
     "Hospital Code": 51141618000002,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "0.79"
+    "ราคาต้นทุน": "0.79",
+    "Medical Name": "Fluoxetine CAPSULE (20 mg)"
   },
   {
     "Hospital Code": 51171505000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.79"
+    "ราคาต้นทุน": "0.79",
+    "Medical Name": "Simeticone TABLET (80 mg)"
   },
   {
     "Hospital Code": 51121502000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.80"
+    "ราคาต้นทุน": "0.80",
+    "Medical Name": "Lanoxin Pg 0.0625 Mg Tab"
   },
   {
     "Hospital Code": 51142109000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.80"
+    "ราคาต้นทุน": "0.80",
+    "Medical Name": "Naproxen TABLET (250 mg)"
   },
   {
     "Hospital Code": 51161637000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.80"
+    "ราคาต้นทุน": "0.80",
+    "Medical Name": "Hydroxyzine Tablet(25 Mg)"
   },
   {
     "Hospital Code": 51013030224001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.81"
+    "ราคาต้นทุน": "0.81",
+    "Medical Name": "Biocalm Tab"
   },
   {
     "Hospital Code": 51121502000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.86"
+    "ราคาต้นทุน": "0.86",
+    "Medical Name": "Lanoxin 0.25 Mg Tablet"
   },
   {
     "Hospital Code": 51121805000001,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "0.86"
+    "ราคาต้นทุน": "0.86",
+    "Medical Name": "Gemfibrozil CAPSULE (300 mg)"
   },
   {
     "Hospital Code": 51161629000017,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.86"
+    "ราคาต้นทุน": "0.86",
+    "Medical Name": "Cettec HB (Cetirizine 10 mg).Tab"
   },
   {
     "Hospital Code": 51121803000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.96"
+    "ราคาต้นทุน": "0.96",
+    "Medical Name": "Simvastatin 10 mg (Zimmex) Tablet"
   },
   {
     "Hospital Code": 51142106000012,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.96"
+    "ราคาต้นทุน": "0.96",
+    "Medical Name": "Ibuprofen 400 Mg Tab"
   },
   {
     "Hospital Code": 51191802000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "0.98"
+    "ราคาต้นทุน": "0.98",
+    "Medical Name": "Enpott  Enteric Coated Tablet"
   },
   {
     "Hospital Code": 51101569000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "1.18"
+    "ราคาต้นทุน": "1.18",
+    "Medical Name": "Roxithromycin 150 Mg Tab"
   },
   {
     "Hospital Code": 51171610000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "1.18"
+    "ราคาต้นทุน": "1.18",
+    "Medical Name": "Senokot Tab"
   },
   {
     "Hospital Code": 51101511000003,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "1.30"
+    "ราคาต้นทุน": "1.30",
+    "Medical Name": "Amoxicillin CAPSULE (500 mg)"
   },
   {
     "Hospital Code": 51101542000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "1.39"
+    "ราคาต้นทุน": "1.39",
+    "Medical Name": "Ciprofloxacin TABLET (500 mg)"
   },
   {
     "Hospital Code": 51101542000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "1.39"
+    "ราคาต้นทุน": "1.39",
+    "Medical Name": "Ciprofloxacin TABLET (500 mg)"
   },
   {
     "Hospital Code": 51181520000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "1.40"
+    "ราคาต้นทุน": "1.40",
+    "Medical Name": "Pioglitazone 30 Mg (Utmos)"
   },
   {
     "Hospital Code": 51121711000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "1.50"
+    "ราคาต้นทุน": "1.50",
+    "Medical Name": "Minoxidil 5 Mg Tab (Loniten)"
   },
   {
     "Hospital Code": 51211618000002,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "1.59"
+    "ราคาต้นทุน": "1.59",
+    "Medical Name": "Ca-R-Bon  260 Mg  Cap"
   },
   {
     "Hospital Code": 51141619000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "1.60"
+    "ราคาต้นทุน": "1.60",
+    "Medical Name": "Sertraline Tablet (50 Mg)"
   },
   {
     "Hospital Code": 51014020301001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "1.85"
+    "ราคาต้นทุน": "1.85",
+    "Medical Name": "Avamigran Tab"
   },
   {
     "Hospital Code": 51131604000007,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "1.90"
+    "ราคาต้นทุน": "1.90",
+    "Medical Name": "Warfarin Sodium TABLET 3 mg"
   },
   {
     "Hospital Code": 51181605000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "1.98"
+    "ราคาต้นทุน": "1.98",
+    "Medical Name": "Tapazole 5 Mg Tab"
   },
   {
     "Hospital Code": 51171925000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "10.00"
+    "ราคาต้นทุน": "10.00",
+    "Medical Name": "Mucosta 100 Mg Tab"
   },
   {
     "Hospital Code": 51181731000008,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "10.15"
+    "ราคาต้นทุน": "10.15",
+    "Medical Name": "Triamcinolone CREAM 0.02% (5 g)"
   },
   {
     "Hospital Code": 51171614000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "10.35"
+    "ราคาต้นทุน": "10.35",
+    "Medical Name": "Dulcolax(Adult) Suppo  (10 Mg)"
   },
   {
     "Hospital Code": 51121810000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "10.70"
+    "ราคาต้นทุน": "10.70",
+    "Medical Name": "Atorvastatin TABLET (10 mg)"
   },
   {
     "Hospital Code": 51131511000001,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "100.83"
+    "ราคาต้นทุน": "100.83",
+    "Medical Name": "Eurofer-Iron Syrup (120 Ml)"
   },
   {
     "Hospital Code": 51013020103005,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "101.65"
+    "ราคาต้นทุน": "101.65",
+    "Medical Name": "Reparil Gel 20 Gm"
   },
   {
     "Hospital Code": 51171916000005,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "102.00"
+    "ราคาต้นทุน": "102.00",
+    "Medical Name": "Vocinti 20 mg Tablet @"
   },
   {
     "Hospital Code": 51142412000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "102.72"
+    "ราคาต้นทุน": "102.72",
+    "Medical Name": "Relpax Tablet (40 Mg)"
   },
   {
     "Hospital Code": 51151805000002,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "107.00"
+    "ราคาต้นทุน": "107.00",
+    "Medical Name": "Timolol 0.5% Eye Drops"
   },
   {
     "Hospital Code": 51101536000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "107.29"
+    "ราคาต้นทุน": "107.29",
+    "Medical Name": "Avelox  400 Mg  Tab"
   },
   {
     "Hospital Code": 51003080301001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "11.18"
+    "ราคาต้นทุน": "11.18",
+    "Medical Name": "Madiplot 10 Mg Tab"
   },
   {
     "Hospital Code": 51181504000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "11.68"
+    "ราคาต้นทุน": "11.68",
+    "Medical Name": "Amaryl  2 Mg Tab"
   },
   {
     "Hospital Code": 51181818000001,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "11.78"
+    "ราคาต้นทุน": "11.78",
+    "Medical Name": "Utrogestan (100 Mg) Capsule"
   },
   {
     "Hospital Code": 51019012401030,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "111.86"
+    "ราคาต้นทุน": "111.86",
+    "Medical Name": "Vidisic Eye Gel 10 Gm"
   },
   {
     "Hospital Code": 51002010124003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "112.35"
+    "ราคาต้นทุน": "112.35",
+    "Medical Name": "Xarelto TABLET (20 mg)"
   },
   {
     "Hospital Code": 51101582000002,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "114.39"
+    "ราคาต้นทุน": "114.39",
+    "Medical Name": "Tobrex 0.3% Eye Drops"
   },
   {
     "Hospital Code": 51142107000004,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "114.39"
+    "ราคาต้นทุน": "114.39",
+    "Medical Name": "Elmetacin Spray"
   },
   {
     "Hospital Code": 51019010301009,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "114.49"
+    "ราคาต้นทุน": "114.49",
+    "Medical Name": "Tobradex Eye Drops"
   },
   {
     "Hospital Code": 51141530000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "12.02"
+    "ราคาต้นทุน": "12.02",
+    "Medical Name": "Depakine Chrono (500 Mg) Tablet"
   },
   {
     "Hospital Code": 51181509000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "12.23"
+    "ราคาต้นทุน": "12.23",
+    "Medical Name": "Diamicron Mr Tablet(60 Mg)"
   },
   {
     "Hospital Code": 51161606000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "12.33"
+    "ราคาต้นทุน": "12.33",
+    "Medical Name": "Clarityne 10 Mg Tab"
   },
   {
     "Hospital Code": 51018060124004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "12.50"
+    "ราคาต้นทุน": "12.50",
+    "Medical Name": "Bilaxten TABLET (20 mg)"
   },
   {
     "Hospital Code": 51001070203003,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "12.51"
+    "ราคาต้นทุน": "12.51",
+    "Medical Name": "Smecta Powder"
   },
   {
     "Hospital Code": 51101572000001,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "12.84"
+    "ราคาต้นทุน": "12.84",
+    "Medical Name": "Azithromycin CAPSULE (250 mg)"
   },
   {
     "Hospital Code": 51101577000001,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "12.84"
+    "ราคาต้นทุน": "12.84",
+    "Medical Name": "Samnir 100 Mg Cap"
   },
   {
     "Hospital Code": 51001020108003,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "12.86"
+    "ราคาต้นทุน": "12.86",
+    "Medical Name": "Carminative Mixture 8 Oz"
   },
   {
     "Hospital Code": 51121823000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "12.90"
+    "ราคาต้นทุน": "12.90",
+    "Medical Name": "Rosuvastatin TABLET (10 mg)"
   },
   {
     "Hospital Code": 51151917000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "12.98"
+    "ราคาต้นทุน": "12.98",
+    "Medical Name": "Sirdalud 4 Mg Tab"
   },
   {
     "Hospital Code": 51151509000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "124.27"
+    "ราคาต้นทุน": "124.27",
+    "Medical Name": "Aricept Evess Tablet(5 Mg)"
   },
   {
     "Hospital Code": 51181827000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "13.10"
+    "ราคาต้นทุน": "13.10",
+    "Medical Name": "Provera (10 Mg) Tablet"
   },
   {
     "Hospital Code": 51013050224004,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "13.23"
+    "ราคาต้นทุน": "13.23",
+    "Medical Name": "Glakay (15mg) Capsule"
   },
   {
     "Hospital Code": 51141517000002,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "13.35"
+    "ราคาต้นทุน": "13.35",
+    "Medical Name": "Neurontin 100 Mg Cap"
   },
   {
     "Hospital Code": 51161654000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "13.38"
+    "ราคาต้นทุน": "13.38",
+    "Medical Name": "Xyzal 5 Mg Tab"
   },
   {
     "Hospital Code": 51014020124001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "13.55"
+    "ราคาต้นทุน": "13.55",
+    "Medical Name": "Ultracet Caplet"
   },
   {
     "Hospital Code": 51121713000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "13.59"
+    "ราคาต้นทุน": "13.59",
+    "Medical Name": "Cardil CR TABLET 120 mg"
   },
   {
     "Hospital Code": 51151824000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "13.69"
+    "ราคาต้นทุน": "13.69",
+    "Medical Name": "Cardura  2 Mg Tab"
   },
   {
     "Hospital Code": 51171631000001,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "13.96"
+    "ราคาต้นทุน": "13.96",
+    "Medical Name": "Forlax  Sachet 10 Gm"
   },
   {
     "Hospital Code": 51161701000004,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "136.31"
+    "ราคาต้นทุน": "136.31",
+    "Medical Name": "Nac Long (10 Tab) Eff. Tab"
   },
   {
     "Hospital Code": 51181811000003,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "138.52"
+    "ราคาต้นทุน": "138.52",
+    "Medical Name": "Mercilon Tab (21's)"
   },
   {
     "Hospital Code": 51121769000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "14.01"
+    "ราคาต้นทุน": "14.01",
+    "Medical Name": "CoverSYL Arginine TABLET (5 mg)"
   },
   {
     "Hospital Code": 51121743000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "14.28"
+    "ราคาต้นทุน": "14.28",
+    "Medical Name": "Norvasc 5 Mg Tab"
   },
   {
     "Hospital Code": 51141722000008,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "14.50"
+    "ราคาต้นทุน": "14.50",
+    "Medical Name": "Quetiapine Tablet(25 Mg)"
   },
   {
     "Hospital Code": 51141722000008,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "14.50"
+    "ราคาต้นทุน": "14.50",
+    "Medical Name": "Quetiapine Tablet(25 Mg)"
   },
   {
     "Hospital Code": 51102707000072,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "141.73"
+    "ราคาต้นทุน": "141.73",
+    "Medical Name": "Betadine Gargle Mouthwash (30 mL)"
   },
   {
     "Hospital Code": 51151510000002,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "141.78"
+    "ราคาต้นทุน": "141.78",
+    "Medical Name": "Reminyl Pr  16  Mg Cap"
   },
   {
     "Hospital Code": 42181503000004,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "142.13"
+    "ราคาต้นทุน": "142.13",
+    "Medical Name": "K-Y Jelly 82 Gm"
   },
   {
     "Hospital Code": 51142937000004,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "142.31"
+    "ราคาต้นทุน": "142.31",
+    "Medical Name": "Xylocaine 2% Jelly 30 Gm"
   },
   {
     "Hospital Code": 51101577000003,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "149.80"
+    "ราคาต้นทุน": "149.80",
+    "Medical Name": "Samnir Ds Susp (125 Mg/5Ml)(30Ml)"
   },
   {
     "Hospital Code": 51181525000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "15.00"
+    "ราคาต้นทุน": "15.00",
+    "Medical Name": "Gasmotin Tablet (5 Mg)"
   },
   {
     "Hospital Code": 51004010105008,
     "หน่วย": "BOX",
-    "ราคาต้นทุน": "151.19"
+    "ราคาต้นทุน": "151.19",
+    "Medical Name": "Zalain Vaginal Suppository (300 mg)"
   },
   {
     "Hospital Code": 51001010104002,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "151.58"
+    "ราคาต้นทุน": "151.58",
+    "Medical Name": "Kamilosan-M Spray (20mL)"
   },
   {
     "Hospital Code": 51001010104002,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "151.58"
+    "ราคาต้นทุน": "151.58",
+    "Medical Name": "Kamilosan-M Spray (20mL)"
   },
   {
     "Hospital Code": 51181506000011,
     "หน่วย": "AMP",
-    "ราคาต้นทุน": "154.08"
+    "ราคาต้นทุน": "154.08",
+    "Medical Name": "Humulin N Cartridge 300 Unit/3 Ml"
   },
   {
     "Hospital Code": 51001100210003,
     "หน่วย": "SET",
-    "ราคาต้นทุน": "1,564.80"
+    "ราคาต้นทุน": "1564.80",
+    "Medical Name": "Trulicity 1.5 mg/0.5 mL Pre-filled Pen @"
   },
   {
     "Hospital Code": 51001030601001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "16.05"
+    "ราคาต้นทุน": "16.05",
+    "Medical Name": "Ganaton 50 Mg Tab"
   },
   {
     "Hospital Code": 51121709000005,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "16.09"
+    "ราคาต้นทุน": "16.09",
+    "Medical Name": "Dilatrend (6.25 Mg) Tab"
   },
   {
     "Hospital Code": 51101912000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "16.30"
+    "ราคาต้นทุน": "16.30",
+    "Medical Name": "Plaquenil 200 Mg Tab"
   },
   {
     "Hospital Code": 51001030504002,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "16.50"
+    "ราคาต้นทุน": "16.50",
+    "Medical Name": "Berclomine Syr 60Ml"
   },
   {
     "Hospital Code": 51101536000003,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "165.00"
+    "ราคาต้นทุน": "165.00",
+    "Medical Name": "Vigamox Eye Drop"
   },
   {
     "Hospital Code": 51181813000004,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "167.78"
+    "ราคาต้นทุน": "167.78",
+    "Medical Name": "Progynova 2 Mg Tab (28's)"
   },
   {
     "Hospital Code": 51201510000001,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "169.74"
+    "ราคาต้นทุน": "169.74",
+    "Medical Name": "Aldara 5% Cream"
   },
   {
     "Hospital Code": 51121511000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "17.12"
+    "ราคาต้นทุน": "17.12",
+    "Medical Name": "Cordarone (200 Mg) Tablet"
   },
   {
     "Hospital Code": 51121823000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "17.50"
+    "ราคาต้นทุน": "17.50",
+    "Medical Name": "Rosuvastatin TABLET (20 mg)"
   },
   {
     "Hospital Code": 51181706000007,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "17.55"
+    "ราคาต้นทุน": "17.55",
+    "Medical Name": "Hytisone 1% Cream 5 Gm"
   },
   {
     "Hospital Code": 51101583000002,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "17.83"
+    "ราคาต้นทุน": "17.83",
+    "Medical Name": "Meiact Fine Granules 0.5 Gm"
   },
   {
     "Hospital Code": 51121773000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "17.96"
+    "ราคาต้นทุน": "17.96",
+    "Medical Name": "ZANIDIP 10 MG TAB"
   },
   {
     "Hospital Code": 51161508000005,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "170.98"
+    "ราคาต้นทุน": "170.98",
+    "Medical Name": "Ventolin Evohaler (200 D)"
   },
   {
     "Hospital Code": 51013020103019,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "174.88"
+    "ราคาต้นทุน": "174.88",
+    "Medical Name": "Perskindol Cool Spray (250 Ml)"
   },
   {
     "Hospital Code": 51007030301005,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "174.97"
+    "ราคาต้นทุน": "174.97",
+    "Medical Name": "Cyclo-Progynova Tab (21'S)"
   },
   {
     "Hospital Code": 51351606000002,
     "หน่วย": "BOX",
-    "ราคาต้นทุน": "1,765.40"
+    "ราคาต้นทุน": "1765.40",
+    "Medical Name": "Visanne TABLET (2 mg)(28'S)"
   },
   {
     "Hospital Code": 51181813000003,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "178.52"
+    "ราคาต้นทุน": "178.52",
+    "Medical Name": "Progynova 1 Mg Tab (28'S)"
   },
   {
     "Hospital Code": 51181813000002,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "178.76"
+    "ราคาต้นทุน": "178.76",
+    "Medical Name": "Estrofem 2 Mg Tab"
   },
   {
     "Hospital Code": 51003050301009,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "18.00"
+    "ราคาต้นทุน": "18.00",
+    "Medical Name": "Daflon TABLET 1000 mg"
   },
   {
     "Hospital Code": 51212035000002,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "18.09"
+    "ราคาต้นทุน": "18.09",
+    "Medical Name": "Legalon 140 Mg Cap"
   },
   {
     "Hospital Code": 51122110000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "18.11"
+    "ราคาต้นทุน": "18.11",
+    "Medical Name": "Nimotop 30 Mg Tab"
   },
   {
     "Hospital Code": 51101538000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "18.19"
+    "ราคาต้นทุน": "18.19",
+    "Medical Name": "Levofloxacin TABLET (500 mg)"
   },
   {
     "Hospital Code": 51102707000023,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "18.19"
+    "ราคาต้นทุน": "18.19",
+    "Medical Name": "B-Mouth Wash 180 Ml"
   },
   {
     "Hospital Code": 51013020103020,
     "หน่วย": "TIN",
-    "ราคาต้นทุน": "180.06"
+    "ราคาต้นทุน": "180.06",
+    "Medical Name": "Perskindol Classic Spray (150 Ml)"
   },
   {
     "Hospital Code": 51161633000002,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "186.18"
+    "ราคาต้นทุน": "186.18",
+    "Medical Name": "Aerius Syrup 60 Ml"
   },
   {
     "Hospital Code": 51141534000003,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "19.20"
+    "ราคาต้นทุน": "19.20",
+    "Medical Name": "Lyrica Capsule (25 Mg)"
   },
   {
     "Hospital Code": 51161621000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "19.25"
+    "ราคาต้นทุน": "19.25",
+    "Medical Name": "Telfast 180 Mg Tab"
   },
   {
     "Hospital Code": 51003090402008,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "19.26"
+    "ราคาต้นทุน": "19.26",
+    "Medical Name": "Normetec Tablet (5 Mg/20 Mg)"
   },
   {
     "Hospital Code": 51007030402001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "19.26"
+    "ราคาต้นทุน": "19.26",
+    "Medical Name": "Duphaston 10 Mg Tab"
   },
   {
     "Hospital Code": 51121819000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "19.61"
+    "ราคาต้นทุน": "19.61",
+    "Medical Name": "Ezetimibe Tablet (10mg)"
   },
   {
     "Hospital Code": 51018010124032,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "190.00"
+    "ราคาต้นทุน": "190.00",
+    "Medical Name": "Mar Plus 5% NASAL SPRAY (140 puffs)"
   },
   {
     "Hospital Code": 51142148000039,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "191.37"
+    "ราคาต้นทุน": "191.37",
+    "Medical Name": "Diquas EYE DROP 3%(5mL)"
   },
   {
     "Hospital Code": 51101572000003,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "197.27"
+    "ราคาต้นทุน": "197.27",
+    "Medical Name": "Zithromax (200Mg/5Ml) Susp 15Ml"
   },
   {
     "Hospital Code": 51101818000004,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "197.59"
+    "ราคาต้นทุน": "197.59",
+    "Medical Name": "Lamisil Cream 15 Gm"
   },
   {
     "Hospital Code": 51142002000007,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "2.11"
+    "ราคาต้นทุน": "2.11",
+    "Medical Name": "Asa.Cardiprin 100 Mg Tab"
   },
   {
     "Hospital Code": 51161505000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "2.24"
+    "ราคาต้นทุน": "2.24",
+    "Medical Name": "Nuelin-Sr 200 Mg Tab"
   },
   {
     "Hospital Code": 51131604000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "2.30"
+    "ราคาต้นทุน": "2.30",
+    "Medical Name": "Warfarin Sodium TABLET 4 mg"
   },
   {
     "Hospital Code": 51131604000008,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "2.30"
+    "ราคาต้นทุน": "2.30",
+    "Medical Name": "Warfarin Sodium TABLET 5 mg"
   },
   {
     "Hospital Code": 51171614000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "2.30"
+    "ราคาต้นทุน": "2.30",
+    "Medical Name": "Dulcolax 5 Mg Tab"
   },
   {
     "Hospital Code": 51013030203002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "2.38"
+    "ราคาต้นทุน": "2.38",
+    "Medical Name": "Norgesic Tab"
   },
   {
     "Hospital Code": 51018030303002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "2.41"
+    "ราคาต้นทุน": "2.41",
+    "Medical Name": "Meptin-Mini 25 Mcg Tab"
   },
   {
     "Hospital Code": 51171807000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "2.47"
+    "ราคาต้นทุน": "2.47",
+    "Medical Name": "Stugeron 25 Mg Tab"
   },
   {
     "Hospital Code": 51141606000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "2.70"
+    "ราคาต้นทุน": "2.70",
+    "Medical Name": "Trazodone 50 Mg (10 TAB/PACK)"
   },
   {
     "Hospital Code": 51101554000002,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "2.71"
+    "ราคาต้นทุน": "2.71",
+    "Medical Name": "Dicloxacillin CAPSULE (500 mg)"
   },
   {
     "Hospital Code": 51141507000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "2.91"
+    "ราคาต้นทุน": "2.91",
+    "Medical Name": "Dilantin Infatab 50 Mg Tab"
   },
   {
     "Hospital Code": 51101701000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "2.98"
+    "ราคาต้นทุน": "2.98",
+    "Medical Name": "Albendazole TABLET (200 mg)"
   },
   {
     "Hospital Code": 51121739000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "20.37"
+    "ราคาต้นทุน": "20.37",
+    "Medical Name": "Isoptin-Sr 240 Mg Tab"
   },
   {
     "Hospital Code": 51003090301001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "20.64"
+    "ราคาต้นทุน": "20.64",
+    "Medical Name": "Edarbi TABLET (40 mg)"
   },
   {
     "Hospital Code": 51161633000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "20.87"
+    "ราคาต้นทุน": "20.87",
+    "Medical Name": "Aerius 5 Mg Tab"
   },
   {
     "Hospital Code": 51141722000009,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "20.90"
+    "ราคาต้นทุน": "20.90",
+    "Medical Name": "Quetiapine TABLET (100 mg)"
   },
   {
     "Hospital Code": 51181742000009,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "206.39"
+    "ราคาต้นทุน": "206.39",
+    "Medical Name": "Dermovate Scalp Lotion"
   },
   {
     "Hospital Code": 51101510000004,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "21.09"
+    "ราคาต้นทุน": "21.09",
+    "Medical Name": "Terramycin Eye Oint 3.5 Gm (Box144Tub)"
   },
   {
     "Hospital Code": 51181740000001,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "21.37"
+    "ราคาต้นทุน": "21.37",
+    "Medical Name": "Dexamethasone Phosphate Eye Drops"
   },
   {
     "Hospital Code": 51121763000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "21.40"
+    "ราคาต้นทุน": "21.40",
+    "Medical Name": "Micardis 40 Mg Tab"
   },
   {
     "Hospital Code": 51151824000006,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "21.40"
+    "ราคาต้นทุน": "21.40",
+    "Medical Name": "Cardura Xl Tablet (4 Mg)"
   },
   {
     "Hospital Code": 51121809000007,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "21.76"
+    "ราคาต้นทุน": "21.76",
+    "Medical Name": "Supralip NT TABLET (145 mg)"
   },
   {
     "Hospital Code": 51101504000004,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "22.23"
+    "ราคาต้นทุน": "22.23",
+    "Medical Name": "Dalacin-C 300 Mg Cap"
   },
   {
     "Hospital Code": 51141705000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "22.64"
+    "ราคาต้นทุน": "22.64",
+    "Medical Name": "Sermion 30 mg Tab"
   },
   {
     "Hospital Code": 51019010101002,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "22.92"
+    "ราคาต้นทุน": "22.92",
+    "Medical Name": "Polyoph Eye Drops 5 Ml"
   },
   {
     "Hospital Code": 51101522000006,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "235.40"
+    "ราคาต้นทุน": "235.40",
+    "Medical Name": "Klacid Ped (125Mg/5Ml) Susp 60Ml"
   },
   {
     "Hospital Code": 51142114000003,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "235.40"
+    "ราคาต้นทุน": "235.40",
+    "Medical Name": "Difflam Forte Throat Spray (15 Ml)"
   },
   {
     "Hospital Code": 51141530000005,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "238.58"
+    "ราคาต้นทุน": "238.58",
+    "Medical Name": "Depakine (200Mg/Ml) Oral Soln 60Ml"
   },
   {
     "Hospital Code": 51001020104003,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "24.61"
+    "ราคาต้นทุน": "24.61",
+    "Medical Name": "Alumed  Susp 10 Oz"
   },
   {
     "Hospital Code": 51001100204009,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "24.61"
+    "ราคาต้นทุน": "24.61",
+    "Medical Name": "Janumet Tablet (50/1000 Mg)"
   },
   {
     "Hospital Code": 51142131000001,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "24.61"
+    "ราคาต้นทุน": "24.61",
+    "Medical Name": "Celebrex 200 Mg Cap"
   },
   {
     "Hospital Code": 51161629000004,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "24.61"
+    "ราคาต้นทุน": "24.61",
+    "Medical Name": "Cetirizine SYRUP (5mg/5mL)(100mL)"
   },
   {
     "Hospital Code": 51001100208001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "24.85"
+    "ราคาต้นทุน": "24.85",
+    "Medical Name": "Galvus Tablet (50 Mg)"
   },
   {
     "Hospital Code": 51161703000001,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "242.92"
+    "ราคาต้นทุน": "242.92",
+    "Medical Name": "Rhinocort Aqua-64 Mcg Nas Spray 120 D"
   },
   {
     "Hospital Code": 51019012401021,
     "หน่วย": "BOX",
-    "ราคาต้นทุน": "243.85"
+    "ราคาต้นทุน": "243.85",
+    "Medical Name": "Tears Natural Free Eye Drop (32'S)"
   },
   {
     "Hospital Code": 51001070203001,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "25.00"
+    "ราคาต้นทุน": "25.00",
+    "Medical Name": "Dehecta Susp Sachet(3 G/20 Ml)"
   },
   {
     "Hospital Code": 51001100204003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "25.00"
+    "ราคาต้นทุน": "25.00",
+    "Medical Name": "Galvus Met Tablet (50/1000 Mg)"
   },
   {
     "Hospital Code": 51101599000002,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "25.00"
+    "ราคาต้นทุน": "25.00",
+    "Medical Name": "Cefspan  100 Mg  Cap"
   },
   {
     "Hospital Code": 51102338000003,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "25.00"
+    "ราคาต้นทุน": "25.00",
+    "Medical Name": "Gpo-A-Flu Capsule (75 Mg)"
   },
   {
     "Hospital Code": 51191510000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "25.09"
+    "ราคาต้นทุน": "25.09",
+    "Medical Name": "Lasix 500 Mg Tab"
   },
   {
     "Hospital Code": 51121709000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "25.20"
+    "ราคาต้นทุน": "25.20",
+    "Medical Name": "Dilatrend 25 Mg Tab"
   },
   {
     "Hospital Code": 51121767000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "25.58"
+    "ราคาต้นทุน": "25.58",
+    "Medical Name": "Nebilet 5 Mg Tab"
   },
   {
     "Hospital Code": 51003090424007,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "25.68"
+    "ราคาต้นทุน": "25.68",
+    "Medical Name": "Favotan TABLET (5/100 mg)"
   },
   {
     "Hospital Code": 51171906000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "25.68"
+    "ราคาต้นทุน": "25.68",
+    "Medical Name": "Prevacid Fdt 15 Mg Tab"
   },
   {
     "Hospital Code": 51121710000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "25.74"
+    "ราคาต้นทุน": "25.74",
+    "Medical Name": "Cozaar 50 Mg Tab"
   },
   {
     "Hospital Code": 51171709000003,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "25.90"
+    "ราคาต้นทุน": "25.90",
+    "Medical Name": "Bioflor 250 Mg Pack"
   },
   {
     "Hospital Code": 51181749000004,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "250.00"
+    "ราคาต้นทุน": "250.00",
+    "Medical Name": "Elomet Lotion 30 Ml"
   },
   {
     "Hospital Code": 51007010103002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "26.22"
+    "ราคาต้นทุน": "26.22",
+    "Medical Name": "Fluomizin Vaginal Tablet (10 Mg)"
   },
   {
     "Hospital Code": 51010010318007,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "26.75"
+    "ราคาต้นทุน": "26.75",
+    "Medical Name": "Augmentin 1Gm Tab"
   },
   {
     "Hospital Code": 51014050308001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "26.75"
+    "ราคาต้นทุน": "26.75",
+    "Medical Name": "Circadin Pr Tablet(2Mg)"
   },
   {
     "Hospital Code": 51161515000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "26.75"
+    "ราคาต้นทุน": "26.75",
+    "Medical Name": "Singulair 4 Mg Tab"
   },
   {
     "Hospital Code": 51161515000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "26.75"
+    "ราคาต้นทุน": "26.75",
+    "Medical Name": "Singulair 5 Mg Chewable Tab"
   },
   {
     "Hospital Code": 51001100224001,
     "หน่วย": "SET",
-    "ราคาต้นทุน": "2,675.00"
+    "ราคาต้นทุน": "2675.00",
+    "Medical Name": "Victoza 18 mg/3 mL Prefill-Pen"
   },
   {
     "Hospital Code": 51121759000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "27.29"
+    "ราคาต้นทุน": "27.29",
+    "Medical Name": "Olmetec 40 Mg Tab"
   },
   {
     "Hospital Code": 51141517000004,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "27.82"
+    "ราคาต้นทุน": "27.82",
+    "Medical Name": "Neurontin 300 Mg Cap"
   },
   {
     "Hospital Code": 51142508000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "27.82"
+    "ราคาต้นทุน": "27.82",
+    "Medical Name": "Sifrol (0.25 mg) Tab"
   },
   {
     "Hospital Code": 51161653000001,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "275.00"
+    "ราคาต้นทุน": "275.00",
+    "Medical Name": "Relestat Eye Drop 0.05% (5 Ml)"
   },
   {
     "Hospital Code": 51102714000001,
     "หน่วย": "BAG",
-    "ราคาต้นทุน": "28.89"
+    "ราคาต้นทุน": "28.89",
+    "Medical Name": "NSS 0.9% (P) Irrigate 1000mL(Square BOT)"
   },
   {
     "Hospital Code": 51171622000004,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "29.31"
+    "ราคาต้นทุน": "29.31",
+    "Medical Name": "Fleet Enema (Adult) 133 Ml"
   },
   {
     "Hospital Code": 51007030101007,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "293.18"
+    "ราคาต้นทุน": "293.18",
+    "Medical Name": "Yasmin Tab (21'S)"
   },
   {
     "Hospital Code": 51191510000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "3.13"
+    "ราคาต้นทุน": "3.13",
+    "Medical Name": "Lasix 40 Mg Tab"
   },
   {
     "Hospital Code": 51191507000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "3.16"
+    "ราคาต้นทุน": "3.16",
+    "Medical Name": "Aldactone  25 Mg Tab"
   },
   {
     "Hospital Code": 51181505000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "3.20"
+    "ราคาต้นทุน": "3.20",
+    "Medical Name": "Minidiab 5 Mg Tab"
   },
   {
     "Hospital Code": 51007010101001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "3.21"
+    "ราคาต้นทุน": "3.21",
+    "Medical Name": "Gynecon-T Vaginal Tab"
   },
   {
     "Hospital Code": 51161805000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "3.21"
+    "ราคาต้นทุน": "3.21",
+    "Medical Name": "Flemex Tab"
   },
   {
     "Hospital Code": 51001030601003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "3.27"
+    "ราคาต้นทุน": "3.27",
+    "Medical Name": "Motilium 10 Mg Tab"
   },
   {
     "Hospital Code": 51131811000002,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "3.42"
+    "ราคาต้นทุน": "3.42",
+    "Medical Name": "Transamin 250 Mg Cap"
   },
   {
     "Hospital Code": 51141525000002,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "3.51"
+    "ราคาต้นทุน": "3.51",
+    "Medical Name": "Dilantin 100 Mg Cap"
   },
   {
     "Hospital Code": 51013050224001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "3.85"
+    "ราคาต้นทุน": "3.85",
+    "Medical Name": "Ossium TABLET 200mg"
   },
   {
     "Hospital Code": 51181517000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "3.86"
+    "ราคาต้นทุน": "3.86",
+    "Medical Name": "Glucophage 850 Mg Tab"
   },
   {
     "Hospital Code": 51191905000027,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "3.87"
+    "ราคาต้นทุน": "3.87",
+    "Medical Name": "Neurobion Tablet"
   },
   {
     "Hospital Code": 51121773000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "30.00"
+    "ราคาต้นทุน": "30.00",
+    "Medical Name": "Zanidip Tablet(20 Mg)"
   },
   {
     "Hospital Code": 51171923000004,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "30.90"
+    "ราคาต้นทุน": "30.90",
+    "Medical Name": "Hidrasec Pediatric Sachet (30 Mg)"
   },
   {
     "Hospital Code": 51003090424002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "31.00"
+    "ราคาต้นทุน": "31.00",
+    "Medical Name": "Exforge Hct Tablet (5/160/12.5 Mg)"
   },
   {
     "Hospital Code": 51142001000018,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "31.57"
+    "ราคาต้นทุน": "31.57",
+    "Medical Name": "Tylenol Cherry(160Mg/5Ml) Susp 60Ml"
   },
   {
     "Hospital Code": 51018030303015,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "31.89"
+    "ราคาต้นทุน": "31.89",
+    "Medical Name": "Meptin Syr  60 Ml"
   },
   {
     "Hospital Code": 51003100101001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "32.00"
+    "ราคาต้นทุน": "32.00",
+    "Medical Name": "Livalo Tablet(2 Mg)"
   },
   {
     "Hospital Code": 51013020124007,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "32.00"
+    "ราคาต้นทุน": "32.00",
+    "Medical Name": "Myomate CREAM (30 g)"
   },
   {
     "Hospital Code": 51142106000013,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "32.10"
+    "ราคาต้นทุน": "32.10",
+    "Medical Name": "Ibuprofen (100Mg/5Ml) Ped. Susp."
   },
   {
     "Hospital Code": 51151817000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "32.10"
+    "ราคาต้นทุน": "32.10",
+    "Medical Name": "Harnal Ocas (0.4Mg) Tab"
   },
   {
     "Hospital Code": 51141812000006,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "32.10"
+    "ราคาต้นทุน": "32.10",
+    "Medical Name": "Dayvigo 5 mg Tablet"
   },
   {
     "Hospital Code": 51142001000013,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "32.18"
+    "ราคาต้นทุน": "32.18",
+    "Medical Name": "Tylenol Infant Drop 80 Mg/ 0.8Ml"
   },
   {
     "Hospital Code": 51013050224005,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "328.05"
+    "ราคาต้นทุน": "328.05",
+    "Medical Name": "Fosamax Plus TABLET (70 mg/5600 unit)"
   },
   {
     "Hospital Code": 51102211000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "33.38"
+    "ราคาต้นทุน": "33.38",
+    "Medical Name": "Xatral Xl 10 Mg Tab"
   },
   {
     "Hospital Code": 51141722000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "34.35"
+    "ราคาต้นทุน": "34.35",
+    "Medical Name": "Seroquel 25 Mg Tab"
   },
   {
     "Hospital Code": 51001030601005,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "35.31"
+    "ราคาต้นทุน": "35.31",
+    "Medical Name": "Motilium (1Mg/Ml)Susp 30Ml"
   },
   {
     "Hospital Code": 51142148000007,
     "หน่วย": "BOX",
-    "ราคาต้นทุน": "350.22"
+    "ราคาต้นทุน": "350.22",
+    "Medical Name": "Vislube Eye Drops"
   },
   {
     "Hospital Code": 51142149000006,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "36.81"
+    "ราคาต้นทุน": "36.81",
+    "Medical Name": "Viartril-S (1500 Mg) Sachet"
   },
   {
     "Hospital Code": 51121823000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "37.07"
+    "ราคาต้นทุน": "37.07",
+    "Medical Name": "Crestor 10 Mg Tab"
   },
   {
     "Hospital Code": 51142153000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "37.19"
+    "ราคาต้นทุน": "37.19",
+    "Medical Name": "Arcoxia 90 Mg Tab"
   },
   {
     "Hospital Code": 51003010502003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "37.45"
+    "ราคาต้นทุน": "37.45",
+    "Medical Name": "Coralan Tablet (5 Mg)"
   },
   {
     "Hospital Code": 51142153000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "38.88"
+    "ราคาต้นทุน": "38.88",
+    "Medical Name": "Arcoxia 60 Mg Tab"
   },
   {
     "Hospital Code": 51171916000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "38.91"
+    "ราคาต้นทุน": "38.91",
+    "Medical Name": "Pariet 20 Mg Tab"
   },
   {
     "Hospital Code": 51181722000002,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "387.70"
+    "ราคาต้นทุน": "387.70",
+    "Medical Name": "Avamys NasalSpray (27.5 Mcg/D)(60 Doses)"
   },
   {
     "Hospital Code": 51141504000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "39.70"
+    "ราคาต้นทุน": "39.70",
+    "Medical Name": "Lamictal 100 Mg Tab"
   },
   {
     "Hospital Code": 51121810000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "39.91"
+    "ราคาต้นทุน": "39.91",
+    "Medical Name": "Lipitor 10 Mg Tab"
   },
   {
     "Hospital Code": 51121709000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "4.28"
+    "ราคาต้นทุน": "4.28",
+    "Medical Name": "Carvedilol 6.25 Mg Tab"
   },
   {
     "Hospital Code": 51141530000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "4.52"
+    "ราคาต้นทุน": "4.52",
+    "Medical Name": "Depakine 200 Mg Tab"
   },
   {
     "Hospital Code": 51003050101002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "4.60"
+    "ราคาต้นทุน": "4.60",
+    "Medical Name": "Doproct Rectal Suppo"
   },
   {
     "Hospital Code": 51142103000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "4.68"
+    "ราคาต้นทุน": "4.68",
+    "Medical Name": "Cataflam 25 Mg Tab"
   },
   {
     "Hospital Code": 51212004000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "4.73"
+    "ราคาต้นทุน": "4.73",
+    "Medical Name": "Reparil (20 Mg) Tablet"
   },
   {
     "Hospital Code": 51171913000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "40.78"
+    "ราคาต้นทุน": "40.78",
+    "Medical Name": "Nexium 20 Mg Tab"
   },
   {
     "Hospital Code": 51181731000024,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "404.46"
+    "ราคาต้นทุน": "404.46",
+    "Medical Name": "Nasacort Aq Nasal Spray (120D)"
   },
   {
     "Hospital Code": 51101548000001,
     "หน่วย": "SAC",
-    "ราคาต้นทุน": "406.60"
+    "ราคาต้นทุน": "406.60",
+    "Medical Name": "Monurol 3 g Granule"
   },
   {
     "Hospital Code": 51141518000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "41.10"
+    "ราคาต้นทุน": "41.10",
+    "Medical Name": "Keppra 500 Mg Tab"
   },
   {
     "Hospital Code": 51121819000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "41.73"
+    "ราคาต้นทุน": "41.73",
+    "Medical Name": "Ezetrol 10 Mg Tab"
   },
   {
     "Hospital Code": 51007040204004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "42.80"
+    "ราคาต้นทุน": "42.80",
+    "Medical Name": "Vesicare 5 Mg Tab"
   },
   {
     "Hospital Code": 51131708000005,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "42.80"
+    "ราคาต้นทุน": "42.80",
+    "Medical Name": "Pletaal SR CAPSULES (100 mg)"
   },
   {
     "Hospital Code": 51141633000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "42.80"
+    "ราคาต้นทุน": "42.80",
+    "Medical Name": "Lexapro 10 Mg Tab"
   },
   {
     "Hospital Code": 51171906000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "42.80"
+    "ราคาต้นทุน": "42.80",
+    "Medical Name": "Prevacid Fdt-30 Mg Tab"
   },
   {
     "Hospital Code": 51241104000001,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "439.61"
+    "ราคาต้นทุน": "439.61",
+    "Medical Name": "Azopt Eye Drop (5 Ml)"
   },
   {
     "Hospital Code": 51001100224013,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "44.58"
+    "ราคาต้นทุน": "44.58",
+    "Medical Name": "Jardiance Duo TABLET (12.5/1000 mg)"
   },
   {
     "Hospital Code": 51019020403003,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "45.00"
+    "ราคาต้นทุน": "45.00",
+    "Medical Name": "Dewax Ear-Drop"
   },
   {
     "Hospital Code": 51141636000004,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "45.88"
+    "ราคาต้นทุน": "45.88",
+    "Medical Name": "Efexor Xr  37.5 Mg  Cap"
   },
   {
     "Hospital Code": 51002010103002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "45.99"
+    "ราคาต้นทุน": "45.99",
+    "Medical Name": "Brilinta Tablet (90 Mg)"
   },
   {
     "Hospital Code": 51003100201002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "46.15"
+    "ราคาต้นทุน": "46.15",
+    "Medical Name": "Vytorin 10/20 Mg Tab"
   },
   {
     "Hospital Code": 51182014000001,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "47.27"
+    "ราคาต้นทุน": "47.27",
+    "Medical Name": "Avodart 0.5 Mg Cap"
   },
   {
     "Hospital Code": 51141534000001,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "47.29"
+    "ราคาต้นทุน": "47.29",
+    "Medical Name": "Lyrica (75 mg) Capsule"
   },
   {
     "Hospital Code": 51142153000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "47.44"
+    "ราคาต้นทุน": "47.44",
+    "Medical Name": "Arcoxia 120 Mg Tab"
   },
   {
     "Hospital Code": 51181722000009,
     "หน่วย": "BOX",
-    "ราคาต้นทุน": "470.57"
+    "ราคาต้นทุน": "470.57",
+    "Medical Name": "Dymista Nasal Spray (17 mL)"
   },
   {
     "Hospital Code": 51001100208003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "49.22"
+    "ราคาต้นทุน": "49.22",
+    "Medical Name": "Januvia 100 Mg Tab"
   },
   {
     "Hospital Code": 51001100208005,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "49.71"
+    "ราคาต้นทุน": "49.71",
+    "Medical Name": "Trajenta Tablet(5 Mg)"
   },
   {
     "Hospital Code": 51014060301001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "5.19"
+    "ราคาต้นทุน": "5.19",
+    "Medical Name": "Deanxit Tab"
   },
   {
     "Hospital Code": 51007040224002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "5.35"
+    "ราคาต้นทุน": "5.35",
+    "Medical Name": "Pocitrin TABLET"
   },
   {
     "Hospital Code": 51171707000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "5.35"
+    "ราคาต้นทุน": "5.35",
+    "Medical Name": "Gastro-Bismol 524 Mg Tab"
   },
   {
     "Hospital Code": 51171816000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "5.35"
+    "ราคาต้นทุน": "5.35",
+    "Medical Name": "Onsia 8 Mg Tab"
   },
   {
     "Hospital Code": 51191905000071,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "5.40"
+    "ราคาต้นทุน": "5.40",
+    "Medical Name": "Z-Bec Tablet"
   },
   {
     "Hospital Code": 51121810000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "5.51"
+    "ราคาต้นทุน": "5.51",
+    "Medical Name": "Atorvastatin TABLET (20 mg)"
   },
   {
     "Hospital Code": 51007030403001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "5.56"
+    "ราคาต้นทุน": "5.56",
+    "Medical Name": "Primolut-N 5 Mg Tab"
   },
   {
     "Hospital Code": 51211502000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "5.89"
+    "ราคาต้นทุน": "5.89",
+    "Medical Name": "Colchicine TABLET (0.6 mg)"
   },
   {
     "Hospital Code": 51161901000001,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "50.58"
+    "ราคาต้นทุน": "50.58",
+    "Medical Name": "Iliadin 0.025%Nasal Drops (10Ml)"
   },
   {
     "Hospital Code": 51101522000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "50.83"
+    "ราคาต้นทุน": "50.83",
+    "Medical Name": "Klacid  500 Mg Tab"
   },
   {
     "Hospital Code": 51181749000006,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "503.41"
+    "ราคาต้นทุน": "503.41",
+    "Medical Name": "Nasonex Nasal Spray (60 D)"
   },
   {
     "Hospital Code": 51142904000002,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "507.61"
+    "ราคาต้นทุน": "507.61",
+    "Medical Name": "Xylocaine 10% Spray 50 Ml"
   },
   {
     "Hospital Code": 51182014000002,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "51.89"
+    "ราคาต้นทุน": "51.89",
+    "Medical Name": "Duodart CAPSULE (0.5mg/0.4mg)"
   },
   {
     "Hospital Code": 51010010318013,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "523.08"
+    "ราคาต้นทุน": "523.08",
+    "Medical Name": "Augmentin Es 642.9 Mg 50 Ml Syr"
   },
   {
     "Hospital Code": 51171915000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "53.30"
+    "ราคาต้นทุน": "53.30",
+    "Medical Name": "Controloc 40 Mg Tab"
   },
   {
     "Hospital Code": 51121705000008,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "53.50"
+    "ราคาต้นทุน": "53.50",
+    "Medical Name": "Eliquis TABLET (5 mg)"
   },
   {
     "Hospital Code": 51007040324003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "53.69"
+    "ราคาต้นทุน": "53.69",
+    "Medical Name": "Betmiga TABLET (50 MG)"
   },
   {
     "Hospital Code": 51018030111004,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "535.00"
+    "ราคาต้นทุน": "535.00",
+    "Medical Name": "Seretide 25/50 Mcg Evohaler (120D)"
   },
   {
     "Hospital Code": 51001100224004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "54.14"
+    "ราคาต้นทุน": "54.14",
+    "Medical Name": "Forxiga TABLET (10 mg)"
   },
   {
     "Hospital Code": 51141639000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "54.33"
+    "ราคาต้นทุน": "54.33",
+    "Medical Name": "Pristiq Tablet 50 Mg"
   },
   {
     "Hospital Code": 51141636000002,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "54.86"
+    "ราคาต้นทุน": "54.86",
+    "Medical Name": "Efexor-Xr 75 Mg  Cap"
   },
   {
     "Hospital Code": 51001030105002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "55.64"
+    "ราคาต้นทุน": "55.64",
+    "Medical Name": "Resolor Tablet(2 Mg)"
   },
   {
     "Hospital Code": 51007040203001,
     "หน่วย": "BOX",
-    "ราคาต้นทุน": "554.27"
+    "ราคาต้นทุน": "554.27",
+    "Medical Name": "Uralyt-U Granules"
   },
   {
     "Hospital Code": 51181722000001,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "556.40"
+    "ราคาต้นทุน": "556.40",
+    "Medical Name": "Avamys NasalSpray (27.5 Mcg/D)(120Doses)"
   },
   {
     "Hospital Code": 51241110000001,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "558.54"
+    "ราคาต้นทุน": "558.54",
+    "Medical Name": "Xalatan Eye Drops"
   },
   {
     "Hospital Code": 51002010105001,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "56.18"
+    "ราคาต้นทุน": "56.18",
+    "Medical Name": "Pradaxa Capsule (110 Mg)"
   },
   {
     "Hospital Code": 51002010105002,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "56.18"
+    "ราคาต้นทุน": "56.18",
+    "Medical Name": "Pradaxa Capsule (150 Mg)"
   },
   {
     "Hospital Code": 51121823000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "57.25"
+    "ราคาต้นทุน": "57.25",
+    "Medical Name": "Crestor 20 Mg Tab"
   },
   {
     "Hospital Code": 51121705000007,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "58.28"
+    "ราคาต้นทุน": "58.28",
+    "Medical Name": "Eliquis TABLET (2.5 mg)"
   },
   {
     "Hospital Code": 51014060124008,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "58.47"
+    "ราคาต้นทุน": "58.47",
+    "Medical Name": "Valdoxan Tablet (25 Mg)"
   },
   {
     "Hospital Code": 51014060424005,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "58.85"
+    "ราคาต้นทุน": "58.85",
+    "Medical Name": "Brintellix TABLET (10 mg)"
   },
   {
     "Hospital Code": 51007010124002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "59.19"
+    "ราคาต้นทุน": "59.19",
+    "Medical Name": "Gynoflor Tablet Vaginal  Suppo"
   },
   {
     "Hospital Code": 51141635000001,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "59.23"
+    "ราคาต้นทุน": "59.23",
+    "Medical Name": "Cymbalta 30 Mg Cap"
   },
   {
     "Hospital Code": 51002030201003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "6.28"
+    "ราคาต้นทุน": "6.28",
+    "Medical Name": "Methycobal  500 Mcg Tab"
   },
   {
     "Hospital Code": 51161701000018,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "6.63"
+    "ราคาต้นทุน": "6.63",
+    "Medical Name": "Fluimucil A 200 mg Granules"
   },
   {
     "Hospital Code": 51001070503002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "6.74"
+    "ราคาต้นทุน": "6.74",
+    "Medical Name": "Salazopyrin-EN TABLET (500 mg)"
   },
   {
     "Hospital Code": 51121726000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "6.90"
+    "ราคาต้นทุน": "6.90",
+    "Medical Name": "Natrilix-Sr 1.5 Mg Tab"
   },
   {
     "Hospital Code": 51161621000007,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "6.90"
+    "ราคาต้นทุน": "6.90",
+    "Medical Name": "Fexofenadine TABLET (180 mg)"
   },
   {
     "Hospital Code": 51181754000005,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "60.31"
+    "ราคาต้นทุน": "60.31",
+    "Medical Name": "Diprotop Oint 5 Gm"
   },
   {
     "Hospital Code": 51181517000008,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "60.68"
+    "ราคาต้นทุน": "60.68",
+    "Medical Name": "Xigduo XR TABLET (10/1000 mg)"
   },
   {
     "Hospital Code": 51101583000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "60.73"
+    "ราคาต้นทุน": "60.73",
+    "Medical Name": "Meiact Tablet (200 mg)"
   },
   {
     "Hospital Code": 51004010103011,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "64.20"
+    "ราคาต้นทุน": "64.20",
+    "Medical Name": "Zalain Cream  5 Gm"
   },
   {
     "Hospital Code": 51018030111010,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "642.00"
+    "ราคาต้นทุน": "642.00",
+    "Medical Name": "Seretide 25/125 Mcg Evohaler (120D)"
   },
   {
     "Hospital Code": 51101572000011,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "65.50"
+    "ราคาต้นทุน": "65.50",
+    "Medical Name": "Zithromax TABLET (250 mg)"
   },
   {
     "Hospital Code": 51181811000001,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "66.34"
+    "ราคาต้นทุน": "66.34",
+    "Medical Name": "Marvelon  Tab (21'S)"
   },
   {
     "Hospital Code": 51121810000006,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "69.55"
+    "ราคาต้นทุน": "69.55",
+    "Medical Name": "Lipitor 40 Mg Tab"
   },
   {
     "Hospital Code": 51013030224004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "7.10"
+    "ราคาต้นทุน": "7.10",
+    "Medical Name": "Myonal 50 Mg Tab"
   },
   {
     "Hospital Code": 51182001000003,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "7.20"
+    "ราคาต้นทุน": "7.20",
+    "Medical Name": "Finasteride TABLET (5 mg)"
   },
   {
     "Hospital Code": 51172101000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "7.43"
+    "ราคาต้นทุน": "7.43",
+    "Medical Name": "Colofac  135 Mg Tab"
   },
   {
     "Hospital Code": 51161630000002,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "7.49"
+    "ราคาต้นทุน": "7.49",
+    "Medical Name": "Chlorpheniramine Syr 60Ml"
   },
   {
     "Hospital Code": 51121709000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "7.50"
+    "ราคาต้นทุน": "7.50",
+    "Medical Name": "Carvedilol 25 Mg"
   },
   {
     "Hospital Code": 51141916000009,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "7.70"
+    "ราคาต้นทุน": "7.70",
+    "Medical Name": "Stresam Capsule (50 Mg)"
   },
   {
     "Hospital Code": 51001100224024,
     "หน่วย": "SET",
-    "ราคาต้นทุน": "7,000.00"
+    "ราคาต้นทุน": "7000.00",
+    "Medical Name": "Ozempic 0.5 mg/Dose Prefilled Pen (2 mg/1.5 mL/Prefilled Pen) @"
   },
   {
     "Hospital Code": 51141534000002,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "71.08"
+    "ราคาต้นทุน": "71.08",
+    "Medical Name": "Lyrica (150 Mg) Capsule"
   },
   {
     "Hospital Code": 51101538000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "72.76"
+    "ราคาต้นทุน": "72.76",
+    "Medical Name": "Cravit 500 Mg Tab"
   },
   {
     "Hospital Code": 51004070302006,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "74.34"
+    "ราคาต้นทุน": "74.34",
+    "Medical Name": "Dermacombin Cream 5 Gm"
   },
   {
     "Hospital Code": 51018030111011,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "749.00"
+    "ราคาต้นทุน": "749.00",
+    "Medical Name": "Seretide 50/250 Mcg Accuhaler (60D)"
   },
   {
     "Hospital Code": 51101550000007,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "76.46"
+    "ราคาต้นทุน": "76.46",
+    "Medical Name": "Keflex (125 Mg/5 Ml) Susp 60Ml"
   },
   {
     "Hospital Code": 51181749000001,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "77.01"
+    "ราคาต้นทุน": "77.01",
+    "Medical Name": "Elomet Cream  5 Gm"
   },
   {
     "Hospital Code": 51004070203007,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "77.78"
+    "ราคาต้นทุน": "77.78",
+    "Medical Name": "Diprosalic Ointment (5 gm) (TUBE)"
   },
   {
     "Hospital Code": 51102318000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "78.16"
+    "ราคาต้นทุน": "78.16",
+    "Medical Name": "Valtrex  500 Mg Tab"
   },
   {
     "Hospital Code": 51013040101002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "78.47"
+    "ราคาต้นทุน": "78.47",
+    "Medical Name": "Feburic TABLET (80mg)"
   },
   {
     "Hospital Code": 51142114000005,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "79.85"
+    "ราคาต้นทุน": "79.85",
+    "Medical Name": "Difflam Solution 200 Ml"
   },
   {
     "Hospital Code": 51172003000002,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "8.03"
+    "ราคาต้นทุน": "8.03",
+    "Medical Name": "Ursolin  250 Mg Cap"
   },
   {
     "Hospital Code": 51001030601011,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "8.10"
+    "ราคาต้นทุน": "8.10",
+    "Medical Name": "Meteospasmyl CAPSULE (60/300 mg)"
   },
   {
     "Hospital Code": 51142131000003,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "8.10"
+    "ราคาต้นทุน": "8.10",
+    "Medical Name": "Celecoxib CAPSULE (200 mg)"
   },
   {
     "Hospital Code": 51181517000007,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "8.21"
+    "ราคาต้นทุน": "8.21",
+    "Medical Name": "Glucophage XR TABLET(1000 mg)"
   },
   {
     "Hospital Code": 51142503000001,
     "หน่วย": "CAP",
-    "ราคาต้นทุน": "8.45"
+    "ราคาต้นทุน": "8.45",
+    "Medical Name": "Madopar Hbs 125 Mg Cap"
   },
   {
     "Hospital Code": 51151822000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "8.56"
+    "ราคาต้นทุน": "8.56",
+    "Medical Name": "Betaloc Zok Tablet(100 Mg)"
   },
   {
     "Hospital Code": 51121725000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "8.68"
+    "ราคาต้นทุน": "8.68",
+    "Medical Name": "Concor 5 Mg Tab"
   },
   {
     "Hospital Code": 51141634000009,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "80.25"
+    "ราคาต้นทุน": "80.25",
+    "Medical Name": "Rexulti TABLET (1 mg)"
   },
   {
     "Hospital Code": 51111827000001,
     "หน่วย": "PCK",
-    "ราคาต้นทุน": "801.76"
+    "ราคาต้นทุน": "801.76",
+    "Medical Name": "Livial Tablet"
   },
   {
     "Hospital Code": 51181730000001,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "81.65"
+    "ราคาต้นทุน": "81.65",
+    "Medical Name": "Pred-Forte Eye Drops"
   },
   {
     "Hospital Code": 51161901000003,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "83.54"
+    "ราคาต้นทุน": "83.54",
+    "Medical Name": "Iliadin Nasal Metered Spray 0.05% 10 Ml"
   },
   {
     "Hospital Code": 51131709000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "84.00"
+    "ราคาต้นทุน": "84.00",
+    "Medical Name": "Plavix 75 Mg Tab"
   },
   {
     "Hospital Code": 51014010202007,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "85.60"
+    "ราคาต้นทุน": "85.60",
+    "Medical Name": "Kamistad Gel N"
   },
   {
     "Hospital Code": 51241114000002,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "87.74"
+    "ราคาต้นทุน": "87.74",
+    "Medical Name": "Isopto Carpine 2% Eye Drops"
   },
   {
     "Hospital Code": 51181749000005,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "877.40"
+    "ราคาต้นทุน": "877.40",
+    "Medical Name": "Nasonex Nasal Spray (140D)"
   },
   {
     "Hospital Code": 51001100224012,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "89.17"
+    "ราคาต้นทุน": "89.17",
+    "Medical Name": "Jardiance TABLET (25 mg)"
   },
   {
     "Hospital Code": 51102301000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "9.17"
+    "ราคาต้นทุน": "9.17",
+    "Medical Name": "Acyclovir 800 Mg Tab"
   },
   {
     "Hospital Code": 51212027000001,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "9.27"
+    "ราคาต้นทุน": "9.27",
+    "Medical Name": "Tanakan (40 Mg) Tablet"
   },
   {
     "Hospital Code": 51211501000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "9.58"
+    "ราคาต้นทุน": "9.58",
+    "Medical Name": "Zyloric 300 Mg Tab"
   },
   {
     "Hospital Code": 51142110000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "9.61"
+    "ราคาต้นทุน": "9.61",
+    "Medical Name": "Synflex 275 Mg Tab"
   },
   {
     "Hospital Code": 51161629000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "9.63"
+    "ราคาต้นทุน": "9.63",
+    "Medical Name": "Zyrtec 10 Mg Tab"
   },
   {
     "Hospital Code": 51161608000002,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "9.82"
+    "ราคาต้นทุน": "9.82",
+    "Medical Name": "Serc TABLET (24 mg)"
   },
   {
     "Hospital Code": 51121725000004,
     "หน่วย": "TAB",
-    "ราคาต้นทุน": "9.98"
+    "ราคาต้นทุน": "9.98",
+    "Medical Name": "Concor AM TABLET (5/5 mg)"
   },
   {
     "Hospital Code": 51181710000002,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "90.03"
+    "ราคาต้นทุน": "90.03",
+    "Medical Name": "Topicorte Cream (15 G)"
   },
   {
     "Hospital Code": 51161903000002,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "90.47"
+    "ราคาต้นทุน": "90.47",
+    "Medical Name": "Otrivin Md NasalSpray Child 0.05% (10mL)"
   },
   {
     "Hospital Code": 51241234000006,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "90.92"
+    "ราคาต้นทุน": "90.92",
+    "Medical Name": "Fucidin Cream 5 Gm"
   },
   {
     "Hospital Code": 51019010301013,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "90.95"
+    "ราคาต้นทุน": "90.95",
+    "Medical Name": "Tobradex Eye Oint"
   },
   {
     "Hospital Code": 51019010701002,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "91.05"
+    "ราคาต้นทุน": "91.05",
+    "Medical Name": "Naphcon-A Eye Drops"
   },
   {
     "Hospital Code": 51161629000005,
     "หน่วย": "BOT",
-    "ราคาต้นทุน": "95.29"
+    "ราคาต้นทุน": "95.29",
+    "Medical Name": "Zyrtec oral SOLUTION (1 mg/mL)(75 mL)"
   },
   {
     "Hospital Code": 51004070303011,
     "หน่วย": "TUB",
-    "ราคาต้นทุน": "99.51"
+    "ราคาต้นทุน": "99.51",
+    "Medical Name": "Fucicort Cream 5 Gm"
   },
   {
     "Hospital Code": 23151823000017,
