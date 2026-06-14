@@ -1,49 +1,56 @@
 # AA Extensions — BKN Hospital Pharmacy
 
 > Internal tooling monorepo for the **BKN Hospital Pharmacy Department**  
-> Three Chrome extensions and a local backend server, all targeting the Arcusair clinical workbench.
+> Chrome extensions + a Python backend, all targeting ArcusAir (`arcusair.bdms.co.th`).
 
+![Extension Version](https://img.shields.io/badge/BKNPharmacyPortal-v3.0.0-blue)
 ![Manifest](https://img.shields.io/badge/manifest-v3-green)
 ![License](https://img.shields.io/badge/license-Internal-grey)
 
 ---
 
-## Projects
+## Active Projects
 
-| Folder | Name | Type | Description |
-|---|---|---|---|
-| [`rx_menu/`](rx_menu/) | BKN Pharmacy | Chrome Extension v2.1 | IV/auxiliary label printing, IPD queue, reports, quick links, formulary, knowledge hub |
-| [`AAOverlay/`](AAOverlay/) | Discharge Process Checklist | Chrome Extension v2.3.14 | Discharge tools injected into Arcusair: home-med sheet, med stickers, patient stickers, med reconciliation, allergy cards |
-| [`Automate/`](Automate/) | Arcus Toolkit | Chrome Extension v4.0.0 | One-click automation of Auto Dispense and IP Fill workflows on Arcusair |
-| [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | Python (stdlib only) | Local REST API backing KPI tracking, knowledge sharing, and pharmacy master data |
+| Folder | Name | Description |
+|---|---|---|
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | **BKN Pharmacy Portal** (v3.0.0) | Primary extension — unified portal merging all pharmacy tools |
+| [`Automate/`](Automate/) | Arcus Toolkit | Separate utility extension for Auto Dispense / IP Fill automation |
+| [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | Python stdlib backend for KPI, scheduling, master data, and medication DB |
 
----
-
-## rx_menu — BKN Pharmacy Extension
-
-Full documentation: [rx_menu/README.md](README.md) *(root README covers this extension in detail)*
-
-**Key features:**
-- IV Sticker: generate and print IV labels for IPD patients (HAD, PFS, ATB, Cytotoxic, EYE types)
-- Auxiliary Sticker: premix and mixing labels (10×5 cm sheet, 6 labels per sheet)
-- IPD Queue: load active inpatient list from Arcusair MRD, push Visit IDs to Drug Delivery
-- Reports: RT_COMMON_257 dispensing report, RT_COMMON_917 stock picking PDF
-- Formulary, Knowledge Hub, and KPI viewer (backed by `pharmacy_server/`)
-- Quick links to internal hospital systems
+> **Legacy rollback copies** (`rx_menu/`, `AAOverlay/`) have been removed. All their functionality is live in `BKNPharmacyPortal/`.
 
 ---
 
-## AAOverlay — Discharge Process Checklist
+## BKNPharmacyPortal — BKN Pharmacy Portal
 
-Full documentation: [AAOverlay/README.md](AAOverlay/README.md)
+Full documentation: [BKNPharmacyPortal/README.md](BKNPharmacyPortal/README.md)
 
-**Key features:**
-- Injects buttons directly into the Arcusair Discharge and Dispense Workbench routes
-- Home Medication Sheet: formatted A4 printable from the discharge dialog med table
-- Medication Sticker: dispense order sticker printing with POM list overlay
-- Patient Sticker: barcode patient ID labels (JsBarcode)
-- Medication Reconciliation, Allergy Card, Patient Address, Unreceivable Medications pages
-- Shared Thai ↔ English medical glossary for drug name translation
+Unified MV3 Chrome extension merging two predecessor extensions (`rx_menu` + `AAOverlay`) under a shared pharmacy-server data layer (`BKNData`).
+
+**Feature areas (injected into ArcusAir):**
+
+| Feature | Description |
+|---|---|
+| Home Med Sheet | Discharge medication sheet (Thai, printable, with photos and editable lines) |
+| Med Sticker | Medication labels from dispense workbench / POM list |
+| Patient Sticker | Patient ID / address / med-reconcile / allergy / unreceivable labels |
+| ADR Drug Timeline | Drug Gantt chart with ADR events, multi-range editing, print-to-one-page |
+| Med Journey | Per-drug continuity grid across encounters |
+
+**Top-level extension pages (popup tabs):**
+
+| Page | Description |
+|---|---|
+| IV / Aux Sticker | IV label printing (HAD, PFS, ATB, Cytotoxic, EYE) and premix mixing labels |
+| IPD Queue | Active inpatient list from ArcusAir MRD → push to Drug Delivery |
+| Reports | RT_COMMON_257 dispensing report, RT_COMMON_917 stock picking PDF |
+| Formulary | Drug formulary browser |
+| Knowledge Hub | Internal knowledge sharing |
+| KPI Viewer | Daily KPI tracking backed by pharmacy server |
+| Schedule | Staff shift schedule with booking rules and auth gate |
+| Vaccine | Vaccine schedule viewer |
+
+**Load unpacked:** `chrome://extensions` → Developer mode → **Load unpacked** → `BKNPharmacyPortal/`
 
 ---
 
@@ -51,11 +58,9 @@ Full documentation: [AAOverlay/README.md](AAOverlay/README.md)
 
 Full documentation: [Automate/README.md](Automate/README.md)
 
-**Key features:**
-- Floating control panel injected into Arcusair Dispense Workbench and IP Fill queue
-- Automates order row iteration with configurable filters (pharmacy type, status)
-- Live progress stats and step-by-step action log
-- Popup for one-click navigation to each workflow
+Floating control panel injected into ArcusAir Dispense Workbench and IP Fill queue. Automates order row iteration with configurable filters, live progress stats, and step-by-step action log.
+
+**Load unpacked:** `chrome://extensions` → **Load unpacked** → `Automate/`
 
 ---
 
@@ -63,11 +68,9 @@ Full documentation: [Automate/README.md](Automate/README.md)
 
 Full documentation: [pharmacy_server/README.md](pharmacy_server/README.md)
 
-**Key features:**
-- Single Python file, no dependencies beyond stdlib (Python 3.6+)
-- REST API for daily KPI documents, med-error logging, knowledge sharing collections
-- Master data endpoints for IV drugs, premix drugs, mixing protocols, and pharmacy staff
-- Serves static files from `www/` alongside the API
+Single-file Python (stdlib only, 3.6+) `ThreadingHTTPServer`. All cross-workstation data flows through this server — extensions fetch fresh on each request (no localStorage caches).
+
+**Key endpoints:** KPI documents, med-error log, knowledge collections, booking/schedule state, medication DB (images + instructions), frequency master, order item labels.
 
 **Start the server:**
 ```bash
@@ -76,28 +79,64 @@ python bkn_ks_server.py          # default port 8765
 python bkn_ks_server.py --port 9000
 ```
 
+On Windows: `start_server.bat`. Server URL stored in Chrome extension storage under `bknks.serverUrl`.
+
+> **Note:** Never modify `pharmacy_server/data/` manually — protected by `.gitignore` + `--skip-worktree` so git pull won't overwrite production data.
+
 ---
 
 ## Host Integrations
 
 | Host | Used by |
 |---|---|
-| `arcusair.bdms.co.th` | All three extensions (Arcusair clinical workbench) |
-| `10.134.10.91` (Drug Delivery) | `rx_menu` — IPD queue push |
-| `bdmsgroup-my.sharepoint.com` | `rx_menu` — SharePoint document access |
-| `script.google.com` | `rx_menu` — Med Rec Google Apps Script trigger |
-| `translate.googleapis.com` | `AAOverlay` — Drug name translation |
-| `localhost:8765` | `rx_menu` — pharmacy_server API |
+| `arcusair.bdms.co.th` | BKNPharmacyPortal (content scripts), Automate |
+| `10.134.10.91` (Drug Delivery) | BKNPharmacyPortal — IPD queue push |
+| `10.134.110.81:8765` | BKNPharmacyPortal — pharmacy server API |
+| `bdmsgroup-my.sharepoint.com` | BKNPharmacyPortal — SharePoint document access |
+| `script.google.com` | BKNPharmacyPortal — Med Rec Google Apps Script |
+| `translate.googleapis.com` | BKNPharmacyPortal — offline fallback drug name translation |
 
 ---
 
-## Installing the Extensions
+## Version History
 
-All extensions are internal-only and not published to the Chrome Web Store.
+### v3.0.0 — 2026-05-28 · BKNPharmacyPortal launch (merge)
+- Merged `rx_menu` (BKN Pharmacy) + `AAOverlay` (Discharge Process Checklist) into single unified MV3 extension `BKNPharmacyPortal/`
+- Shared pharmacy-server data layer (`BKNData` / `shared-data-client.js`) replacing per-extension localStorage
+- All cross-workstation data routed through `pharmacy_server` (no localStorage caches)
 
-1. Open Chrome → `chrome://extensions/`
-2. Enable **Developer mode** (top-right toggle)
-3. Click **Load unpacked** for each extension folder (`rx_menu/`, `AAOverlay/`, `Automate/`)
+### v3.0.1 — 2026-05-29
+- Booking rules editor added to Schedule page
+- Trusted Chrome extension origins validated server-side without re-registering IDs
+- Welcome page added; deprecated popup files removed
+
+### v3.1.0 — 2026-06-01
+- Patient sticker injected via shared `.bkn-tool-group` collapsible button strip next to `#paprint`
+- Dispense route detection and toolbar button management refactored
+- Debounced `MutationObserver` + `hashchange`/`popstate` guard on patient pages only
+
+### v3.2.0 — 2026-06-02
+- Animated terminal dashboard for `pharmacy_server` (Maprang game)
+- Home Med Sheet: translations cached — no repeated Google Translate calls on re-render
+- Patient sticker barcode fixed to use order number
+
+### v3.3.0 — 2026-06-03
+- Home Med Sheet: full Thai on first load — offline translation from `frequencymaster` + `medication-db`, no Google Translate call on initial render
+- Patient instruction notes use Thai-language `localLanguage` from `orderitem_extralabel`
+- Order item scraper added for medication codes and instruction export
+- `pharmacy_server`: fixed-window ASCII dashboard, Maprang row layout, home-med fetch logging
+- Patient sticker barcode corrected to order number (not visit number)
+
+### v3.4.0 — 2026-06-04
+- Per-feature READMEs added; lightweight `CLAUDE.md` index created
+- `medication-db`: Thai + English patient instructions for medications; Atorvastatin entry added
+- `pharmacy_server`: correct MIME types for webp/jxl/jfif medication images
+- ADR Drug Timeline: multi-ADR events with duration bars, multi-range drug editing, print fits one page
+- Standalone PowerShell Maprang dashboard for `pharmacy_server`
+
+### v3.5.0 — 2026-06-11 — 2026-06-12
+- `beedee_report.json` cost calculation fixes
+- UI redesign (popup / portal layout)
 
 ---
 

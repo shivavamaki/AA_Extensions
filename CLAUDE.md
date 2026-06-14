@@ -8,14 +8,12 @@ Internal tooling monorepo for the **BKN Hospital Pharmacy Department**. Chrome e
 
 ```text
 EXT/
-├── BKNPharmacyPortal/   ← merged extension (rx_menu + AAOverlay) — primary, ACTIVE
-├── rx_menu/             ← legacy: BKN Pharmacy (kept for rollback — do not edit)
-├── AAOverlay/           ← legacy: Discharge Process Checklist (kept for rollback — do not edit)
+├── BKNPharmacyPortal/   ← primary extension (merged from rx_menu + AAOverlay — ACTIVE)
 ├── Automate/            ← separate utility extension (Auto Dispense / IP Fill / scrapers)
 └── pharmacy_server/     ← Python stdlib HTTP server (data backend)
 ```
 
-**Active development: `BKNPharmacyPortal/` and `pharmacy_server/`.** Legacy `rx_menu/` and `AAOverlay/` exist only for rollback.
+**Active development: `BKNPharmacyPortal/` and `pharmacy_server/`.** Legacy `rx_menu/` and `AAOverlay/` have been removed — all their functionality lives in `BKNPharmacyPortal/`.
 
 ## Feature index → READMEs
 
