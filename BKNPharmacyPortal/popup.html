@@ -260,6 +260,22 @@
         </div>
       </div>
 
+      <!-- API Test (Dev Tools) -->
+      <div class="ws-section">
+        <button class="ws-section-toggle" aria-expanded="false" aria-controls="ws-apitest">
+          <span>🧪 API Test</span>
+          <span class="ws-chevron">▾</span>
+        </button>
+        <div class="ws-section-body" id="ws-apitest" hidden>
+          <p style="font-size:11px;color:var(--text-soft);margin:0 0 8px">Tests every pharmacy-server endpoint used by Home Med Sheet &amp; Medication Journey. Needs a patient open in ArcusAir for the POST report endpoints.</p>
+          <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+            <button type="button" id="btnApiTest" class="rpt-btn rpt-btn-primary" style="flex:1">🧪 Run All Tests</button>
+            <button type="button" id="btnApiTestClear" class="rpt-btn" style="flex:0 0 auto">🗑 Clear</button>
+          </div>
+          <div id="apiTestLog" style="background:#0d1b2a;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.55;max-height:420px;overflow-y:auto;color:#c9d7e8;white-space:pre-wrap;word-break:break-all;">Ready — click Run All Tests.</div>
+        </div>
+      </div>
+
     </section>
 
     <!-- ══════════════════════════════════════════════════════

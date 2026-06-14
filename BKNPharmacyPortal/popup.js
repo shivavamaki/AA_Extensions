@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initKpiApp();
   initShiftSchedule();
   initWorkspaceSections();
+  initApiTest();
 
   document.getElementById('btnAdminConsole')?.addEventListener('click', () => {
     chrome.tabs.create({ url: 'http://10.134.110.81:8765/' });
@@ -3215,4 +3216,228 @@ function escKs(v) {
   return String(v ?? '').replace(/[&<>'"]/g, s =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[s])
   );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// API Test Panel — Home Med Sheet & Medication Journey endpoints
+// ──────────────────────────────────────────────────────────────────────────────
+function initApiTest() {
+  const btn      = document.getElementById('btnApiTest');
+  const clearBtn = document.getElementById('btnApiTestClear');
+  const log      = document.getElementById('apiTestLog');
+  if (!btn || !log) return;
+
+  clearBtn?.addEventListener('click', () => { log.textContent = 'Ready — click Run All Tests.'; });
+  btn.addEventListener('click', runApiTests);
+
+  async function runApiTests() {
+    log.textContent = '';
+    btn.disabled = true;
+    btn.textContent = '⏳ Running…';
+
+    // Resolve server URL from storage (same key as shared-data-client.js).
+    const srv = await new Promise(res => {
+      try {
+        chrome.storage.local.get(['bknks.serverUrl'], r => {
+          res((r && r['bknks.serverUrl']) ? String(r['bknks.serverUrl']).replace(/\/$/, '') : REPORT_SERVER);
+        });
+      } catch (_) { res(REPORT_SERVER); }
+    });
+
+    // Retrieve patient context saved by the content script (bkn.patientContext).
+    const ctx = await new Promise(res => {
+      try {
+        chrome.storage.session.get(['bkn.patientContext'], r => {
+          res((r && r['bkn.patientContext']) || null);
+        });
+      } catch (_) { res(null); }
+    });
+
+    const puid    = ctx && ctx.patientuid    ? encodeURIComponent(ctx.patientuid)    : null;
+    const visituid = ctx && ctx.patientvisituid ? encodeURIComponent(ctx.patientvisituid) : null;
+
+    _apiLog(`🖥  Server  : ${srv}`);
+    _apiLog(`👤 Patient : ${ctx ? `puid=${ctx.patientuid}  visituid=${ctx.patientvisituid}` : '⚠  No patient context — open a patient in ArcusAir first'}`);
+    if (ctx) _apiLog(`🔑 Token   : ${ctx.incusToken ? ctx.incusToken.slice(0, 20) + '…' : '⚠  missing (report endpoints will fail)'}`);
+    _apiLog('─'.repeat(60));
+
+    // ── Endpoint definitions ────────────────────────────────────────────────
+    const ENDPOINTS = [
+      // ── Server health ──
+      {
+        label : 'Server Health',
+        method: 'GET',
+        path  : '/api/health',
+        note  : 'Simple ping — no auth or patient needed',
+        needs : [],
+        summarize: d => `ok=${d.ok}  uptime=${d.uptime ?? '—'}s`,
+      },
+
+      // ── Medication database ──
+      {
+        label : 'Medication DB',
+        method: 'GET',
+        path  : '/api/medication-db',
+        note  : 'Full medication dictionary keyed by item code',
+        needs : [],
+        summarize: d => {
+          const keys = Object.keys(d || {});
+          const sample = keys.slice(0, 2).map(k => `${k}: ${(d[k].name || '').slice(0, 30)}`);
+          return `${keys.length} entries  |  sample: ${sample.join(' | ')}`;
+        },
+        truncateJson: true,
+      },
+
+      // ── Patient profile ──
+      {
+        label : 'Patient Profile',
+        method: 'GET',
+        path  : puid ? `/api/patients/${puid}` : null,
+        note  : 'Full patient profile stored on server',
+        needs : ['puid'],
+      },
+
+      // ── Patient context ──
+      {
+        label : 'Patient Context (server copy)',
+        method: 'GET',
+        path  : puid ? `/api/patients/${puid}/context` : null,
+        note  : 'Last-pushed patient context from this workstation',
+        needs : ['puid'],
+      },
+
+      // ── ADR Timeline ──
+      {
+        label : 'ADR Timeline',
+        method: 'GET',
+        path  : puid ? `/api/patients/${puid}/adr-timeline` : null,
+        note  : 'Saved ADR events for this patient',
+        needs : ['puid'],
+      },
+
+      // ── Medication cache — Home Med Sheet ──
+      {
+        label : 'Med Cache — Home Med Sheet',
+        method: 'GET',
+        path  : (puid && visituid) ? `/api/patients/${puid}/medication-cache/${visituid}` : null,
+        note  : 'Pharmacist-edited Home Med Sheet saved for this visit',
+        needs : ['puid', 'visituid'],
+        summarize: d => d ? `kind=${d.kind}  meds=${Array.isArray(d.meds) ? d.meds.length : '—'}  savedAt=${d.savedAt || '—'}` : '(empty)',
+      },
+
+      // ── Medication cache — Medication Journey ──
+      {
+        label : 'Med Cache — Medication Journey',
+        method: 'GET',
+        path  : (puid && visituid) ? `/api/patients/${puid}/medication-cache/${visituid}__journey` : null,
+        note  : 'Pharmacist-edited Med Journey saved for this visit',
+        needs : ['puid', 'visituid'],
+        summarize: d => d ? `kind=${d.kind}  rows=${Array.isArray(d.rows) ? d.rows.length : '—'}  savedAt=${d.savedAt || '—'}` : '(empty)',
+      },
+
+      // ── Report: Home Med Sheet (POST) ──
+      {
+        label : 'Report — Home Med API',
+        method: 'POST',
+        path  : '/api/report/home-med-api',
+        note  : 'Discharge meds + allergy from ArcusAir getallorderitem (needs incus-token)',
+        needs : ['puid', 'visituid', 'incusToken'],
+        body  : ctx ? JSON.stringify({ context: ctx }) : null,
+        headers: { 'Content-Type': 'application/json' },
+        summarize: d => d && d.ok
+          ? `ok=true  meds=${Array.isArray(d.meds) ? d.meds.length : '—'}  allMeds=${d.allMeds ?? '—'}  nkda=${d.allergies?.nkda ?? '—'}  allergyItems=${d.allergies?.items?.length ?? 0}`
+          : `ok=false  error=${d?.error ?? '—'}`,
+      },
+
+      // ── Report: Medication Journey (POST) ──
+      {
+        label : 'Report — Medication Journey',
+        method: 'POST',
+        path  : '/api/report/med-journey',
+        note  : 'All orders grouped into admission/ward/home continuity timeline (needs incus-token)',
+        needs : ['puid', 'visituid', 'incusToken'],
+        body  : ctx ? JSON.stringify({ context: ctx }) : null,
+        headers: { 'Content-Type': 'application/json' },
+        summarize: d => d && d.ok
+          ? `ok=true  rows=${Array.isArray(d.rows) ? d.rows.length : '—'}  dates={adm:${d.dates?.admission || '—'} dc:${d.dates?.discharge || '—'}}`
+          : `ok=false  error=${d?.error ?? '—'}`,
+      },
+    ];
+
+    for (const ep of ENDPOINTS) {
+      await _runEndpoint(srv, ep, { puid, visituid, hasToken: !!(ctx && ctx.incusToken) });
+    }
+
+    _apiLog('─'.repeat(60));
+    _apiLog('✅ Done.');
+    btn.disabled = false;
+    btn.textContent = '🧪 Run All Tests';
+  }
+
+  async function _runEndpoint(srv, ep, { puid, visituid, hasToken }) {
+    // Check prerequisite fields.
+    const missing = (ep.needs || []).filter(n => {
+      if (n === 'puid')       return !puid;
+      if (n === 'visituid')   return !visituid;
+      if (n === 'incusToken') return !hasToken;
+      return false;
+    });
+    _apiLog(`\n[${ep.method}] ${ep.path || '(skipped)'}`);
+    _apiLog(`  📋 ${ep.label}`);
+    _apiLog(`  ℹ  ${ep.note}`);
+
+    if (!ep.path || missing.length) {
+      _apiLog(`  ⏭  Skipped — missing: ${missing.length ? missing.join(', ') : 'path'}`, '#f5a623');
+      return;
+    }
+
+    const t0 = Date.now();
+    try {
+      const fetchOpts = { method: ep.method, headers: ep.headers || {} };
+      if (ep.body) fetchOpts.body = ep.body;
+
+      const resp = await fetch(srv + ep.path, fetchOpts);
+      const ms   = Date.now() - t0;
+      const ok   = resp.ok;
+
+      let json = null;
+      let rawText = '';
+      try {
+        rawText = await resp.text();
+        json = JSON.parse(rawText);
+      } catch (_) { json = null; }
+
+      const statusEmoji = ok ? '✅' : '❌';
+      _apiLog(`  ${statusEmoji} HTTP ${resp.status}  (${ms}ms)`, ok ? '#4ade80' : '#f87171');
+
+      if (ep.summarize && json !== null) {
+        try { _apiLog(`  📊 ${ep.summarize(json)}`, '#93c5fd'); } catch (_) {}
+      }
+
+      // Print full JSON (truncated for huge responses like medication-db).
+      if (json !== null) {
+        const pretty = JSON.stringify(json, null, 2);
+        const MAX = ep.truncateJson ? 800 : 4000;
+        _apiLog('  ── JSON ──');
+        _apiLog(pretty.length > MAX
+          ? pretty.slice(0, MAX) + `\n  … [${pretty.length} chars total — truncated]`
+          : pretty, '#e2e8f0');
+      } else if (rawText) {
+        _apiLog(`  ── Raw ──\n${rawText.slice(0, 400)}`, '#fcd34d');
+      }
+
+    } catch (err) {
+      const ms = Date.now() - t0;
+      _apiLog(`  ❌ Fetch failed (${ms}ms): ${err.message}`, '#f87171');
+      console.error(`[API Test] ${ep.label}:`, err);
+    }
+  }
+
+  function _apiLog(text, color) {
+    const span = document.createElement('span');
+    span.textContent = text + '\n';
+    if (color) span.style.color = color;
+    log.appendChild(span);
+    log.scrollTop = log.scrollHeight;
+  }
 }
