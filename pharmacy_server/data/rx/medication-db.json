@@ -26129,16 +26129,8 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [
-      {
-        "type": "Patient Instruction",
-        "EN": "For pain (Anti-inflammatory-Take after meal immediately)",
-        "TH": "แก้ปวด ลดอักเสบของข้อและกล้ามเนื้อ (ทานหลังอาหารทันที)",
-        "_auto": true,
-        "autoAt": "2026-06-11T06:23:24.217071+00:00"
-      }
-    ],
-    "instructionCount": 1
+    "instructions": [],
+    "instructionCount": 0
   },
   "51142131000002": {
     "code": "51142131000002",

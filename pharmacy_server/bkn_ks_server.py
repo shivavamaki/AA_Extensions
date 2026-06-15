@@ -391,6 +391,56 @@ def fetch_arcus_discharge_meds(ctx):
 
 ARCUS_MEDRECON_URL = ARCUS_BASE + '/ordermanagement/medreconcile/getdetail'
 
+ARCUS_APPT_URL = ARCUS_BASE + '/enterprise/appointmentschedule/getfuturebookingforpatient'
+
+_THAI_MONTHS = [
+    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
+]
+
+
+def _thai_datetime(iso_str):
+    """ISO UTC string → Thai date+time in Buddhist Era (UTC+7)."""
+    from datetime import datetime, timezone, timedelta
+    try:
+        dt = datetime.fromisoformat(iso_str.replace('Z', '+00:00'))
+        bkk = dt.astimezone(timezone(timedelta(hours=7)))
+        return (f'{bkk.day} {_THAI_MONTHS[bkk.month - 1]} {bkk.year + 543}'
+                f' เวลา {bkk.strftime("%H:%M")} น.')
+    except Exception:
+        return iso_str
+
+
+def fetch_arcus_future_appointments(ctx):
+    """POST to ArcusAir getfuturebookingforpatient. Returns JSON."""
+    from datetime import datetime, timezone
+    now_iso = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+    return _arcus_post_json(ARCUS_APPT_URL, ctx, {
+        'patientuid': ctx.get('patientuid', ''),
+        'futureapptstartdate': now_iso,
+    })
+
+
+def format_appointments_th(data):
+    """Build Thai appointment summary text from getfuturebookingforpatient JSON."""
+    appts = (data or {}).get('appointments') or []
+    if not appts:
+        return ('ไม่มีนัดติดตามอาการ '
+                'แต่ถ้าพบอาการผิดปรกติหรืออาการแย่ลง '
+                'แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม')
+    lines = []
+    for a in appts:
+        service = _hm_norm((a.get('servicetypeuid') or {}).get('valuedescription') or '')
+        start   = _thai_datetime(a.get('start') or '')
+        dept    = _hm_norm(a.get('departmentname') or '')
+        provider = _hm_norm(a.get('careprovidername') or '')
+        comments = _hm_norm(a.get('comments') or '')
+        line = f'คนไข้มีนัดหมาย{service} วันที่ {start} ที่แผนก {dept} กับ {provider}'
+        if comments:
+            line += f' หมายเหตุ {comments}'
+        lines.append(line)
+    return '\n'.join(lines)
+
 
 def fetch_arcus_medreconcile(ctx):
     """POST to ArcusAir medreconcile/getdetail. Needs ctx.medreconcileuid
@@ -604,25 +654,25 @@ def _arcus_item_to_med(it):
         instr_parts.append(verb)
     if dosage:
         instr_parts.append(str(dosage) + (' ' + dose_unit if dose_unit else ''))
-    if route:
-        instr_parts.append(route)
     if freq:
         instr_parts.append(freq)
-    # Keep the instruction fully English here. The client's offline pattern
-    # engine (matchMedicalPattern) localises the whole line — verb/unit/route/
-    # frequency — to Thai on first load without any Google Translate call.
+    # Route is intentionally excluded — "How to take" shows verb + dose + freq only.
+    # The client's offline pattern engine localises the line to Thai on first load.
     instruction = ' '.join(instr_parts).strip()
 
     qty_n = poi.get('quantity')
     qty_unit = _hm_norm((_arc_first(poi.get('quantityUOM')) or {}).get('valuedescription') or '')
     quantity = (str(qty_n) + (' ' + qty_unit if qty_unit else '')) if qty_n is not None else ''
 
-    # Live free-text patient instruction (English) from this order, if any.
-    live_note = ''
-    for ins in (poi.get('instructions') or []):
-        if ins.get('valuecode') == 'INSTYP1' and ins.get('instructiontext'):
-            live_note = _hm_norm(ins['instructiontext'])
-            break
+    # All free-text patient instructions from the order, joined with " / ".
+    # Includes all valuecodes (INSTYP1 = English dispensing note, INSTYP3 = Thai
+    # patient instruction, etc.) so none are silently dropped.
+    live_note_parts = [
+        _hm_norm(ins['instructiontext'])
+        for ins in (poi.get('instructions') or [])
+        if ins.get('instructiontext')
+    ]
+    live_note = ' / '.join(p for p in live_note_parts if p)
 
     # Note-line: the curated "Patient Instruction" extra label by item code.
     # localLanguage = Thai (default), text = English; build both so the client
@@ -2059,6 +2109,16 @@ class Handler(BaseHTTPRequestHandler):
                 result['allergies'] = build_allergies_from_arcus(fetch_arcus_allergies(ctx))
             except Exception as e:
                 result['allergies'] = {'nkda': False, 'items': [], 'hasRecord': False, 'error': str(e)}
+            # Future appointments — best-effort, never fail the sheet.
+            try:
+                appt_data = fetch_arcus_future_appointments(ctx)
+                result['appointmentText'] = format_appointments_th(appt_data)
+            except Exception:
+                result['appointmentText'] = (
+                    'ไม่มีนัดติดตามอาการ '
+                    'แต่ถ้าพบอาการผิดปรกติหรืออาการแย่ลง '
+                    'แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม'
+                )
             result['ok'] = True
             result['source'] = 'arcus-api'
             self.send_json(200, result)

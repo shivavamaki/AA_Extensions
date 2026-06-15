@@ -214,6 +214,16 @@ function renderAllergies(allergies) {
   }
 }
 
+function renderAppointments(text) {
+  const el = document.getElementById("appointmentText");
+  if (!el) return;
+  el.textContent = text || (
+    'ไม่มีนัดติดตามอาการ ' +
+    'แต่ถ้าพบอาการผิดปรกติหรืออาการแย่ลง ' +
+    'แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม'
+  );
+}
+
 /* ─────────────────────────── Med image binding ────────────────────────── */
 function _renderNoImageSlot(icon) {
   return `<span class="med-photo-icon">${icon}</span><span class="med-photo-label">รูปยา</span>`;
@@ -690,6 +700,7 @@ async function fetchAndRender() {
   populateHeader(data.patient || {}, _context, reportMeds);
   renderDiagnosis(_context && _context.diagnosis);
   renderAllergies(data.allergies);
+  renderAppointments(data.appointmentText);
   await renderMeds();
 }
 
