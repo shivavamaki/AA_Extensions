@@ -12,6 +12,23 @@
 
 const DRUGDELIVERY_URL_PART = '10.134.10.91:8809/drugdelivery/web/ipfill';
 
+/* Allowlist for BKN_SERVER_PROXY and extFetch — prevents SSRF from a
+   compromised content script or XSS exploit using the extension as a proxy.
+   Only hostnames explicitly listed here are forwarded. */
+const _PROXY_ALLOWED_HOSTS = new Set([
+  'arcusair.bdms.co.th',
+  'aa-report.bdms.co.th',
+  'translate.googleapis.com',
+  'localhost',
+  '10.134.10.5',
+  '10.134.10.91',
+  '10.134.110.81',
+]);
+function _isAllowedProxyUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  try { return _PROXY_ALLOWED_HOSTS.has(new URL(url).hostname); } catch (_) { return false; }
+}
+
 /* ── AAOverlay feature-tab registry ──────────────────────────────────────── */
 const MSG = Object.freeze({
   LOAD_MED_TABLE:          'LOAD_MED_TABLE',
@@ -267,7 +284,7 @@ function _arcusExtractAngularCtx() {
       if (xhrCtx.patientuid      && !pc.patientuid)      pc.patientuid      = xhrCtx.patientuid;
       if (xhrCtx.patientvisituid && !pc.patientvisituid) pc.patientvisituid = xhrCtx.patientvisituid;
       out._raw.xhrTap = xhrCtx;
-      out._raw.arcusHdrs = window.__arcus_hdrs__ || {};
+      out._raw.arcusHdrs = {};  // populated by background from chrome.storage.session
       out._raw.medreconMap = window.__arcus_medrecon__ || {};
     } catch (_) {}
 
@@ -360,7 +377,14 @@ function _arcusSetupXhrTap() {
     try {
       var k = String(name || '').toLowerCase();
       if (HDR_KEYS[k] && value != null && value !== '') {
-        window.__arcus_hdrs__[k] = String(value);
+        if (k === 'incus-token') {
+          /* Never store the session auth token in window — relay immediately to
+             the isolated content script (content-adrtimeline.js) via postMessage,
+             which ships it to chrome.storage.session where page scripts cannot read it. */
+          window.postMessage({ __bkn_sec__: 1, k: k, v: String(value) }, '*');
+        } else {
+          window.__arcus_hdrs__[k] = String(value);
+        }
       }
     } catch (_) {}
     return _origSetHdr.apply(this, arguments);
@@ -425,6 +449,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
      1. SHARED LAYER — pharmacy server proxy
   ════════════════════════════════════════════════════════════════════ */
   if (msg && msg.type === 'BKN_SERVER_PROXY') {
+    if (!_isAllowedProxyUrl(msg.url)) {
+      sendResponse({ ok: false, status: 403, error: 'URL not in proxy allowlist' });
+      return true;
+    }
     (async () => {
       try {
         const method  = msg.method  || 'GET';
@@ -472,6 +500,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   /* ════════════════════════════════════════════════════════════════════
+     3b. Auth header relay — content script bridges MAIN-world postMessage
+         into chrome.storage.session (incus-token never stored in window)
+  ════════════════════════════════════════════════════════════════════ */
+  if (msg && msg.type === 'BKN_SEC_HDR_RELAY') {
+    const tabId = sender.tab?.id;
+    if (tabId && msg.k && msg.v) {
+      const storKey = `_bkn_hdrs_${tabId}`;
+      chrome.storage.session.get(storKey, res => {
+        const hdrs = (res && res[storKey]) || {};
+        hdrs[msg.k] = msg.v;
+        chrome.storage.session.set({ [storKey]: hdrs });
+      });
+    }
+    return false;
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
      4. AAOverlay — extract Angular patient context (MAIN world)
   ════════════════════════════════════════════════════════════════════ */
   if (msg && msg.type === 'MJ_EXTRACT_ANGULAR_CTX') {
@@ -482,9 +527,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }, results => {
       if (chrome.runtime.lastError || !results || !results[0]) {
         sendResponse({ ok: false, error: chrome.runtime.lastError && chrome.runtime.lastError.message });
-      } else {
-        sendResponse({ ok: true, data: results[0].result || {} });
+        return;
       }
+      const data = results[0].result || {};
+      chrome.storage.session.get(`_bkn_hdrs_${tabId}`, res => {
+        data._raw = data._raw || {};
+        data._raw.arcusHdrs = (res && res[`_bkn_hdrs_${tabId}`]) || {};
+        sendResponse({ ok: true, data });
+      });
     });
     return true;
   }
@@ -531,6 +581,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg && msg.action === 'extFetch') {
+    if (!_isAllowedProxyUrl(msg.url)) {
+      sendResponse({ ok: false, status: 403, statusText: 'URL not in proxy allowlist', text: '', json: null });
+      return true;
+    }
     (async () => {
       try {
         const method  = msg.method  || 'GET';
@@ -588,16 +642,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg && msg.action === 'getDataByTag') {
     sendResponse({ data: [] });
     return false;
-  }
-
-  if (msg && msg.action === 'triggerFunction') {
-    const url = 'https://script.google.com/macros/s/AKfycbwk0PsLdtR7a37iEzMLS15YBUlw25UPp92IQYRy2sYRRU-3LFb17HSvBZsIjA_tGTvyYQ/exec';
-    fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data0: 'value0', data1: 'value1' }) })
-      .then(r => r.json())
-      .then(() => sendResponse({ success: true, message: 'Function triggered!' }))
-      .catch(() => sendResponse({ success: false, message: 'Failed to trigger function.' }));
-    return true;
   }
 
   return false;
