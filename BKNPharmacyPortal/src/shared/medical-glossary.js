@@ -56,7 +56,7 @@ function _unit(raw, lang, count) {
     tablet:  { th:"เม็ด", lo:"ເມັດ", my:"ဆေးပြား", km:"គ្រាប់", vi:"viên",   "zh-CN":"片", "zh-TW":"錠",  ja:"錠",    ko:"정",   ar:"قرص",   hi:"गोली",  id:"tablet", ms:"tablet", ru:"таблетку", fr:"comprimé", de:"Tablette", es:"comprimido", pt:"comprimido", tr:"tablet" },
     capsule: { th:"แคปซูล", lo:"ແຄັບຊູນ", my:"တောင့်", km:"កម្រៀប",  vi:"viên nang","zh-CN":"粒", "zh-TW":"粒",  ja:"カプセル",ko:"캡슐", ar:"كبسولة", hi:"कैप्सूल",id:"kapsul",ms:"kapsul", ru:"капсулу",  fr:"gélule",  de:"Kapsel",    es:"cápsula",    pt:"cápsula",   tr:"kapsül" },
     drop:    { th:"หยด",   lo:"ຢອດ",  my:"စက်",   km:"ដំណក់",  vi:"giọt",  "zh-CN":"滴", "zh-TW":"滴",  ja:"滴",    ko:"방울",ar:"قطرة",  hi:"बूँद",  id:"tetes",  ms:"titik",  ru:"каплю",   fr:"goutte",  de:"Tropfen",   es:"gota",       pt:"gota",      tr:"damla" },
-    spray:   { th:"ครั้ง", lo:"ເທື່ອ",my:"ဖျန်း",  km:"ដង",     vi:"lần",   "zh-CN":"喷", "zh-TW":"噴",  ja:"回",    ko:"번",  ar:"رشة",   hi:"स्प्रे",id:"semprotan",ms:"semburan",ru:"вдох",  fr:"bouffée", de:"Hub",       es:"pulverización",pt:"pulverização",tr:"puf" },
+    spray:   { th:"กด",    lo:"ເທື່ອ",my:"ဖျန်း",  km:"ដង",     vi:"lần",   "zh-CN":"喷", "zh-TW":"噴",  ja:"回",    ko:"번",  ar:"رشة",   hi:"स्प्रे",id:"semprotan",ms:"semburan",ru:"вдох",  fr:"bouffée", de:"Hub",       es:"pulverización",pt:"pulverização",tr:"puf" },
     ml:       { th:"มล.",  lo:"ມລ",   my:"မီလီ",  km:"មីលីលីត្រ",vi:"ml",  "zh-CN":"毫升","zh-TW":"毫升",ja:"ml",   ko:"ml",  ar:"مل",    hi:"मिली",  id:"ml",     ms:"ml",     ru:"мл",      fr:"ml",      de:"ml",        es:"ml",         pt:"ml",        tr:"ml" },
     bottle:  { th:"ขวด",   lo:"ຂວດ",  my:"ပုလင်း", km:"ដប",     vi:"chai",  "zh-CN":"瓶", "zh-TW":"瓶",  ja:"本",    ko:"병",  ar:"زجاجة", hi:"बोतल",  id:"botol",  ms:"botol",  ru:"флакон",  fr:"flacon",  de:"Flasche",   es:"frasco",     pt:"frasco",    tr:"şişe" },
     vial:    { th:"ขวด",   lo:"ຂວດ",  my:"ပုလင်း", km:"ដប",     vi:"lọ",    "zh-CN":"瓶", "zh-TW":"瓶",  ja:"バイアル",ko:"바이알",ar:"قارورة",hi:"शीशी",  id:"vial",   ms:"vial",   ru:"флакон",  fr:"flacon",  de:"Fläschchen",es:"vial",       pt:"frasco",    tr:"flakon" },
@@ -367,7 +367,7 @@ function _compoundTiming(raw, lang) {
 // Each group optional except N and unit. Leading verb may be Take/Spray/Apply/etc.
 const MASTER_RE = new RegExp(
   [
-    /^(?:Take|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put)\s+/i,
+    /^(?:Take|Chew|Dissolve|Swallow|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put)\s+/i,
     /(\d+(?:\.\d+)?|\bquarter\b|\bhalf\b|\bthree-quarter\b)\s+/,  // [1] qty
     /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr|pack|sachet|bottle|vial|tube|ampoule|ampule|amp|piece|pcs|pc)s?\s*/i,   // [2] unit
     // Optional route phrase ("orally" / "in mouth" / "in nostril" / "in eye" / ...)
@@ -387,7 +387,7 @@ const MASTER_RE = new RegExp(
 // so the dose verb is localised and the messy English tail is dropped.
 const TAKE_QTY_RE = new RegExp(
   [
-    /^(?:Take|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put)\s+/i,
+    /^(?:(?:Take|Chew|Dissolve|Swallow|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put)\s+)?/i,
     /(?:(?:to|in|into|onto)\s+(?:the\s+)?(?:mouth|throat|nose|nostril|nasal|eye|ear|skin|affected\s+area)\s+)?/i,
     /(\d+(?:\.\d+)?|\bquarter\b|\bhalf\b|\bthree-quarter\b)\s+/,        // [1] qty
     /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr|pack|sachet|bottle|vial|tube|ampoule|ampule|amp|piece|pcs|pc)s?\b/i, // [2] unit

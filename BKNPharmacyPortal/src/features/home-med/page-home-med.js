@@ -2,17 +2,13 @@
 
 /**
  * features/home-med/page-home-med.js
- * Reworked Home Medication Sheet page.
  *
  * Flow:
  *   1. Receive { context } (patient/report UIDs) via LOAD_MED_TABLE message or
  *      chrome.storage.session (payload_sheet).
- *   2. Build the HomeMedSheetReport/Thai Jasper URL from the context.
- *   3. Fetch the XLS via MJ_FETCH_XLS, parse with parseBiff8ToSheets.
- *   4. Map rows (header-agnostic) → meds, filter to oral / take-home only,
- *      extract the patient header from the report itself.
- *   5. Render the existing A4 layout. Images come from the pharmacy server via
- *      BKNData. From/to dates are adjustable in the toolbar (re-fetch on change).
+ *   2. POST /api/report/home-med-api → server hits ArcusAir getallorderitem
+ *      (DISCHARGE MEDICATION) + getallergies; returns { patient, meds, allergies }.
+ *   3. Render the A4 layout. Drug photos from GET /med-image/{code} via BKNData.
  */
 
 const { norm, escapeHtml, safeSetText } = window.CoreDom;

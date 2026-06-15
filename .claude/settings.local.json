@@ -59,7 +59,11 @@
       "Bash(Format-List)",
       "Bash(find \"\\\\\\\\10.134.10.5\\\\BKNinfo\\\\24 Pharmacy\\\\EXT\\\\AAOverlay\" -type f \\\\\\( -name \"*.json\" -o -name \"*.css\" \\\\\\))",
       "Bash(git rm *)",
-      "Bash(node --check /workspaces/AA_Extensions/BKNPharmacyPortal/popup.js)"
+      "Bash(node --check /workspaces/AA_Extensions/BKNPharmacyPortal/popup.js)",
+      "Bash(rm /workspaces/AA_Extensions/BKNPharmacyPortal/src/features/home-med/parser-home-med.js)"
+    ],
+    "additionalDirectories": [
+      "/workspaces/AA_Extensions/BKNPharmacyPortal/src/features/home-med"
     ]
   }
 }
