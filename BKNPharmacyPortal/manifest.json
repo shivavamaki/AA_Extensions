@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.0.0",
-  "version_name": "2026.05.28 - merged from BKN Pharmacy (rx_menu) + Discharge Process Checklist (AAOverlay) — unified extension with shared pharmacy-server data layer (BKNData)",
+  "version": "3.5.0",
+  "version_name": "2026.06.15 — UI redesign, beedee_report cost fixes, ADR multi-event/range, Home Med full Thai on load, per-feature READMEs",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",
