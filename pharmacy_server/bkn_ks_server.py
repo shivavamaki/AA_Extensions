@@ -604,25 +604,25 @@ def _arcus_item_to_med(it):
         instr_parts.append(verb)
     if dosage:
         instr_parts.append(str(dosage) + (' ' + dose_unit if dose_unit else ''))
-    if route:
-        instr_parts.append(route)
     if freq:
         instr_parts.append(freq)
-    # Keep the instruction fully English here. The client's offline pattern
-    # engine (matchMedicalPattern) localises the whole line — verb/unit/route/
-    # frequency — to Thai on first load without any Google Translate call.
+    # Route is intentionally excluded — "How to take" shows verb + dose + freq only.
+    # The client's offline pattern engine localises the line to Thai on first load.
     instruction = ' '.join(instr_parts).strip()
 
     qty_n = poi.get('quantity')
     qty_unit = _hm_norm((_arc_first(poi.get('quantityUOM')) or {}).get('valuedescription') or '')
     quantity = (str(qty_n) + (' ' + qty_unit if qty_unit else '')) if qty_n is not None else ''
 
-    # Live free-text patient instruction (English) from this order, if any.
-    live_note = ''
-    for ins in (poi.get('instructions') or []):
-        if ins.get('valuecode') == 'INSTYP1' and ins.get('instructiontext'):
-            live_note = _hm_norm(ins['instructiontext'])
-            break
+    # All free-text patient instructions from the order, joined with " / ".
+    # Includes all valuecodes (INSTYP1 = English dispensing note, INSTYP3 = Thai
+    # patient instruction, etc.) so none are silently dropped.
+    live_note_parts = [
+        _hm_norm(ins['instructiontext'])
+        for ins in (poi.get('instructions') or [])
+        if ins.get('instructiontext')
+    ]
+    live_note = ' / '.join(p for p in live_note_parts if p)
 
     # Note-line: the curated "Patient Instruction" extra label by item code.
     # localLanguage = Thai (default), text = English; build both so the client
