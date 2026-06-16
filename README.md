@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.5.2 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.5.3 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -182,6 +182,9 @@ Flow:
 ---
 
 ## Version History
+
+### v3.5.3 — 2026-06-16
+- Home Med Sheet: offline translation engine — fixed `"Drink Instead of Water Every 2-3 Hours When have Symptom"` (ORS/fluid instructions) dropping the dose verb; added `_drinkVerb()` fallback in `medical-glossary.js` so the Thai output keeps "ดื่มช้าๆ" before the frequency, matching the existing `_applyVerb()` pattern for topical instructions
 
 ### v3.5.2 — 2026-06-16
 - Home Med Sheet: appointment box now renders one card per booking instead of one paragraph (splits `appointmentText` on newline)

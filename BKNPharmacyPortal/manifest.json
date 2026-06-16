@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.5.2",
-  "version_name": "2026.06.16 — Home Med Sheet: appointment cards split per booking, merged physician/pharmacist box",
+  "version": "3.5.3",
+  "version_name": "2026.06.16 — Home Med Sheet: offline translation fix for \"Drink...\" fluid/ORS instructions",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",
