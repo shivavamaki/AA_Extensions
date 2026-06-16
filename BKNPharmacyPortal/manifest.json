@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.5.1",
-  "version_name": "2026.06.16 — Home Med Sheet: future appointment section (getfuturebookingforpatient)",
+  "version": "3.5.2",
+  "version_name": "2026.06.16 — Home Med Sheet: appointment cards split per booking, merged physician/pharmacist box",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",

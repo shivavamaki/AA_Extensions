@@ -21,9 +21,17 @@ Printable A4 **เอกสารแนะนำการใช้ยากล�
 The sheet footer shows **นัดหมายติดตามอาการ** (follow-up appointment) instead of a static caregiver-note box.
 
 - Server-side, the same `home-med-api` handler best-effort-POSTs to ArcusAir `enterprise/appointmentschedule/getfuturebookingforpatient` (`fetch_arcus_future_appointments` in `bkn_ks_server.py`), passing `patientuid` + current UTC timestamp as `futureapptstartdate`.
-- `format_appointments_th()` turns the response into a Thai summary per appointment: service type, Buddhist-Era date/time (UTC+7, via `_thai_datetime`), department, provider, and comments — joined with newlines.
+- `format_appointments_th()` turns the response into a Thai summary per appointment: service type, Buddhist-Era date/time (UTC+7, via `_thai_datetime`), department, provider, and comments — appointments are joined with `\n` when there are several.
 - When there are no future appointments, or the ArcusAir call fails, it returns a static fallback: *"ไม่มีนัดติดตามอาการ แต่ถ้าพบอาการผิดปรกติ…"*. The fetch is **best-effort** — a failure here never blocks the medication list from rendering.
-- Client-side, `data.appointmentText` is passed to `renderAppointments()` (`page-home-med.js`), which fills `#appointmentText` in `page-home-med.html`. The same Thai fallback string is duplicated client-side in case `appointmentText` is empty/undefined.
+- Client-side, `renderAppointments()` (`page-home-med.js`) splits `data.appointmentText` on `\n` and renders **one `.appt-item` card per appointment** into `#appointmentList` — so multiple bookings don't run together as one paragraph. The no-appointment fallback renders as a single muted `.appt-item.empty` card.
+
+## Footer layout — appointment + providers
+
+The footer (`.footer-note`) is a 2-column grid:
+- **Left** (`appt-box`, wider): the appointment card list above.
+- **Right** (`providers-box`): a single merged box with two stacked sections — **Physician** then **เภสัชกร (Pharmacist)** — separated by a dashed rule, instead of three separate boxes.
+  - `populateHeader()` collects **every distinct provider** across the discharge meds (`_uniquePhysicians()`), not just the first one, since a visit can involve more than one prescriber. Each name renders on its own line via `_renderProviderList()`.
+  - Pharmacist stays single-value (from `context.pharmacistName`).
 
 ## Files
 

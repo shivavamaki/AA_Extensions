@@ -160,18 +160,43 @@ function _medicineImageCandidates(med) {
 }
 
 /* ─────────────────────────── Patient header ───────────────────────────── */
+/** All distinct prescribing physicians across the discharge meds, in the
+ * order they first appear (a visit can have more than one provider). */
+function _uniquePhysicians(meds) {
+  const seen = new Set();
+  const list = [];
+  (meds || []).forEach((m) => {
+    const p = norm(m.provider || "");
+    if (p && !seen.has(p)) { seen.add(p); list.push(p); }
+  });
+  return list;
+}
+
+function _renderProviderList(elId, names) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = "";
+  if (!names.length) { el.textContent = "-"; return; }
+  names.forEach((name) => {
+    const div = document.createElement("div");
+    div.textContent = name;
+    el.appendChild(div);
+  });
+}
+
 function populateHeader(header, context, meds) {
   const h = header || {};
   const c = context || {};
-  // Physician isn't in the report header; take it from the first med's provider.
-  const physician = (meds || []).map((m) => m.provider).find(Boolean) || "-";
+  // Physician isn't in the report header; collect every distinct provider
+  // across the discharge meds (a visit can involve more than one).
+  const physicians = _uniquePhysicians(meds);
   safeSetText("patientName", h.patientName || c.patientName || "-");
   safeSetText("patientHN",   h.hn || c.hn || c.patientId || "-");
   safeSetText("patientAN",   h.an || c.an || c.patientVisitId || "-");
   safeSetText("patientRoom", h.room || c.bed || "-");
   safeSetText("sheetDate",   h.visitDate || new Date().toLocaleDateString("th-TH"));
   safeSetText("pharmacistName", c.pharmacistName || "-");
-  safeSetText("physicianName",  physician);
+  _renderProviderList("physicianName", physicians);
 }
 
 /* ─────────────────────── Diagnosis + Allergy banner ───────────────────── */
@@ -214,14 +239,29 @@ function renderAllergies(allergies) {
   }
 }
 
+const _NO_APPOINTMENT_TEXT =
+  'ไม่มีนัดติดตามอาการ ' +
+  'แต่ถ้าพบอาการผิดปรกติหรืออาการแย่ลง ' +
+  'แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม';
+
+/** Render the appointment box as one card per appointment. The server joins
+ * multiple appointments with "\n" (see format_appointments_th); split back
+ * into lines so each renders as its own item instead of one wall of text. */
 function renderAppointments(text) {
-  const el = document.getElementById("appointmentText");
+  const el = document.getElementById("appointmentList");
   if (!el) return;
-  el.textContent = text || (
-    'ไม่มีนัดติดตามอาการ ' +
-    'แต่ถ้าพบอาการผิดปรกติหรืออาการแย่ลง ' +
-    'แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม'
-  );
+  el.innerHTML = "";
+
+  const lines = norm(text || "").split("\n").map((l) => l.trim()).filter(Boolean);
+  if (!lines.length) lines.push(_NO_APPOINTMENT_TEXT);
+
+  const isEmptyState = lines.length === 1 && lines[0] === _NO_APPOINTMENT_TEXT;
+  lines.forEach((line) => {
+    const div = document.createElement("div");
+    div.className = isEmptyState ? "appt-item empty" : "appt-item";
+    div.textContent = line;
+    el.appendChild(div);
+  });
 }
 
 /* ─────────────────────────── Med image binding ────────────────────────── */

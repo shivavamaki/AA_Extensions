@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.5.1 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.5.2 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -182,6 +182,10 @@ Flow:
 ---
 
 ## Version History
+
+### v3.5.2 — 2026-06-16
+- Home Med Sheet: appointment box now renders one card per booking instead of one paragraph (splits `appointmentText` on newline)
+- Home Med Sheet: Physician and Pharmacist merged into a single footer box; all distinct prescribing physicians across the discharge meds are listed (not just the first)
 
 ### v3.5.1 — 2026-06-16
 - Home Med Sheet: added follow-up appointment section (`นัดหมายติดตามอาการ`) to the sheet footer, replacing the static caregiver-note box
