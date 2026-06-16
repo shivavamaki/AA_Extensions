@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.5.4 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.5.5 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -182,6 +182,10 @@ Flow:
 ---
 
 ## Version History
+
+### v3.5.5 — 2026-06-16
+- Home Med Sheet: appointment box (`นัดหมายติดตามอาการ`) now shows a bullet marker per card so multiple bookings are visually distinct, not just stacked boxes
+- Home Med Sheet: registered the missing Bold face for the `Sarabun` font family (`THSarabunNew-Bold.ttf`, no `Sarabun-Bold.ttf` was ever shipped) — every existing `font-weight: 700/800` rule, including the per-medicine หมายเหตุ note box, was silently rendering as Regular weight because the browser had no bold glyph to match against
 
 ### v3.5.4 — 2026-06-16
 - Fixed `incus-token` (ArcusAir session auth) frequently showing as missing in Home Med / ADR Timeline / Medication Journey context, blocking report fetches

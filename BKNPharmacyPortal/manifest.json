@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.5.4",
-  "version_name": "2026.06.16 — incus-token capture moved to document_start MAIN-world script; fixed missing relay listener",
+  "version": "3.5.5",
+  "version_name": "2026.06.16 — Home Med Sheet: appointment bullets, fixed missing Bold font face for หมายเหตุ note box",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",

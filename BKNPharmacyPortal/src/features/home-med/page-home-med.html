@@ -11,6 +11,15 @@
       src: url("../../assets/fonts/Sarabun-Regular.ttf") format("truetype");
       font-weight: 400;
     }
+    /* No Sarabun-Bold.ttf shipped — register TH Sarabun New's bold face under
+       the same family name so every existing font-weight:700/800 rule (the
+       per-medicine หมายเหตุ box, headers, etc.) renders an actual bold glyph
+       instead of silently falling back to the only available Regular face. */
+    @font-face {
+      font-family: "Sarabun";
+      src: url("../../assets/fonts/THSarabunNew-Bold.ttf") format("truetype");
+      font-weight: 700;
+    }
 
     * { box-sizing: border-box; }
 
@@ -447,16 +456,26 @@
     }
 
     .appt-item {
+      position: relative;
       font-size: 11px;
       line-height: 1.35;
-      padding: 5px 7px;
+      padding: 5px 7px 5px 18px;
       border-left: 3px solid #2563eb;
       border-radius: 6px;
       background: #eff6ff;
       color: #1e3a8a;
     }
 
+    .appt-item:not(.empty)::before {
+      content: "•";
+      position: absolute;
+      left: 7px;
+      font-weight: 700;
+      color: #2563eb;
+    }
+
     .appt-item.empty {
+      padding-left: 7px;
       border-left-color: #cbd5e1;
       background: #f8fafc;
       color: #6b7280;

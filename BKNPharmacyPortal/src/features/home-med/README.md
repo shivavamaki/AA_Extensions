@@ -23,7 +23,7 @@ The sheet footer shows **นัดหมายติดตามอาการ*
 - Server-side, the same `home-med-api` handler best-effort-POSTs to ArcusAir `enterprise/appointmentschedule/getfuturebookingforpatient` (`fetch_arcus_future_appointments` in `bkn_ks_server.py`), passing `patientuid` + current UTC timestamp as `futureapptstartdate`.
 - `format_appointments_th()` turns the response into a Thai summary per appointment: service type, Buddhist-Era date/time (UTC+7, via `_thai_datetime`), department, provider, and comments — appointments are joined with `\n` when there are several.
 - When there are no future appointments, or the ArcusAir call fails, it returns a static fallback: *"ไม่มีนัดติดตามอาการ แต่ถ้าพบอาการผิดปรกติ…"*. The fetch is **best-effort** — a failure here never blocks the medication list from rendering.
-- Client-side, `renderAppointments()` (`page-home-med.js`) splits `data.appointmentText` on `\n` and renders **one `.appt-item` card per appointment** into `#appointmentList` — so multiple bookings don't run together as one paragraph. The no-appointment fallback renders as a single muted `.appt-item.empty` card.
+- Client-side, `renderAppointments()` (`page-home-med.js`) splits `data.appointmentText` on `\n` and renders **one `.appt-item` card per appointment** into `#appointmentList` — so multiple bookings don't run together as one paragraph. Each non-empty card gets a `•` bullet via CSS (`.appt-item:not(.empty)::before`); the no-appointment fallback renders as a single muted `.appt-item.empty` card with no bullet.
 
 ## Footer layout — appointment + providers
 
@@ -32,6 +32,10 @@ The footer (`.footer-note`) is a 2-column grid:
 - **Right** (`providers-box`): a single merged box with two stacked sections — **Physician** then **เภสัชกร (Pharmacist)** — separated by a dashed rule, instead of three separate boxes.
   - `populateHeader()` collects **every distinct provider** across the discharge meds (`_uniquePhysicians()`), not just the first one, since a visit can involve more than one prescriber. Each name renders on its own line via `_renderProviderList()`.
   - Pharmacist stays single-value (from `context.pharmacistName`).
+
+## Font weight gotcha
+
+`page-home-med.html` registers `Sarabun` via `@font-face`, but the repo only ships `Sarabun-Regular.ttf` — there's no `Sarabun-Bold.ttf`. A second `@font-face` rule maps `THSarabunNew-Bold.ttf` to the same `"Sarabun"` family at `font-weight: 700`, so every existing `font-weight: 700/800` declaration (per-medicine หมายเหตุ box `.comment`, headers, etc.) actually renders bold instead of silently falling back to Regular. If you ever swap the Regular face for a different font, make sure a matching Bold face is registered too — `font-weight` rules with no matching face fail silently, not visibly.
 
 ## Files
 
