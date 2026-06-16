@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.0 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.1 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -182,6 +182,10 @@ Flow:
 ---
 
 ## Version History
+
+### v3.6.1 — 2026-06-16
+- Home Med Sheet: reverted the v3.5.5 `THSarabunNew-Bold.ttf` `@font-face` registration — no font-family/face change, single `Sarabun-Regular` face as before
+- All emphasis that used `font-weight: 700/800` (patient field labels/values, diagnosis/allergy banner, section titles, `.med-name`, `.instruction-text`, the per-medicine หมายเหตุ `.comment` box, footer labels) now uses `text-decoration: underline` with normal weight instead of bold
 
 ### v3.6.0 — 2026-06-16
 - **Refactor — feature-based reorganization, no behavior change.** Moved root-level loose files into `src/features/`: `iv_sticker.*` + `aux_sticker.*` → `src/features/iv-aux-sticker/`; `pdf.html/.js` + `beedee_report.json` → `src/features/beedee-pdf/`; `report_print.*` → `src/features/report-print/`. All path references (`manifest.json` web_accessible_resources, `popup.js`/`background.js`/`content_script.js` `chrome.runtime.getURL(...)` calls, `pdf.html`'s relative `cdnjs/` script paths) updated accordingly; each new folder has its own README.

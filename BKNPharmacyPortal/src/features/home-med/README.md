@@ -33,9 +33,9 @@ The footer (`.footer-note`) is a 2-column grid:
   - `populateHeader()` collects **every distinct provider** across the discharge meds (`_uniquePhysicians()`), not just the first one, since a visit can involve more than one prescriber. Each name renders on its own line via `_renderProviderList()`.
   - Pharmacist stays single-value (from `context.pharmacistName`).
 
-## Font weight gotcha
+## Emphasis style — underline, not bold
 
-`page-home-med.html` registers `Sarabun` via `@font-face`, but the repo only ships `Sarabun-Regular.ttf` — there's no `Sarabun-Bold.ttf`. A second `@font-face` rule maps `THSarabunNew-Bold.ttf` to the same `"Sarabun"` family at `font-weight: 700`, so every existing `font-weight: 700/800` declaration (per-medicine หมายเหตุ box `.comment`, headers, etc.) actually renders bold instead of silently falling back to Regular. If you ever swap the Regular face for a different font, make sure a matching Bold face is registered too — `font-weight` rules with no matching face fail silently, not visibly.
+`page-home-med.html` registers only `Sarabun-Regular.ttf` via `@font-face` (no Bold face, by design — don't add one). Every place that previously used `font-weight: 700/800` for emphasis (patient field labels/values, diagnosis/allergy banner, section titles, `.med-name`, `.instruction-text`, the per-medicine หมายเหตุ box `.comment`, footer labels) now uses `font-weight: 400` + `text-decoration: underline` instead — keeps the sheet on a single font face/weight throughout.
 
 ## Files
 
