@@ -143,25 +143,25 @@
 
     .top-title {
       display: grid;
-      grid-template-columns: 34mm 1fr 55mm;
+      grid-template-columns: 26mm 1fr 50mm;
       align-items: center;
-      gap: 10px;
-      padding-bottom: 8px;
+      gap: 8px;
+      padding-bottom: 5px;
       border-bottom: 3px solid #111827;
-      margin-bottom: 9px;
+      margin-bottom: 5px;
     }
 
     .logo-zone {
-      width: 34mm;
-      min-height: 18mm;
+      width: 26mm;
+      min-height: 12mm;
       display: flex;
       align-items: center;
       justify-content: flex-start;
     }
 
     .logo-zone img {
-      max-width: 32mm;
-      max-height: 17mm;
+      max-width: 24mm;
+      max-height: 11mm;
       object-fit: contain;
     }
 
@@ -171,37 +171,37 @@
 
     h1 {
       margin: 0;
-      font-size: 22px;
+      font-size: 18px;
       line-height: 1.1;
     }
 
     .subtitle {
-      margin-top: 2px;
-      font-size: 12px;
+      margin-top: 1px;
+      font-size: 11px;
       color: #4b5563;
     }
 
     .date-box {
       text-align: right;
-      font-size: 12px;
+      font-size: 11px;
       color: #374151;
-      padding-top: 2px;
+      padding-top: 0;
     }
 
     .patient-card {
       display: grid;
       grid-template-columns: 1.6fr .7fr 1.05fr .7fr;
-      gap: 6px;
-      margin: 10px 0 12px;
-      padding: 9px 10px;
+      gap: 5px;
+      margin: 5px 0 6px;
+      padding: 5px 8px;
       border: 1.5px solid #111827;
-      border-radius: 10px;
+      border-radius: 8px;
       background: #f9fafb;
     }
 
     .patient-field .label {
       display: block;
-      font-size: 10px;
+      font-size: 9px;
       color: #6b7280;
       font-weight: 400;
       text-decoration: underline;
@@ -211,8 +211,8 @@
 
     /* ── Clinical banner (Diagnosis + Allergies, stacked) ──────── */
     .clinical-banner {
-      margin: 0 0 12px;
-      border-radius: 10px;
+      margin: 0 0 6px;
+      border-radius: 8px;
       overflow: hidden;
       border: 1.5px solid #cbd5e1;
     }
@@ -221,9 +221,9 @@
       display: flex;
       align-items: baseline;
       gap: 8px;
-      padding: 7px 12px;
-      font-size: 14px;
-      line-height: 1.3;
+      padding: 4px 10px;
+      font-size: 12px;
+      line-height: 1.25;
     }
     /* Diagnosis on the upper line — distinct blue tone. */
     .clinical-banner .dx-line {
@@ -248,30 +248,39 @@
     .clinical-banner .dx-line.empty { display: none; }
 
     .patient-field .value {
-      margin-top: 1px;
-      font-size: 15px;
+      margin-top: 0;
+      font-size: 13px;
       font-weight: 400;
       text-decoration: underline;
-      line-height: 1.25;
+      line-height: 1.2;
       word-break: break-word;
     }
 
+    /* Floating pill badge instead of a full-width banner — the section only
+       needs a small visual anchor, not a heavy block taking a whole row. */
     .section-title {
       display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin: 10px 0 7px;
-      padding: 6px 8px;
-      border-radius: 10px;
-      background: #e0f2fe;
-      color: #0c4a6e;
-      font-size: 16px;
+      align-items: center;
+      gap: 8px;
+      margin: 6px 0 4px;
+    }
+
+    .section-title .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 12px;
+      border-radius: 999px;
+      background: #0c4a6e;
+      color: #fff;
+      font-size: 11px;
       font-weight: 400;
       text-decoration: underline;
+      white-space: nowrap;
+      box-shadow: 0 1px 3px rgba(12, 74, 110, .35);
     }
 
     .hint {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 400;
       color: #6b7280;
     }
@@ -812,7 +821,7 @@
     </section>
 
     <section class="section-title screen-only">
-      <span>Medication instructions</span>
+      <span class="badge">Medication instructions</span>
       <span class="hint">อ่านชื่อยา วิธีใช้ จำนวนยา และหมายเหตุให้ครบทุกบรรทัด</span>
     </section>
 
@@ -831,7 +840,7 @@
           <th class="col-no">#</th>
           <th class="col-med">Medicine / Picture<br><span class="th-sub">ชื่อยา / รูปยา</span></th>
           <th class="col-how">How to take<br><span class="th-sub">วิธีใช้ยา</span></th>
-          <th class="col-qty">Qty / Days<br><span class="th-sub">จำนวน / วัน</span></th>
+          <th class="col-qty">Qty<br><span class="th-sub">จำนวน</span></th>
         </tr>
       </thead>
       <tbody>

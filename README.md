@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.1 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.2 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -182,6 +182,11 @@ Flow:
 ---
 
 ## Version History
+
+### v3.6.2 — 2026-06-16
+- Home Med Sheet: compacted header/logo, patient-info card, and diagnosis/allergy banner (reduced margins, padding, gaps, and font sizes) — no more empty vertical space between sections
+- Home Med Sheet: `.section-title` ("Medication instructions" etc.) redesigned from a full-width colored banner into a compact floating pill badge
+- Home Med Sheet: medication table's Qty column header simplified from "Qty / Days" / "จำนวน / วัน" to "Qty" / "จำนวน" since only quantity is shown
 
 ### v3.6.1 — 2026-06-16
 - Home Med Sheet: reverted the v3.5.5 `THSarabunNew-Bold.ttf` `@font-face` registration — no font-family/face change, single `Sarabun-Regular` face as before
