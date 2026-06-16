@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.5.3",
-  "version_name": "2026.06.16 — Home Med Sheet: offline translation fix for \"Drink...\" fluid/ORS instructions",
+  "version": "3.5.4",
+  "version_name": "2026.06.16 — incus-token capture moved to document_start MAIN-world script; fixed missing relay listener",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",
@@ -40,6 +40,25 @@
     "128": "images/icon128.png"
   },
   "content_scripts": [
+    {
+      "matches": [
+        "https://arcusair.bdms.co.th/*"
+      ],
+      "js": [
+        "src/main-world/arcus-xhr-tap.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://arcusair.bdms.co.th/*"
+      ],
+      "js": [
+        "src/main-world/early-sec-relay.js"
+      ],
+      "run_at": "document_start"
+    },
     {
       "matches": [
         "https://arcusair.bdms.co.th/*"

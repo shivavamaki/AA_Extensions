@@ -7,7 +7,8 @@ A 📊 timeline page showing a patient's drug and ADR history across an admissio
 ## Where it runs
 
 - **`content-adrtimeline.js`** injects the 📊 button on the ArcusAir order-profile page (`/emr/emrview/emr/orders`) and orchestrates context extraction, Jasper XLS fetch, and page open (`OPEN_MEDICATION_JOURNEY`).
-- It installs the **MAIN-world XHR/fetch tap early** (`MJ_SETUP_XHR_TAP`) so API calls are captured during SPA navigation before the click.
+- The MAIN-world XHR/fetch tap (`src/main-world/arcus-xhr-tap.js`) is installed via a manifest-declared `world: "MAIN"`, `document_start` content script — **not** on demand via `MJ_SETUP_XHR_TAP` — so `incus-token` and the session UIDs are captured before ArcusAir's Angular app fires its first authenticated call. `content-adrtimeline.js` still sends `MJ_SETUP_XHR_TAP` as a no-op-safe fallback (the tap is idempotent, guarded by `window.__arcus_xhr_tap_installed__`).
+- `src/main-world/early-sec-relay.js` (also `document_start`) listens for the tap's `postMessage({ __bkn_sec__: 1, ... })` and forwards it to background via `BKN_SEC_HDR_RELAY` → `chrome.storage.session`. Both scripts must load at `document_start` together — if the relay listener isn't attached yet when the tap posts, the message is lost (not queued).
 
 ## Patient-context extraction (the hard part)
 
