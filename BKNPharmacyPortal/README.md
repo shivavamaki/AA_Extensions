@@ -22,7 +22,7 @@ The portal injects pharmacy action buttons directly into ArcusAir pages. Patient
 
 | Feature | Trigger page | What it produces | README |
 |---|---|---|---|
-| Home Med Sheet | Dispense workbench (DISCHARGE MEDICATION) | Printable A4 Thai medication sheet | [src/features/home-med/README.md](src/features/home-med/README.md) |
+| Home Med Sheet | Dispense workbench (DISCHARGE MEDICATION) | Printable A4 Thai medication sheet with follow-up appointment section | [src/features/home-med/README.md](src/features/home-med/README.md) |
 | Med Sticker | Dispense workbench / POM list | Medication label stickers with barcode | [src/features/med-sticker/README.md](src/features/med-sticker/README.md) |
 | Patient Sticker | Patient EMR banner | Patient ID / address / allergy / unreceivable labels | [src/features/patient-sticker/README.md](src/features/patient-sticker/README.md) |
 | ADR Drug Timeline | Order-profile page | Drug Gantt with ADR events, editable, server-persisted | [src/features/adrtimeline/README.md](src/features/adrtimeline/README.md) |
