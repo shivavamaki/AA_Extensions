@@ -8,7 +8,7 @@ Internal tooling monorepo for the **BKN Hospital Pharmacy Department**. Chrome e
 
 ```text
 EXT/
-├── BKNPharmacyPortal/   ← primary extension (ACTIVE — v3.5.0)
+├── BKNPharmacyPortal/   ← primary extension (ACTIVE — v3.6.0)
 ├── Automate/            ← separate utility extension (Auto Dispense / IP Fill)
 └── pharmacy_server/     ← Python stdlib HTTP server (data backend)
 ```
@@ -37,6 +37,9 @@ Extension pages:
 | kpi | [kpi/README.md](BKNPharmacyPortal/kpi/README.md) |
 | schedule | [schedule/README.md](BKNPharmacyPortal/schedule/README.md) |
 | vaccine | [vaccine/README.md](BKNPharmacyPortal/vaccine/README.md) |
+| iv-aux-sticker | [src/features/iv-aux-sticker/README.md](BKNPharmacyPortal/src/features/iv-aux-sticker/README.md) |
+| beedee-pdf | [src/features/beedee-pdf/README.md](BKNPharmacyPortal/src/features/beedee-pdf/README.md) |
+| report-print | [src/features/report-print/README.md](BKNPharmacyPortal/src/features/report-print/README.md) |
 
 Extension architecture: [BKNPharmacyPortal/README.md](BKNPharmacyPortal/README.md)
 

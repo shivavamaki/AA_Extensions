@@ -412,6 +412,19 @@ function _applyVerb(t, lang) {
   return "";
 }
 
+// Oral-rehydration / fluid instructions with no quantity+unit, e.g.
+// "Drink Instead of Water Every 2-3 Hours When have Symptom" (ORS sachets).
+// "Slowly" is the standard ORS counselling point (sip, don't gulp), so it's
+// baked into the verb phrase rather than left to the frequency tail.
+function _drinkVerb(t, lang) {
+  if (/^drink\b/i.test(t)) {
+    const M = { th:"ดื่มช้าๆ", lo:"ດື່ມຊ້າໆ", en:"Drink slowly",
+                "zh-CN":"慢慢喝", my:"တဖြည်းဖြည်း သောက်ပါ", km:"ផឹកបន្តិចម្តងៗ" };
+    return M[lang] || M.en;
+  }
+  return "";
+}
+
 function matchPattern(text, lang, opts = {}) {
   const t = text.trim();
   const freqOverrideRaw = (lang === "th" && opts.freqOverride) ? String(opts.freqOverride).trim() : "";
@@ -438,6 +451,10 @@ function matchPattern(text, lang, opts = {}) {
       // to a bare frequency. The "(Topical)" route marker is dropped.
       const ap = _applyVerb(t, lang);
       if (ap) return [ap, freqOverrideRaw].filter(Boolean).join(" ");
+      // Same for fluid/ORS instructions ("Drink Instead of Water ...") — no
+      // qty+unit to match, but the verb still needs to survive into Thai.
+      const dr = _drinkVerb(t, lang);
+      if (dr) return [dr, freqOverrideRaw].filter(Boolean).join(" ");
       // No dose verb/qty either (e.g. "As Directed (Nasal) As directed") —
       // the Thai frequency alone is the whole instruction.
       return freqOverrideRaw;

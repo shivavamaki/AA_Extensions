@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.5.1 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.0 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -182,6 +182,28 @@ Flow:
 ---
 
 ## Version History
+
+### v3.6.0 — 2026-06-16
+- **Refactor — feature-based reorganization, no behavior change.** Moved root-level loose files into `src/features/`: `iv_sticker.*` + `aux_sticker.*` → `src/features/iv-aux-sticker/`; `pdf.html/.js` + `beedee_report.json` → `src/features/beedee-pdf/`; `report_print.*` → `src/features/report-print/`. All path references (`manifest.json` web_accessible_resources, `popup.js`/`background.js`/`content_script.js` `chrome.runtime.getURL(...)` calls, `pdf.html`'s relative `cdnjs/` script paths) updated accordingly; each new folder has its own README.
+- **Removed dead code** found during the reorg audit (all confirmed unreachable — no sender/caller existed anywhere in the repo): `background.js` handlers for `extFetch`, `toggleSidebar`, `sendSelection`, `getSelection`, `saveFile` (+ its entire orphaned Google Drive upload chain: `fetchFileFromUrl`/`uploadFileToDrive`/`getAccessToken` — `chrome.identity` wasn't even a declared permission, so this was non-functional besides being unreachable), and the stub `getDataByTag`; the unused `"contextMenus"` permission and its dead `chrome.contextMenus.onClicked` listener (no `contextMenus.create()` exists anywhere); `content_script.js`'s generic-router cases `getDataByTag`/`getDataBySelector`/`getInputValueBySelector`/`getDataByTagTable`/`getMrdRows` and the `collectMrdRows()` helper; `popup.js`'s unused `msgTab()` function.
+- Fixed a stale doc reference: `src/features/home-med/README.md` documented a `parser-home-med.js` file that doesn't exist in the repo.
+- Noted but left untouched: `BKNPharmacyPortal/db/iv_history.json` is unreferenced — `iv_sticker.js` persists history via `localStorage['iv_history']` instead.
+
+### v3.5.5 — 2026-06-16
+- Home Med Sheet: appointment box (`นัดหมายติดตามอาการ`) now shows a bullet marker per card so multiple bookings are visually distinct, not just stacked boxes
+- Home Med Sheet: registered the missing Bold face for the `Sarabun` font family (`THSarabunNew-Bold.ttf`, no `Sarabun-Bold.ttf` was ever shipped) — every existing `font-weight: 700/800` rule, including the per-medicine หมายเหตุ note box, was silently rendering as Regular weight because the browser had no bold glyph to match against
+
+### v3.5.4 — 2026-06-16
+- Fixed `incus-token` (ArcusAir session auth) frequently showing as missing in Home Med / ADR Timeline / Medication Journey context, blocking report fetches
+- `src/main-world/arcus-xhr-tap.js`: the `setRequestHeader`/`open`/`send`/`fetch` hooks that capture the token now install via a manifest-declared `world: "MAIN"`, `document_start` content script, instead of being injected on demand at `document_idle` — previously ArcusAir's first authenticated XHR (carrying the token) often fired before the tap was installed
+- `src/main-world/early-sec-relay.js`: added the `window.addEventListener("message", ...)` listener that forwards the tap's `__bkn_sec__` postMessage to `BKN_SEC_HDR_RELAY` — this listener never existed, so the token was never actually relayed into `chrome.storage.session` regardless of timing
+
+### v3.5.3 — 2026-06-16
+- Home Med Sheet: offline translation engine — fixed `"Drink Instead of Water Every 2-3 Hours When have Symptom"` (ORS/fluid instructions) dropping the dose verb; added `_drinkVerb()` fallback in `medical-glossary.js` so the Thai output keeps "ดื่มช้าๆ" before the frequency, matching the existing `_applyVerb()` pattern for topical instructions
+
+### v3.5.2 — 2026-06-16
+- Home Med Sheet: appointment box now renders one card per booking instead of one paragraph (splits `appointmentText` on newline)
+- Home Med Sheet: Physician and Pharmacist merged into a single footer box; all distinct prescribing physicians across the discharge meds are listed (not just the first)
 
 ### v3.5.1 — 2026-06-16
 - Home Med Sheet: added follow-up appointment section (`นัดหมายติดตามอาการ`) to the sheet footer, replacing the static caregiver-note box

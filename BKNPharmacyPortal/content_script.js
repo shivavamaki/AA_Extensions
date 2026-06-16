@@ -1,11 +1,10 @@
 /**
  * content_script.js — BKN Pharmacy Extension v2.1
  *
- * Handles four concerns:
- *  1. Generic DOM message routing (for popup queries)
+ * Handles three concerns:
+ *  1. drugdelivery page — receive visitId, fill form and submit
  *  2. arcusair MRD page — scroll-load table, inject "Send" buttons per row
- *  3. drugdelivery page — receive visitId, fill form and submit
- *  4. arcusair Dispense Workbench — scrape patient + order, push to iv_sticker
+ *  3. arcusair Dispense Workbench — scrape patient + order, push to iv_sticker
  */
 (function () {
   'use strict';
@@ -17,41 +16,6 @@
   // ═══════════════════════════════════════════════════════════════════════════
   chrome.runtime.onMessage.addListener((req, _sender, sendResponse) => {
     switch (req.action) {
-
-      case 'getDataByTag': {
-        const data = Array.from(document.querySelectorAll(req.tagName))
-          .map(el => (el.innerText || el.textContent || '').trim());
-        sendResponse({ data });
-        break;
-      }
-
-      case 'getDataBySelector': {
-        const el = document.querySelector(req.selector);
-        sendResponse({ data: el ? (el.innerText || el.textContent || '').trim() : null });
-        break;
-      }
-
-      case 'getInputValueBySelector': {
-        const el = document.querySelector(req.selector);
-        sendResponse({ data: el ? el.value : null });
-        break;
-      }
-
-      case 'getDataByTagTable': {
-        const tbl = document.querySelector(req.tagName);
-        if (!tbl) return sendResponse({ data: null });
-        const rows = Array.from(tbl.querySelectorAll('tr'))
-          .map(tr => Array.from(tr.querySelectorAll('td'))
-            .map(td => td.innerText.trim()).join('\t'));
-        sendResponse({ data: rows.join('\n') });
-        break;
-      }
-
-      // Popup asks: "give me the filtered MRD rows"
-      case 'getMrdRows': {
-        collectMrdRows().then(rows => sendResponse({ rows }));
-        return true; // async
-      }
 
       // drugdelivery page: fill + submit
       case 'fillAndSubmit': {
@@ -226,28 +190,6 @@
       btn.disabled = false;
       console.error('[MRD Send]', e);
     }
-  }
-
-  async function collectMrdRows() {
-    const table = document.querySelector(MRD_TABLE_SEL);
-    if (!table) return [];
-
-    await scrollLoadAll(MRD_TABLE_SEL);
-
-    const rows = Array.from(table.querySelectorAll('tbody tr'));
-    const result = [];
-    rows.forEach(tr => {
-      const cells = tr.querySelectorAll('td');
-      if (cells.length < 11) return;
-      const endDate = cellText(cells[COL.END_DATE]);
-      if (endDate !== '') return;
-      result.push({
-        wardBed: cellText(cells[COL.WARD_BED]),
-        name:    cellText(cells[COL.NAME]),
-        visitId: cellText(cells[COL.VISIT_ID]),
-      });
-    });
-    return result;
   }
 
   function observeTableChanges() {
@@ -559,7 +501,7 @@
       });
       console.log('[BKN IV Scraper] Data saved to chrome.storage.local key:', IV_STORAGE_KEY);
 
-      window.open(chrome.runtime.getURL('iv_sticker.html'), '_blank');
+      window.open(chrome.runtime.getURL('src/features/iv-aux-sticker/iv_sticker.html'), '_blank');
 
       btn.innerHTML = '✅';
       setTimeout(() => {
