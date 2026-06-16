@@ -258,21 +258,39 @@
       word-break: break-word;
     }
 
+    /* border-collapse:collapse ignores border-radius on cells in Chrome, so
+       the medicine table uses the separate model with each cell drawing only
+       its right/bottom edge (plus an explicit left/top edge on the first
+       column/row) — same 1px grid look, but corners can round like the
+       other containers. The patient/diagnosis header row above is unaffected
+       (its <td class="hdr-cell"> has border: none). */
     table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0;
       table-layout: fixed;
     }
 
     th {
       background: #dbeafe;
-      border: 1px solid #111827;
+      border-right: 1px solid #111827;
+      border-bottom: 1px solid #111827;
       padding: 6px 7px;
       text-align: left;
       font-size: 12px;
       line-height: 1.25;
       color: #1e3a8a;
     }
+
+    thead tr:last-child th { border-top: 1px solid #111827; }
+    th:first-child, td:first-child { border-left: 1px solid #111827; }
+
+    /* Round the medicine table's own corners (column-header row + last data
+       row) to match the 8px radius used on the other containers. */
+    thead tr:last-child th:first-child { border-top-left-radius: 8px; }
+    thead tr:last-child th:last-child { border-top-right-radius: 8px; }
+    tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
+    tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
 
     .th-sub {
       font-size: 10px;
@@ -281,7 +299,8 @@
     }
 
     td {
-      border: 1px solid #111827;
+      border-right: 1px solid #111827;
+      border-bottom: 1px solid #111827;
       padding: var(--row-padding-y) var(--row-padding-x);
       vertical-align: top;
       line-height: 1.28;
@@ -663,6 +682,16 @@
       #medTable col.cg-med { width: 38% !important; }
       #medTable col.cg-how { width: 41% !important; }
       #medTable col.cg-qty { width: 14% !important; }
+
+      /* The action column (true first-child) is hidden in print, so the
+         left border + rounded left corners need to move to the "#" column,
+         which becomes the visually-first one. */
+      th:first-child, td:first-child { border-left: none; }
+      thead tr:last-child th:first-child,
+      tbody tr:last-child td:first-child { border-radius: 0; }
+      th:nth-child(2), td:nth-child(2) { border-left: 1px solid #111827; }
+      thead tr:last-child th:nth-child(2) { border-top-left-radius: 8px; }
+      tbody tr:last-child td:nth-child(2) { border-bottom-left-radius: 8px; }
     }
   </style>
 </head>

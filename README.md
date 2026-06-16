@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.4 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.5 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -182,6 +182,9 @@ Flow:
 ---
 
 ## Version History
+
+### v3.6.5 — 2026-06-16
+- Home Med Sheet: rounded the medicine table's own corners (8px, matching the other containers) — `border-collapse: collapse` silently ignores `border-radius` on cells in Chrome, so the table switched to `border-collapse: separate` with each cell drawing only its right/bottom edge (plus an explicit left/top edge on the first column/row) to keep the same 1px grid look while letting corner radius work; print mode has its own corner rules since the hidden action column shifts which column is visually first
 
 ### v3.6.4 — 2026-06-16
 - Home Med Sheet: removed the table's outer 1.5px border (the table now only frames the medicine grid via its own cell borders) — moving the header into `<thead>` had left a stray black box around the logo/patient/diagnosis area

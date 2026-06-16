@@ -29,6 +29,12 @@ The sheet footer shows **นัดหมายติดตามอาการ*
 
 `.patient-card` (name/HN/visit/room) and `.clinical-banner` (diagnosis/allergy lines) sit inside a single outer wrapper, `.patient-clinical-card`, which owns the one outer border/radius/background. Neither child has its own border anymore — `.clinical-banner` gets a `border-top` divider instead. Don't re-add borders to the children; it'll double up with the wrapper's frame.
 
+## Medicine table — rounded corners need the separate border model
+
+`#medTable` uses `border-collapse: separate` (not `collapse`) specifically so `border-radius` renders on the corner cells — Chrome ignores cell radius under `collapse`. To avoid double-thickness grid lines under the separate model, `th`/`td` draw only their **right** and **bottom** edges; an explicit rule adds the **left** edge back on `:first-child` and the **top** edge on the column-header row. Corner radius (8px, matching the other containers) is applied via `thead tr:last-child th:first-child` / `:last-child` and `tbody tr:last-child td:first-child` / `:last-child`.
+
+The action column (`.col-act`, screen-only edit buttons) is the true first DOM child but is hidden in print, which would shift the visible left edge/rounded corner onto the "#" column with nothing there to draw it. A `@media print` override moves the left border + corner radius from `:first-child` to `:nth-child(2)` to compensate — if the column layout changes, double-check both the screen and print corner rules still target the right cells.
+
 ## Footer layout — appointment + providers
 
 The footer (`.footer-note`) is a 2-column grid:
