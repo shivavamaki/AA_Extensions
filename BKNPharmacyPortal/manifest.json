@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.5.0",
-  "version_name": "2026.06.15 — UI redesign, beedee_report cost fixes, ADR multi-event/range, Home Med full Thai on load, per-feature READMEs",
+  "version": "3.5.1",
+  "version_name": "2026.06.16 — Home Med Sheet: future appointment section (getfuturebookingforpatient)",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",

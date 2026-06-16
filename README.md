@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.5.0 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.5.1 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -182,6 +182,10 @@ Flow:
 ---
 
 ## Version History
+
+### v3.5.1 — 2026-06-16
+- Home Med Sheet: added follow-up appointment section (`นัดหมายติดตามอาการ`) to the sheet footer, replacing the static caregiver-note box
+- Server: best-effort fetch of ArcusAir `getfuturebookingforpatient`, formatted as Thai appointment summary (Buddhist Era date, UTC+7 time, department, provider, comments)
 
 ### v3.5.0 — 2026-06-11 → 2026-06-12
 - `beedee_report.json` cost calculation fixes

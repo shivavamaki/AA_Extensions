@@ -10,11 +10,20 @@ Printable A4 **เอกสารแนะนำการใช้ยากล�
 ## Data flow
 
 1. Page receives `{ context }` (patientuid, patientvisituid, incusToken, …).
-2. Calls **`POST /api/report/home-med-api`** → server hits ArcusAir `getallorderitem` (DISCHARGE MEDICATION type), returns `{ patient, meds, allMeds, allergies }`.
+2. Calls **`POST /api/report/home-med-api`** → server hits ArcusAir `getallorderitem` (DISCHARGE MEDICATION type), returns `{ patient, meds, allMeds, allergies, appointmentText }`.
 3. Drug photos: **`GET /api/medication-db`** (name/code index) + **`GET /med-image/{code}`** (extension-agnostic).
-4. Renders an editable A4 table. User edits persist per-visit via `BKNData.saveMedCache`.
+4. Renders an editable A4 table plus a follow-up appointment line. User edits persist per-visit via `BKNData.saveMedCache`.
 
 > The file-header comment mentioning a Jasper XLS flow is **stale** — the sheet now fetches from the ArcusAir API via the server.
+
+## Follow-up appointment section
+
+The sheet footer shows **นัดหมายติดตามอาการ** (follow-up appointment) instead of a static caregiver-note box.
+
+- Server-side, the same `home-med-api` handler best-effort-POSTs to ArcusAir `enterprise/appointmentschedule/getfuturebookingforpatient` (`fetch_arcus_future_appointments` in `bkn_ks_server.py`), passing `patientuid` + current UTC timestamp as `futureapptstartdate`.
+- `format_appointments_th()` turns the response into a Thai summary per appointment: service type, Buddhist-Era date/time (UTC+7, via `_thai_datetime`), department, provider, and comments — joined with newlines.
+- When there are no future appointments, or the ArcusAir call fails, it returns a static fallback: *"ไม่มีนัดติดตามอาการ แต่ถ้าพบอาการผิดปรกติ…"*. The fetch is **best-effort** — a failure here never blocks the medication list from rendering.
+- Client-side, `data.appointmentText` is passed to `renderAppointments()` (`page-home-med.js`), which fills `#appointmentText` in `page-home-med.html`. The same Thai fallback string is duplicated client-side in case `appointmentText` is empty/undefined.
 
 ## Files
 
