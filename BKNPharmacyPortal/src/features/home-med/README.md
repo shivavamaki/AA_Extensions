@@ -25,6 +25,10 @@ The sheet footer shows **นัดหมายติดตามอาการ*
 - When there are no future appointments, or the ArcusAir call fails, it returns a static fallback: *"ไม่มีนัดติดตามอาการ แต่ถ้าพบอาการผิดปรกติ…"*. The fetch is **best-effort** — a failure here never blocks the medication list from rendering.
 - Client-side, `renderAppointments()` (`page-home-med.js`) splits `data.appointmentText` on `\n` and renders **one `.appt-item` card per appointment** into `#appointmentList` — so multiple bookings don't run together as one paragraph. Each non-empty card gets a `•` bullet via CSS (`.appt-item:not(.empty)::before`); the no-appointment fallback renders as a single muted `.appt-item.empty` card with no bullet.
 
+## Patient info + diagnosis/allergy — one merged card
+
+`.patient-card` (name/HN/visit/room) and `.clinical-banner` (diagnosis/allergy lines) sit inside a single outer wrapper, `.patient-clinical-card`, which owns the one outer border/radius/background. Neither child has its own border anymore — `.clinical-banner` gets a `border-top` divider instead. Don't re-add borders to the children; it'll double up with the wrapper's frame.
+
 ## Footer layout — appointment + providers
 
 The footer (`.footer-note`) is a 2-column grid:

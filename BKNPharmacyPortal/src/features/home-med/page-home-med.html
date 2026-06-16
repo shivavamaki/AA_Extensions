@@ -188,15 +188,22 @@
       padding-top: 0;
     }
 
+    /* Patient info + diagnosis/allergy share one outer frame instead of two
+       separate bordered boxes — visual style of each part is unchanged,
+       only the outer border is merged. */
+    .patient-clinical-card {
+      margin: 5px 0 6px;
+      border: 1.5px solid #111827;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f9fafb;
+    }
+
     .patient-card {
       display: grid;
       grid-template-columns: 1.6fr .7fr 1.05fr .7fr;
       gap: 5px;
-      margin: 5px 0 6px;
       padding: 5px 8px;
-      border: 1.5px solid #111827;
-      border-radius: 8px;
-      background: #f9fafb;
     }
 
     .patient-field .label {
@@ -210,10 +217,7 @@
 
     /* ── Clinical banner (Diagnosis + Allergies, stacked) ──────── */
     .clinical-banner {
-      margin: 0 0 6px;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1.5px solid #cbd5e1;
+      border-top: 1.5px solid #111827;
     }
     .clinical-banner .dx-line,
     .clinical-banner .allergy-line {
@@ -258,7 +262,6 @@
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      border: 1.5px solid #111827;
     }
 
     th {
@@ -414,7 +417,7 @@
       padding-top: 8px;
       border-top: 1px solid #d1d5db;
       display: grid;
-      grid-template-columns: 1.3fr 1fr;
+      grid-template-columns: 2fr .8fr;
       gap: 8px;
       font-size: 11px;
       color: #374151;
@@ -480,7 +483,7 @@
        patient info, and diagnosis/allergy banner repeat on every printed page. ── */
     .hdr-cell { padding: 0 0 7px 0; border: none !important; }
     .hdr-cell .top-title { margin-bottom: 7px; }
-    .hdr-cell .patient-card { margin: 7px 0 8px; }
+    .hdr-cell .patient-clinical-card { margin: 7px 0 8px; }
 
     /* ── Page number footer (current page / estimated total) ───────────── */
     .page-counter { display: none; }
@@ -784,35 +787,37 @@
               </div>
             </section>
 
-            <section class="patient-card">
-              <div class="patient-field">
-                <span class="label">Patient name</span>
-                <div class="value" id="patientName">-</div>
-              </div>
-              <div class="patient-field">
-                <span class="label">HN</span>
-                <div class="value" id="patientHN">-</div>
-              </div>
-              <div class="patient-field">
-                <span class="label">Visit / AN</span>
-                <div class="value" id="patientAN">-</div>
-              </div>
-              <div class="patient-field">
-                <span class="label">Room</span>
-                <div class="value" id="patientRoom">-</div>
-              </div>
-            </section>
+            <div class="patient-clinical-card">
+              <section class="patient-card">
+                <div class="patient-field">
+                  <span class="label">Patient name</span>
+                  <div class="value" id="patientName">-</div>
+                </div>
+                <div class="patient-field">
+                  <span class="label">HN</span>
+                  <div class="value" id="patientHN">-</div>
+                </div>
+                <div class="patient-field">
+                  <span class="label">Visit / AN</span>
+                  <div class="value" id="patientAN">-</div>
+                </div>
+                <div class="patient-field">
+                  <span class="label">Room</span>
+                  <div class="value" id="patientRoom">-</div>
+                </div>
+              </section>
 
-            <section class="clinical-banner" id="clinicalBanner" data-no-translate translate="no">
-              <div class="dx-line" id="dxLine">
-                <span class="dx-label"> Diagnosis / การวินิจฉัย:</span>
-                <span class="dx-value" id="diagnosisValue">-</span>
-              </div>
-              <div class="allergy-line nkda" id="allergyBanner">
-                <span class="allergy-label"> Allergies / แพ้ยา:</span>
-                <span class="allergy-value" id="allergyValue">No Known Drug Allergies (ไม่มีประวัติแพ้ยา)</span>
-              </div>
-            </section>
+              <section class="clinical-banner" id="clinicalBanner" data-no-translate translate="no">
+                <div class="dx-line" id="dxLine">
+                  <span class="dx-label"> Diagnosis / การวินิจฉัย:</span>
+                  <span class="dx-value" id="diagnosisValue">-</span>
+                </div>
+                <div class="allergy-line nkda" id="allergyBanner">
+                  <span class="allergy-label"> Allergies / แพ้ยา:</span>
+                  <span class="allergy-value" id="allergyValue">No Known Drug Allergies (ไม่มีประวัติแพ้ยา)</span>
+                </div>
+              </section>
+            </div>
           </td>
         </tr>
         <tr>

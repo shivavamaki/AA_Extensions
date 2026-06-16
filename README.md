@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.3 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.4 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -182,6 +182,11 @@ Flow:
 ---
 
 ## Version History
+
+### v3.6.4 — 2026-06-16
+- Home Med Sheet: removed the table's outer 1.5px border (the table now only frames the medicine grid via its own cell borders) — moving the header into `<thead>` had left a stray black box around the logo/patient/diagnosis area
+- Home Med Sheet: patient-info card and diagnosis/allergy banner now share one merged outer container (`.patient-clinical-card`) instead of two separately-bordered boxes — same internal styling, single frame
+- Home Med Sheet: footer `appt-box` (นัดหมายติดตามอาการ) widened, `providers-box` (Physician/Pharmacist) narrowed — `grid-template-columns: 2fr .8fr`
 
 ### v3.6.3 — 2026-06-16
 - Home Med Sheet: removed all `text-decoration: underline` emphasis (per pharmacy feedback) — emphasis is plain `font-weight: 400` only now
