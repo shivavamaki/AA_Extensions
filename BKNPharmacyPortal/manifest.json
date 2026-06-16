@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.6.5",
-  "version_name": "2026.06.16 — Home Med Sheet: rounded medicine table corners to match other containers",
+  "version": "3.6.6",
+  "version_name": "2026.06.16 — Pattern Editor: editable phrase overrides for the Home Med translator + Node test harness",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",
@@ -167,7 +167,9 @@
         "src/assets/fonts/Sarabun-Regular.ttf",
         "src/features/adrtimeline/page-adrtimeline.html",
         "src/features/adrtimeline/page-adrtimeline.js",
-        "src/features/adrtimeline/adrtimeline.css"
+        "src/features/adrtimeline/adrtimeline.css",
+        "src/features/pattern-editor/page-pattern-editor.html",
+        "src/features/pattern-editor/page-pattern-editor.js"
       ],
       "matches": [
         "<all_urls>"

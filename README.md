@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.5 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.6 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -182,6 +182,11 @@ Flow:
 ---
 
 ## Version History
+
+### v3.6.6 — 2026-06-16
+- Added `BKNPharmacyPortal/test/test-pattern-matcher.js` — a standalone Node test harness for the Home Med Sheet's offline pattern matcher (`medical-glossary.js`), loaded via `vm` with no browser/build step; run with `node test/test-pattern-matcher.js`
+- Added a "Pattern Editor" admin page (`src/features/pattern-editor/`, opened from the popup) so pharmacy staff can add/correct curated English→Thai phrase translations without a code deploy — persisted server-side to a new `data/rx/pattern-overrides.json` via the existing generic rx-collection REST routes (`GET`/`PUT /api/pattern-overrides`)
+- `matchAuxiliaryPhrase()` in `medical-glossary.js` now checks `window.PATTERN_OVERRIDES` (fetched by `page-home-med.js` at load) before the hardcoded phrase table, so overrides take effect immediately on next sheet load — the regex-based qty/frequency/timing engine itself stays code-only by design
 
 ### v3.6.5 — 2026-06-16
 - Home Med Sheet: rounded the medicine table's own corners (8px, matching the other containers) — `border-collapse: collapse` silently ignores `border-radius` on cells in Chrome, so the table switched to `border-collapse: separate` with each cell drawing only its right/bottom edge (plus an explicit left/top edge on the first column/row) to keep the same 1px grid look while letting corner radius work; print mode has its own corner rules since the hidden action column shifts which column is visually first

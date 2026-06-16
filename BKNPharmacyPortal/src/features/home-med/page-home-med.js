@@ -46,6 +46,25 @@ async function _loadMedicationDatabase() {
   return _medDbLoadPromise;
 }
 
+/* Pharmacist-curated phrase overrides (src/features/pattern-editor) — layered
+ * in front of the hardcoded AUXILIARY_PHRASES in medical-glossary.js so new
+ * instruction phrases can be added without a code deploy. Best-effort: a
+ * server-fetch failure just means no overrides apply, never blocks the sheet. */
+let _patternOverridesLoadPromise = null;
+async function _loadPatternOverrides() {
+  if (_patternOverridesLoadPromise) return _patternOverridesLoadPromise;
+  _patternOverridesLoadPromise = (async () => {
+    try {
+      if (window.BKNData && window.BKNData.serverFetch) {
+        const r = await window.BKNData.serverFetch("/api/pattern-overrides");
+        if (r && r.ok && r.json) { window.PATTERN_OVERRIDES = r.json; return; }
+      }
+    } catch (_) { /* server unavailable */ }
+    window.PATTERN_OVERRIDES = window.PATTERN_OVERRIDES || {};
+  })();
+  return _patternOverridesLoadPromise;
+}
+
 /* ── Name index for image lookup + add-item autocomplete ────────────────────
  * The med DB is keyed by item code, but RT_COMMON_286 gives only drug names,
  * and user-added items are names too. Build a normalized name → entry index.
@@ -685,7 +704,7 @@ async function fetchAndRender() {
   }
 
   _setStatus("⏳ กำลังดึงรายการยากลับบ้าน...");
-  await _loadMedicationDatabase();
+  await Promise.all([_loadMedicationDatabase(), _loadPatternOverrides()]);
 
   // Fetch discharge meds + allergies from the ArcusAir getallorderitem API.
   let resp = null;
