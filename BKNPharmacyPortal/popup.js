@@ -2,7 +2,6 @@
  * popup.js — BKN Pharmacy Extension v2.1
  *
  * Compatible with:
- * - content_script.js MRD page action: getMrdRows
  * - background relay action: sendToDrugDelivery
  * - background/content result action: drugDeliveryResult
  *
@@ -396,13 +395,6 @@ async function handleDeliveryResult(visitId, ok, errorText) {
 // ──────────────────────────────────────────────────────────────────────────────
 // Utilities
 // ──────────────────────────────────────────────────────────────────────────────
-function msgTab(tabId, payload) {
-  return new Promise(resolve =>
-    chrome.tabs.sendMessage(tabId, payload, resp =>
-      chrome.runtime.lastError ? resolve(null) : resolve(resp)
-    )
-  );
-}
 
 function setStatus(el, msg, type = '') {
   if (!el) return;
@@ -476,14 +468,14 @@ function getExp174SelectedStoreBinLabel() {
 function initIvSticker() {
   document.getElementById('openIvSticker')
     ?.addEventListener('click', () => {
-      chrome.tabs.create({ url: chrome.runtime.getURL('iv_sticker.html') });
+      chrome.tabs.create({ url: chrome.runtime.getURL('src/features/iv-aux-sticker/iv_sticker.html') });
     });
 }
 
 function initAuxSticker() {
   document.getElementById('openAuxSticker')
     ?.addEventListener('click', () => {
-      chrome.tabs.create({ url: chrome.runtime.getURL('aux_sticker.html') });
+      chrome.tabs.create({ url: chrome.runtime.getURL('src/features/iv-aux-sticker/aux_sticker.html') });
     });
 }
 
@@ -944,7 +936,7 @@ function openPrintPage(type, data, meta = {}) {
 
   chrome.storage.local.set({ reportData: rows, reportPrintPayload: payload }, () => {
     chrome.tabs.create({
-      url: chrome.runtime.getURL(`report_print.html?type=${encodeURIComponent(type)}`)
+      url: chrome.runtime.getURL(`src/features/report-print/report_print.html?type=${encodeURIComponent(type)}`)
     });
   });
 }

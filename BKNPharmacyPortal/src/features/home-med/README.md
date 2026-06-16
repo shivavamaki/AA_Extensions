@@ -44,7 +44,6 @@ The footer (`.footer-note`) is a 2-column grid:
 | `content-home-med.js` | ArcusAir button injection, context extraction, route to page |
 | `page-home-med.html` | A4 layout + toolbar (language, paper, margin, scale, font, picture size) |
 | `page-home-med.js` | Fetch, build editable med list, render, translate, persist |
-| `parser-home-med.js` | Header-agnostic row → med mapping (legacy/report fallback) |
 
 ## Translation (offline-first, Thai default)
 

@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.5.5 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.0 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -182,6 +182,12 @@ Flow:
 ---
 
 ## Version History
+
+### v3.6.0 — 2026-06-16
+- **Refactor — feature-based reorganization, no behavior change.** Moved root-level loose files into `src/features/`: `iv_sticker.*` + `aux_sticker.*` → `src/features/iv-aux-sticker/`; `pdf.html/.js` + `beedee_report.json` → `src/features/beedee-pdf/`; `report_print.*` → `src/features/report-print/`. All path references (`manifest.json` web_accessible_resources, `popup.js`/`background.js`/`content_script.js` `chrome.runtime.getURL(...)` calls, `pdf.html`'s relative `cdnjs/` script paths) updated accordingly; each new folder has its own README.
+- **Removed dead code** found during the reorg audit (all confirmed unreachable — no sender/caller existed anywhere in the repo): `background.js` handlers for `extFetch`, `toggleSidebar`, `sendSelection`, `getSelection`, `saveFile` (+ its entire orphaned Google Drive upload chain: `fetchFileFromUrl`/`uploadFileToDrive`/`getAccessToken` — `chrome.identity` wasn't even a declared permission, so this was non-functional besides being unreachable), and the stub `getDataByTag`; the unused `"contextMenus"` permission and its dead `chrome.contextMenus.onClicked` listener (no `contextMenus.create()` exists anywhere); `content_script.js`'s generic-router cases `getDataByTag`/`getDataBySelector`/`getInputValueBySelector`/`getDataByTagTable`/`getMrdRows` and the `collectMrdRows()` helper; `popup.js`'s unused `msgTab()` function.
+- Fixed a stale doc reference: `src/features/home-med/README.md` documented a `parser-home-med.js` file that doesn't exist in the repo.
+- Noted but left untouched: `BKNPharmacyPortal/db/iv_history.json` is unreferenced — `iv_sticker.js` persists history via `localStorage['iv_history']` instead.
 
 ### v3.5.5 — 2026-06-16
 - Home Med Sheet: appointment box (`นัดหมายติดตามอาการ`) now shows a bullet marker per card so multiple bookings are visually distinct, not just stacked boxes

@@ -554,7 +554,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   ════════════════════════════════════════════════════════════════════ */
   if (msg && msg.action === 'OPEN_PDF_PAGE') {
     chrome.storage.local.set({ pdf_data: msg.payload }, () => {
-      chrome.tabs.create({ url: chrome.runtime.getURL('pdf.html') });
+      chrome.tabs.create({ url: chrome.runtime.getURL('src/features/beedee-pdf/pdf.html') });
     });
     return true;
   }
@@ -580,70 +580,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return false;
   }
 
-  if (msg && msg.action === 'extFetch') {
-    if (!_isAllowedProxyUrl(msg.url)) {
-      sendResponse({ ok: false, status: 403, statusText: 'URL not in proxy allowlist', text: '', json: null });
-      return true;
-    }
-    (async () => {
-      try {
-        const method  = msg.method  || 'GET';
-        const headers = msg.headers || {};
-        let body;
-        if (msg.body !== null && msg.body !== undefined) {
-          body = (typeof msg.body === 'string') ? msg.body : JSON.stringify(msg.body);
-        }
-        const res = await fetch(msg.url, { method, headers, body, redirect: 'follow' });
-        const text = await res.text();
-        let json = null;
-        try { json = JSON.parse(text); } catch (_) {}
-        sendResponse({ ok: res.ok, status: res.status, statusText: res.statusText, text, json });
-      } catch (e) {
-        sendResponse({ ok: false, status: 0, statusText: String(e), text: '', json: null });
-      }
-    })();
-    return true;
-  }
-
-  if (msg && msg.action === 'toggleSidebar') {
-    if (!sender.tab?.id || !chrome.scripting?.executeScript) {
-      sendResponse && sendResponse({ ok: false, error: 'No tab or scripting API unavailable' });
-      return false;
-    }
-    chrome.scripting.executeScript({
-      target: { tabId: sender.tab.id },
-      func: () => { chrome.runtime.sendMessage({ action: 'toggleSidebar' }); },
-    });
-    sendResponse && sendResponse({ ok: true });
-    return false;
-  }
-
-  if (msg && msg.action === 'sendSelection') {
-    chrome.storage.local.set({ selectedText: msg.data });
-    sendResponse && sendResponse({ ok: true });
-    return false;
-  }
-
-  if (msg && msg.action === 'getSelection') {
-    chrome.storage.local.get(['selectedText'], result => {
-      sendResponse({ data: (result && result.selectedText) || '' });
-    });
-    return true;
-  }
-
-  if (msg && msg.action === 'saveFile') {
-    fetchFileFromUrl(msg.fileUrl)
-      .then(file => uploadFileToDrive(file))
-      .then(() => sendResponse({ status: 'File saved to Google Drive!' }))
-      .catch(() => sendResponse({ status: 'Failed to save file to Google Drive.' }));
-    return true;
-  }
-
-  if (msg && msg.action === 'getDataByTag') {
-    sendResponse({ data: [] });
-    return false;
-  }
-
   return false;
 });
 
@@ -653,14 +589,6 @@ chrome.runtime.onInstalled.addListener(details => {
     chrome.tabs.create({ url: 'welcome.html' });
   }
 });
-
-if (chrome.contextMenus && chrome.contextMenus.onClicked) {
-  chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId === 'openSidePanel' && chrome.sidePanel?.open) {
-      chrome.sidePanel.open({ windowId: tab.windowId });
-    }
-  });
-}
 
 /* ── Drug Delivery helper (rx_menu) ─────────────────────────────────────── */
 async function handleSendToDrugDelivery(visitId) {
@@ -678,43 +606,4 @@ async function handleSendToDrugDelivery(visitId) {
   if (!resp) throw new Error('No response from drug delivery content script');
   if (resp.ok === false) throw new Error(resp.error || 'Drug delivery rejected request');
   return true;
-}
-
-/* ── Google Drive helpers (rx_menu) ─────────────────────────────────────── */
-async function fetchFileFromUrl(fileUrl) {
-  const response = await fetch(fileUrl);
-  if (!response.ok) throw new Error(`Failed to download: ${response.statusText}`);
-  const blob = await response.blob();
-  return new File([blob], 'downloaded-file', { type: blob.type });
-}
-
-async function uploadFileToDrive(file) {
-  const accessToken = await getAccessToken();
-  const formData = new FormData();
-  formData.append('metadata', new Blob([JSON.stringify({
-    name: file.name, parents: ['14U3kFKdaA0tFkyFqMt1sDRByuIerOMbk'],
-  })], { type: 'application/json' }));
-  formData.append('file', file);
-  const r = await fetch(
-    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
-    { method: 'POST', headers: { Authorization: 'Bearer ' + accessToken }, body: formData }
-  );
-  if (!r.ok) throw new Error('Failed to upload to Google Drive.');
-  return r.json();
-}
-
-function getAccessToken() {
-  return new Promise((resolve, reject) => {
-    if (!chrome.identity || !chrome.identity.getAuthToken) {
-      reject(new Error('chrome.identity unavailable'));
-      return;
-    }
-    chrome.identity.getAuthToken({ interactive: true }, token => {
-      if (chrome.runtime.lastError || !token) {
-        reject(new Error(chrome.runtime.lastError ? chrome.runtime.lastError.message : 'No token'));
-      } else {
-        resolve(token);
-      }
-    });
-  });
 }

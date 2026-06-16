@@ -64,8 +64,8 @@ async function fetchJsonAny(urls) {
 async function loadBeedeeCostMap() {
   const urls = [];
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
-    urls.push(chrome.runtime.getURL('beedee_report.json'));
-    urls.push(chrome.runtime.getURL('/beedee_report.json'));
+    urls.push(chrome.runtime.getURL('src/features/beedee-pdf/beedee_report.json'));
+    urls.push(chrome.runtime.getURL('/src/features/beedee-pdf/beedee_report.json'));
   }
   urls.push('beedee_report.json');
 

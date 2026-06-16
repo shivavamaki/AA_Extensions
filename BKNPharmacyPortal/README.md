@@ -2,7 +2,7 @@
 
 Unified Chrome MV3 extension for BKN Hospital Pharmacy. Combines the former **BKN Pharmacy** (`rx_menu`) and **Discharge Process Checklist** (`AAOverlay`) extensions into one portal backed by a shared pharmacy server.
 
-**Version:** 3.5.0 · **Manifest:** MV3 · **Target:** ArcusAir (`arcusair.bdms.co.th`, AngularJS 1.x SPA)
+**Version:** 3.6.0 · **Manifest:** MV3 · **Target:** ArcusAir (`arcusair.bdms.co.th`, AngularJS 1.x SPA)
 
 Full project context: [/README.md](../README.md)
 
@@ -32,16 +32,16 @@ Shared infrastructure (translation engine, data bus): [src/shared/README.md](src
 
 ### Extension pages (popup tabs)
 
-| Page | Description |
-|---|---|
-| IV / Aux Sticker | IV bag, HAD, PFS, ATB, Cytotoxic, EYE labels and premix mixing labels |
-| IPD Queue | Active inpatient list from ArcusAir MRD → push to Drug Delivery |
-| Reports | RT_COMMON_257 dispensing report, RT_COMMON_917 stock picking, Beedee report export |
-| Formulary | Drug formulary browser · [formulary/README.md](formulary/README.md) |
-| Knowledge Hub | Pharmacy FAQs, items, videos, shared references · [knowledge/README.md](knowledge/README.md) |
-| KPI | Daily OPD/IPD/med-error KPI records · [kpi/README.md](kpi/README.md) |
-| Schedule | Staff shift schedule with booking rules · [schedule/README.md](schedule/README.md) |
-| Vaccine | Vaccine schedule viewer · [vaccine/README.md](vaccine/README.md) |
+| Page | Description | README |
+|---|---|---|
+| IV / Aux Sticker | IV bag, HAD, PFS, ATB, Cytotoxic, EYE labels and premix mixing labels | [src/features/iv-aux-sticker/README.md](src/features/iv-aux-sticker/README.md) |
+| IPD Queue | Active inpatient list from ArcusAir MRD → push to Drug Delivery | — |
+| Reports | RT_COMMON_257 dispensing report, RT_COMMON_917 stock picking, Beedee report export | [src/features/report-print/README.md](src/features/report-print/README.md), [src/features/beedee-pdf/README.md](src/features/beedee-pdf/README.md) |
+| Formulary | Drug formulary browser | [formulary/README.md](formulary/README.md) |
+| Knowledge Hub | Pharmacy FAQs, items, videos, shared references | [knowledge/README.md](knowledge/README.md) |
+| KPI | Daily OPD/IPD/med-error KPI records | [kpi/README.md](kpi/README.md) |
+| Schedule | Staff shift schedule with booking rules | [schedule/README.md](schedule/README.md) |
+| Vaccine | Vaccine schedule viewer | [vaccine/README.md](vaccine/README.md) |
 
 ---
 
@@ -57,25 +57,33 @@ background.js  ← sole message hub (MV3 service worker)
   ├── ROUTE_MAP         — feature-tab openers
   ├── MJ_FETCH_XLS      — Jasper XLS fetch (single-response guard)
   ├── MJ_EXTRACT_ANGULAR_CTX  — MAIN-world Angular DI extraction
-  └── MJ_SETUP_XHR_TAP  — XHR/fetch tap setup
+  └── MJ_SETUP_XHR_TAP  — on-demand XHR/fetch tap setup (idempotent fallback;
+                           the tap normally self-installs, see below)
 
-Content scripts (load order in manifest.json — load-bearing):
-  src/core/messages.js
-  src/core/utils.js
-  src/core/dom.js
-  src/core/storage.js
-  src/shared/shared-data-client.js   ← window.BKNData (data bus)
-  src/features/med-sticker/parser-order-table.js
-  src/features/med-sticker/content-med-sticker.js
-  src/features/med-sticker/content-pomlist.js
-  src/features/patient-sticker/parser-patient.js
-  src/features/patient-sticker/content-patient-sticker.js  ← owns .bkn-tool-group
-  src/features/adrtimeline/adrtimeline-core.js
-  src/features/adrtimeline/adrtimeline-parser-html.js
-  src/features/adrtimeline/adrtimeline-jasper.js
-  src/features/adrtimeline/content-adrtimeline.js
-  src/features/home-med/content-home-med.js
-  content_script.js  ← legacy handlers (load last)
+Content scripts (3 separate manifest.json entries — load order is load-bearing):
+  1. world:"MAIN", document_start:
+       src/main-world/arcus-xhr-tap.js     ← installs setRequestHeader/open/send/fetch hooks
+                                              before ArcusAir's app fires its first call
+  2. ISOLATED, document_start:
+       src/main-world/early-sec-relay.js   ← relays the tap's incus-token postMessage
+                                              to background (must load before the tap can post)
+  3. ISOLATED, document_idle:
+       src/core/messages.js
+       src/core/utils.js
+       src/core/dom.js
+       src/core/storage.js
+       src/shared/shared-data-client.js   ← window.BKNData (data bus)
+       src/features/med-sticker/parser-order-table.js
+       src/features/med-sticker/content-med-sticker.js
+       src/features/med-sticker/content-pomlist.js
+       src/features/patient-sticker/parser-patient.js
+       src/features/patient-sticker/content-patient-sticker.js  ← owns .bkn-tool-group
+       src/features/adrtimeline/adrtimeline-core.js
+       src/features/adrtimeline/adrtimeline-parser-html.js
+       src/features/adrtimeline/adrtimeline-jasper.js
+       src/features/adrtimeline/content-adrtimeline.js
+       src/features/home-med/content-home-med.js
+       content_script.js  ← legacy handlers (load last)
 ```
 
 ---
@@ -119,31 +127,30 @@ Key methods: `getServerUrl / setServerUrl / serverFetch / getPatientContext / se
 BKNPharmacyPortal/
 ├── manifest.json
 ├── background.js
-├── content_script.js
+├── content_script.js   (legacy: MRD table, drug delivery, dispense-workbench scrape)
 ├── popup.html / popup.js / styles.css
-├── iv_sticker.html/.js/.css
-├── aux_sticker.html/.js/.css
 ├── welcome.html/.js
-├── pdf.html/.js
-├── report_print.html/.js/.css
-├── beedee_report.json
 ├── formulary/
 ├── knowledge/
 ├── kpi/
 ├── schedule/
 ├── vaccine/
-├── db/
+├── db/             (iv_history.json — currently unused; iv_sticker.js uses localStorage instead)
 ├── images/
 ├── cdnjs/   (jsPDF)
 └── src/
     ├── core/           (messages, utils, dom, storage)
     ├── shared/         (shared-data-client, translate-core, medical-glossary)
+    ├── main-world/     (arcus-xhr-tap.js, early-sec-relay.js — incus-token capture)
     ├── features/
     │   ├── home-med/
     │   ├── med-sticker/
     │   ├── patient-sticker/
     │   ├── adrtimeline/
-    │   └── med-journey/
+    │   ├── med-journey/
+    │   ├── iv-aux-sticker/   (iv_sticker.*, aux_sticker.*)
+    │   ├── beedee-pdf/       (pdf.html/.js, beedee_report.json)
+    │   └── report-print/    (report_print.html/.js/.css)
     ├── styles/         (overlay.css)
     ├── assets/fonts/   (THSarabunNew, Sarabun)
     └── vendor/         (jsbarcode.min.js)
