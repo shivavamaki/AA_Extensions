@@ -848,12 +848,32 @@ function bindToolbar() {
   const btnPdf = document.getElementById("btnPdf");
   const btnRevert = document.getElementById("btnRevert");
   // Set document.title for both Print and PDF — browsers use it as the
-  // default save/print filename, so the HN ends up in the file name. The header
-  // sections print once at the top; the column-header row repeats via <thead>.
+  // default save/print filename, so the HN ends up in the file name. The whole
+  // header (logo/title, patient info, diagnosis/allergy) now lives inside
+  // <thead> and repeats with the column-header row on every printed page.
   if (btnPrint) btnPrint.onclick = () => { document.title = buildFileName(_context); applyPrintSettings(currentPrintSettingsFromControls()); window.print(); };
   if (btnRevert) btnRevert.onclick = () => location.reload();
   if (btnPdf) btnPdf.onclick = () => { document.title = buildFileName(_context); applyPrintSettings(currentPrintSettingsFromControls()); window.print(); };
 }
+
+// Chrome has no CSS counter for total printed pages, so estimate it from the
+// rendered sheet height vs. the A4 content height (minus margins) just before
+// printing. The current-page number itself comes from the CSS position:fixed
+// + counter(page) trick in page-home-med.html, which Chrome repeats per page.
+function updatePageCounterTotal() {
+  const counterEl = document.getElementById("pageCounter");
+  const sheetEl = document.querySelector(".sheet");
+  if (!counterEl || !sheetEl) return;
+  const c = _getPrintControls();
+  const marginMm = Number(c.printMargin?.value) || PRINT_CONTROL_DEFAULTS.marginMm;
+  const MM_TO_PX = 96 / 25.4;
+  const pageContentPx = (297 - marginMm * 2) * MM_TO_PX;
+  const totalPx = sheetEl.scrollHeight;
+  const totalPages = Math.max(1, Math.ceil(totalPx / pageContentPx));
+  counterEl.dataset.total = String(totalPages);
+}
+
+window.addEventListener("beforeprint", updatePageCounterTotal);
 
 function bindLangControl() {
   const sel = document.getElementById("lang");

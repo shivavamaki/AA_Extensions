@@ -33,9 +33,17 @@ The footer (`.footer-note`) is a 2-column grid:
   - `populateHeader()` collects **every distinct provider** across the discharge meds (`_uniquePhysicians()`), not just the first one, since a visit can involve more than one prescriber. Each name renders on its own line via `_renderProviderList()`.
   - Pharmacist stays single-value (from `context.pharmacistName`).
 
-## Emphasis style — underline, not bold
+## Emphasis style — plain weight, no underline or bold
 
-`page-home-med.html` registers only `Sarabun-Regular.ttf` via `@font-face` (no Bold face, by design — don't add one). Every place that previously used `font-weight: 700/800` for emphasis (patient field labels/values, diagnosis/allergy banner, section titles, `.med-name`, `.instruction-text`, the per-medicine หมายเหตุ box `.comment`, footer labels) now uses `font-weight: 400` + `text-decoration: underline` instead — keeps the sheet on a single font face/weight throughout.
+`page-home-med.html` registers only `Sarabun-Regular.ttf` via `@font-face` (no Bold face, by design — don't add one). All emphasis is `font-weight: 400` with no `text-decoration` — underline was tried and then explicitly removed per pharmacy feedback. Don't reintroduce bold or underline for "emphasis"; rely on layout (badges, color, spacing) instead.
+
+## Repeating page header (print)
+
+The logo/title row, patient-info card, and diagnosis/allergy banner live inside `#medTable`'s `<thead>` (a single `<tr class="hdr-row"><td class="hdr-cell" colspan="5">…</td></tr>` row, followed by the normal column-header `<tr>`). Browsers repeat `<thead>` content on every printed page, so the patient context reprints automatically if the medication list spans multiple A4 pages — no separate per-page reprint logic needed. Don't move these sections back out of the table, or multi-page printouts will only show patient/diagnosis info on page 1.
+
+## Page number footer (print)
+
+`#pageCounter` (`.page-counter`) is a `position: fixed` element, print-only, bottom-right of the sheet. The **current** page number comes from the CSS `counter(page)` trick (Chrome increments a `position: fixed` element's counter once per printed page) — no JS involved. The **total** page count has no native CSS equivalent in Chrome, so `updatePageCounterTotal()` (`page-home-med.js`, on `window.beforeprint`) estimates it from `.sheet.scrollHeight` vs. the A4 content height (297mm minus the current print margin), written to `data-total` and read via `attr(data-total)` in the `::before` content. It's an estimate, not exact pagination — close enough for "Page X / Y" on a discharge sheet.
 
 ## Files
 

@@ -204,7 +204,6 @@
       font-size: 9px;
       color: #6b7280;
       font-weight: 400;
-      text-decoration: underline;
       letter-spacing: .03em;
       text-transform: uppercase;
     }
@@ -232,9 +231,9 @@
       border-bottom: 1px solid #dbeafe;
     }
     .clinical-banner .dx-label,
-    .clinical-banner .allergy-label { font-weight: 400; text-decoration: underline; white-space: nowrap; }
+    .clinical-banner .allergy-label { font-weight: 400; white-space: nowrap; }
     .clinical-banner .dx-value,
-    .clinical-banner .allergy-value { font-weight: 400; text-decoration: underline; word-break: break-word; }
+    .clinical-banner .allergy-value { font-weight: 400; word-break: break-word; }
     /* Allergy line: red when present, calm grey for NKDA. */
     .clinical-banner .allergy-line {
       background: #fef2f2;
@@ -251,38 +250,8 @@
       margin-top: 0;
       font-size: 13px;
       font-weight: 400;
-      text-decoration: underline;
       line-height: 1.2;
       word-break: break-word;
-    }
-
-    /* Floating pill badge instead of a full-width banner — the section only
-       needs a small visual anchor, not a heavy block taking a whole row. */
-    .section-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 6px 0 4px;
-    }
-
-    .section-title .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 3px 12px;
-      border-radius: 999px;
-      background: #0c4a6e;
-      color: #fff;
-      font-size: 11px;
-      font-weight: 400;
-      text-decoration: underline;
-      white-space: nowrap;
-      box-shadow: 0 1px 3px rgba(12, 74, 110, .35);
-    }
-
-    .hint {
-      font-size: 10px;
-      font-weight: 400;
-      color: #6b7280;
     }
 
     table {
@@ -380,7 +349,6 @@
     .med-name {
       font-size: 14px;
       font-weight: 400;
-      text-decoration: underline;
       line-height: 1.2;
     }
 
@@ -416,7 +384,6 @@
     .instruction-text {
       font-size: 15px;
       font-weight: 400;
-      text-decoration: underline;
       line-height: 1.35;
       color: #0f172a;
     }
@@ -429,7 +396,6 @@
       background: #eff6ff;
       font-size: 13px;
       font-weight: 400;
-      text-decoration: underline;
       line-height: 1.3;
     }
 
@@ -441,7 +407,6 @@
     .qty-main {
       font-size: 13px;
       font-weight: 400;
-      text-decoration: underline;
     }
 
     .footer-note {
@@ -511,12 +476,29 @@
       margin-top: 2px;
     }
 
-    /* ── Print-repeating page header ─────────────────────── */
-    .print-hdr-row { display: none; }
+    /* ── Print-repeating page header — lives inside <thead> so the logo/title,
+       patient info, and diagnosis/allergy banner repeat on every printed page. ── */
     .hdr-cell { padding: 0 0 7px 0; border: none !important; }
     .hdr-cell .top-title { margin-bottom: 7px; }
     .hdr-cell .patient-card { margin: 7px 0 8px; }
-    .hdr-cell .section-title { margin: 7px 0 7px; }
+
+    /* ── Page number footer (current page / estimated total) ───────────── */
+    .page-counter { display: none; }
+    @media print {
+      body { counter-reset: page; }
+      .page-counter {
+        display: block;
+        position: fixed;
+        bottom: 4mm;
+        right: var(--sheet-padding-x);
+        font-size: 9px;
+        color: #6b7280;
+      }
+      .page-counter::before {
+        counter-increment: page;
+        content: "Page " counter(page) " / " attr(data-total);
+      }
+    }
 
     .sign-box {
       min-height: 38px;
@@ -528,7 +510,6 @@
     .label-ul {
       font-weight: 400;
       font-family: inherit;
-      text-decoration: underline;
     }
 
     .empty {
@@ -776,55 +757,6 @@
 
   <div class="sheet-wrap">
   <main class="sheet">
-    <section class="top-title screen-only">
-      <div class="logo-zone">
-        <img src="../patient-sticker/bkh-logo.png" alt="Hospital logo" />
-      </div>
-      <div class="title-zone">
-        <h1>Home Medication Sheet</h1>
-        <div class="subtitle">เอกสารแนะนำการใช้ยากลับบ้าน</div>
-      </div>
-      <div class="date-box">
-        <div><span class="label-ul">Date:</span> <span id="sheetDate">-</span></div>
-        <div class="muted">Please follow the medication instructions below.</div>
-      </div>
-    </section>
-
-    <section class="patient-card screen-only">
-      <div class="patient-field">
-        <span class="label">Patient name</span>
-        <div class="value" id="patientName">-</div>
-      </div>
-      <div class="patient-field">
-        <span class="label">HN</span>
-        <div class="value" id="patientHN">-</div>
-      </div>
-      <div class="patient-field">
-        <span class="label">Visit / AN</span>
-        <div class="value" id="patientAN">-</div>
-      </div>
-      <div class="patient-field">
-        <span class="label">Room</span>
-        <div class="value" id="patientRoom">-</div>
-      </div>
-    </section>
-
-    <section class="clinical-banner screen-only" id="clinicalBanner" data-no-translate translate="no">
-      <div class="dx-line" id="dxLine">
-        <span class="dx-label"> Diagnosis / การวินิจฉัย:</span>
-        <span class="dx-value" id="diagnosisValue">-</span>
-      </div>
-      <div class="allergy-line nkda" id="allergyBanner">
-        <span class="allergy-label"> Allergies / แพ้ยา:</span>
-        <span class="allergy-value" id="allergyValue">No Known Drug Allergies (ไม่มีประวัติแพ้ยา)</span>
-      </div>
-    </section>
-
-    <section class="section-title screen-only">
-      <span class="badge">Medication instructions</span>
-      <span class="hint">อ่านชื่อยา วิธีใช้ จำนวนยา และหมายเหตุให้ครบทุกบรรทัด</span>
-    </section>
-
     <table id="medTable">
       <colgroup>
         <col class="col-act-col no-print" style="width:9mm">
@@ -834,7 +766,55 @@
         <col class="cg-qty" style="width:28mm">
       </colgroup>
       <thead>
-        <!-- This column-header row repeats on every printed page via thead. -->
+        <!-- This whole header (logo/title, patient info, diagnosis/allergy)
+             repeats on every printed page via <thead>. -->
+        <tr class="hdr-row">
+          <td class="hdr-cell" colspan="5">
+            <section class="top-title">
+              <div class="logo-zone">
+                <img src="../patient-sticker/bkh-logo.png" alt="Hospital logo" />
+              </div>
+              <div class="title-zone">
+                <h1>Home Medication Sheet</h1>
+                <div class="subtitle">เอกสารแนะนำการใช้ยากลับบ้าน</div>
+              </div>
+              <div class="date-box">
+                <div><span class="label-ul">Date:</span> <span id="sheetDate">-</span></div>
+                <div class="muted">Please follow the medication instructions below.</div>
+              </div>
+            </section>
+
+            <section class="patient-card">
+              <div class="patient-field">
+                <span class="label">Patient name</span>
+                <div class="value" id="patientName">-</div>
+              </div>
+              <div class="patient-field">
+                <span class="label">HN</span>
+                <div class="value" id="patientHN">-</div>
+              </div>
+              <div class="patient-field">
+                <span class="label">Visit / AN</span>
+                <div class="value" id="patientAN">-</div>
+              </div>
+              <div class="patient-field">
+                <span class="label">Room</span>
+                <div class="value" id="patientRoom">-</div>
+              </div>
+            </section>
+
+            <section class="clinical-banner" id="clinicalBanner" data-no-translate translate="no">
+              <div class="dx-line" id="dxLine">
+                <span class="dx-label"> Diagnosis / การวินิจฉัย:</span>
+                <span class="dx-value" id="diagnosisValue">-</span>
+              </div>
+              <div class="allergy-line nkda" id="allergyBanner">
+                <span class="allergy-label"> Allergies / แพ้ยา:</span>
+                <span class="allergy-value" id="allergyValue">No Known Drug Allergies (ไม่มีประวัติแพ้ยา)</span>
+              </div>
+            </section>
+          </td>
+        </tr>
         <tr>
           <th class="col-act no-print"></th>
           <th class="col-no">#</th>
@@ -865,6 +845,7 @@
       </div>
     </section>
   </main>
+  <div class="page-counter" id="pageCounter" data-total="1"></div>
   </div>
 
   <script src="../../core/messages.js"></script>

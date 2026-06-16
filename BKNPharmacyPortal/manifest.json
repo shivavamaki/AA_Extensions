@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.6.2",
-  "version_name": "2026.06.16 — Home Med Sheet: compact header/patient/diagnosis area, floating badge section titles, Qty column simplified",
+  "version": "3.6.3",
+  "version_name": "2026.06.16 — Home Med Sheet: removed underline emphasis, header/patient/diagnosis repeats per printed page, page X/Y counter",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",

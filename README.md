@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.2 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.3 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -182,6 +182,12 @@ Flow:
 ---
 
 ## Version History
+
+### v3.6.3 — 2026-06-16
+- Home Med Sheet: removed all `text-decoration: underline` emphasis (per pharmacy feedback) — emphasis is plain `font-weight: 400` only now
+- Home Med Sheet: removed the "Medication instructions" section-title line above the table — the table is self-explanatory
+- Home Med Sheet: header (logo/title), patient-info card, and diagnosis/allergy banner moved into `#medTable`'s `<thead>` so they repeat automatically on every printed page, not just the first
+- Home Med Sheet: added a print-only "Page X / Y" counter, bottom-right of the sheet (`#pageCounter`) — current page via CSS `counter(page)`, estimated total via `updatePageCounterTotal()` in `page-home-med.js`
 
 ### v3.6.2 — 2026-06-16
 - Home Med Sheet: compacted header/logo, patient-info card, and diagnosis/allergy banner (reduced margins, padding, gaps, and font sizes) — no more empty vertical space between sections
