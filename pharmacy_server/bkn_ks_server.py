@@ -190,17 +190,16 @@ def _load_extralabel_index():
     idx = {}
 
     def _collect(inss, want_type):
-        th_parts, en_parts = [], []
+        # Return only the first matching instruction — joining multiples produces
+        # confusingly long notes on the Home Med Sheet.
         for ins in inss:
             if (ins.get('type') or '').strip() != want_type:
                 continue
             th = _hm_norm(ins.get('TH') or '')
             en = _hm_norm(ins.get('EN') or '')
-            if th:
-                th_parts.append(th)
-            if en:
-                en_parts.append(en)
-        return ' '.join(th_parts).strip(), ' '.join(en_parts).strip()
+            if th or en:
+                return th, en
+        return '', ''
 
     try:
         with open(EXTRALABEL_FILE, encoding='utf-8') as f:
@@ -667,15 +666,15 @@ def _arcus_item_to_med(it):
     qty_unit = _hm_norm((_arc_first(poi.get('quantityUOM')) or {}).get('valuedescription') or '')
     quantity = (str(qty_n) + (' ' + qty_unit if qty_unit else '')) if qty_n is not None else ''
 
-    # All free-text patient instructions from the order, joined with " / ".
-    # Includes all valuecodes (INSTYP1 = English dispensing note, INSTYP3 = Thai
-    # patient instruction, etc.) so none are silently dropped.
+    # Free-text patient instructions from the order — keep the first only.
+    # ArcusAir can emit multiple entries for one order (drug class, warning,
+    # storage note, …) that when joined produce a confusingly long run-on line.
     live_note_parts = [
         _hm_norm(ins['instructiontext'])
         for ins in (poi.get('instructions') or [])
         if ins.get('instructiontext')
     ]
-    live_note = ' / '.join(p for p in live_note_parts if p)
+    live_note = next((p for p in live_note_parts if p), '')
 
     # Note-line: the curated "Patient Instruction" extra label by item code.
     # localLanguage = Thai (default), text = English; build both so the client
