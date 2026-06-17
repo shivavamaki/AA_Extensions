@@ -539,6 +539,9 @@ function matchPattern(text, lang, opts = {}) {
     "$1"
   );
 
+  // Already in Thai/Lao script — return as-is; dose + frequency already embedded.
+  if (/[฀-໿]/.test(t)) return t;
+
   // Strip route phrases between verb and qty; supports multi-word routes
   // (e.g. "Spray into the Mouth 3 spray", "Apply to the Ulcer in Mouth 1 ml").
   let preQtyRoute = "";

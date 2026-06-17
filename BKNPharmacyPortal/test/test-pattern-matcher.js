@@ -131,6 +131,13 @@ const CASES = [
     expect: "รับประทาน 1 เม็ด วันละ 1 ครั้ง",
   },
   {
+    name: "already-Thai input — passthrough unchanged even with freqOverride",
+    input: "รับประทาน ครึ่ง เม็ด วันเว้นวัน ก่อนนอน",
+    lang: "th",
+    opts: { freqOverride: "วันเว้นวัน ก่อนนอน" },
+    expect: "รับประทาน ครึ่ง เม็ด วันเว้นวัน ก่อนนอน",
+  },
+  {
     name: "no match — gibberish falls through to null (glossary/Google layer)",
     input: "asdkj qwoeiu random text",
     lang: "th",
