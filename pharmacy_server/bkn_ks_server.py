@@ -801,16 +801,31 @@ def build_home_med_from_arcus(data):
     items = (data or {}).get('orderitems') or []
     meds = []
     patient = {}
+    seen_codes = {}   # code → index in meds; later dispensed replaces earlier cancelled
     for it in items:
         med = _arcus_item_to_med(it)
         if not med:
             continue
+        # Skip cancelled orders — ArcusAir can return both a cancelled and a
+        # replacement dispensed order for the same drug in one response; the
+        # cancelled one must never reach the discharge sheet.
+        if re.search(r'cancel', med.get('status') or '', re.I):
+            continue
         if not patient:
             patient = _arcus_patient_header(it)
+        code = med.get('code') or ''
         # Drop the timeline-only fields for the home-med sheet shape.
         for k in ('ordertype', 'status', 'ordercat', 'orderdate', 'startdate'):
             med.pop(k, None)
-        meds.append(med)
+        if code and code in seen_codes:
+            # Replace earlier entry for the same drug with the newer one
+            # (ArcusAir sorts by -orderdate so the first occurrence is newest;
+            # a second occurrence for the same code is an older superseded order).
+            pass
+        else:
+            if code:
+                seen_codes[code] = len(meds)
+            meds.append(med)
     return {'patient': patient, 'meds': meds, 'allMeds': len(meds)}
 
 
