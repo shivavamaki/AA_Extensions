@@ -664,16 +664,23 @@ def _arcus_item_to_med(it):
     # frequency (covers custom/odd frequencies without a Google Translate call).
     _freq_idx = _load_freq_th_index()
     freq_th = _freq_idx.get(_freq_key(freq)) or _freq_idx.get(_freq_key(freq_code)) or ''
-    instr_parts = []
-    if verb:
-        instr_parts.append(verb)
-    if dosage:
-        instr_parts.append(str(dosage) + (' ' + dose_unit if dose_unit else ''))
-    if freq:
-        instr_parts.append(freq)
-    # Route is intentionally excluded — "How to take" shows verb + dose + freq only.
-    # The client's offline pattern engine localises the line to Thai on first load.
-    instruction = ' '.join(instr_parts).strip()
+    # If instructionuid.valuedescription already contains Thai/Lao text it is a
+    # pre-written complete instruction (e.g. "รับประทาน ครึ่ง เม็ด วันละ 1 ครั้ง…").
+    # Use it as-is; do NOT append the separate dosage/freq fields or the result
+    # becomes a mixed Thai+English string that confuses the pattern engine.
+    if verb and re.search(r'[฀-๿຀-໿]', verb):
+        instruction = verb
+    else:
+        instr_parts = []
+        if verb:
+            instr_parts.append(verb)
+        if dosage:
+            instr_parts.append(str(dosage) + (' ' + dose_unit if dose_unit else ''))
+        if freq:
+            instr_parts.append(freq)
+        # Route is intentionally excluded — "How to take" shows verb + dose + freq only.
+        # The client's offline pattern engine localises the line to Thai on first load.
+        instruction = ' '.join(instr_parts).strip()
 
     qty_n = poi.get('quantity')
     qty_unit = _hm_norm((_arc_first(poi.get('quantityUOM')) or {}).get('valuedescription') or '')
