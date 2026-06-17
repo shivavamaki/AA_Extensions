@@ -205,8 +205,10 @@ function _take(n, unit, lang) {
   const isDrop      = u === "drop";
   const isSpray     = u === "spray" || u === "puff";
   const isLiquid    = u === "ml" || /^millilit/.test(u) || u === "litre" || u === "liter";
-  const isMouthSpray = u === "mouth-spray";
-  const isPatch     = u === "patch";
+  const isMouthSpray  = u === "mouth-spray";
+  const isMouthPuff   = u === "mouth-puff";
+  const isMouthUlcer  = u === "mouth-ulcer";
+  const isPatch       = u === "patch";
 
   // Oral verb (default — tablet/capsule/ml taken by mouth)
   // Thai & Lao prescriptions don't write "by mouth" — the verb already
@@ -349,10 +351,60 @@ function _take(n, unit, lang) {
     tr:      (n, u) => `${n} ${u} cilde yapıştırın`,
   };
 
-  // mouth-spray resolves unit display as "spray"; patch has its own unit entry.
-  const unitKey = isMouthSpray ? "spray" : unit;
-  const TABLE = isDrop ? DROP : isMouthSpray ? MOUTH_SPRAY : isSpray ? SPRAY
-              : isLiquid ? LIQUID : isPatch ? PATCH : ORAL;
+  // "Inhale through the Mouth N puff" → "สูดยาทางปาก N กด"
+  // Unit display hardcoded per-language (กด/กด/press); unitKey unused for this table.
+  const INHALE_MOUTH = {
+    th:      (n, u) => `สูดยาทางปาก ${n} กด`,
+    lo:      (n, u) => `ສູດຢາທາງປາກ ${n} ກົດ`,
+    my:      (n, u) => `ပါးစပ်မှ ရှူပါ ${n} ကြိမ်`,
+    km:      (n, u) => `ស្រូបតាមមាត់ ${n} ដង`,
+    vi:      (n, u) => `Hít qua miệng ${n} lần`,
+    "zh-CN": (n, u) => `经口吸入 ${n} 喷`,
+    "zh-TW": (n, u) => `經口吸入 ${n} 噴`,
+    ja:      (n, u) => `口から${n}回吸入`,
+    ko:      (n, u) => `입으로 ${n}회 흡입`,
+    ar:      (n, u) => `استنشاق عن طريق الفم ${n} بخة`,
+    hi:      (n, u) => `मुँह से ${n} पफ श्वास लें`,
+    id:      (n, u) => `Hirup melalui mulut ${n} kali`,
+    ms:      (n, u) => `Sedut melalui mulut ${n} kali`,
+    ru:      (n, u) => `Вдохнуть через рот ${n} раз`,
+    fr:      (n, u) => `Inhaler par la bouche ${n} bouffée`,
+    de:      (n, u) => `Durch den Mund ${n}× inhalieren`,
+    es:      (n, u) => `Inhalar por la boca ${n} inhalación`,
+    pt:      (n, u) => `Inalar pela boca ${n} inalação`,
+    tr:      (n, u) => `Ağız yoluyla ${n} kez inhale et`,
+  };
+
+  // "Apply to the Ulcer in Mouth N ml" → "ทาแผลในปากหรืออมกลั้วปาก N มิลลิลิตร"
+  // unitKey = "ml" so the standard liquid unit translation is used.
+  const MOUTH_ULCER = {
+    th:      (n, u) => `ทาแผลในปากหรืออมกลั้วปาก ${n} ${u}`,
+    lo:      (n, u) => `ທາແຜລໃນປາກ ${n} ${u}`,
+    my:      (n, u) => `ခံတွင်းအနာကျော် ${n} ${u} သုတ်ပါ`,
+    km:      (n, u) => `លាបដំបៅក្នុងមាត់ ${n} ${u}`,
+    vi:      (n, u) => `Bôi vết loét trong miệng ${n} ${u}`,
+    "zh-CN": (n, u) => `涂口腔溃疡 ${n} ${u}`,
+    "zh-TW": (n, u) => `塗口腔潰瘍 ${n} ${u}`,
+    ja:      (n, u) => `口内炎に${n}${u}塗布`,
+    ko:      (n, u) => `구내염에 ${n}${u} 도포`,
+    ar:      (n, u) => `وضع على قرحة الفم ${n} ${u}`,
+    hi:      (n, u) => `मुँह के छाले पर ${n} ${u} लगाएँ`,
+    id:      (n, u) => `Oleskan pada sariawan ${n} ${u}`,
+    ms:      (n, u) => `Sapu pada sariawan mulut ${n} ${u}`,
+    ru:      (n, u) => `Нанести на язву во рту ${n} ${u}`,
+    fr:      (n, u) => `Appliquer sur l'aphte ${n} ${u}`,
+    de:      (n, u) => `Auf Mundgeschwür ${n} ${u} auftragen`,
+    es:      (n, u) => `Aplicar en la úlcera bucal ${n} ${u}`,
+    pt:      (n, u) => `Aplicar na úlcera bucal ${n} ${u}`,
+    tr:      (n, u) => `Ağız ülserine ${n} ${u} uygula`,
+  };
+
+  // mouth-spray → spray unit; mouth-ulcer → ml unit; others use raw unit key.
+  const unitKey = isMouthSpray ? "spray" : isMouthUlcer ? "ml" : unit;
+  const TABLE = isDrop      ? DROP        : isMouthSpray ? MOUTH_SPRAY
+              : isSpray     ? SPRAY       : isLiquid     ? LIQUID
+              : isPatch     ? PATCH       : isMouthPuff  ? INHALE_MOUTH
+              : isMouthUlcer ? MOUTH_ULCER : ORAL;
   const fn = TABLE[lang];
   if (!fn) return null;
   return fn(n, _unit(unitKey, lang, n));
@@ -481,12 +533,18 @@ function _drinkVerb(t, lang) {
 function matchPattern(text, lang, opts = {}) {
   const freqOverrideRaw = (lang === "th" && opts.freqOverride) ? String(opts.freqOverride).trim() : "";
 
-  // Strip route phrases that appear between verb and qty, e.g. "Spray into the Mouth 3 spray"
-  // or "Patch on the skin 1 patch". Records the location so the unit can be overridden.
-  let preQtyRoute = "";
+  // Normalize ArcusAir unit suffixes before regex matching (e.g. PUFF_PU → PUFF).
   let t = text.trim().replace(
-    /^((?:Take|Spray|Apply|Use|Instill|Inhale|Place|Put|Patch)\s+)((?:to|in|into|on|onto)\s+(?:the\s+)?(\w+)\s+)(?=\d|\bquarter\b|\bhalf\b|\bthree-quarter\b)/i,
-    (_, verb, _rp, routeLoc) => { preQtyRoute = routeLoc.toLowerCase(); return verb; }
+    /\b(tablet|capsule|caplet|drop|spray|puff|ml|pack|sachet|bottle|vial|tube|piece|patch)_\w+/gi,
+    "$1"
+  );
+
+  // Strip route phrases between verb and qty; supports multi-word routes
+  // (e.g. "Spray into the Mouth 3 spray", "Apply to the Ulcer in Mouth 1 ml").
+  let preQtyRoute = "";
+  t = t.replace(
+    /^((?:Take|Spray|Apply|Use|Instill|Inhale|Place|Put|Patch)\s+)((?:to|in|into|on|onto|through)\s+(?:the\s+)?(.+?)\s+)(?=\d|\bquarter\b|\bhalf\b|\bthree-quarter\b)/i,
+    (_, verb, _rp, routeLoc) => { preQtyRoute = routeLoc.toLowerCase().trim(); return verb; }
   );
 
   const m = t.match(MASTER_RE);
@@ -500,6 +558,8 @@ function matchPattern(text, lang, opts = {}) {
         let unit = lm[2] || "tablet";
         if (/^caplet/i.test(unit)) unit = "tablet";
         if (preQtyRoute === "mouth" && /^spray$/i.test(unit)) unit = "mouth-spray";
+        if (preQtyRoute === "mouth" && /^puff$/i.test(unit)) unit = "mouth-puff";
+        if (/ulcer.*mouth/i.test(preQtyRoute) && /^m[il]/i.test(unit)) unit = "mouth-ulcer";
         let q = lm[1] || "1";
         if (/^quarter$/i.test(q)) q = "¼";
         else if (/^half$/i.test(q)) q = lang === "th" ? "ครึ่ง" : lang === "lo" ? "ເຄິ່ງ" : "½";
@@ -527,6 +587,8 @@ function matchPattern(text, lang, opts = {}) {
   let   rawUnit   = m[2] || "tablet";
   if (/^caplet/i.test(rawUnit)) rawUnit = "tablet";
   if (preQtyRoute === "mouth" && /^spray$/i.test(rawUnit)) rawUnit = "mouth-spray";
+  if (preQtyRoute === "mouth" && /^puff$/i.test(rawUnit))  rawUnit = "mouth-puff";
+  if (/ulcer.*mouth/i.test(preQtyRoute) && /^m[il]/i.test(rawUnit)) rawUnit = "mouth-ulcer";
   const rawFreq   = (m[3] || "").trim();
   const rawTiming = (m[4] || "").trim();
   const rawDays   = m[5] || "";

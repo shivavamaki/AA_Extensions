@@ -150,6 +150,20 @@ const CASES = [
     opts: { freqOverride: "วันละ 1 ครั้ง เวลามีอาการ" },
     expect: "แปะที่ผิวหนัง วันละ 1 ครั้ง เวลามีอาการ",
   },
+  {
+    name: "inhale through mouth (PUFF_PU suffix) → สูดยาทางปาก N กด",
+    input: "Inhale through the Mouth 1 PUFF_PU 2 times daily After Breakfast Dinner",
+    lang: "th",
+    opts: { freqOverride: "วันละ 2 ครั้ง หลังอาหาร เช้า เย็น" },
+    expect: "สูดยาทางปาก 1 กด วันละ 2 ครั้ง หลังอาหาร เช้า เย็น",
+  },
+  {
+    name: "apply to ulcer in mouth (ml) → ทาแผลในปากหรืออมกลั้วปาก N มิลลิลิตร",
+    input: "Apply to the Ulcer in Mouth 1 MilliLitre 3 times daily Before Breakfast Lunch Dinner",
+    lang: "th",
+    opts: { freqOverride: "วันละ 3 ครั้ง ก่อนอาหาร เช้า กลางวัน เย็น" },
+    expect: "ทาแผลในปากหรืออมกลั้วปาก 1 มล. วันละ 3 ครั้ง ก่อนอาหาร เช้า กลางวัน เย็น",
+  },
 ];
 
 /* ── Runner ─────────────────────────────────────────────────────────────── */
