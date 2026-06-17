@@ -58,10 +58,10 @@ const CASES = [
     expect: "รับประทาน 2 เม็ด วันละ 2 ครั้ง หลังอาหารเช้า",
   },
   {
-    name: "fraction tablet (half) — qty resolves to the ½ glyph",
+    name: "fraction tablet (half) — qty resolves to Thai word for lang=th",
     input: "Take half Tablet Once Daily",
     lang: "th",
-    expect: "รับประทาน ½ เม็ด วันละ 1 ครั้ง",
+    expect: "รับประทาน ครึ่ง เม็ด วันละ 1 ครั้ง",
   },
   {
     name: "nasal spray, twice daily, 2 nostrils",
@@ -135,6 +135,20 @@ const CASES = [
     input: "asdkj qwoeiu random text",
     lang: "th",
     expect: null,
+  },
+  {
+    name: "mouth spray — pre-qty route produces พ่นปาก verb (not bare พ่น)",
+    input: "Spray into the Mouth 3 SPRAY 3 times daily Before Breakfast Lunch Dinner If needed",
+    lang: "th",
+    opts: { freqOverride: "วันละ 3 ครั้ง ก่อนอาหาร เช้า กลางวัน เย็น เวลามีอาการ" },
+    expect: "พ่นปาก 3 ครั้ง วันละ 3 ครั้ง ก่อนอาหาร เช้า กลางวัน เย็น เวลามีอาการ",
+  },
+  {
+    name: "patch on skin — verb แปะที่ผิวหนัง not dropped (requires freqOverride)",
+    input: "Patch on the skin 1 Patch Once Daily When have Symptom",
+    lang: "th",
+    opts: { freqOverride: "วันละ 1 ครั้ง เวลามีอาการ" },
+    expect: "แปะที่ผิวหนัง วันละ 1 ครั้ง เวลามีอาการ",
   },
 ];
 
