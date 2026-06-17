@@ -131,6 +131,13 @@ const CASES = [
     expect: "รับประทาน 1 เม็ด วันละ 1 ครั้ง",
   },
   {
+    name: "bilateral nasal spray — Into Each Nostril → พ่นจมูก 2 ข้าง ข้างละ N กด",
+    input: "Spray 1 Puff Into Each Nostril 1 SPRAY 2 times daily Morning Evening",
+    lang: "th",
+    opts: { freqOverride: "วันละ 2 ครั้ง เช้า เย็น" },
+    expect: "พ่นจมูก 2 ข้าง ข้างละ 1 กด วันละ 2 ครั้ง เช้า เย็น",
+  },
+  {
     name: "chew before swallowing — compound verb → เคี้ยวก่อนกลืน N เม็ด",
     input: "Chew Before Swallowing 1 Tablet Once Daily Before Bedtime",
     lang: "th",

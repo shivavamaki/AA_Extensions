@@ -566,6 +566,37 @@ function matchPattern(text, lang, opts = {}) {
   // Already in Thai/Lao script — return as-is; dose + frequency already embedded.
   if (/[฀-໿]/.test(t)) return t;
 
+  // "Spray N Puff Into Each Nostril ..." — bilateral nasal spray.
+  // ArcusAir encodes "1 puff per nostril, both sides" as a single instruction.
+  // The standard spray verb cannot express this; handle it with a dedicated table.
+  const _nostrilM = t.match(/^Spray\s+(\d+(?:\.\d+)?)\s+Puff\s+Into\s+Each\s+Nostril\b/i);
+  if (_nostrilM) {
+    const _n = _nostrilM[1];
+    const _NT = {
+      th:      n => `พ่นจมูก 2 ข้าง ข้างละ ${n} กด`,
+      lo:      n => `ພົ່ນດັງ 2 ຂ້າງ ຂ້າງລະ ${n} ກົດ`,
+      my:      n => `နှာခေါင်းတစ်ဖက်စီ ${n} ကြိမ် ဖျန်းပါ`,
+      km:      n => `បាញ់ ${n} ដង ក្នុងរន្ធច្រមុះម្ខាង`,
+      vi:      n => `Xịt ${n} lần vào mỗi lỗ mũi`,
+      "zh-CN": n => `每侧鼻孔喷${n}下`,
+      "zh-TW": n => `每側鼻孔噴${n}下`,
+      ja:      n => `各鼻孔に${n}回噴霧`,
+      ko:      n => `각 콧구멍에 ${n}회 분무`,
+      ar:      n => `${n} بخة في كل منخر`,
+      hi:      n => `प्रत्येक नासिका में ${n} पफ स्प्रे करें`,
+      id:      n => `Semprotkan ${n} kali ke setiap lubang hidung`,
+      ms:      n => `Sembur ${n} kali ke setiap lubang hidung`,
+      ru:      n => `По ${n} вдыханию в каждую ноздрю`,
+      fr:      n => `${n} pulvérisation dans chaque narine`,
+      de:      n => `${n} Sprühstoß in jedes Nasenloch`,
+      es:      n => `${n} pulsación en cada fosa nasal`,
+      pt:      n => `${n} aplicação em cada narina`,
+      tr:      n => `Her burun deliğine ${n} puf`,
+    };
+    const _fn = _NT[lang] || (n => `Spray ${n} puff into each nostril`);
+    return [_fn(_n), freqOverrideRaw].filter(Boolean).join(" ");
+  }
+
   // Normalize compound verbs before route/regex processing.
   // "Chew Before Swallowing N unit" → "Chew N unit" + preQtyRoute = "chew-swallow"
   let preQtyRoute = "";
