@@ -700,9 +700,10 @@ def _arcus_item_to_med(it):
     live_note_th = live_note_th or live_note
 
     def _with_live(base, live):
-        if live and live != base:
-            return (base + ' ' + live).strip() if base else live
-        return base
+        _n = lambda s: ' '.join((s or '').split())
+        if not live or _n(live) == _n(base) or _n(live) in _n(base):
+            return base
+        return (base + ' ' + live).strip() if base else live
 
     note   = _with_live(extra_th, live_note_th)   # Thai note (default)
     note_en = _with_live(extra_en, live_note)     # English note

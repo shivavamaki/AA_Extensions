@@ -205,10 +205,11 @@ function _take(n, unit, lang) {
   const isDrop      = u === "drop";
   const isSpray     = u === "spray" || u === "puff";
   const isLiquid    = u === "ml" || /^millilit/.test(u) || u === "litre" || u === "liter";
-  const isMouthSpray  = u === "mouth-spray";
-  const isMouthPuff   = u === "mouth-puff";
-  const isMouthUlcer  = u === "mouth-ulcer";
-  const isPatch       = u === "patch";
+  const isMouthSpray   = u === "mouth-spray";
+  const isMouthPuff    = u === "mouth-puff";
+  const isMouthUlcer   = u === "mouth-ulcer";
+  const isChewSwallow  = u === "chew-tablet";
+  const isPatch        = u === "patch";
 
   // Oral verb (default — tablet/capsule/ml taken by mouth)
   // Thai & Lao prescriptions don't write "by mouth" — the verb already
@@ -399,12 +400,35 @@ function _take(n, unit, lang) {
     tr:      (n, u) => `Ağız ülserine ${n} ${u} uygula`,
   };
 
-  // mouth-spray → spray unit; mouth-ulcer → ml unit; others use raw unit key.
-  const unitKey = isMouthSpray ? "spray" : isMouthUlcer ? "ml" : unit;
-  const TABLE = isDrop      ? DROP        : isMouthSpray ? MOUTH_SPRAY
-              : isSpray     ? SPRAY       : isLiquid     ? LIQUID
-              : isPatch     ? PATCH       : isMouthPuff  ? INHALE_MOUTH
-              : isMouthUlcer ? MOUTH_ULCER : ORAL;
+  // "Chew Before Swallowing N tablet" → "เคี้ยวก่อนกลืน N เม็ด"
+  const CHEW_SWALLOW = {
+    th:      (n, u) => `เคี้ยวก่อนกลืน ${n} ${u}`,
+    lo:      (n, u) => `ຊ້ຽນກ່ອນກືນ ${n} ${u}`,
+    my:      (n, u) => `မျိုမချိုးဘဲ ဝါးပြီးမှ မျိုပါ ${n} ${u}`,
+    km:      (n, u) => `ចិញ្ចឹមមុនបើក ${n} ${u}`,
+    vi:      (n, u) => `Nhai trước khi nuốt ${n} ${u}`,
+    "zh-CN": (n, u) => `嚼碎后吞服 ${n} ${u}`,
+    "zh-TW": (n, u) => `嚼碎後吞服 ${n} ${u}`,
+    ja:      (n, u) => `噛んでから飲み込む ${n}${u}`,
+    ko:      (n, u) => `씹어서 삼키기 ${n}${u}`,
+    ar:      (n, u) => `مضغ قبل البلع ${n} ${u}`,
+    hi:      (n, u) => `निगलने से पहले चबाएं ${n} ${u}`,
+    id:      (n, u) => `Kunyah sebelum ditelan ${n} ${u}`,
+    ms:      (n, u) => `Kunyah sebelum menelan ${n} ${u}`,
+    ru:      (n, u) => `Разжевать перед проглатыванием ${n} ${u}`,
+    fr:      (n, u) => `Croquer avant d'avaler ${n} ${u}`,
+    de:      (n, u) => `Vor dem Schlucken kauen ${n} ${u}`,
+    es:      (n, u) => `Masticar antes de tragar ${n} ${u}`,
+    pt:      (n, u) => `Mastigar antes de engolir ${n} ${u}`,
+    tr:      (n, u) => `Yutmadan önce çiğne ${n} ${u}`,
+  };
+
+  // mouth-spray → spray unit; mouth-ulcer → ml unit; chew-tablet → tablet; others use raw unit key.
+  const unitKey = isMouthSpray ? "spray" : isMouthUlcer ? "ml" : isChewSwallow ? "tablet" : unit;
+  const TABLE = isDrop        ? DROP         : isMouthSpray  ? MOUTH_SPRAY
+              : isSpray       ? SPRAY        : isLiquid      ? LIQUID
+              : isPatch       ? PATCH        : isMouthPuff   ? INHALE_MOUTH
+              : isMouthUlcer  ? MOUTH_ULCER  : isChewSwallow ? CHEW_SWALLOW : ORAL;
   const fn = TABLE[lang];
   if (!fn) return null;
   return fn(n, _unit(unitKey, lang, n));
@@ -472,7 +496,7 @@ function _compoundTiming(raw, lang) {
 // Each group optional except N and unit. Leading verb may be Take/Spray/Apply/etc.
 const MASTER_RE = new RegExp(
   [
-    /^(?:Take|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put|Patch)\s+/i,
+    /^(?:Take|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put|Patch|Chew)\s+/i,
     /(\d+(?:\.\d+)?|\bquarter\b|\bhalf\b|\bthree-quarter\b)\s+/,  // [1] qty
     /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr|pack|sachet|bottle|vial|tube|ampoule|ampule|amp|piece|pcs|pc|patch)s?\s*/i,   // [2] unit
     // Optional route phrase ("orally" / "in mouth" / "in nostril" / "in eye" / ...)
@@ -492,7 +516,7 @@ const MASTER_RE = new RegExp(
 // so the dose verb is localised and the messy English tail is dropped.
 const TAKE_QTY_RE = new RegExp(
   [
-    /^(?:Take|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put|Patch)\s+/i,
+    /^(?:Take|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put|Patch|Chew)\s+/i,
     /(?:(?:to|in|into|on|onto)\s+(?:the\s+)?(?:mouth|throat|nose|nostril|nasal|eye|ear|skin|affected\s+area)\s+)?/i,
     /(\d+(?:\.\d+)?|\bquarter\b|\bhalf\b|\bthree-quarter\b)\s+/,        // [1] qty
     /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr|pack|sachet|bottle|vial|tube|ampoule|ampule|amp|piece|pcs|pc|patch)s?\b/i, // [2] unit
@@ -542,11 +566,18 @@ function matchPattern(text, lang, opts = {}) {
   // Already in Thai/Lao script — return as-is; dose + frequency already embedded.
   if (/[฀-໿]/.test(t)) return t;
 
+  // Normalize compound verbs before route/regex processing.
+  // "Chew Before Swallowing N unit" → "Chew N unit" + preQtyRoute = "chew-swallow"
+  let preQtyRoute = "";
+  t = t.replace(/^(Chew)\s+Before\s+Swallowing\b\s*/i, (_, v) => {
+    preQtyRoute = "chew-swallow";
+    return v + " ";
+  });
+
   // Strip route phrases between verb and qty; supports multi-word routes
   // (e.g. "Spray into the Mouth 3 spray", "Apply to the Ulcer in Mouth 1 ml").
-  let preQtyRoute = "";
   t = t.replace(
-    /^((?:Take|Spray|Apply|Use|Instill|Inhale|Place|Put|Patch)\s+)((?:to|in|into|on|onto|through)\s+(?:the\s+)?(.+?)\s+)(?=\d|\bquarter\b|\bhalf\b|\bthree-quarter\b)/i,
+    /^((?:Take|Spray|Apply|Use|Instill|Inhale|Place|Put|Patch|Chew)\s+)((?:to|in|into|on|onto|through)\s+(?:the\s+)?(.+?)\s+)(?=\d|\bquarter\b|\bhalf\b|\bthree-quarter\b)/i,
     (_, verb, _rp, routeLoc) => { preQtyRoute = routeLoc.toLowerCase().trim(); return verb; }
   );
 
@@ -563,6 +594,7 @@ function matchPattern(text, lang, opts = {}) {
         if (preQtyRoute === "mouth" && /^spray$/i.test(unit)) unit = "mouth-spray";
         if (preQtyRoute === "mouth" && /^puff$/i.test(unit)) unit = "mouth-puff";
         if (/ulcer.*mouth/i.test(preQtyRoute) && /^m[il]/i.test(unit)) unit = "mouth-ulcer";
+        if (preQtyRoute === "chew-swallow") unit = "chew-tablet";
         let q = lm[1] || "1";
         if (/^quarter$/i.test(q)) q = "¼";
         else if (/^half$/i.test(q)) q = lang === "th" ? "ครึ่ง" : lang === "lo" ? "ເຄິ່ງ" : "½";
@@ -592,6 +624,7 @@ function matchPattern(text, lang, opts = {}) {
   if (preQtyRoute === "mouth" && /^spray$/i.test(rawUnit)) rawUnit = "mouth-spray";
   if (preQtyRoute === "mouth" && /^puff$/i.test(rawUnit))  rawUnit = "mouth-puff";
   if (/ulcer.*mouth/i.test(preQtyRoute) && /^m[il]/i.test(rawUnit)) rawUnit = "mouth-ulcer";
+  if (preQtyRoute === "chew-swallow") rawUnit = "chew-tablet";
   const rawFreq   = (m[3] || "").trim();
   const rawTiming = (m[4] || "").trim();
   const rawDays   = m[5] || "";

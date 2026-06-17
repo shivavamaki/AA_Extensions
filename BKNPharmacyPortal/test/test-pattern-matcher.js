@@ -131,6 +131,12 @@ const CASES = [
     expect: "รับประทาน 1 เม็ด วันละ 1 ครั้ง",
   },
   {
+    name: "chew before swallowing — compound verb → เคี้ยวก่อนกลืน N เม็ด",
+    input: "Chew Before Swallowing 1 Tablet Once Daily Before Bedtime",
+    lang: "th",
+    expect: "เคี้ยวก่อนกลืน 1 เม็ด วันละ 1 ครั้ง ก่อนนอน",
+  },
+  {
     name: "already-Thai input — passthrough unchanged even with freqOverride",
     input: "รับประทาน ครึ่ง เม็ด วันเว้นวัน ก่อนนอน",
     lang: "th",
