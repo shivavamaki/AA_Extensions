@@ -737,7 +737,11 @@ async function fetchAndRender() {
 
   // Build the editable list: prefer the user's previously-saved edits for this
   // visit; otherwise seed from the ArcusAir discharge meds.
-  const saved = await _loadSavedMeds();
+  // If the Revert button was clicked, clear the flag and skip the cache so the
+  // fresh ArcusAir data is used unconditionally.
+  const revertFlag = sessionStorage.getItem('hm:revert');
+  if (revertFlag) sessionStorage.removeItem('hm:revert');
+  const saved = revertFlag ? null : await _loadSavedMeds();
   if (saved && saved.length) {
     _meds = saved.map((m) => ({
       drug: norm(m.drug || ""), instruction: norm(m.instruction || ""),
@@ -871,7 +875,11 @@ function bindToolbar() {
   // header (logo/title, patient info, diagnosis/allergy) now lives inside
   // <thead> and repeats with the column-header row on every printed page.
   if (btnPrint) btnPrint.onclick = () => { document.title = buildFileName(_context); applyPrintSettings(currentPrintSettingsFromControls()); window.print(); };
-  if (btnRevert) btnRevert.onclick = () => location.reload();
+  if (btnRevert) btnRevert.onclick = () => {
+    // Signal the next load to skip the saved cache and use fresh ArcusAir data.
+    sessionStorage.setItem('hm:revert', '1');
+    location.reload();
+  };
   if (btnPdf) btnPdf.onclick = () => { document.title = buildFileName(_context); applyPrintSettings(currentPrintSettingsFromControls()); window.print(); };
 }
 
