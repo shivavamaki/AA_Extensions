@@ -49,6 +49,9 @@ Data layout:
   data/rx/iv-drugs.json
   data/rx/iv-staff.json
   data/rx/medication-db.json
+  data/rx/pattern-overrides.json  — pharmacist-curated phrase translations, layered
+                                     in front of the hardcoded AUXILIARY_PHRASES in
+                                     medical-glossary.js (see pattern-editor feature)
   data/patients/{patientuid}.json   — one file per patient (context, ADR, med cache)
 """
 
@@ -102,7 +105,7 @@ LOGS_DIR          = DATA_DIR / 'logs'
 WWW_DIR           = Path(__file__).parent / 'www'
 KS_COLS       = {'faqs', 'items', 'vdos'}
 # All rx collections — GET is public; PUT requires editor/admin auth
-RX_COLS       = {'premix-drugs', 'mixing-protocols', 'medication-db', 'iv-drugs', 'iv-staff'}
+RX_COLS       = {'premix-drugs', 'mixing-protocols', 'medication-db', 'iv-drugs', 'iv-staff', 'pattern-overrides'}
 # Requests from these Chrome extensions may read/write data without login.
 # Multiple IDs supported during the rx_menu → BKN Pharmacy Portal migration.
 TRUSTED_EXTENSION_ORIGINS = {
@@ -111,8 +114,8 @@ TRUSTED_EXTENSION_ORIGINS = {
 }
 # Backward-compat single-origin variable (still referenced by older code paths)
 EXTENSION_ORIGIN = 'chrome-extension://eeglifkmgelepjmnnldknacamedmckbj'
-# medication-db is a dict; all others are arrays
-RX_DICT_COLS  = {'medication-db'}
+# medication-db and pattern-overrides are dicts; all other rx cols are arrays
+RX_DICT_COLS  = {'medication-db', 'pattern-overrides'}
 DATE_RE       = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 MONTH_RE      = re.compile(r'^\d{4}-\d{2}$')
 SECTION_KEYS  = {'opd-brief', 'ipd-brief', 'opd-stat', 'ipd-stat'}

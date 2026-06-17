@@ -84,6 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnAdminConsole')?.addEventListener('click', () => {
     chrome.tabs.create({ url: 'http://10.134.110.81:8765/' });
   });
+
+  document.getElementById('btnPatternEditor')?.addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('src/features/pattern-editor/page-pattern-editor.html') });
+  });
 });
 
 // ──────────────────────────────────────────────────────────────────────────────

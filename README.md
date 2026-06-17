@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.0 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.6 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -182,6 +182,34 @@ Flow:
 ---
 
 ## Version History
+
+### v3.6.6 — 2026-06-16
+- Added `BKNPharmacyPortal/test/test-pattern-matcher.js` — a standalone Node test harness for the Home Med Sheet's offline pattern matcher (`medical-glossary.js`), loaded via `vm` with no browser/build step; run with `node test/test-pattern-matcher.js`
+- Added a "Pattern Editor" admin page (`src/features/pattern-editor/`, opened from the popup) so pharmacy staff can add/correct curated English→Thai phrase translations without a code deploy — persisted server-side to a new `data/rx/pattern-overrides.json` via the existing generic rx-collection REST routes (`GET`/`PUT /api/pattern-overrides`)
+- `matchAuxiliaryPhrase()` in `medical-glossary.js` now checks `window.PATTERN_OVERRIDES` (fetched by `page-home-med.js` at load) before the hardcoded phrase table, so overrides take effect immediately on next sheet load — the regex-based qty/frequency/timing engine itself stays code-only by design
+
+### v3.6.5 — 2026-06-16
+- Home Med Sheet: rounded the medicine table's own corners (8px, matching the other containers) — `border-collapse: collapse` silently ignores `border-radius` on cells in Chrome, so the table switched to `border-collapse: separate` with each cell drawing only its right/bottom edge (plus an explicit left/top edge on the first column/row) to keep the same 1px grid look while letting corner radius work; print mode has its own corner rules since the hidden action column shifts which column is visually first
+
+### v3.6.4 — 2026-06-16
+- Home Med Sheet: removed the table's outer 1.5px border (the table now only frames the medicine grid via its own cell borders) — moving the header into `<thead>` had left a stray black box around the logo/patient/diagnosis area
+- Home Med Sheet: patient-info card and diagnosis/allergy banner now share one merged outer container (`.patient-clinical-card`) instead of two separately-bordered boxes — same internal styling, single frame
+- Home Med Sheet: footer `appt-box` (นัดหมายติดตามอาการ) widened, `providers-box` (Physician/Pharmacist) narrowed — `grid-template-columns: 2fr .8fr`
+
+### v3.6.3 — 2026-06-16
+- Home Med Sheet: removed all `text-decoration: underline` emphasis (per pharmacy feedback) — emphasis is plain `font-weight: 400` only now
+- Home Med Sheet: removed the "Medication instructions" section-title line above the table — the table is self-explanatory
+- Home Med Sheet: header (logo/title), patient-info card, and diagnosis/allergy banner moved into `#medTable`'s `<thead>` so they repeat automatically on every printed page, not just the first
+- Home Med Sheet: added a print-only "Page X / Y" counter, bottom-right of the sheet (`#pageCounter`) — current page via CSS `counter(page)`, estimated total via `updatePageCounterTotal()` in `page-home-med.js`
+
+### v3.6.2 — 2026-06-16
+- Home Med Sheet: compacted header/logo, patient-info card, and diagnosis/allergy banner (reduced margins, padding, gaps, and font sizes) — no more empty vertical space between sections
+- Home Med Sheet: `.section-title` ("Medication instructions" etc.) redesigned from a full-width colored banner into a compact floating pill badge
+- Home Med Sheet: medication table's Qty column header simplified from "Qty / Days" / "จำนวน / วัน" to "Qty" / "จำนวน" since only quantity is shown
+
+### v3.6.1 — 2026-06-16
+- Home Med Sheet: reverted the v3.5.5 `THSarabunNew-Bold.ttf` `@font-face` registration — no font-family/face change, single `Sarabun-Regular` face as before
+- All emphasis that used `font-weight: 700/800` (patient field labels/values, diagnosis/allergy banner, section titles, `.med-name`, `.instruction-text`, the per-medicine หมายเหตุ `.comment` box, footer labels) now uses `text-decoration: underline` with normal weight instead of bold
 
 ### v3.6.0 — 2026-06-16
 - **Refactor — feature-based reorganization, no behavior change.** Moved root-level loose files into `src/features/`: `iv_sticker.*` + `aux_sticker.*` → `src/features/iv-aux-sticker/`; `pdf.html/.js` + `beedee_report.json` → `src/features/beedee-pdf/`; `report_print.*` → `src/features/report-print/`. All path references (`manifest.json` web_accessible_resources, `popup.js`/`background.js`/`content_script.js` `chrome.runtime.getURL(...)` calls, `pdf.html`'s relative `cdnjs/` script paths) updated accordingly; each new folder has its own README.

@@ -46,6 +46,25 @@ async function _loadMedicationDatabase() {
   return _medDbLoadPromise;
 }
 
+/* Pharmacist-curated phrase overrides (src/features/pattern-editor) — layered
+ * in front of the hardcoded AUXILIARY_PHRASES in medical-glossary.js so new
+ * instruction phrases can be added without a code deploy. Best-effort: a
+ * server-fetch failure just means no overrides apply, never blocks the sheet. */
+let _patternOverridesLoadPromise = null;
+async function _loadPatternOverrides() {
+  if (_patternOverridesLoadPromise) return _patternOverridesLoadPromise;
+  _patternOverridesLoadPromise = (async () => {
+    try {
+      if (window.BKNData && window.BKNData.serverFetch) {
+        const r = await window.BKNData.serverFetch("/api/pattern-overrides");
+        if (r && r.ok && r.json) { window.PATTERN_OVERRIDES = r.json; return; }
+      }
+    } catch (_) { /* server unavailable */ }
+    window.PATTERN_OVERRIDES = window.PATTERN_OVERRIDES || {};
+  })();
+  return _patternOverridesLoadPromise;
+}
+
 /* ── Name index for image lookup + add-item autocomplete ────────────────────
  * The med DB is keyed by item code, but RT_COMMON_286 gives only drug names,
  * and user-added items are names too. Build a normalized name → entry index.
@@ -685,7 +704,7 @@ async function fetchAndRender() {
   }
 
   _setStatus("⏳ กำลังดึงรายการยากลับบ้าน...");
-  await _loadMedicationDatabase();
+  await Promise.all([_loadMedicationDatabase(), _loadPatternOverrides()]);
 
   // Fetch discharge meds + allergies from the ArcusAir getallorderitem API.
   let resp = null;
@@ -848,12 +867,32 @@ function bindToolbar() {
   const btnPdf = document.getElementById("btnPdf");
   const btnRevert = document.getElementById("btnRevert");
   // Set document.title for both Print and PDF — browsers use it as the
-  // default save/print filename, so the HN ends up in the file name. The header
-  // sections print once at the top; the column-header row repeats via <thead>.
+  // default save/print filename, so the HN ends up in the file name. The whole
+  // header (logo/title, patient info, diagnosis/allergy) now lives inside
+  // <thead> and repeats with the column-header row on every printed page.
   if (btnPrint) btnPrint.onclick = () => { document.title = buildFileName(_context); applyPrintSettings(currentPrintSettingsFromControls()); window.print(); };
   if (btnRevert) btnRevert.onclick = () => location.reload();
   if (btnPdf) btnPdf.onclick = () => { document.title = buildFileName(_context); applyPrintSettings(currentPrintSettingsFromControls()); window.print(); };
 }
+
+// Chrome has no CSS counter for total printed pages, so estimate it from the
+// rendered sheet height vs. the A4 content height (minus margins) just before
+// printing. The current-page number itself comes from the CSS position:fixed
+// + counter(page) trick in page-home-med.html, which Chrome repeats per page.
+function updatePageCounterTotal() {
+  const counterEl = document.getElementById("pageCounter");
+  const sheetEl = document.querySelector(".sheet");
+  if (!counterEl || !sheetEl) return;
+  const c = _getPrintControls();
+  const marginMm = Number(c.printMargin?.value) || PRINT_CONTROL_DEFAULTS.marginMm;
+  const MM_TO_PX = 96 / 25.4;
+  const pageContentPx = (297 - marginMm * 2) * MM_TO_PX;
+  const totalPx = sheetEl.scrollHeight;
+  const totalPages = Math.max(1, Math.ceil(totalPx / pageContentPx));
+  counterEl.dataset.total = String(totalPages);
+}
+
+window.addEventListener("beforeprint", updatePageCounterTotal);
 
 function bindLangControl() {
   const sel = document.getElementById("lang");

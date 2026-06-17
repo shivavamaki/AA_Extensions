@@ -11,15 +11,6 @@
       src: url("../../assets/fonts/Sarabun-Regular.ttf") format("truetype");
       font-weight: 400;
     }
-    /* No Sarabun-Bold.ttf shipped — register TH Sarabun New's bold face under
-       the same family name so every existing font-weight:700/800 rule (the
-       per-medicine หมายเหตุ box, headers, etc.) renders an actual bold glyph
-       instead of silently falling back to the only available Regular face. */
-    @font-face {
-      font-family: "Sarabun";
-      src: url("../../assets/fonts/THSarabunNew-Bold.ttf") format("truetype");
-      font-weight: 700;
-    }
 
     * { box-sizing: border-box; }
 
@@ -152,25 +143,25 @@
 
     .top-title {
       display: grid;
-      grid-template-columns: 34mm 1fr 55mm;
+      grid-template-columns: 26mm 1fr 50mm;
       align-items: center;
-      gap: 10px;
-      padding-bottom: 8px;
+      gap: 8px;
+      padding-bottom: 5px;
       border-bottom: 3px solid #111827;
-      margin-bottom: 9px;
+      margin-bottom: 5px;
     }
 
     .logo-zone {
-      width: 34mm;
-      min-height: 18mm;
+      width: 26mm;
+      min-height: 12mm;
       display: flex;
       align-items: center;
       justify-content: flex-start;
     }
 
     .logo-zone img {
-      max-width: 32mm;
-      max-height: 17mm;
+      max-width: 24mm;
+      max-height: 11mm;
       object-fit: contain;
     }
 
@@ -180,58 +171,62 @@
 
     h1 {
       margin: 0;
-      font-size: 22px;
+      font-size: 18px;
       line-height: 1.1;
     }
 
     .subtitle {
-      margin-top: 2px;
-      font-size: 12px;
+      margin-top: 1px;
+      font-size: 11px;
       color: #4b5563;
     }
 
     .date-box {
       text-align: right;
-      font-size: 12px;
+      font-size: 11px;
       color: #374151;
-      padding-top: 2px;
+      padding-top: 0;
+    }
+
+    /* Patient info + diagnosis/allergy share one outer frame instead of two
+       separate bordered boxes — visual style of each part is unchanged,
+       only the outer border is merged. */
+    .patient-clinical-card {
+      margin: 5px 0 6px;
+      border: 1.5px solid #111827;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f9fafb;
     }
 
     .patient-card {
       display: grid;
       grid-template-columns: 1.6fr .7fr 1.05fr .7fr;
-      gap: 6px;
-      margin: 10px 0 12px;
-      padding: 9px 10px;
-      border: 1.5px solid #111827;
-      border-radius: 10px;
-      background: #f9fafb;
+      gap: 5px;
+      padding: 5px 8px;
     }
 
     .patient-field .label {
       display: block;
-      font-size: 10px;
+      font-size: 9px;
       color: #6b7280;
-      font-weight: 700;
+      font-weight: 400;
       letter-spacing: .03em;
       text-transform: uppercase;
     }
 
     /* ── Clinical banner (Diagnosis + Allergies, stacked) ──────── */
     .clinical-banner {
-      margin: 0 0 12px;
-      border-radius: 10px;
-      overflow: hidden;
-      border: 1.5px solid #cbd5e1;
+      border-top: 1.5px solid #111827;
     }
     .clinical-banner .dx-line,
     .clinical-banner .allergy-line {
       display: flex;
       align-items: baseline;
       gap: 8px;
-      padding: 7px 12px;
-      font-size: 14px;
-      line-height: 1.3;
+      padding: 4px 10px;
+      font-size: 12px;
+      line-height: 1.25;
     }
     /* Diagnosis on the upper line — distinct blue tone. */
     .clinical-banner .dx-line {
@@ -240,9 +235,9 @@
       border-bottom: 1px solid #dbeafe;
     }
     .clinical-banner .dx-label,
-    .clinical-banner .allergy-label { font-weight: 800; white-space: nowrap; }
+    .clinical-banner .allergy-label { font-weight: 400; white-space: nowrap; }
     .clinical-banner .dx-value,
-    .clinical-banner .allergy-value { font-weight: 700; word-break: break-word; }
+    .clinical-banner .allergy-value { font-weight: 400; word-break: break-word; }
     /* Allergy line: red when present, calm grey for NKDA. */
     .clinical-banner .allergy-line {
       background: #fef2f2;
@@ -256,48 +251,46 @@
     .clinical-banner .dx-line.empty { display: none; }
 
     .patient-field .value {
-      margin-top: 1px;
-      font-size: 15px;
-      font-weight: 700;
-      line-height: 1.25;
+      margin-top: 0;
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 1.2;
       word-break: break-word;
     }
 
-    .section-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin: 10px 0 7px;
-      padding: 6px 8px;
-      border-radius: 10px;
-      background: #e0f2fe;
-      color: #0c4a6e;
-      font-size: 16px;
-      font-weight: 800;
-    }
-
-    .hint {
-      font-size: 11px;
-      font-weight: 400;
-      color: #6b7280;
-    }
-
+    /* border-collapse:collapse ignores border-radius on cells in Chrome, so
+       the medicine table uses the separate model with each cell drawing only
+       its right/bottom edge (plus an explicit left/top edge on the first
+       column/row) — same 1px grid look, but corners can round like the
+       other containers. The patient/diagnosis header row above is unaffected
+       (its <td class="hdr-cell"> has border: none). */
     table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0;
       table-layout: fixed;
-      border: 1.5px solid #111827;
     }
 
     th {
       background: #dbeafe;
-      border: 1px solid #111827;
+      border-right: 1px solid #111827;
+      border-bottom: 1px solid #111827;
       padding: 6px 7px;
       text-align: left;
       font-size: 12px;
       line-height: 1.25;
       color: #1e3a8a;
     }
+
+    thead tr:last-child th { border-top: 1px solid #111827; }
+    th:first-child, td:first-child { border-left: 1px solid #111827; }
+
+    /* Round the medicine table's own corners (column-header row + last data
+       row) to match the 8px radius used on the other containers. */
+    thead tr:last-child th:first-child { border-top-left-radius: 8px; }
+    thead tr:last-child th:last-child { border-top-right-radius: 8px; }
+    tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
+    tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
 
     .th-sub {
       font-size: 10px;
@@ -306,7 +299,8 @@
     }
 
     td {
-      border: 1px solid #111827;
+      border-right: 1px solid #111827;
+      border-bottom: 1px solid #111827;
       padding: var(--row-padding-y) var(--row-padding-x);
       vertical-align: top;
       line-height: 1.28;
@@ -376,7 +370,7 @@
 
     .med-name {
       font-size: 14px;
-      font-weight: 800;
+      font-weight: 400;
       line-height: 1.2;
     }
 
@@ -411,7 +405,7 @@
 
     .instruction-text {
       font-size: 15px;
-      font-weight: 800;
+      font-weight: 400;
       line-height: 1.35;
       color: #0f172a;
     }
@@ -423,7 +417,7 @@
       border-radius: 8px;
       background: #eff6ff;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 400;
       line-height: 1.3;
     }
 
@@ -434,7 +428,7 @@
 
     .qty-main {
       font-size: 13px;
-      font-weight: 800;
+      font-weight: 400;
     }
 
     .footer-note {
@@ -442,7 +436,7 @@
       padding-top: 8px;
       border-top: 1px solid #d1d5db;
       display: grid;
-      grid-template-columns: 1.3fr 1fr;
+      grid-template-columns: 2fr .8fr;
       gap: 8px;
       font-size: 11px;
       color: #374151;
@@ -504,18 +498,40 @@
       margin-top: 2px;
     }
 
-    /* ── Print-repeating page header ─────────────────────── */
-    .print-hdr-row { display: none; }
+    /* ── Print-repeating page header — lives inside <thead> so the logo/title,
+       patient info, and diagnosis/allergy banner repeat on every printed page. ── */
     .hdr-cell { padding: 0 0 7px 0; border: none !important; }
     .hdr-cell .top-title { margin-bottom: 7px; }
-    .hdr-cell .patient-card { margin: 7px 0 8px; }
-    .hdr-cell .section-title { margin: 7px 0 7px; }
+    .hdr-cell .patient-clinical-card { margin: 7px 0 8px; }
+
+    /* ── Page number footer (current page / estimated total) ───────────── */
+    .page-counter { display: none; }
+    @media print {
+      body { counter-reset: page; }
+      .page-counter {
+        display: block;
+        position: fixed;
+        bottom: 4mm;
+        right: var(--sheet-padding-x);
+        font-size: 9px;
+        color: #6b7280;
+      }
+      .page-counter::before {
+        counter-increment: page;
+        content: "Page " counter(page) " / " attr(data-total);
+      }
+    }
 
     .sign-box {
       min-height: 38px;
       border: 1px dashed #9ca3af;
       border-radius: 8px;
       padding: 6px 8px;
+    }
+
+    .label-ul {
+      font-weight: 400;
+      font-family: inherit;
     }
 
     .empty {
@@ -666,6 +682,16 @@
       #medTable col.cg-med { width: 38% !important; }
       #medTable col.cg-how { width: 41% !important; }
       #medTable col.cg-qty { width: 14% !important; }
+
+      /* The action column (true first-child) is hidden in print, so the
+         left border + rounded left corners need to move to the "#" column,
+         which becomes the visually-first one. */
+      th:first-child, td:first-child { border-left: none; }
+      thead tr:last-child th:first-child,
+      tbody tr:last-child td:first-child { border-radius: 0; }
+      th:nth-child(2), td:nth-child(2) { border-left: 1px solid #111827; }
+      thead tr:last-child th:nth-child(2) { border-top-left-radius: 8px; }
+      tbody tr:last-child td:nth-child(2) { border-bottom-left-radius: 8px; }
     }
   </style>
 </head>
@@ -763,55 +789,6 @@
 
   <div class="sheet-wrap">
   <main class="sheet">
-    <section class="top-title screen-only">
-      <div class="logo-zone">
-        <img src="../patient-sticker/bkh-logo.png" alt="Hospital logo" />
-      </div>
-      <div class="title-zone">
-        <h1>Home Medication Sheet</h1>
-        <div class="subtitle">เอกสารแนะนำการใช้ยากลับบ้าน</div>
-      </div>
-      <div class="date-box">
-        <div><strong>Date:</strong> <span id="sheetDate">-</span></div>
-        <div class="muted">Please follow the medication instructions below.</div>
-      </div>
-    </section>
-
-    <section class="patient-card screen-only">
-      <div class="patient-field">
-        <span class="label">Patient name</span>
-        <div class="value" id="patientName">-</div>
-      </div>
-      <div class="patient-field">
-        <span class="label">HN</span>
-        <div class="value" id="patientHN">-</div>
-      </div>
-      <div class="patient-field">
-        <span class="label">Visit / AN</span>
-        <div class="value" id="patientAN">-</div>
-      </div>
-      <div class="patient-field">
-        <span class="label">Room</span>
-        <div class="value" id="patientRoom">-</div>
-      </div>
-    </section>
-
-    <section class="clinical-banner screen-only" id="clinicalBanner" data-no-translate translate="no">
-      <div class="dx-line" id="dxLine">
-        <span class="dx-label"> Diagnosis / การวินิจฉัย:</span>
-        <span class="dx-value" id="diagnosisValue">-</span>
-      </div>
-      <div class="allergy-line nkda" id="allergyBanner">
-        <span class="allergy-label"> Allergies / แพ้ยา:</span>
-        <span class="allergy-value" id="allergyValue">No Known Drug Allergies (ไม่มีประวัติแพ้ยา)</span>
-      </div>
-    </section>
-
-    <section class="section-title screen-only">
-      <span>Medication instructions</span>
-      <span class="hint">อ่านชื่อยา วิธีใช้ จำนวนยา และหมายเหตุให้ครบทุกบรรทัด</span>
-    </section>
-
     <table id="medTable">
       <colgroup>
         <col class="col-act-col no-print" style="width:9mm">
@@ -821,13 +798,63 @@
         <col class="cg-qty" style="width:28mm">
       </colgroup>
       <thead>
-        <!-- This column-header row repeats on every printed page via thead. -->
+        <!-- This whole header (logo/title, patient info, diagnosis/allergy)
+             repeats on every printed page via <thead>. -->
+        <tr class="hdr-row">
+          <td class="hdr-cell" colspan="5">
+            <section class="top-title">
+              <div class="logo-zone">
+                <img src="../patient-sticker/bkh-logo.png" alt="Hospital logo" />
+              </div>
+              <div class="title-zone">
+                <h1>Home Medication Sheet</h1>
+                <div class="subtitle">เอกสารแนะนำการใช้ยากลับบ้าน</div>
+              </div>
+              <div class="date-box">
+                <div><span class="label-ul">Date:</span> <span id="sheetDate">-</span></div>
+                <div class="muted">Please follow the medication instructions below.</div>
+              </div>
+            </section>
+
+            <div class="patient-clinical-card">
+              <section class="patient-card">
+                <div class="patient-field">
+                  <span class="label">Patient name</span>
+                  <div class="value" id="patientName">-</div>
+                </div>
+                <div class="patient-field">
+                  <span class="label">HN</span>
+                  <div class="value" id="patientHN">-</div>
+                </div>
+                <div class="patient-field">
+                  <span class="label">Visit / AN</span>
+                  <div class="value" id="patientAN">-</div>
+                </div>
+                <div class="patient-field">
+                  <span class="label">Room</span>
+                  <div class="value" id="patientRoom">-</div>
+                </div>
+              </section>
+
+              <section class="clinical-banner" id="clinicalBanner" data-no-translate translate="no">
+                <div class="dx-line" id="dxLine">
+                  <span class="dx-label"> Diagnosis / การวินิจฉัย:</span>
+                  <span class="dx-value" id="diagnosisValue">-</span>
+                </div>
+                <div class="allergy-line nkda" id="allergyBanner">
+                  <span class="allergy-label"> Allergies / แพ้ยา:</span>
+                  <span class="allergy-value" id="allergyValue">No Known Drug Allergies (ไม่มีประวัติแพ้ยา)</span>
+                </div>
+              </section>
+            </div>
+          </td>
+        </tr>
         <tr>
           <th class="col-act no-print"></th>
           <th class="col-no">#</th>
           <th class="col-med">Medicine / Picture<br><span class="th-sub">ชื่อยา / รูปยา</span></th>
           <th class="col-how">How to take<br><span class="th-sub">วิธีใช้ยา</span></th>
-          <th class="col-qty">Qty / Days<br><span class="th-sub">จำนวน / วัน</span></th>
+          <th class="col-qty">Qty<br><span class="th-sub">จำนวน</span></th>
         </tr>
       </thead>
       <tbody>
@@ -837,21 +864,22 @@
 
     <section class="footer-note">
       <div class="sign-box appt-box">
-        <strong>นัดหมายติดตามอาการ</strong>
+        <span class="label-ul">นัดหมายติดตามอาการ</span>
         <div class="appt-list" id="appointmentList"></div>
       </div>
       <div class="sign-box providers-box">
         <div class="provider-block">
-          <strong>Physician</strong>
+          <span class="label-ul">Physician</span>
           <div class="provider-value" id="physicianName">-</div>
         </div>
         <div class="provider-block">
-          <strong>เภสัชกร (Pharmacist)</strong>
+          <span class="label-ul">เภสัชกร (Pharmacist)</span>
           <div class="provider-value" id="pharmacistName">-</div>
         </div>
       </div>
     </section>
   </main>
+  <div class="page-counter" id="pageCounter" data-total="1"></div>
   </div>
 
   <script src="../../core/messages.js"></script>

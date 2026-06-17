@@ -809,6 +809,11 @@ const AUXILIARY_PHRASES = {
 
 function matchAuxiliaryPhrase(text, lang) {
   const t = text.trim().toLowerCase().replace(/\.$/, "").replace(/\s+/g, " ");
+  // Pharmacist-curated overrides (src/features/pattern-editor, persisted server-side
+  // to data/rx/pattern-overrides.json) take priority — they let new phrases be added
+  // without a code deploy, and can also correct a built-in AUXILIARY_PHRASES entry.
+  const overrideMap = (window.PATTERN_OVERRIDES || {})[t];
+  if (overrideMap && overrideMap[lang]) return overrideMap[lang];
   const map = AUXILIARY_PHRASES[t];
   if (!map) return null;
   return map[lang] || null;

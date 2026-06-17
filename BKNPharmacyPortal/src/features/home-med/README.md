@@ -25,6 +25,16 @@ The sheet footer shows **นัดหมายติดตามอาการ*
 - When there are no future appointments, or the ArcusAir call fails, it returns a static fallback: *"ไม่มีนัดติดตามอาการ แต่ถ้าพบอาการผิดปรกติ…"*. The fetch is **best-effort** — a failure here never blocks the medication list from rendering.
 - Client-side, `renderAppointments()` (`page-home-med.js`) splits `data.appointmentText` on `\n` and renders **one `.appt-item` card per appointment** into `#appointmentList` — so multiple bookings don't run together as one paragraph. Each non-empty card gets a `•` bullet via CSS (`.appt-item:not(.empty)::before`); the no-appointment fallback renders as a single muted `.appt-item.empty` card with no bullet.
 
+## Patient info + diagnosis/allergy — one merged card
+
+`.patient-card` (name/HN/visit/room) and `.clinical-banner` (diagnosis/allergy lines) sit inside a single outer wrapper, `.patient-clinical-card`, which owns the one outer border/radius/background. Neither child has its own border anymore — `.clinical-banner` gets a `border-top` divider instead. Don't re-add borders to the children; it'll double up with the wrapper's frame.
+
+## Medicine table — rounded corners need the separate border model
+
+`#medTable` uses `border-collapse: separate` (not `collapse`) specifically so `border-radius` renders on the corner cells — Chrome ignores cell radius under `collapse`. To avoid double-thickness grid lines under the separate model, `th`/`td` draw only their **right** and **bottom** edges; an explicit rule adds the **left** edge back on `:first-child` and the **top** edge on the column-header row. Corner radius (8px, matching the other containers) is applied via `thead tr:last-child th:first-child` / `:last-child` and `tbody tr:last-child td:first-child` / `:last-child`.
+
+The action column (`.col-act`, screen-only edit buttons) is the true first DOM child but is hidden in print, which would shift the visible left edge/rounded corner onto the "#" column with nothing there to draw it. A `@media print` override moves the left border + corner radius from `:first-child` to `:nth-child(2)` to compensate — if the column layout changes, double-check both the screen and print corner rules still target the right cells.
+
 ## Footer layout — appointment + providers
 
 The footer (`.footer-note`) is a 2-column grid:
@@ -33,9 +43,17 @@ The footer (`.footer-note`) is a 2-column grid:
   - `populateHeader()` collects **every distinct provider** across the discharge meds (`_uniquePhysicians()`), not just the first one, since a visit can involve more than one prescriber. Each name renders on its own line via `_renderProviderList()`.
   - Pharmacist stays single-value (from `context.pharmacistName`).
 
-## Font weight gotcha
+## Emphasis style — plain weight, no underline or bold
 
-`page-home-med.html` registers `Sarabun` via `@font-face`, but the repo only ships `Sarabun-Regular.ttf` — there's no `Sarabun-Bold.ttf`. A second `@font-face` rule maps `THSarabunNew-Bold.ttf` to the same `"Sarabun"` family at `font-weight: 700`, so every existing `font-weight: 700/800` declaration (per-medicine หมายเหตุ box `.comment`, headers, etc.) actually renders bold instead of silently falling back to Regular. If you ever swap the Regular face for a different font, make sure a matching Bold face is registered too — `font-weight` rules with no matching face fail silently, not visibly.
+`page-home-med.html` registers only `Sarabun-Regular.ttf` via `@font-face` (no Bold face, by design — don't add one). All emphasis is `font-weight: 400` with no `text-decoration` — underline was tried and then explicitly removed per pharmacy feedback. Don't reintroduce bold or underline for "emphasis"; rely on layout (badges, color, spacing) instead.
+
+## Repeating page header (print)
+
+The logo/title row, patient-info card, and diagnosis/allergy banner live inside `#medTable`'s `<thead>` (a single `<tr class="hdr-row"><td class="hdr-cell" colspan="5">…</td></tr>` row, followed by the normal column-header `<tr>`). Browsers repeat `<thead>` content on every printed page, so the patient context reprints automatically if the medication list spans multiple A4 pages — no separate per-page reprint logic needed. Don't move these sections back out of the table, or multi-page printouts will only show patient/diagnosis info on page 1.
+
+## Page number footer (print)
+
+`#pageCounter` (`.page-counter`) is a `position: fixed` element, print-only, bottom-right of the sheet. The **current** page number comes from the CSS `counter(page)` trick (Chrome increments a `position: fixed` element's counter once per printed page) — no JS involved. The **total** page count has no native CSS equivalent in Chrome, so `updatePageCounterTotal()` (`page-home-med.js`, on `window.beforeprint`) estimates it from `.sheet.scrollHeight` vs. the A4 content height (297mm minus the current print margin), written to `data-total` and read via `attr(data-total)` in the `::before` content. It's an estimate, not exact pagination — close enough for "Page X / Y" on a discharge sheet.
 
 ## Files
 
@@ -53,6 +71,16 @@ The footer (`.footer-note`) is a 2-column grid:
 - A persistent translation cache (`chrome.storage.local`) avoids re-translating on every add/remove re-render.
 
 See [`../../shared/README.md`](../../shared/README.md) for the translation engine and `BKNData`.
+
+### Pattern matcher test harness
+
+`test/test-pattern-matcher.js` (repo root: `BKNPharmacyPortal/test/`) loads `medical-glossary.js` directly in Node (via `vm`, with a `window = global`-style sandbox — the file has no DOM dependency) and runs a table of `{ input, lang, opts, expect|contains }` cases through `window.matchMedicalPattern`. Run with `node test/test-pattern-matcher.js` (add `--verbose` to print passes too). Add new rows whenever a real ArcusAir instruction string exposes a parsing gap.
+
+### Pattern overrides (editable, no code deploy)
+
+`matchAuxiliaryPhrase()` checks `window.PATTERN_OVERRIDES` (a dict of `{ phrase: { th, en, ... } }`, keyed by the lowercased/trimmed English phrase) **before** the hardcoded `AUXILIARY_PHRASES` table, so a pharmacist-curated phrase wins and new verbatim phrases can be added without touching `medical-glossary.js`. `page-home-med.js`'s `_loadPatternOverrides()` fetches `GET /api/pattern-overrides` from the pharmacy server (best-effort — a failure just means no overrides apply) alongside the medication-DB load in `fetchAndRender()`.
+
+The editing UI lives in `src/features/pattern-editor/` (`page-pattern-editor.html`/`.js`, opened via the popup's "🧩 Pattern Editor" button) — a simple phrase/Thai-translation table that `PUT`s the whole dict to `/api/pattern-overrides`, persisted server-side to `pharmacy_server/data/rx/pattern-overrides.json` via the existing generic rx-collection routes (same mechanism as `medication-db`/`premix-drugs`). Only **verbatim full-phrase** matches are exposed this way — the regex-based qty/frequency/timing engine (`MASTER_RE`) is not editable from the UI, by design, since a malformed regex edit could break parsing for every instruction on the sheet.
 
 ## Gotchas
 
