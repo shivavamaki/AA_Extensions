@@ -271,7 +271,7 @@ function renderAppointments(text) {
   if (!el) return;
   el.innerHTML = "";
 
-  const lines = norm(text || "").split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = (text || "").split("\n").map((l) => norm(l)).filter(Boolean);
   if (!lines.length) lines.push(_NO_APPOINTMENT_TEXT);
 
   const isEmptyState = lines.length === 1 && lines[0] === _NO_APPOINTMENT_TEXT;

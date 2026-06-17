@@ -190,6 +190,8 @@ tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
       <div class="nav-item active" data-page="premix"><span class="nav-icon">💊</span>Premix Drugs</div>
       <div class="nav-item" data-page="mixing"><span class="nav-icon">🧪</span>Mixing Protocols</div>
       <div class="nav-item" data-page="meddb"><span class="nav-icon">📋</span>Medication DB</div>
+      <div class="nav-item editor-only" data-page="patterns"><span class="nav-icon">🔤</span>Pattern Overrides</div>
+      <div class="nav-item editor-only" data-page="extralabel"><span class="nav-icon">🏷</span>Extralabel</div>
       <div class="nav-section super-admin-only">Admin</div>
       <div class="nav-item super-admin-only" data-page="users"><span class="nav-icon">👥</span>Users</div>
     </nav>
@@ -254,6 +256,43 @@ tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
           </table>
         </div>
         <div class="pagination" id="meddb-pages"></div>
+      </div>
+
+      <!-- Pattern Overrides -->
+      <div class="page" id="page-patterns">
+        <div class="page-header">
+          <div><div class="page-title">Pattern Overrides</div><div class="page-sub" id="patterns-sub">Pharmacist-curated phrase translations (layered over built-in glossary)</div></div>
+          <button class="btn btn-success editor-only" id="btn-add-pattern">+ Add Override</button>
+        </div>
+        <div class="toolbar">
+          <input class="search-box" id="patterns-search" placeholder="Search phrase or Thai translation…"/>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>English Phrase</th><th>Thai (th)</th><th>Lao (lo)</th><th>Other langs</th><th class="editor-only"></th></tr></thead>
+            <tbody id="patterns-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Extralabel -->
+      <div class="page" id="page-extralabel">
+        <div class="page-header">
+          <div><div class="page-title">Extralabel Instructions</div><div class="page-sub" id="extralabel-sub"></div></div>
+        </div>
+        <div class="toolbar">
+          <input class="search-box" id="extralabel-search" placeholder="Search code or name…"/>
+          <select id="extralabel-filter-lang" style="padding:7px 9px;border:1px solid #d0d7e3;border-radius:6px;font-size:12px;outline:none">
+            <option value="all">All languages</option>
+          </select>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Code</th><th>Name</th><th>Instruction</th><th>Lang</th><th class="editor-only"></th></tr></thead>
+            <tbody id="extralabel-tbody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="extralabel-pages"></div>
       </div>
 
       <!-- Users -->
@@ -482,6 +521,50 @@ tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
   </div>
 </div>
 
+<!-- Pattern Override modal -->
+<div class="modal-overlay" id="modal-pattern">
+  <div class="modal" style="width:640px">
+    <div class="modal-head"><h2 id="pattern-modal-title">Add Pattern Override</h2><button class="modal-close" data-close="modal-pattern">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field span2">
+          <label>English Phrase (key — matched case-insensitively)</label>
+          <input id="pt-phrase" placeholder="e.g. keep in a cool dry place"/>
+          <div class="form-hint">Overrides the built-in AUXILIARY_PHRASES entry with the same key.</div>
+        </div>
+        <div class="form-field span2"><label>Thai (th) ★</label><input id="pt-th" placeholder="Thai translation"/></div>
+        <div class="form-field"><label>Lao (lo)</label><input id="pt-lo" placeholder="(optional)"/></div>
+        <div class="form-field"><label>Burmese (my)</label><input id="pt-my" placeholder="(optional)"/></div>
+        <div class="form-field"><label>Khmer (km)</label><input id="pt-km" placeholder="(optional)"/></div>
+        <div class="form-field"><label>Vietnamese (vi)</label><input id="pt-vi" placeholder="(optional)"/></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close="modal-pattern">Cancel</button>
+      <button class="btn btn-primary" id="pt-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Extralabel edit modal -->
+<div class="modal-overlay" id="modal-extralabel">
+  <div class="modal" style="width:600px">
+    <div class="modal-head"><h2>Edit Extralabel Instruction</h2><button class="modal-close" data-close="modal-extralabel">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field"><label>Code</label><input id="el-code" readonly style="background:#f7f9fc;color:#888"/></div>
+        <div class="form-field"><label>Language</label><input id="el-lang" placeholder="e.g. TH"/></div>
+        <div class="form-field span2"><label>Drug Name</label><input id="el-name" readonly style="background:#f7f9fc;color:#888"/></div>
+        <div class="form-field span2"><label>Instruction Text</label><textarea id="el-text" style="min-height:110px"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close="modal-extralabel">Cancel</button>
+      <button class="btn btn-primary" id="el-save">Save</button>
+    </div>
+  </div>
+</div>
+
 <div id="toasts"></div>
 
 <script>
@@ -507,6 +590,16 @@ let premixEditIdx  = -1;
 let mixingEditIdx  = -1;
 let medDbEditCode  = null;
 let userEditName   = null;
+
+let patternData    = {};   // { phrase_lc: { th, lo, ... } }
+let patternArr     = [];   // [{ phrase, langs }] sorted
+let patternEditKey = null;
+let _patternsLoaded = false;
+
+let extralabelArr   = [];
+let extralabelPage  = 0;
+let _extralabelLoaded = false;
+const EL_PAGE_SIZE  = 50;
 
 // ── API helpers ───────────────────────────────────────────────
 async function api(method, path, body) {
@@ -556,6 +649,8 @@ document.querySelectorAll('.modal-overlay').forEach(ov =>
 function goPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === name));
   document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === `page-${name}`));
+  if (name === 'patterns'    && !_patternsLoaded)    loadPatterns();
+  if (name === 'extralabel'  && !_extralabelLoaded)  loadExtralabel();
 }
 document.querySelectorAll('.nav-item[data-page]').forEach(n =>
   n.addEventListener('click', () => goPage(n.dataset.page))
@@ -1272,6 +1367,217 @@ async function deleteUser(username) {
     loadUsers();
   } catch (e) { toast('Error: ' + e.message, 'err'); }
 }
+
+// ══════════════════════════════════════════════════════════════
+// PATTERN OVERRIDES
+// ══════════════════════════════════════════════════════════════
+async function loadPatterns() {
+  _patternsLoaded = true;
+  try {
+    patternData = await api('GET', '/api/pattern-overrides');
+    _rebuildPatternArr();
+    renderPatterns();
+  } catch (e) { toast('Failed to load pattern overrides: ' + e.message, 'err'); }
+}
+
+function _rebuildPatternArr() {
+  patternArr = Object.entries(patternData)
+    .map(([phrase, langs]) => ({ phrase, langs }))
+    .sort((a, b) => a.phrase.localeCompare(b.phrase));
+}
+
+function renderPatterns() {
+  const q = document.getElementById('patterns-search').value.toLowerCase();
+  const isEditor = _role === 'editor' || _role === 'admin' || _role === 'super_admin';
+  const rows = patternArr.filter(r =>
+    !q || r.phrase.includes(q) || (r.langs.th || '').toLowerCase().includes(q)
+  );
+  document.getElementById('patterns-sub').textContent =
+    `${rows.length} of ${patternArr.length} overrides — layered over built-in AUXILIARY_PHRASES`;
+  const tbody = document.getElementById('patterns-tbody');
+  tbody.innerHTML = rows.length ? '' : '<tr class="empty-row"><td colspan="5">No overrides yet — click "+ Add Override" to create one</td></tr>';
+  rows.forEach(r => {
+    const otherLangs = Object.keys(r.langs).filter(k => k !== 'th' && k !== 'lo' && r.langs[k]);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-family:monospace;font-size:11px">${esc(r.phrase)}</td>
+      <td>${esc(r.langs.th || '—')}</td>
+      <td>${esc(r.langs.lo || '—')}</td>
+      <td style="font-size:11px;color:#888">${otherLangs.length ? otherLangs.join(', ') : '—'}</td>
+      ${isEditor ? `<td class="td-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editPattern(${JSON.stringify(r.phrase)})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePattern(${JSON.stringify(r.phrase)})">Del</button>
+      </td>` : '<td></td>'}`;
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('patterns-search').addEventListener('input', renderPatterns);
+
+document.getElementById('btn-add-pattern').addEventListener('click', () => {
+  patternEditKey = null;
+  document.getElementById('pattern-modal-title').textContent = 'Add Pattern Override';
+  document.getElementById('pt-phrase').readOnly = false;
+  ['pt-phrase','pt-th','pt-lo','pt-my','pt-km','pt-vi'].forEach(id => document.getElementById(id).value = '');
+  openModal('modal-pattern');
+});
+
+function editPattern(phrase) {
+  patternEditKey = phrase;
+  const langs = patternData[phrase] || {};
+  document.getElementById('pattern-modal-title').textContent = 'Edit Pattern Override';
+  document.getElementById('pt-phrase').value    = phrase;
+  document.getElementById('pt-phrase').readOnly = true;
+  document.getElementById('pt-th').value = langs.th || '';
+  document.getElementById('pt-lo').value = langs.lo || '';
+  document.getElementById('pt-my').value = langs.my || '';
+  document.getElementById('pt-km').value = langs.km || '';
+  document.getElementById('pt-vi').value = langs.vi || '';
+  openModal('modal-pattern');
+}
+
+document.getElementById('pt-save').addEventListener('click', async () => {
+  const phrase = document.getElementById('pt-phrase').value.trim().toLowerCase();
+  if (!phrase) { toast('Phrase is required', 'err'); return; }
+  const langs = {};
+  ['th','lo','my','km','vi'].forEach(k => {
+    const v = document.getElementById(`pt-${k}`).value.trim();
+    if (v) langs[k] = v;
+  });
+  if (!Object.keys(langs).length) { toast('At least one translation is required', 'err'); return; }
+  if (patternEditKey && patternEditKey !== phrase) delete patternData[patternEditKey];
+  patternData[phrase] = langs;
+  await savePatterns();
+  closeModal('modal-pattern');
+});
+
+async function deletePattern(phrase) {
+  if (!confirm(`Delete override for "${phrase}"?`)) return;
+  delete patternData[phrase];
+  await savePatterns();
+}
+
+async function savePatterns() {
+  try {
+    await api('PUT', '/api/pattern-overrides', patternData);
+    _rebuildPatternArr();
+    renderPatterns();
+    toast('Pattern overrides saved');
+  } catch (e) { toast('Save failed: ' + e.message, 'err'); }
+}
+
+// ══════════════════════════════════════════════════════════════
+// EXTRALABEL
+// ══════════════════════════════════════════════════════════════
+async function loadExtralabel() {
+  _extralabelLoaded = true;
+  try {
+    extralabelArr = await api('GET', '/api/extralabel');
+    extralabelPage = 0;
+    _populateExtralabelLangFilter();
+    renderExtralabel();
+    document.getElementById('extralabel-sub').textContent =
+      `${extralabelArr.length.toLocaleString()} items with Patient Instructions`;
+  } catch (e) { toast('Failed to load extralabel: ' + e.message, 'err'); }
+}
+
+function _populateExtralabelLangFilter() {
+  const langs = [...new Set(extralabelArr.flatMap(r => (r.instructions || []).map(i => i.localLanguage)).filter(Boolean))].sort();
+  const sel = document.getElementById('extralabel-filter-lang');
+  sel.innerHTML = '<option value="all">All languages</option>';
+  langs.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = l; sel.appendChild(o); });
+}
+
+function _elFiltered() {
+  const q    = document.getElementById('extralabel-search').value.toLowerCase();
+  const lang = document.getElementById('extralabel-filter-lang').value;
+  return extralabelArr.filter(r => {
+    if (q && !r.code.toLowerCase().includes(q) && !r.name.toLowerCase().includes(q)) return false;
+    if (lang !== 'all' && !(r.instructions || []).some(i => i.localLanguage === lang)) return false;
+    return true;
+  });
+}
+
+function renderExtralabel() {
+  const isEditor = _role === 'editor' || _role === 'admin' || _role === 'super_admin';
+  const filtered = _elFiltered();
+  const total  = filtered.length;
+  const pages  = Math.ceil(total / EL_PAGE_SIZE) || 1;
+  if (extralabelPage >= pages) extralabelPage = pages - 1;
+
+  document.getElementById('extralabel-sub').textContent =
+    `${total.toLocaleString()} of ${extralabelArr.length.toLocaleString()} items with Patient Instructions`;
+
+  const slice = filtered.slice(extralabelPage * EL_PAGE_SIZE, (extralabelPage + 1) * EL_PAGE_SIZE);
+  const tbody = document.getElementById('extralabel-tbody');
+  tbody.innerHTML = slice.length ? '' : '<tr class="empty-row"><td colspan="5">No items found</td></tr>';
+  slice.forEach(r => {
+    const ins = (r.instructions || [])[0] || {};
+    const txt = ins.text || '';
+    const preview = txt.length > 70 ? txt.slice(0, 67) + '…' : txt;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><code>${esc(r.code)}</code></td>
+      <td>${esc(r.name)}</td>
+      <td style="max-width:320px;white-space:pre-wrap;word-break:break-word;font-size:11px">${esc(preview)}</td>
+      <td><span class="badge badge-user">${esc(ins.localLanguage || '—')}</span></td>
+      ${isEditor ? `<td class="td-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editExtralabel('${esc(r.code)}')">Edit</button>
+      </td>` : '<td></td>'}`;
+    tbody.appendChild(tr);
+  });
+
+  const pg = document.getElementById('extralabel-pages');
+  pg.innerHTML = '';
+  const makeBtn = (label, page, disabled, active) => {
+    const b = document.createElement('button');
+    b.className = 'pg-btn' + (active ? ' active' : '');
+    b.textContent = label; b.disabled = disabled;
+    b.addEventListener('click', () => { extralabelPage = page; renderExtralabel(); });
+    pg.appendChild(b);
+  };
+  makeBtn('‹ Prev', extralabelPage - 1, extralabelPage === 0, false);
+  const start = Math.max(0, extralabelPage - 2);
+  const end   = Math.min(pages, start + 5);
+  for (let p = start; p < end; p++) makeBtn(p + 1, p, false, p === extralabelPage);
+  makeBtn('Next ›', extralabelPage + 1, extralabelPage >= pages - 1, false);
+  const info = document.createElement('span');
+  info.className = 'pg-info';
+  info.textContent = `Page ${extralabelPage + 1} of ${pages}`;
+  pg.appendChild(info);
+}
+
+document.getElementById('extralabel-search').addEventListener('input', () => { extralabelPage = 0; renderExtralabel(); });
+document.getElementById('extralabel-filter-lang').addEventListener('change', () => { extralabelPage = 0; renderExtralabel(); });
+
+function editExtralabel(code) {
+  const r = extralabelArr.find(x => x.code === code);
+  if (!r) return;
+  const ins = (r.instructions || [])[0] || {};
+  document.getElementById('el-code').value = r.code;
+  document.getElementById('el-name').value = r.name;
+  document.getElementById('el-lang').value = ins.localLanguage || '';
+  document.getElementById('el-text').value = ins.text || '';
+  openModal('modal-extralabel');
+}
+
+document.getElementById('el-save').addEventListener('click', async () => {
+  const code = document.getElementById('el-code').value;
+  const text = document.getElementById('el-text').value.trim();
+  const lang = document.getElementById('el-lang').value.trim();
+  try {
+    await api('PUT', `/api/extralabel/${encodeURIComponent(code)}`, { text, localLanguage: lang });
+    // Update in-memory
+    const r = extralabelArr.find(x => x.code === code);
+    if (r && r.instructions && r.instructions[0]) {
+      r.instructions[0].text          = text;
+      r.instructions[0].localLanguage = lang;
+    }
+    renderExtralabel();
+    toast('Extralabel instruction saved');
+    closeModal('modal-extralabel');
+  } catch (e) { toast('Save failed: ' + e.message, 'err'); }
+});
 
 // ── Utility ───────────────────────────────────────────────────
 function esc(s) {

@@ -65,6 +65,7 @@ function _unit(raw, lang, count) {
     tube:    { th:"หลอด", lo:"ຫຼອດ", my:"ပိုက်",  km:"បំពង់",   vi:"tuýp",  "zh-CN":"管", "zh-TW":"管",  ja:"チューブ",ko:"튜브",ar:"أنبوب", hi:"ट्यूब",id:"tabung", ms:"tiub",   ru:"тюбик",   fr:"tube",    de:"Tube",      es:"tubo",       pt:"tubo",      tr:"tüp" },
     sachet:  { th:"ซอง",  lo:"ຊອງ",  my:"ထုပ်",   km:"កញ្ចប់", vi:"gói",   "zh-CN":"袋", "zh-TW":"包",  ja:"袋",    ko:"포",  ar:"كيس",   hi:"पाउच",  id:"sachet", ms:"sachet", ru:"пакетик",fr:"sachet",  de:"Beutel",    es:"sobre",      pt:"sachê",     tr:"poşet" },
     syringe: { th:"กระบอก",lo:"ກະບອກ",my:"ဆေးထိုးအပ်",km:"ស្រាំ",vi:"ống tiêm","zh-CN":"支","zh-TW":"支", ja:"本",    ko:"개",  ar:"محقنة", hi:"सिरिंज",id:"jarum",  ms:"picagari",ru:"шприц",   fr:"seringue",de:"Spritze",   es:"jeringa",    pt:"seringa",   tr:"şırınga" },
+    patch:   { th:"แผ่น", lo:"ແຜ່ນ",  my:"ပြင်",    km:"ប្លែក",  vi:"miếng", "zh-CN":"贴",  "zh-TW":"貼",   ja:"枚",         ko:"장",   ar:"لصقة",  hi:"पैच",   id:"lembar", ms:"keping",  ru:"пластырь", fr:"timbre",  de:"Pflaster",  es:"parche",     pt:"adesivo",   tr:"yama" },
     pack:    { th:"แพ็ค", lo:"ແພັກ", my:"ထုပ်",   km:"កញ្ចប់", vi:"gói",   "zh-CN":"包", "zh-TW":"包",  ja:"パック",ko:"팩",  ar:"عبوة",  hi:"पैक",   id:"paket",  ms:"pek",    ru:"упаковку",fr:"paquet",  de:"Packung",   es:"paquete",    pt:"pacote",    tr:"paket" },
     piece:   { th:"ชิ้น", lo:"ອັນ",  my:"ခု",     km:"គ្រឿង",  vi:"chiếc", "zh-CN":"个", "zh-TW":"個",  ja:"個",    ko:"개",  ar:"قطعة",  hi:"टुकड़ा",id:"buah",   ms:"biji",   ru:"штуку",   fr:"pièce",   de:"Stück",     es:"unidad",     pt:"unidade",   tr:"adet" },
   };
@@ -201,9 +202,14 @@ function _days(n, lang) {
 // doesn't render as "รับประทาน" (eat).
 function _take(n, unit, lang) {
   const u = (unit || "").toLowerCase().replace(/s$/, "");
-  const isDrop    = u === "drop";
-  const isSpray   = u === "spray" || u === "puff";
-  const isLiquid  = u === "ml" || /^millilit/.test(u) || u === "litre" || u === "liter";
+  const isDrop      = u === "drop";
+  const isSpray     = u === "spray" || u === "puff";
+  const isLiquid    = u === "ml" || /^millilit/.test(u) || u === "litre" || u === "liter";
+  const isMouthSpray   = u === "mouth-spray";
+  const isMouthPuff    = u === "mouth-puff";
+  const isMouthUlcer   = u === "mouth-ulcer";
+  const isChewSwallow  = u === "chew-tablet";
+  const isPatch        = u === "patch";
 
   // Oral verb (default — tablet/capsule/ml taken by mouth)
   // Thai & Lao prescriptions don't write "by mouth" — the verb already
@@ -299,10 +305,133 @@ function _take(n, unit, lang) {
     tr:  (n, u) => `${n} ${u} alın`,
   };
 
-  const TABLE = isDrop ? DROP : isSpray ? SPRAY : isLiquid ? LIQUID : ORAL;
+  // Mouth spray: "Spray into the Mouth" → "พ่นปาก / ພົ່ນໃສ່ປາກ / ..."
+  const MOUTH_SPRAY = {
+    th:      (n, u) => `พ่นปาก ${n} ${u}`,
+    lo:      (n, u) => `ພົ່ນໃສ່ປາກ ${n} ${u}`,
+    my:      (n, u) => `ပါးစပ်ထဲ ${n} ${u} ဖျန်းပါ`,
+    km:      (n, u) => `បាញ់ ${n} ${u} ក្នុងមាត់`,
+    vi:      (n, u) => `Xịt ${n} ${u} vào miệng`,
+    "zh-CN": (n, u) => `口腔喷 ${n} ${u}`,
+    "zh-TW": (n, u) => `口腔噴 ${n} ${u}`,
+    ja:      (n, u) => `口腔内へ${n}${u}噴霧`,
+    ko:      (n, u) => `구강 내에 ${n}${u} 분무`,
+    ar:      (n, u) => `رشّ ${n} ${u} في الفم`,
+    hi:      (n, u) => `${n} ${u} मुँह में स्प्रे करें`,
+    id:      (n, u) => `Semprotkan ${n} ${u} ke mulut`,
+    ms:      (n, u) => `Sembur ${n} ${u} ke dalam mulut`,
+    ru:      (n, u) => `${n} ${u} распылить в рот`,
+    fr:      (n, u) => `Pulvériser ${n} ${u} dans la bouche`,
+    de:      (n, u) => `${n} ${u} in den Mund sprühen`,
+    es:      (n, u) => `Pulverizar ${n} ${u} en la boca`,
+    pt:      (n, u) => `Pulverizar ${n} ${u} na boca`,
+    tr:      (n, u) => `${n} ${u} ağıza sıkın`,
+  };
+
+  // Transdermal patch: "Patch on the skin" → "แปะที่ผิวหนัง / ..."
+  // Thai/Lao omit the qty — one patch at a time is self-evident; other languages include it.
+  const PATCH = {
+    th:      (n, u) => `แปะที่ผิวหนัง`,
+    lo:      (n, u) => `ຕິດທີ່ຜິວໜັງ`,
+    my:      (n, u) => `အရေပြားပေါ် ${n} ${u} ကပ်ပါ`,
+    km:      (n, u) => `貼 ${n} ${u} ស្បែក`,
+    vi:      (n, u) => `Dán ${n} ${u} lên da`,
+    "zh-CN": (n, u) => `贴 ${n} ${u} 于皮肤`,
+    "zh-TW": (n, u) => `貼 ${n} ${u} 於皮膚`,
+    ja:      (n, u) => `皮膚に${n}${u}貼付`,
+    ko:      (n, u) => `피부에 ${n}${u} 부착`,
+    ar:      (n, u) => `ضع ${n} ${u} على الجلد`,
+    hi:      (n, u) => `${n} ${u} त्वचा पर लगाएँ`,
+    id:      (n, u) => `Tempelkan ${n} ${u} pada kulit`,
+    ms:      (n, u) => `Tampalkan ${n} ${u} pada kulit`,
+    ru:      (n, u) => `Наклеить ${n} ${u} на кожу`,
+    fr:      (n, u) => `Appliquer ${n} ${u} sur la peau`,
+    de:      (n, u) => `${n} ${u} auf die Haut kleben`,
+    es:      (n, u) => `Colocar ${n} ${u} sobre la piel`,
+    pt:      (n, u) => `Colar ${n} ${u} na pele`,
+    tr:      (n, u) => `${n} ${u} cilde yapıştırın`,
+  };
+
+  // "Inhale through the Mouth N puff" → "สูดยาทางปาก N กด"
+  // Unit display hardcoded per-language (กด/กด/press); unitKey unused for this table.
+  const INHALE_MOUTH = {
+    th:      (n, u) => `สูดยาทางปาก ${n} กด`,
+    lo:      (n, u) => `ສູດຢາທາງປາກ ${n} ກົດ`,
+    my:      (n, u) => `ပါးစပ်မှ ရှူပါ ${n} ကြိမ်`,
+    km:      (n, u) => `ស្រូបតាមមាត់ ${n} ដង`,
+    vi:      (n, u) => `Hít qua miệng ${n} lần`,
+    "zh-CN": (n, u) => `经口吸入 ${n} 喷`,
+    "zh-TW": (n, u) => `經口吸入 ${n} 噴`,
+    ja:      (n, u) => `口から${n}回吸入`,
+    ko:      (n, u) => `입으로 ${n}회 흡입`,
+    ar:      (n, u) => `استنشاق عن طريق الفم ${n} بخة`,
+    hi:      (n, u) => `मुँह से ${n} पफ श्वास लें`,
+    id:      (n, u) => `Hirup melalui mulut ${n} kali`,
+    ms:      (n, u) => `Sedut melalui mulut ${n} kali`,
+    ru:      (n, u) => `Вдохнуть через рот ${n} раз`,
+    fr:      (n, u) => `Inhaler par la bouche ${n} bouffée`,
+    de:      (n, u) => `Durch den Mund ${n}× inhalieren`,
+    es:      (n, u) => `Inhalar por la boca ${n} inhalación`,
+    pt:      (n, u) => `Inalar pela boca ${n} inalação`,
+    tr:      (n, u) => `Ağız yoluyla ${n} kez inhale et`,
+  };
+
+  // "Apply to the Ulcer in Mouth N ml" → "ทาแผลในปากหรืออมกลั้วปาก N มิลลิลิตร"
+  // unitKey = "ml" so the standard liquid unit translation is used.
+  const MOUTH_ULCER = {
+    th:      (n, u) => `ทาแผลในปากหรืออมกลั้วปาก ${n} ${u}`,
+    lo:      (n, u) => `ທາແຜລໃນປາກ ${n} ${u}`,
+    my:      (n, u) => `ခံတွင်းအနာကျော် ${n} ${u} သုတ်ပါ`,
+    km:      (n, u) => `លាបដំបៅក្នុងមាត់ ${n} ${u}`,
+    vi:      (n, u) => `Bôi vết loét trong miệng ${n} ${u}`,
+    "zh-CN": (n, u) => `涂口腔溃疡 ${n} ${u}`,
+    "zh-TW": (n, u) => `塗口腔潰瘍 ${n} ${u}`,
+    ja:      (n, u) => `口内炎に${n}${u}塗布`,
+    ko:      (n, u) => `구내염에 ${n}${u} 도포`,
+    ar:      (n, u) => `وضع على قرحة الفم ${n} ${u}`,
+    hi:      (n, u) => `मुँह के छाले पर ${n} ${u} लगाएँ`,
+    id:      (n, u) => `Oleskan pada sariawan ${n} ${u}`,
+    ms:      (n, u) => `Sapu pada sariawan mulut ${n} ${u}`,
+    ru:      (n, u) => `Нанести на язву во рту ${n} ${u}`,
+    fr:      (n, u) => `Appliquer sur l'aphte ${n} ${u}`,
+    de:      (n, u) => `Auf Mundgeschwür ${n} ${u} auftragen`,
+    es:      (n, u) => `Aplicar en la úlcera bucal ${n} ${u}`,
+    pt:      (n, u) => `Aplicar na úlcera bucal ${n} ${u}`,
+    tr:      (n, u) => `Ağız ülserine ${n} ${u} uygula`,
+  };
+
+  // "Chew Before Swallowing N tablet" → "เคี้ยวก่อนกลืน N เม็ด"
+  const CHEW_SWALLOW = {
+    th:      (n, u) => `เคี้ยวก่อนกลืน ${n} ${u}`,
+    lo:      (n, u) => `ຊ້ຽນກ່ອນກືນ ${n} ${u}`,
+    my:      (n, u) => `မျိုမချိုးဘဲ ဝါးပြီးမှ မျိုပါ ${n} ${u}`,
+    km:      (n, u) => `ចិញ្ចឹមមុនបើក ${n} ${u}`,
+    vi:      (n, u) => `Nhai trước khi nuốt ${n} ${u}`,
+    "zh-CN": (n, u) => `嚼碎后吞服 ${n} ${u}`,
+    "zh-TW": (n, u) => `嚼碎後吞服 ${n} ${u}`,
+    ja:      (n, u) => `噛んでから飲み込む ${n}${u}`,
+    ko:      (n, u) => `씹어서 삼키기 ${n}${u}`,
+    ar:      (n, u) => `مضغ قبل البلع ${n} ${u}`,
+    hi:      (n, u) => `निगलने से पहले चबाएं ${n} ${u}`,
+    id:      (n, u) => `Kunyah sebelum ditelan ${n} ${u}`,
+    ms:      (n, u) => `Kunyah sebelum menelan ${n} ${u}`,
+    ru:      (n, u) => `Разжевать перед проглатыванием ${n} ${u}`,
+    fr:      (n, u) => `Croquer avant d'avaler ${n} ${u}`,
+    de:      (n, u) => `Vor dem Schlucken kauen ${n} ${u}`,
+    es:      (n, u) => `Masticar antes de tragar ${n} ${u}`,
+    pt:      (n, u) => `Mastigar antes de engolir ${n} ${u}`,
+    tr:      (n, u) => `Yutmadan önce çiğne ${n} ${u}`,
+  };
+
+  // mouth-spray → spray unit; mouth-ulcer → ml unit; chew-tablet → tablet; others use raw unit key.
+  const unitKey = isMouthSpray ? "spray" : isMouthUlcer ? "ml" : isChewSwallow ? "tablet" : unit;
+  const TABLE = isDrop        ? DROP         : isMouthSpray  ? MOUTH_SPRAY
+              : isSpray       ? SPRAY        : isLiquid      ? LIQUID
+              : isPatch       ? PATCH        : isMouthPuff   ? INHALE_MOUTH
+              : isMouthUlcer  ? MOUTH_ULCER  : isChewSwallow ? CHEW_SWALLOW : ORAL;
   const fn = TABLE[lang];
   if (!fn) return null;
-  return fn(n, _unit(unit, lang, n));
+  return fn(n, _unit(unitKey, lang, n));
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -367,9 +496,9 @@ function _compoundTiming(raw, lang) {
 // Each group optional except N and unit. Leading verb may be Take/Spray/Apply/etc.
 const MASTER_RE = new RegExp(
   [
-    /^(?:Take|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put)\s+/i,
+    /^(?:Take|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put|Patch|Chew)\s+/i,
     /(\d+(?:\.\d+)?|\bquarter\b|\bhalf\b|\bthree-quarter\b)\s+/,  // [1] qty
-    /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr|pack|sachet|bottle|vial|tube|ampoule|ampule|amp|piece|pcs|pc)s?\s*/i,   // [2] unit
+    /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr|pack|sachet|bottle|vial|tube|ampoule|ampule|amp|piece|pcs|pc|patch)s?\s*/i,   // [2] unit
     // Optional route phrase ("orally" / "in mouth" / "in nostril" / "in eye" / ...)
     /(?:(?:orally|in\s+(?:the\s+)?(?:mouth|throat|nose|nostril|nasal|eye|ear|rectum|vagina|affected\s+area))\s*)?/i,
     // [3] freq: "N times a day" OR canonical forms, optionally suffixed with PRN
@@ -387,10 +516,10 @@ const MASTER_RE = new RegExp(
 // so the dose verb is localised and the messy English tail is dropped.
 const TAKE_QTY_RE = new RegExp(
   [
-    /^(?:Take|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put)\s+/i,
-    /(?:(?:to|in|into|onto)\s+(?:the\s+)?(?:mouth|throat|nose|nostril|nasal|eye|ear|skin|affected\s+area)\s+)?/i,
+    /^(?:Take|Spray|Apply|Insert|Use|Instill|Inhale|Place|Put|Patch|Chew)\s+/i,
+    /(?:(?:to|in|into|on|onto)\s+(?:the\s+)?(?:mouth|throat|nose|nostril|nasal|eye|ear|skin|affected\s+area)\s+)?/i,
     /(\d+(?:\.\d+)?|\bquarter\b|\bhalf\b|\bthree-quarter\b)\s+/,        // [1] qty
-    /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr|pack|sachet|bottle|vial|tube|ampoule|ampule|amp|piece|pcs|pc)s?\b/i, // [2] unit
+    /(tablet|caplet|capsule|drop|spray|puff|ml|millilit(?:re|er)|millilitr|pack|sachet|bottle|vial|tube|ampoule|ampule|amp|piece|pcs|pc|patch)s?\b/i, // [2] unit
   ].map(r => r.source).join(""),
   "i"
 );
@@ -426,8 +555,62 @@ function _drinkVerb(t, lang) {
 }
 
 function matchPattern(text, lang, opts = {}) {
-  const t = text.trim();
   const freqOverrideRaw = (lang === "th" && opts.freqOverride) ? String(opts.freqOverride).trim() : "";
+
+  // Normalize ArcusAir unit suffixes before regex matching (e.g. PUFF_PU → PUFF).
+  let t = text.trim().replace(
+    /\b(tablet|capsule|caplet|drop|spray|puff|ml|pack|sachet|bottle|vial|tube|piece|patch)_\w+/gi,
+    "$1"
+  );
+
+  // Already in Thai/Lao script — return as-is; dose + frequency already embedded.
+  if (/[฀-໿]/.test(t)) return t;
+
+  // "Spray N Puff Into Each Nostril ..." — bilateral nasal spray.
+  // ArcusAir encodes "1 puff per nostril, both sides" as a single instruction.
+  // The standard spray verb cannot express this; handle it with a dedicated table.
+  const _nostrilM = t.match(/^Spray\s+(\d+(?:\.\d+)?)\s+Puff\s+Into\s+Each\s+Nostril\b/i);
+  if (_nostrilM) {
+    const _n = _nostrilM[1];
+    const _NT = {
+      th:      n => `พ่นจมูก 2 ข้าง ข้างละ ${n} กด`,
+      lo:      n => `ພົ່ນດັງ 2 ຂ້າງ ຂ້າງລະ ${n} ກົດ`,
+      my:      n => `နှာခေါင်းတစ်ဖက်စီ ${n} ကြိမ် ဖျန်းပါ`,
+      km:      n => `បាញ់ ${n} ដង ក្នុងរន្ធច្រមុះម្ខាង`,
+      vi:      n => `Xịt ${n} lần vào mỗi lỗ mũi`,
+      "zh-CN": n => `每侧鼻孔喷${n}下`,
+      "zh-TW": n => `每側鼻孔噴${n}下`,
+      ja:      n => `各鼻孔に${n}回噴霧`,
+      ko:      n => `각 콧구멍에 ${n}회 분무`,
+      ar:      n => `${n} بخة في كل منخر`,
+      hi:      n => `प्रत्येक नासिका में ${n} पफ स्प्रे करें`,
+      id:      n => `Semprotkan ${n} kali ke setiap lubang hidung`,
+      ms:      n => `Sembur ${n} kali ke setiap lubang hidung`,
+      ru:      n => `По ${n} вдыханию в каждую ноздрю`,
+      fr:      n => `${n} pulvérisation dans chaque narine`,
+      de:      n => `${n} Sprühstoß in jedes Nasenloch`,
+      es:      n => `${n} pulsación en cada fosa nasal`,
+      pt:      n => `${n} aplicação em cada narina`,
+      tr:      n => `Her burun deliğine ${n} puf`,
+    };
+    const _fn = _NT[lang] || (n => `Spray ${n} puff into each nostril`);
+    return [_fn(_n), freqOverrideRaw].filter(Boolean).join(" ");
+  }
+
+  // Normalize compound verbs before route/regex processing.
+  // "Chew Before Swallowing N unit" → "Chew N unit" + preQtyRoute = "chew-swallow"
+  let preQtyRoute = "";
+  t = t.replace(/^(Chew)\s+Before\s+Swallowing\b\s*/i, (_, v) => {
+    preQtyRoute = "chew-swallow";
+    return v + " ";
+  });
+
+  // Strip route phrases between verb and qty; supports multi-word routes
+  // (e.g. "Spray into the Mouth 3 spray", "Apply to the Ulcer in Mouth 1 ml").
+  t = t.replace(
+    /^((?:Take|Spray|Apply|Use|Instill|Inhale|Place|Put|Patch|Chew)\s+)((?:to|in|into|on|onto|through)\s+(?:the\s+)?(.+?)\s+)(?=\d|\bquarter\b|\bhalf\b|\bthree-quarter\b)/i,
+    (_, verb, _rp, routeLoc) => { preQtyRoute = routeLoc.toLowerCase().trim(); return verb; }
+  );
 
   const m = t.match(MASTER_RE);
   if (!m) {
@@ -439,9 +622,13 @@ function matchPattern(text, lang, opts = {}) {
       if (lm) {
         let unit = lm[2] || "tablet";
         if (/^caplet/i.test(unit)) unit = "tablet";
+        if (preQtyRoute === "mouth" && /^spray$/i.test(unit)) unit = "mouth-spray";
+        if (preQtyRoute === "mouth" && /^puff$/i.test(unit)) unit = "mouth-puff";
+        if (/ulcer.*mouth/i.test(preQtyRoute) && /^m[il]/i.test(unit)) unit = "mouth-ulcer";
+        if (preQtyRoute === "chew-swallow") unit = "chew-tablet";
         let q = lm[1] || "1";
         if (/^quarter$/i.test(q)) q = "¼";
-        else if (/^half$/i.test(q)) q = "½";
+        else if (/^half$/i.test(q)) q = lang === "th" ? "ครึ่ง" : lang === "lo" ? "ເຄິ່ງ" : "½";
         else if (/^three.quarter$/i.test(q)) q = "¾";
         const take = _take(q, unit, lang);
         if (take) return [take, freqOverrideRaw].filter(Boolean).join(" ");
@@ -464,16 +651,19 @@ function matchPattern(text, lang, opts = {}) {
 
   const rawQty    = m[1] || "1";
   let   rawUnit   = m[2] || "tablet";
-  // Caplet is a tablet form — translate it the same way as "tablet".
   if (/^caplet/i.test(rawUnit)) rawUnit = "tablet";
+  if (preQtyRoute === "mouth" && /^spray$/i.test(rawUnit)) rawUnit = "mouth-spray";
+  if (preQtyRoute === "mouth" && /^puff$/i.test(rawUnit))  rawUnit = "mouth-puff";
+  if (/ulcer.*mouth/i.test(preQtyRoute) && /^m[il]/i.test(rawUnit)) rawUnit = "mouth-ulcer";
+  if (preQtyRoute === "chew-swallow") rawUnit = "chew-tablet";
   const rawFreq   = (m[3] || "").trim();
   const rawTiming = (m[4] || "").trim();
   const rawDays   = m[5] || "";
 
-  // Resolve quantity (handle fractions)
+  // Resolve quantity (handle fractions); use native words for Thai/Lao
   let qty = rawQty;
-  if (/^quarter$/i.test(qty))        qty = "¼";
-  else if (/^half$/i.test(qty))      qty = "½";
+  if (/^quarter$/i.test(qty))           qty = "¼";
+  else if (/^half$/i.test(qty))         qty = lang === "th" ? "ครึ่ง" : lang === "lo" ? "ເຄິ່ງ" : "½";
   else if (/^three.quarter$/i.test(qty)) qty = "¾";
 
   // Build sentence parts
