@@ -136,7 +136,8 @@ def _hm_norm(s):
 # alongside the other rx master data. Missing/broken files degrade gracefully
 # to empty indices (the sheet then falls back to on-demand translation).
 FREQ_MASTER_FILE = RX_DIR / 'frequencymaster.json'
-EXTRALABEL_FILE  = RX_DIR / 'medication-db.json'   # merged: per-item instructions (TH/EN)
+EXTRALABEL_FILE           = RX_DIR / 'medication-db.json'         # merged: per-item instructions (TH/EN)
+ORDERITEM_EXTRALABEL_FILE = RX_DIR / 'orderitem_extralabel.json'  # raw ArcusAir order-item scrape
 
 _freq_th_idx = None        # normalized freq name/code → Thai localLanguage
 _extralabel_idx = None     # item code → {'text': en, 'localLanguage': th}
@@ -249,6 +250,18 @@ def _load_note_glossary():
         print(f'[note-gloss] load failed: {e}', file=sys.stderr)
     _note_gloss = (phrases, terms)
     return _note_gloss
+
+def _load_orderitem_extralabel_raw():
+    """Load orderitem_extralabel.json as-is. Returns the full dict."""
+    try:
+        with open(ORDERITEM_EXTRALABEL_FILE, encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {'results': []}
+    except Exception as e:
+        print(f'[orderitem-extralabel] load error: {e}', file=sys.stderr)
+        return {'results': []}
+
 
 def _translate_note(en):
     """EN note → Thai. Exact curated phrase first; else substitute known terms.
@@ -1666,6 +1679,12 @@ class Handler(BaseHTTPRequestHandler):
                     return None, None, None
                 return 'patient-medcache', puid, visituid
 
+        # /api/extralabel                → ('extralabel', None, None)
+        # /api/extralabel/<code>         → ('extralabel', code, None)
+        if len(parts) >= 2 and parts[:2] == ['api', 'extralabel']:
+            code = urllib.parse.unquote(parts[2]) if len(parts) == 3 else None
+            return 'extralabel', code, None
+
         # /api/auth/ACTION
         if len(parts) == 3 and parts[:2] == ['api', 'auth'] and parts[2] in ('login', 'logout', 'me'):
             return 'auth', parts[2], None
@@ -1782,6 +1801,27 @@ class Handler(BaseHTTPRequestHandler):
         elif rtype == 'med-images-list':
             stems = [p.stem for p in MED_IMAGES_DIR.iterdir() if p.is_file()]
             self.send_json(200, stems)
+        elif rtype == 'extralabel':
+            raw = _load_orderitem_extralabel_raw()
+            results = raw.get('results') or []
+            out = []
+            for r in results:
+                if r.get('status') != 'ok':
+                    continue
+                inss = [i for i in (r.get('instructions') or [])
+                        if i.get('type') == 'Patient Instruction']
+                if not inss:
+                    continue
+                name = (r.get('listRow') or {}).get('name') or ''
+                out.append({
+                    'code': r.get('code', ''),
+                    'name': name,
+                    'instructions': [
+                        {'text': i.get('text', ''), 'localLanguage': i.get('localLanguage', '')}
+                        for i in inss
+                    ],
+                })
+            self.send_json(200, out)
         elif rtype == 'patient':
             self.send_json(200, load_or_create_patient(key))
         elif rtype == 'patient-context':
@@ -1914,6 +1954,31 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(body, (dict, list)):
                 self.send_json(400, {'error': 'Body must be a JSON object or array'}); return
             save_schedule(key, body)
+            self.send_json(200, {'ok': True})
+
+        elif rtype == 'extralabel' and key:
+            # PUT /api/extralabel/<code>  body: {localLanguage, text}
+            # Updates the first "Patient Instruction" entry for this drug code.
+            if not isinstance(body, dict):
+                self.send_json(400, {'error': 'Body must be JSON object'}); return
+            raw = _load_orderitem_extralabel_raw()
+            results = raw.get('results') or []
+            found = False
+            for r in results:
+                if r.get('code') != key:
+                    continue
+                for ins in (r.get('instructions') or []):
+                    if ins.get('type') == 'Patient Instruction':
+                        if 'localLanguage' in body:
+                            ins['localLanguage'] = body['localLanguage']
+                        if 'text' in body:
+                            ins['text'] = body['text']
+                        found = True
+                        break
+                break
+            if not found:
+                self.send_json(404, {'error': 'Code not found or no Patient Instruction'}); return
+            _atomic_write_json(ORDERITEM_EXTRALABEL_FILE, raw)
             self.send_json(200, {'ok': True})
 
         elif rtype == 'patient':
