@@ -291,7 +291,15 @@ function renderAppointments(text) {
       btn.className = "appt-remove";
       btn.title = "ลบรายการนี้";
       btn.textContent = "×";
-      btn.onclick = () => div.remove();
+      btn.onclick = () => {
+        div.remove();
+        if (el.children.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "appt-item empty";
+          empty.textContent = _NO_APPOINTMENT_TEXT;
+          el.appendChild(empty);
+        }
+      };
 
       const body = document.createElement("div");
       body.className = "appt-body";
