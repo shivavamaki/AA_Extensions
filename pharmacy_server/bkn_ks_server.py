@@ -813,6 +813,11 @@ def build_home_med_from_arcus(data):
         med = _arcus_item_to_med(it)
         if not med:
             continue
+        # Skip non-medicine items (activities, nursing orders, diet, etc.).
+        # ArcusAir sometimes returns OTHERS-category items even with the
+        # DISCHARGEMEDICATION filter.
+        if not _is_medicine(med):
+            continue
         # Skip cancelled orders — ArcusAir can return both a cancelled and a
         # replacement dispensed order for the same drug in one response; the
         # cancelled one must never reach the discharge sheet.

@@ -176,6 +176,12 @@ function _timing(raw, lang) {
     "as needed":             { th:"เมื่อมีอาการ",         lo:"ເມື່ອຕ້ອງການ",    my:"လိုအပ်သောအခါ",        km:"ពេលត្រូវការ",           vi:"khi cần",        "zh-CN":"必要时",    "zh-TW":"必要時",   ja:"必要時",    ko:"필요 시",      ar:"حسب الحاجة",        hi:"जैसी जरूरत हो",   id:"sesuai kebutuhan",ms:"mengikut keperluan",ru:"по необходимости",    fr:"au besoin",            de:"nach Bedarf",        es:"según sea necesario", tr:"gerektiği gibi" },
     "before noon":           { th:"ก่อนเที่ยง",          lo:"ກ່ອນທ່ຽງ",        my:"နေ့လည်မတိုင်မီ",     km:"មុនថ្ងៃត្រង់",          vi:"trước trưa",     "zh-CN":"中午前",    "zh-TW":"中午前",   ja:"昼前",      ko:"점심 전",      ar:"قبل الظهر",          hi:"दोपहर से पहले",  id:"sebelum siang",  ms:"sebelum tengah hari",ru:"до полудня",         fr:"avant midi",            de:"vor Mittag",         es:"antes del mediodía",  tr:"öğleden önce" },
     "after noon":            { th:"หลังเที่ยง",          lo:"ຫຼັງທ່ຽງ",        my:"နေ့လည်ပြီးနောက်",     km:"ក្រោយថ្ងៃត្រង់",        vi:"sau trưa",       "zh-CN":"中午后",    "zh-TW":"中午後",   ja:"昼後",      ko:"점심 후",      ar:"بعد الظهر",          hi:"दोपहर के बाद",   id:"setelah siang",  ms:"selepas tengah hari",ru:"после полудня",      fr:"après midi",            de:"nach Mittag",        es:"después del mediodía",tr:"öğleden sonra" },
+    // Single-word timing tokens used by some HIS frequency names (e.g. "Once Daily Morning")
+    "morning":               { th:"เช้า",               lo:"ເຊົ້າ",           my:"နံနက်",               km:"ព្រឹក",                vi:"sáng",           "zh-CN":"早上",      "zh-TW":"早上",     ja:"朝",        ko:"아침",         ar:"صباح",               hi:"सुबह",            id:"pagi",            ms:"pagi",             ru:"утром",               fr:"matin",                de:"morgens",            es:"mañana",              tr:"sabah" },
+    "evening":               { th:"เย็น",               lo:"ແລງ",             my:"ညနေ",                km:"ល្ងាច",                vi:"chiều",          "zh-CN":"晚上",      "zh-TW":"晚上",     ja:"夕方",      ko:"저녁",         ar:"مساء",               hi:"शाम",             id:"sore",            ms:"petang",           ru:"вечером",             fr:"soir",                 de:"abends",             es:"tarde",               tr:"akşam" },
+    "noon":                  { th:"เที่ยง",             lo:"ທ່ຽງ",            my:"နေ့လည်",              km:"ថ្ងៃត្រង់",             vi:"trưa",           "zh-CN":"中午",      "zh-TW":"中午",     ja:"昼",        ko:"점심",         ar:"ظهراً",              hi:"दोपहर",           id:"siang",           ms:"tengah hari",      ru:"в обед",              fr:"midi",                 de:"mittags",            es:"mediodía",            tr:"öğle" },
+    "lunch":                 { th:"กลางวัน",            lo:"ທ່ຽງ",            my:"နေ့လည်",              km:"ថ្ងៃត្រង់",             vi:"trưa",           "zh-CN":"中午",      "zh-TW":"中午",     ja:"昼",        ko:"점심",         ar:"الغداء",             hi:"दोपहर",           id:"siang",           ms:"tengah hari",      ru:"в обед",              fr:"déjeuner",             de:"mittags",            es:"mediodía",            tr:"öğle" },
+    "bedtime":               { th:"ก่อนนอน",            lo:"ກ່ອນນອນ",         my:"အိပ်ရာမဝင်မီ",        km:"មុនពេលគេង",            vi:"trước khi ngủ",  "zh-CN":"睡前",      "zh-TW":"睡前",     ja:"就寝前",    ko:"취침 전",      ar:"قبل النوم",          hi:"सोने से पहले",    id:"sebelum tidur",   ms:"sebelum tidur",    ru:"перед сном",          fr:"coucher",              de:"vor dem Schlafen",   es:"acostarse",           tr:"yatmadan önce" },
   };
   const map = TIMING[r];
   if (!map) return null;
@@ -210,6 +216,8 @@ function _take(n, unit, lang) {
   const isMouthUlcer   = u === "mouth-ulcer";
   const isChewSwallow  = u === "chew-tablet";
   const isPatch        = u === "patch";
+  const isNasalSpray   = u === "nasal-spray";
+  const isMouthCapsule = u === "mouth-capsule";
 
   // Oral verb (default — tablet/capsule/ml taken by mouth)
   // Thai & Lao prescriptions don't write "by mouth" — the verb already
@@ -376,6 +384,52 @@ function _take(n, unit, lang) {
     tr:      (n, u) => `Ağız yoluyla ${n} kez inhale et`,
   };
 
+  // "Spray into Nostril N Spray …" → "พ่นจมูกข้างละ N กด [freq]"
+  const NASAL_SPRAY = {
+    th:      (n, u) => `พ่นจมูกข้างละ ${n} กด`,
+    lo:      (n, u) => `ພ່ນດັງຂ້າງລະ ${n} ກົດ`,
+    my:      (n, u) => `နှာခေါင်းတစ်ဖက်စီ ${n} ကြိမ် ဖျန်းပါ`,
+    km:      (n, u) => `បាញ់ ${n} ដង ក្នុងរន្ធច្រមុះ`,
+    vi:      (n, u) => `Xịt ${n} lần vào mỗi lỗ mũi`,
+    "zh-CN": (n, u) => `每侧鼻孔喷${n}下`,
+    "zh-TW": (n, u) => `每側鼻孔噴${n}下`,
+    ja:      (n, u) => `各鼻孔に${n}回噴霧`,
+    ko:      (n, u) => `각 콧구멍에 ${n}회 분무`,
+    ar:      (n, u) => `${n} بخة في كل منخر`,
+    hi:      (n, u) => `प्रत्येक नासिका में ${n} पफ स्प्रे करें`,
+    id:      (n, u) => `Semprotkan ${n} kali ke setiap lubang hidung`,
+    ms:      (n, u) => `Sembur ${n} kali ke setiap lubang hidung`,
+    ru:      (n, u) => `По ${n} вдыханию в каждую ноздрю`,
+    fr:      (n, u) => `${n} pulvérisation dans chaque narine`,
+    de:      (n, u) => `${n} Sprühstoß in jedes Nasenloch`,
+    es:      (n, u) => `${n} pulsación en cada fosa nasal`,
+    pt:      (n, u) => `${n} aplicação em cada narina`,
+    tr:      (n, u) => `Her burun deliğine ${n} puf`,
+  };
+
+  // "Inhale through the Mouth N Capsule …" → "สูดยาทางปากครั้งละ N แคปซูล [freq]"
+  const INHALE_MOUTH_CAP = {
+    th:      (n, u) => `สูดยาทางปากครั้งละ ${n} ${u}`,
+    lo:      (n, u) => `ສູດຢາທາງປາກຄັ້ງລະ ${n} ${u}`,
+    my:      (n, u) => `ပါးစပ်မှ တစ်ကြိမ်လျှင် ${n} ${u} ရှူပါ`,
+    km:      (n, u) => `ស្រូបតាមមាត់ ${n} ${u} ក្នុងមួយដង`,
+    vi:      (n, u) => `Hít qua miệng ${n} ${u} mỗi lần`,
+    "zh-CN": (n, u) => `经口吸入每次 ${n} ${u}`,
+    "zh-TW": (n, u) => `經口吸入每次 ${n} ${u}`,
+    ja:      (n, u) => `口から1回${n}${u}吸入`,
+    ko:      (n, u) => `입으로 매번 ${n}${u} 흡입`,
+    ar:      (n, u) => `استنشاق عن طريق الفم ${n} ${u} في كل مرة`,
+    hi:      (n, u) => `मुँह से प्रत्येक बार ${n} ${u} श्वास लें`,
+    id:      (n, u) => `Hirup melalui mulut ${n} ${u} setiap kali`,
+    ms:      (n, u) => `Sedut melalui mulut ${n} ${u} setiap kali`,
+    ru:      (n, u) => `Вдохнуть через рот ${n} ${u} за один раз`,
+    fr:      (n, u) => `Inhaler par la bouche ${n} ${u} par prise`,
+    de:      (n, u) => `Durch den Mund ${n} ${u} pro Einnahme inhalieren`,
+    es:      (n, u) => `Inhalar por la boca ${n} ${u} por toma`,
+    pt:      (n, u) => `Inalar pela boca ${n} ${u} por dose`,
+    tr:      (n, u) => `Ağız yoluyla her seferinde ${n} ${u} inhale et`,
+  };
+
   // "Apply to the Ulcer in Mouth N ml" → "ทาแผลในปากหรืออมกลั้วปาก N มิลลิลิตร"
   // unitKey = "ml" so the standard liquid unit translation is used.
   const MOUTH_ULCER = {
@@ -423,12 +477,14 @@ function _take(n, unit, lang) {
     tr:      (n, u) => `Yutmadan önce çiğne ${n} ${u}`,
   };
 
-  // mouth-spray → spray unit; mouth-ulcer → ml unit; chew-tablet → tablet; others use raw unit key.
-  const unitKey = isMouthSpray ? "spray" : isMouthUlcer ? "ml" : isChewSwallow ? "tablet" : unit;
-  const TABLE = isDrop        ? DROP         : isMouthSpray  ? MOUTH_SPRAY
-              : isSpray       ? SPRAY        : isLiquid      ? LIQUID
-              : isPatch       ? PATCH        : isMouthPuff   ? INHALE_MOUTH
-              : isMouthUlcer  ? MOUTH_ULCER  : isChewSwallow ? CHEW_SWALLOW : ORAL;
+  // mouth-spray → spray unit; mouth-ulcer → ml unit; chew-tablet → tablet; mouth-capsule → capsule; others use raw unit key.
+  const unitKey = isMouthSpray ? "spray" : isMouthUlcer ? "ml" : isChewSwallow ? "tablet"
+                : isMouthCapsule ? "capsule" : unit;
+  const TABLE = isDrop          ? DROP           : isMouthSpray   ? MOUTH_SPRAY
+              : isSpray         ? SPRAY          : isLiquid       ? LIQUID
+              : isPatch         ? PATCH          : isMouthPuff    ? INHALE_MOUTH
+              : isMouthUlcer    ? MOUTH_ULCER    : isChewSwallow  ? CHEW_SWALLOW
+              : isNasalSpray    ? NASAL_SPRAY    : isMouthCapsule ? INHALE_MOUTH_CAP : ORAL;
   const fn = TABLE[lang];
   if (!fn) return null;
   return fn(n, _unit(unitKey, lang, n));
@@ -624,8 +680,10 @@ function matchPattern(text, lang, opts = {}) {
         if (/^caplet/i.test(unit)) unit = "tablet";
         if (preQtyRoute === "mouth" && /^spray$/i.test(unit)) unit = "mouth-spray";
         if (preQtyRoute === "mouth" && /^puff$/i.test(unit)) unit = "mouth-puff";
+        if (preQtyRoute === "mouth" && /^capsule$/i.test(unit)) unit = "mouth-capsule";
         if (/ulcer.*mouth/i.test(preQtyRoute) && /^m[il]/i.test(unit)) unit = "mouth-ulcer";
         if (preQtyRoute === "chew-swallow") unit = "chew-tablet";
+        if (preQtyRoute === "nostril" && /^spray$/i.test(unit)) unit = "nasal-spray";
         let q = lm[1] || "1";
         if (/^quarter$/i.test(q)) q = "¼";
         else if (/^half$/i.test(q)) q = lang === "th" ? "ครึ่ง" : lang === "lo" ? "ເຄິ່ງ" : "½";
@@ -654,8 +712,10 @@ function matchPattern(text, lang, opts = {}) {
   if (/^caplet/i.test(rawUnit)) rawUnit = "tablet";
   if (preQtyRoute === "mouth" && /^spray$/i.test(rawUnit)) rawUnit = "mouth-spray";
   if (preQtyRoute === "mouth" && /^puff$/i.test(rawUnit))  rawUnit = "mouth-puff";
+  if (preQtyRoute === "mouth" && /^capsule$/i.test(rawUnit)) rawUnit = "mouth-capsule";
   if (/ulcer.*mouth/i.test(preQtyRoute) && /^m[il]/i.test(rawUnit)) rawUnit = "mouth-ulcer";
   if (preQtyRoute === "chew-swallow") rawUnit = "chew-tablet";
+  if (preQtyRoute === "nostril" && /^spray$/i.test(rawUnit)) rawUnit = "nasal-spray";
   const rawFreq   = (m[3] || "").trim();
   const rawTiming = (m[4] || "").trim();
   const rawDays   = m[5] || "";
