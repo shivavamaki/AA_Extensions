@@ -724,8 +724,15 @@ def _arcus_item_to_med(it):
 
     def _with_live(base, live):
         _n = lambda s: ' '.join((s or '').split())
+        # Strip punctuation/spaces for semantic Thai comparison so a single
+        # comma-space difference doesn't cause the same note to appear twice
+        # (e.g. medication-db has ",ห้าม" while note-glossary has ", ห้าม").
+        _core = lambda s: re.sub(r'[^฀-๿\d]', '', s)
         if not live or _n(live) == _n(base) or _n(live) in _n(base):
             return base
+        lc, bc = _core(live), _core(base)
+        if lc and bc and (lc == bc or lc in bc or bc in lc):
+            return base  # same Thai content, curated base wins
         return (base + ' ' + live).strip() if base else live
 
     note   = _with_live(extra_th, live_note_th)   # Thai note (default)
