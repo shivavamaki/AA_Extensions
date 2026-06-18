@@ -4,21 +4,17 @@
  * page-allergy-card.js
  *
  * Renders 8cm × 3.5cm allergy stickers.
- * Fixes:
- * - Reads and displays sideEffect data from Arcus allergy table.
- * - Prevents duplicated text such as "Side Effect" appearing as a detail line.
- * - Uses larger medicine name text and safer page splitting.
+ * Pagination is measurement-based: a hidden probe card is used to determine
+ * exactly how many allergy rows fit before the content area overflows, so no
+ * text is ever clipped by a hard line-count budget.
  */
 
 const { escapeHtml } = window.CoreDom;
 const { MSG }        = window.CoreMessages;
 
-const FIRST_BUDGET = 2;
-const CONT_BUDGET  = 3;
-
 function _normText(text) {
   return String(text || "")
-    .replace(/\u00A0/g, " ")
+    .replace(/ /g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -46,7 +42,6 @@ function _buildDetailParts(a) {
   const unique = [];
   candidates.forEach(part => {
     if (!part) return;
-    // Do not show event type again as detail, e.g. "Side Effect" under "(Side Effect)".
     if (_sameText(part, type)) return;
     if (_sameText(part, drug)) return;
     if (unique.some(x => _sameText(x, part))) return;
@@ -55,7 +50,7 @@ function _buildDetailParts(a) {
   return unique;
 }
 
-function _row(a) {
+function _rowHtml(a) {
   const drug = escapeHtml(_normText(a.drug));
   const type = escapeHtml(_normText(a.type));
   const detailParts = _buildDetailParts(a);
@@ -71,35 +66,70 @@ function _row(a) {
   </div>`;
 }
 
-function _patientHeader(hn, name, suffix = "") {
-  const safeName = escapeHtml(_normText(name) || "-");
-  const safeHn   = escapeHtml(_normText(hn) || "-");
-  const safeSuffix = suffix ? `<span class="c-page-suffix">${escapeHtml(suffix)}</span>` : "";
-
-  return `
-    <div class="c-header">
-      <div class="c-name">${safeName}${safeSuffix}</div>
-      <div class="c-hn">HN: ${safeHn}</div>
-    </div>`;
+function _headerHtml(hn, name, suffix) {
+  const safeName   = escapeHtml(_normText(name) || "-");
+  const safeHn     = escapeHtml(_normText(hn) || "-");
+  const safeSuffix = suffix
+    ? `<span class="c-page-suffix">${escapeHtml(suffix)}</span>` : "";
+  return `<div class="c-header">
+    <div class="c-name">${safeName}${safeSuffix}</div>
+    <div class="c-hn">HN: ${safeHn}</div>
+  </div>`;
 }
 
-function _buildFirstCard(hn, name, rows) {
-  const rowsHtml = rows.length
-    ? rows.map(_row).join("")
-    : `<div class="c-allergy-row c-nkda">ไม่มีประวัติแพ้ยา (NKDA)</div>`;
-  return `
-    <div class="card">
-      ${_patientHeader(hn, name)}
-      <div class="c-allergies">${rowsHtml}</div>
-    </div>`;
+/**
+ * Measure how many allergies from `remaining` fit inside one card (8cm×3.5cm)
+ * without overflowing, by rendering an off-screen probe element.
+ * Returns at least 1 so pagination always makes progress.
+ */
+function _measureFit(hn, name, remaining, suffix) {
+  const probe = document.createElement("div");
+  probe.className = suffix ? "card-cont" : "card";
+  probe.style.cssText =
+    "position:fixed;visibility:hidden;left:-9999px;top:0;pointer-events:none";
+  probe.innerHTML = _headerHtml(hn, name, suffix);
+
+  const allergyEl = document.createElement("div");
+  allergyEl.className = "c-allergies";
+  probe.appendChild(allergyEl);
+  document.body.appendChild(probe);
+
+  let count = 0;
+  for (const a of remaining) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = _rowHtml(a);
+    const rowEl = tmp.firstElementChild;
+    allergyEl.appendChild(rowEl);
+
+    if (allergyEl.scrollHeight > allergyEl.clientHeight) {
+      allergyEl.removeChild(rowEl);
+      break;
+    }
+    count++;
+  }
+
+  document.body.removeChild(probe);
+  return Math.max(1, count);
 }
 
-function _buildContCard(hn, name, rows, pageNum, total) {
-  return `
-    <div class="card-cont">
-      ${_patientHeader(hn, name, `(ต่อ ${pageNum}/${total})`)}
-      <div class="c-allergies">${rows.map(_row).join("")}</div>
-    </div>`;
+/**
+ * Split allergies into pages, each fitting within one 8cm×3.5cm card.
+ * Returns array of batches (each batch = allergies for one card).
+ */
+function _buildPages(hn, name, allergies) {
+  const pages = [];
+  let remaining = allergies.slice();
+  let isFirst = true;
+
+  while (remaining.length > 0) {
+    const suffix = isFirst ? "" : "(ต่อ)";
+    const count  = _measureFit(hn, name, remaining, suffix);
+    pages.push(remaining.slice(0, count));
+    remaining = remaining.slice(count);
+    isFirst = false;
+  }
+
+  return pages;
 }
 
 function renderCard(data) {
@@ -114,25 +144,35 @@ function renderCard(data) {
   }
 
   const allergies = Array.isArray(data.allergies) ? data.allergies : [];
+  const hn   = data.hn;
+  const name = data.fullName;
 
   if (!allergies.length) {
-    preview.innerHTML = _buildFirstCard(data.hn, data.fullName, []);
+    preview.innerHTML = `
+      <div class="card">
+        ${_headerHtml(hn, name, "")}
+        <div class="c-allergies">
+          <div class="c-allergy-row c-nkda">ไม่มีประวัติแพ้ยา (NKDA)</div>
+        </div>
+      </div>`;
     return;
   }
 
-  const firstBatch = allergies.slice(0, FIRST_BUDGET);
-  const rest       = allergies.slice(FIRST_BUDGET);
+  const pages     = _buildPages(hn, name, allergies);
+  const total     = pages.length;
+  let html = "";
 
-  const contPages = [];
-  for (let i = 0; i < rest.length; i += CONT_BUDGET) {
-    contPages.push(rest.slice(i, i + CONT_BUDGET));
-  }
-
-  const totalPages = 1 + contPages.length;
-  let html = _buildFirstCard(data.hn, data.fullName, firstBatch);
-
-  contPages.forEach((batch, idx) => {
-    html += _buildContCard(data.hn, data.fullName, batch, idx + 2, totalPages);
+  pages.forEach((batch, idx) => {
+    const isFirst = idx === 0;
+    const suffix  = total > 1
+      ? (isFirst ? `(1/${total})` : `(ต่อ ${idx + 1}/${total})`)
+      : "";
+    const cls     = isFirst ? "card" : "card-cont";
+    const rows    = batch.map(_rowHtml).join("");
+    html += `<div class="${cls}">
+      ${_headerHtml(hn, name, suffix)}
+      <div class="c-allergies">${rows}</div>
+    </div>`;
   });
 
   preview.innerHTML = html;
