@@ -450,10 +450,13 @@ def format_appointments_th(data):
         dept    = _hm_norm(a.get('departmentname') or '')
         provider = _hm_norm(a.get('careprovidername') or '')
         comments = _hm_norm(a.get('comments') or '')
-        line = f'คนไข้มีนัดหมาย{service} วันที่ {start} ที่แผนก {dept} กับ {provider}'
+        # Tab separates line-1 (date/time) from line-2 (dept/provider/notes)
+        # so the client can render two rows per appointment card.
+        line1 = f'คนไข้มีนัดหมาย{service} วันที่ {start}'
+        line2 = f'ที่แผนก {dept} กับ {provider}'
         if comments:
-            line += f' หมายเหตุ {comments}'
-        lines.append(line)
+            line2 += f' หมายเหตุ {comments}'
+        lines.append(f'{line1}\t{line2}')
     return '\n'.join(lines)
 
 

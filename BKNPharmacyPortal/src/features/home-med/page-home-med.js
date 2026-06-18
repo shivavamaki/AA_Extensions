@@ -263,9 +263,10 @@ const _NO_APPOINTMENT_TEXT =
   'แต่ถ้าพบอาการผิดปรกติหรืออาการแย่ลง ' +
   'แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม';
 
-/** Render the appointment box as one card per appointment. The server joins
- * multiple appointments with "\n" (see format_appointments_th); split back
- * into lines so each renders as its own item instead of one wall of text. */
+/** Render the appointment box as one card per appointment.
+ * Server joins appointments with "\n"; each appointment has two tab-separated
+ * parts: row1 = date/time, row2 = dept/provider/notes.
+ * Each card gets a remove button that hides it (print-hidden). */
 function renderAppointments(text) {
   const el = document.getElementById("appointmentList");
   if (!el) return;
@@ -277,8 +278,38 @@ function renderAppointments(text) {
   const isEmptyState = lines.length === 1 && lines[0] === _NO_APPOINTMENT_TEXT;
   lines.forEach((line) => {
     const div = document.createElement("div");
-    div.className = isEmptyState ? "appt-item empty" : "appt-item";
-    div.textContent = line;
+    if (isEmptyState) {
+      div.className = "appt-item empty";
+      div.textContent = line;
+    } else {
+      div.className = "appt-item";
+      const parts = line.split("\t");
+      const row1 = norm(parts[0] || "");
+      const row2 = norm(parts[1] || "");
+
+      const btn = document.createElement("button");
+      btn.className = "appt-remove";
+      btn.title = "ลบรายการนี้";
+      btn.textContent = "×";
+      btn.onclick = () => div.remove();
+
+      const body = document.createElement("div");
+      body.className = "appt-body";
+      if (row1) {
+        const r1 = document.createElement("div");
+        r1.className = "appt-row1";
+        r1.textContent = row1;
+        body.appendChild(r1);
+      }
+      if (row2) {
+        const r2 = document.createElement("div");
+        r2.className = "appt-row2";
+        r2.textContent = row2;
+        body.appendChild(r2);
+      }
+      div.appendChild(btn);
+      div.appendChild(body);
+    }
     el.appendChild(div);
   });
 }
