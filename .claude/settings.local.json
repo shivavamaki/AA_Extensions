@@ -73,7 +73,18 @@
       "Bash(python3 -c \"import json; json.load\\(open\\('manifest.json'\\)\\)\")",
       "Bash(gh pr *)",
       "Bash(gh auth *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git checkout *)",
+      "Bash(git stash *)",
+      "Bash(python -c \"p='bkn_ks_server.py'; compile\\(open\\(p, encoding='utf-8'\\).read\\(\\), p, 'exec'\\)\")",
+      "Bash(python -c \"p='/workspaces/AA_Extensions/pharmacy_server/bkn_ks_server.py'; compile\\(open\\(p, encoding='utf-8'\\).read\\(\\), p, 'exec'\\)\")",
+      "Bash(node BKNPharmacyPortal/test/test-pattern-matcher.js --verbose)",
+      "Bash(node BKNPharmacyPortal/test/test-pattern-matcher.js)",
+      "Bash(node -e \"console.log\\(/[฀-໿]/.test\\('รับประทาน ครึ่ง เม็ด วันเว้นวัน ก่อนนอน'\\)\\)\")",
+      "Bash(python -c \"p='pharmacy_server/bkn_ks_server.py'; compile\\(open\\(p, encoding='utf-8'\\).read\\(\\), p, 'exec'\\)\")",
+      "Bash(git merge claude/amazing-lovelace-wh5ea6 --no-ff -m ' *)",
+      "Bash(node -e ' *)",
+      "Bash(python -c \"p='pharmacy_server/bkn_ks_server.py'; compile\\(open\\(p, encoding='utf-8'\\).read\\(\\), p, 'exec'\\); print\\('OK'\\)\")"
     ],
     "additionalDirectories": [
       "/workspaces/AA_Extensions/BKNPharmacyPortal/src/features/home-med"

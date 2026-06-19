@@ -45,24 +45,26 @@
       background: #fff; box-shadow: 0 4px 18px rgba(15,23,42,.12);
     }
 
-    .top-title { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; column-gap: 10px;
-      border-bottom: 3px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px; }
-    .top-title h1 { margin: 0; font-size: 24px; }
-    .top-title .subtitle { font-size: 13px; color: #475569; }
-    .top-title .tt-logo { justify-self: start; }
-    .top-title .tt-logo img { height: 42px; max-height: 14mm; max-width: 40mm; width: auto; display: block; object-fit: contain; }
+    .top-title { display: grid; grid-template-columns: 26mm 1fr 50mm; align-items: center; gap: 8px;
+      border-bottom: 3px solid #111827; padding-bottom: 5px; margin-bottom: 5px; }
+    .top-title h1 { margin: 0; font-size: 18px; line-height: 1.1; }
+    .top-title .subtitle { margin-top: 1px; font-size: 11px; color: #4b5563; }
+    .top-title .tt-logo { display: flex; align-items: center; }
+    .top-title .tt-logo img { max-width: 24mm; max-height: 11mm; width: auto; display: block; object-fit: contain; }
     .top-title .tt-center { text-align: center; }
-    .top-title .tt-date { justify-self: end; text-align: right; }
+    .top-title .tt-date { justify-self: end; text-align: right; font-size: 11px; color: #374151; }
 
-    .patient-card { display: grid; grid-template-columns: 2fr 1fr 1.3fr 1fr; gap: 6px; padding: 9px 10px; border: 1.5px solid #0f172a; border-radius: 10px; background: #f8fafc; margin-bottom: 10px; }
-    .patient-field .label { font-size: 10px; color: #6b7280; font-weight: 700; text-transform: uppercase; }
-    .patient-field .value { font-size: 15px; font-weight: 700; }
+    .patient-clinical-card { margin: 5px 0 6px; border: 1.5px solid #111827; border-radius: 8px; overflow: hidden; background: #f9fafb; }
+    .patient-card { display: grid; grid-template-columns: 1.6fr .7fr 1.05fr .7fr; gap: 5px; padding: 5px 8px; }
+    .patient-field .label { display: block; font-size: 9px; color: #6b7280; font-weight: 400; letter-spacing: .03em; text-transform: uppercase; }
+    .patient-field .value { margin-top: 0; font-size: 13px; font-weight: 400; line-height: 1.2; word-break: break-word; }
 
     /* Clinical banner (diagnosis + allergy) */
-    .clinical-banner { margin: 0 0 12px; border-radius: 10px; overflow: hidden; border: 1.5px solid #cbd5e1; }
-    .clinical-banner .dx-line, .clinical-banner .allergy-line { display: flex; align-items: baseline; gap: 8px; padding: 7px 12px; font-size: 14px; }
+    .clinical-banner { border-top: 1.5px solid #111827; }
+    .clinical-banner .dx-line, .clinical-banner .allergy-line { display: flex; align-items: baseline; gap: 8px; padding: 4px 10px; font-size: 12px; line-height: 1.25; }
     .clinical-banner .dx-line { background: #eff6ff; color: #1e3a8a; border-bottom: 1px solid #dbeafe; }
-    .clinical-banner .dx-label, .clinical-banner .allergy-label { font-weight: 800; white-space: nowrap; }
+    .clinical-banner .dx-label, .clinical-banner .allergy-label { font-weight: 400; white-space: nowrap; }
+    .clinical-banner .dx-value, .clinical-banner .allergy-value { font-weight: 400; word-break: break-word; }
     .clinical-banner .allergy-line { background: #fef2f2; color: #7f1d1d; }
     .clinical-banner .allergy-line.nkda { background: #f3f4f6; color: #374151; }
     .clinical-banner .dx-line.empty { display: none; }
@@ -145,11 +147,12 @@
 
     /* ── Bottom drug timeline (own print page) ───────────────────────────── */
     .timeline-section { margin-top: 18px; }
-    .timeline-head { display: flex; align-items: center; gap: 12px; border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 10px; }
-    .timeline-head .tt-logo img { height: 38px; max-height: 13mm; max-width: 38mm; width: auto; display: block; object-fit: contain; }
-    .timeline-head .th-titles { display: flex; flex-direction: column; }
-    .timeline-head h2 { margin: 0; font-size: 18px; }
-    .timeline-head .sub { font-size: 12px; color: #475569; }
+    .timeline-head { display: grid; grid-template-columns: 26mm 1fr 50mm; align-items: center; gap: 8px; border-bottom: 3px solid #111827; padding-bottom: 5px; margin-bottom: 10px; }
+    .timeline-head .tt-logo { display: flex; align-items: center; }
+    .timeline-head .tt-logo img { max-width: 24mm; max-height: 11mm; width: auto; display: block; object-fit: contain; }
+    .timeline-head .th-titles { text-align: center; }
+    .timeline-head h2 { margin: 0; font-size: 18px; line-height: 1.1; }
+    .timeline-head .sub { font-size: 11px; color: #4b5563; margin-top: 1px; }
     /* Date rail across the top: admission ── ward ── discharge */
     .tl-rail { display: grid; grid-template-columns: 110mm 1fr; gap: 0; margin-bottom: 6px; }
     .tl-rail-zones { display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 11px; }
@@ -251,29 +254,31 @@
     <section class="top-title">
       <div class="tt-logo"><img src="../patient-sticker/bkh-logo.png" alt="BKH" /></div>
       <div class="tt-center">
-        <h1>🗺️ Medication Journey</h1>
+        <h1>Medication Journey</h1>
         <div class="subtitle">เส้นทางยา: จากโรงพยาบาลสู่บ้าน · Medication Continuity Timeline</div>
       </div>
       <div class="tt-date subtitle"><strong>Date:</strong> <span id="sheetDate">-</span></div>
     </section>
 
-    <section class="patient-card">
-      <div class="patient-field"><span class="label">Patient name</span><div class="value" id="patientName">-</div></div>
-      <div class="patient-field"><span class="label">HN</span><div class="value" id="patientHN">-</div></div>
-      <div class="patient-field"><span class="label">Visit / AN</span><div class="value" id="patientAN">-</div></div>
-      <div class="patient-field"><span class="label">Room</span><div class="value" id="patientRoom">-</div></div>
-    </section>
+    <div class="patient-clinical-card">
+      <section class="patient-card">
+        <div class="patient-field"><span class="label">Patient name</span><div class="value" id="patientName">-</div></div>
+        <div class="patient-field"><span class="label">HN</span><div class="value" id="patientHN">-</div></div>
+        <div class="patient-field"><span class="label">Visit / AN</span><div class="value" id="patientAN">-</div></div>
+        <div class="patient-field"><span class="label">Room</span><div class="value" id="patientRoom">-</div></div>
+      </section>
 
-    <section class="clinical-banner" id="clinicalBanner" data-no-translate translate="no">
-      <div class="dx-line" id="dxLine">
-        <span class="dx-label">🩺 Diagnosis / การวินิจฉัย:</span>
-        <span class="dx-value" id="diagnosisValue">-</span>
-      </div>
-      <div class="allergy-line nkda" id="allergyBanner">
-        <span class="allergy-label">⚠️ Allergies / แพ้ยา:</span>
-        <span class="allergy-value" id="allergyValue">No Known Drug Allergies (ไม่มีประวัติแพ้ยา)</span>
-      </div>
-    </section>
+      <section class="clinical-banner" id="clinicalBanner" data-no-translate translate="no">
+        <div class="dx-line" id="dxLine">
+          <span class="dx-label">Diagnosis / การวินิจฉัย:</span>
+          <span class="dx-value" id="diagnosisValue">-</span>
+        </div>
+        <div class="allergy-line nkda" id="allergyBanner">
+          <span class="allergy-label">Allergies / แพ้ยา:</span>
+          <span class="allergy-value" id="allergyValue">No Known Drug Allergies (ไม่มีประวัติแพ้ยา)</span>
+        </div>
+      </section>
+    </div>
 
     <table id="journeyTable">
       <colgroup>
@@ -304,9 +309,10 @@
       <div class="timeline-head">
         <div class="tt-logo"><img src="../patient-sticker/bkh-logo.png" alt="BKH" /></div>
         <div class="th-titles">
-          <h2>📊 แผนเวลาการใช้ยา</h2>
+          <h2>แผนเวลาการใช้ยา</h2>
           <span class="sub">Drug Timeline · แรกรับ → จำหน่าย (Admission → Discharge)</span>
         </div>
+        <div></div>
       </div>
       <div class="tl-rail">
         <div class="tl-railhead">ชื่อยา / Medicine</div>
@@ -324,9 +330,10 @@
       <div class="timeline-head">
         <div class="tt-logo"><img src="../patient-sticker/bkh-logo.png" alt="BKH" /></div>
         <div class="th-titles">
-          <h2>🍽️ ยากลับบ้าน — จัดตามมื้อ</h2>
+          <h2>ยากลับบ้าน — จัดตามมื้อ</h2>
           <span class="sub">Daily Pill Journey Card · เวลาในการรับประทานยาที่บ้าน</span>
         </div>
+        <div></div>
       </div>
       <div class="mc-info">ℹ️ มียาหลายตัวในมื้อเดียวกัน โปรดสังเกตว่าตัวใดกินก่อนอาหาร และตัวใดกินหลังอาหาร</div>
       <div class="mc-grid" id="mealcardGrid"><!-- slots injected by JS --></div>

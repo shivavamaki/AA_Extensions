@@ -789,7 +789,15 @@ async function fetchAndRender() {
       code: norm(m.code || ""), provider: norm(m.provider || ""),
       frequencyTh: norm(m.frequencyTh || ""),
     }));
-    _setStatus(`✅ ${_meds.length} รายการ (โหลดฉบับที่แก้ไขไว้)`);
+    // Detect new discharge meds added after the cache was saved and inject them.
+    const savedCodes = new Set(_meds.map((m) => m.code).filter(Boolean));
+    const newItems = reportMeds.filter((m) => m.code && !savedCodes.has(norm(m.code)));
+    if (newItems.length) {
+      _meds = _meds.concat(newItems.map(_medFromReport));
+      _setStatus(`✅ ${_meds.length} รายการ (แก้ไขไว้ + ${newItems.length} รายการใหม่จาก ArcusAir)`);
+    } else {
+      _setStatus(`✅ ${_meds.length} รายการ (โหลดฉบับที่แก้ไขไว้)`);
+    }
   } else {
     _meds = reportMeds.map(_medFromReport);
     if (!_meds.length) {
