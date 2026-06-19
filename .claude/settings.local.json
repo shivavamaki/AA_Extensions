@@ -84,7 +84,19 @@
       "Bash(python -c \"p='pharmacy_server/bkn_ks_server.py'; compile\\(open\\(p, encoding='utf-8'\\).read\\(\\), p, 'exec'\\)\")",
       "Bash(git merge claude/amazing-lovelace-wh5ea6 --no-ff -m ' *)",
       "Bash(node -e ' *)",
-      "Bash(python -c \"p='pharmacy_server/bkn_ks_server.py'; compile\\(open\\(p, encoding='utf-8'\\).read\\(\\), p, 'exec'\\); print\\('OK'\\)\")"
+      "Bash(python -c \"p='pharmacy_server/bkn_ks_server.py'; compile\\(open\\(p, encoding='utf-8'\\).read\\(\\), p, 'exec'\\); print\\('OK'\\)\")",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(node -e \"require\\('playwright'\\)\")",
+      "Bash(pip show *)",
+      "Bash(python3 -c \"import pyvirtualdisplay\")",
+      "Bash(npm list *)",
+      "Bash(npx playwright *)",
+      "Read(//tmp/**)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash('.timeline-section')",
+      "Bash(node /tmp/screenshot_tl.js)"
     ],
     "additionalDirectories": [
       "/workspaces/AA_Extensions/BKNPharmacyPortal/src/features/home-med"
