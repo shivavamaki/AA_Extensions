@@ -96,10 +96,15 @@
       "Bash(npm init *)",
       "Bash(npm install *)",
       "Bash('.timeline-section')",
-      "Bash(node /tmp/screenshot_tl.js)"
+      "Bash(node /tmp/screenshot_tl.js)",
+      "Bash(python3)",
+      "Bash(python3 -c \"from PIL import Image; print\\('PIL ok'\\)\")",
+      "Bash(python3 -c \"import cairosvg; print\\('cairosvg ok'\\)\")",
+      "Bash(python3 -c \" *)"
     ],
     "additionalDirectories": [
-      "/workspaces/AA_Extensions/BKNPharmacyPortal/src/features/home-med"
+      "/workspaces/AA_Extensions/BKNPharmacyPortal/src/features/home-med",
+      "/tmp"
     ]
   }
 }

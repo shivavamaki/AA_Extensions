@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chemo Label</title>
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="alternate icon" href="icon.ico">
+<style>
+/* ── Fonts ──────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'THSarabun';
+  src: url('fonts/Sarabun-Regular.ttf') format('truetype');
+  font-weight: normal;
+}
+@font-face {
+  font-family: 'THSarabun';
+  src: url('fonts/THSarabunNew-Bold.ttf') format('truetype');
+  font-weight: bold;
+}
+
+/* ── Pastel design tokens ───────────────────────────────────────── */
+:root {
+  --bg:     #edf0f7;
+  --surf:   #ffffff;
+  --card:   #f4f6fb;
+  --brd:    #d5dcee;
+  --brd2:   #c2ccdf;
+  --txt:    #1e2d4a;
+  --dim:    #6b7fa3;
+  --hi:     #3a6bbf;
+  --hi2:    #e8eef8;
+  --green:  #2c7a45;
+  --gbg:    #e6f4eb;
+  --red:    #c0392b;
+  --warn:   #fff8e1;
+  --fam:    'THSarabun','TH Sarabun New','Leelawadee UI','Tahoma',sans-serif;
+  --shadow: 0 2px 8px rgba(60,80,140,.10);
+  --ink:    #111;
+  --paper:  #fff;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--fam);
+  background: var(--bg);
+  color: var(--txt);
+  min-height: 100vh;
+}
+
+/* ══ TOP NAV ════════════════════════════════════════════════════════ */
+#topnav {
+  background: var(--surf);
+  border-bottom: 1.5px solid var(--brd);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  height: 46px;
+  box-shadow: 0 1px 4px rgba(60,80,140,.07);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.app-logo {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--hi);
+  margin-right: 28px;
+  letter-spacing: 0.3px;
+}
+
+.tab-btn {
+  height: 46px;
+  padding: 0 18px;
+  background: transparent;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  color: var(--dim);
+  font-family: var(--fam);
+  font-size: 14px;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.tab-btn:hover { color: var(--txt); }
+.tab-btn.active {
+  color: var(--hi);
+  border-bottom-color: var(--hi);
+  font-weight: bold;
+}
+
+/* ══ STICKER TAB ════════════════════════════════════════════════════ */
+#tab-sticker {
+  display: flex;
+  height: calc(100vh - 46px);
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────── */
+#sidebar {
+  width: 390px;
+  min-width: 320px;
+  background: var(--surf);
+  border-right: 1.5px solid var(--brd);
+  overflow-y: auto;
+  padding: 14px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sec {
+  background: var(--card);
+  border: 1px solid var(--brd);
+  border-radius: 8px;
+  padding: 12px 13px;
+}
+
+.sec-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--hi);
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.field { margin-bottom: 9px; }
+.field:last-child { margin-bottom: 0; }
+
+.field > label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--dim);
+  margin-bottom: 4px;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 7px 10px;
+  background: var(--surf);
+  border: 1px solid var(--brd2);
+  border-radius: 5px;
+  color: var(--txt);
+  font-family: var(--fam);
+  font-size: 15px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--hi);
+  box-shadow: 0 0 0 3px rgba(58,107,191,.12);
+}
+
+.field select option { background: #fff; color: var(--txt); }
+
+.row2 { display: flex; gap: 8px; }
+.row2 .field { flex: 1; }
+.row3 { display: flex; gap: 6px; }
+.row3 .field { flex: 1; }
+
+.atag {
+  font-size: 9px;
+  background: var(--hi2);
+  color: var(--hi);
+  padding: 1px 5px;
+  border-radius: 8px;
+}
+
+.abox {
+  padding: 6px 10px;
+  background: var(--bg);
+  border: 1px dashed var(--brd2);
+  border-radius: 5px;
+  color: var(--hi);
+  font-size: 14px;
+  min-height: 32px;
+  line-height: 1.4;
+}
+.abox.dim { color: var(--brd2); font-style: italic; font-size: 13px; }
+
+.btn-print {
+  padding: 11px;
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-family: var(--fam);
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  box-shadow: 0 2px 6px rgba(44,122,69,.2);
+  transition: filter .15s;
+}
+.btn-print:hover { filter: brightness(1.1); }
+
+.btn-clear {
+  padding: 8px;
+  background: transparent;
+  color: var(--dim);
+  border: 1px solid var(--brd2);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: var(--fam);
+  cursor: pointer;
+  width: 100%;
+}
+.btn-clear:hover { background: var(--card); }
+
+/* ── Preview panel ───────────────────────────────────────────────── */
+#preview-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  background-image: radial-gradient(circle at 50% 40%, #dde5f7 0%, #edf0f7 70%);
+  padding: 24px;
+  overflow-y: auto;
+  gap: 20px;
+}
+
+.prev-label {
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  align-self: center;
+}
+
+.scale-host {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 320px;
+}
+
+.scale-wrap {
+  transform: scale(1.85);
+  transform-origin: center center;
+  display: inline-block;
+  filter: drop-shadow(0 4px 16px rgba(60,80,140,.25));
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   STICKER — 10cm × 5cm  |  top 1.5cm = logo space (blank)
+══════════════════════════════════════════════════════════════════ */
+.sticker {
+  width: 10cm;
+  height: 5cm;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--fam);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Header row: 1.5cm tall, split left/right ── */
+.stk-header {
+  display: flex;
+  align-items: stretch;
+  height: 1.5cm;
+  flex-shrink: 0;
+  border-bottom: 0.3mm solid var(--ink);
+}
+
+/* 1.5cm tall × 5cm wide (left to center) — logo pre-printed here */
+.stk-logospace {
+  width: 5cm;
+  flex-shrink: 0;
+  border-right: 0.3mm solid var(--ink);
+}
+
+/* Right portion: warning text fills the rest of the header */
+.stk-warn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8mm 2mm;
+  background: #555;
+  color: #fff;
+  text-align: center;
+}
+
+.stk-warn-top {
+  font-size: 9pt;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  line-height: 1.1;
+}
+
+.stk-warn-bot {
+  font-size: 7.5pt;
+  font-weight: bold;
+  letter-spacing: 0.4px;
+  line-height: 1.1;
+}
+
+/* ── Patient row: Name 60% | HN 20% | Room 20% ── */
+.stk-patient {
+  display: flex;
+  align-items: baseline;
+  padding: 0.3mm 2.5mm 0.2mm;
+  border-bottom: 0.2mm solid #bbb;
+  flex-shrink: 0;
+}
+.stk-name    { flex: 1;    font-size: 11pt; font-weight: bold; line-height: 1.05; }
+.stk-hn-room { flex: 0 0 auto; font-size: 9pt; text-align: right; white-space: nowrap; }
+
+/* ── Drug section: all centered ── */
+.stk-drug-sec {
+  text-align: center;
+  padding: 0.3mm 2mm 0.2mm;
+  border-bottom: 0.2mm solid #bbb;
+  flex-shrink: 0;
+}
+.stk-drug-name { font-size: 13pt; font-weight: bold; line-height: 1.05; }
+.stk-drug-row2 { font-size: 9.5pt; line-height: 1.1; }
+.stk-rate-line { font-size: 9.5pt; line-height: 1.1; }
+
+/* ── Merged dates + staff: 2 rows ── */
+.stk-dates-staff {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.3mm 2.5mm;
+  gap: 0.5mm;
+}
+.stk-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 9.5pt;
+  line-height: 1.15;
+}
+.split-role { font-size: 8pt; color: #111; }
+
+/* ── Footer: all-warning 1 line, centered ── */
+.stk-footer {
+  padding: 0.3mm 2mm;
+  text-align: center;
+  font-size: 8.5pt;
+  border-top: 0.2mm solid #bbb;
+  flex-shrink: 0;
+  line-height: 1.1;
+  font-weight: bold;
+}
+
+/* ══ RATE CARD ═════════════════════════════════════════════════════ */
+.rate-card {
+  width: 10cm;
+  height: 5cm;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--fam);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rc-header {
+  display: flex;
+  align-items: stretch;
+  height: 1.5cm;
+  flex-shrink: 0;
+  border-bottom: 0.3mm solid var(--ink);
+}
+
+.rc-logospace {
+  width: 5cm;
+  flex-shrink: 0;
+  border-right: 0.3mm solid var(--ink);
+}
+
+.rc-title-box {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 10pt;
+  font-weight: bold;
+  letter-spacing: 0.8px;
+  text-align: center;
+  padding: 1mm 2mm;
+  flex-shrink: 0;
+}
+
+.rc-body    { flex: 1; padding: 2mm 3mm; display: flex; flex-direction: column; }
+.rc-patient { font-size: 11pt; font-weight: bold; margin-bottom: 0.5mm; }
+.rc-drug    { font-size: 10pt; margin-bottom: 1.5mm; }
+.rc-text    { font-size: 10.5pt; line-height: 1.45; flex: 1; white-space: pre-wrap; }
+
+/* ══ DATABASE TAB ═══════════════════════════════════════════════════ */
+#tab-db {
+  display: none;
+  flex-direction: column;
+  height: calc(100vh - 46px);
+}
+
+.db-toolbar {
+  background: var(--surf);
+  border-bottom: 1.5px solid var(--brd);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.db-info { font-size: 13px; color: var(--dim); margin-left: auto; }
+
+.btn-sm {
+  padding: 6px 14px;
+  border-radius: 5px;
+  border: 1px solid var(--brd2);
+  font-family: var(--fam);
+  font-size: 14px;
+  cursor: pointer;
+  background: var(--surf);
+  color: var(--txt);
+  transition: background .1s;
+}
+.btn-sm:hover { background: var(--hi2); border-color: var(--hi); color: var(--hi); }
+
+.btn-sm.green { background: var(--gbg); border-color: var(--green); color: var(--green); }
+.btn-sm.green:hover { filter: brightness(0.95); }
+.btn-sm.red   { background: #fdecea; border-color: #e07070; color: var(--red); }
+
+.db-table-wrap { flex: 1; overflow: auto; padding: 12px; }
+
+#db-table {
+  border-collapse: collapse;
+  font-size: 13px;
+  width: 100%;
+  min-width: 1200px;
+}
+
+#db-table th {
+  background: var(--hi2);
+  color: var(--hi);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 8px 10px;
+  border: 1px solid var(--brd);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+}
+
+#db-table td {
+  border: 1px solid var(--brd);
+  padding: 2px;
+  vertical-align: middle;
+  background: var(--surf);
+}
+
+#db-table tr:hover td { background: var(--card); }
+
+#db-table td input,
+#db-table td select {
+  width: 100%;
+  padding: 5px 7px;
+  background: transparent;
+  border: none;
+  color: var(--txt);
+  font-family: var(--fam);
+  font-size: 13px;
+}
+
+#db-table td input:focus,
+#db-table td select:focus {
+  outline: 2px solid var(--hi);
+  background: var(--hi2);
+  border-radius: 2px;
+}
+
+#db-table td select option { background: #fff; }
+
+.del-btn {
+  padding: 3px 8px;
+  background: #fdecea;
+  border: 1px solid #e07070;
+  color: var(--red);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--fam);
+}
+.del-btn:hover { background: #f5c5c5; }
+
+/* ── Toast ──────────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #1e3a2c;
+  border: 1px solid var(--green);
+  color: #5cc98c;
+  padding: 10px 18px;
+  border-radius: 7px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity .3s;
+  pointer-events: none;
+  z-index: 9999;
+}
+.toast.show { opacity: 1; }
+
+/* ── Utility ─────────────────────────────────────────────────────── */
+.hidden { display: none !important; }
+
+/* ══ PRINT ══════════════════════════════════════════════════════════ */
+@media print {
+  @page { size: 10cm 5cm; margin: 0; }
+
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+  #topnav, #tab-sticker, #tab-db { display: none !important; }
+  #print-area { display: block !important; }
+
+  .rate-card { page-break-after: always; }
+
+  .stk-warn     { background: #555 !important; color: #fff !important; }
+  .rc-title-box { background: #555 !important; color: #fff !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ TOP NAV ═══════════════════════════════════════════════════ -->
+<nav id="topnav">
+  <span class="app-logo">&#9651; Chemo Label</span>
+  <button class="tab-btn active" onclick="showTab('sticker')">Label Generator</button>
+  <button class="tab-btn"        onclick="showTab('db')">Drug Database</button>
+</nav>
+
+<!-- ══ TAB 1 — LABEL GENERATOR ═══════════════════════════════════ -->
+<div id="tab-sticker" style="display:flex">
+
+  <!-- Sidebar form -->
+  <div id="sidebar">
+
+    <div class="sec">
+      <div class="sec-title">Patient</div>
+      <div class="field">
+        <label>ชื่อ-สกุล (Name)</label>
+        <input id="f-name" type="text" placeholder="นาย/นาง/น.ส. ชื่อ สกุล" autocomplete="off">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>HN</label>
+          <input id="f-hn" type="text" placeholder="48-xx-xxxxxx">
+        </div>
+        <div class="field">
+          <label>Ward / Room</label>
+          <input id="f-room" type="text" placeholder="OPD / ห้อง">
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Drug</div>
+      <div class="field">
+        <label>Cytotoxic Drug</label>
+        <select id="f-drug"><option value="">— Select drug —</option></select>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Dose</label>
+          <input id="f-dose" type="number" placeholder="0" step="any" min="0">
+        </div>
+        <div class="field">
+          <label>Unit <span class="atag">auto</span></label>
+          <select id="f-unit">
+            <option value="mg">mg</option>
+            <option value="Gm">Gm</option>
+            <option value="mcg">mcg</option>
+            <option value="Unit">Unit</option>
+            <option value="mL">mL</option>
+          </select>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Drug Vol (mL) <span class="atag">calc</span></label>
+          <div class="abox dim" id="d-dvol">—</div>
+        </div>
+        <div class="field">
+          <label>Diluent <span class="atag">auto</span></label>
+          <div class="abox dim" id="d-dil">—</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Total Bag Vol (mL) — 0 for SC / bolus</label>
+        <input id="f-bagvol" type="number" placeholder="e.g. 100" step="any" min="0" value="0">
+      </div>
+      <div class="field">
+        <label>Rate <span class="atag">auto · editable</span></label>
+        <textarea id="f-rate" rows="2" placeholder="auto-filled from drug"></textarea>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Storage <span class="atag">auto</span></label>
+          <div class="abox dim" id="d-stor">—</div>
+        </div>
+        <div class="field">
+          <label>Conc. <span class="atag">auto</span></label>
+          <div class="abox dim" id="d-conc">—</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Special instruction <span class="atag">auto</span></label>
+        <div class="abox dim" id="d-cmt">—</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Preparation Date &amp; Time</div>
+      <div class="row2">
+        <div class="field">
+          <label>Prep Date</label>
+          <input id="f-prepdate" type="date">
+        </div>
+        <div class="field">
+          <label>Prep Time</label>
+          <input id="f-preptime" type="time">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Exp Date <span class="atag">calc</span></label>
+          <div class="abox dim" id="d-expdate">—</div>
+        </div>
+        <div class="field">
+          <label>Exp Time <span class="atag">calc</span></label>
+          <div class="abox dim" id="d-exptime">—</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Stability <span class="atag">auto</span></label>
+        <div class="abox dim" id="d-expnote">—</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Staff</div>
+      <div class="row3">
+        <div class="field">
+          <label>ผู้เตรียม</label>
+          <select id="f-prep"><option value="">—</option></select>
+        </div>
+        <div class="field">
+          <label>ผู้ทำ STK</label>
+          <select id="f-label"><option value="">—</option></select>
+        </div>
+        <div class="field">
+          <label>ผู้เช็ค</label>
+          <select id="f-check"><option value="">—</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Options</div>
+      <div class="field">
+        <label style="flex-direction:row;gap:8px;align-items:center;cursor:pointer;">
+          <input id="f-ratecard" type="checkbox" style="width:auto;margin:0;">
+          Add rate-instruction label (page 2)
+        </label>
+      </div>
+      <div class="field hidden" id="ratetext-wrap">
+        <label>Rate instructions</label>
+        <textarea id="f-ratetext" rows="4"
+          placeholder="e.g.&#10;IV drip 40 mL/hr × 1 hr&#10;Then IV drip 80 mL/hr × 1 hr&#10;Then IV drip 100 mL/hr จนหมด"></textarea>
+      </div>
+    </div>
+
+    <button class="btn-print" id="btn-print">&#128424;  Print / Save PDF</button>
+    <button class="btn-clear" id="btn-clear">Clear form</button>
+
+  </div><!-- /sidebar -->
+
+  <!-- Preview panel -->
+  <div id="preview-panel">
+
+    <div class="prev-label">Label Preview — 10 cm × 5 cm</div>
+    <div class="scale-host">
+      <div class="scale-wrap">
+        <div class="sticker" id="stk-screen"></div>
+      </div>
+    </div>
+
+    <div id="rate-preview-outer" class="hidden">
+      <div class="prev-label" style="text-align:center;">Rate Card — Page 2</div>
+      <div class="scale-host">
+        <div class="scale-wrap">
+          <div class="rate-card" id="rc-screen"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /tab-sticker -->
+
+<!-- ══ TAB 2 — DATABASE EDITOR ════════════════════════════════════ -->
+<div id="tab-db">
+  <div class="db-toolbar">
+    <button class="btn-sm green" onclick="dbSaveJSON()">&#8595; Save JSON</button>
+    <button class="btn-sm"       onclick="dbLoadJSON()">&#8593; Load JSON</button>
+    <input id="json-file-input" type="file" accept=".json" style="display:none"
+           onchange="dbImportJSON(event)">
+    <button class="btn-sm"       onclick="dbAddRow()">+ Add Drug</button>
+    <button class="btn-sm red"   onclick="dbResetDefaults()">Reset Defaults</button>
+    <span class="db-info" id="db-count"></span>
+  </div>
+  <div class="db-table-wrap">
+    <table id="db-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Drug Name</th>
+          <th>Trade Name</th>
+          <th>Exp</th>
+          <th>Day/Hr</th>
+          <th>Storage</th>
+          <th>RT Stable</th>
+          <th>mAb</th>
+          <th>Conc (mg/mL)</th>
+          <th>Dose Unit</th>
+          <th>Comment</th>
+          <th>Default Rate</th>
+          <th>Diluent</th>
+          <th>Route</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="db-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ PRINT AREA ════════════════════════════════════════════════ -->
+<div id="print-area" style="display:none">
+  <div class="sticker"   id="stk-print"></div>
+  <div class="rate-card hidden" id="rc-print"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════════════════
+
+const DEFAULT_DRUGS = [
+  { name:'5-Fluorouracil',               trade:'5-FU',       exp:3,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:50,    unit:'mg',  cmt:'Do not refrigerate',                                                     rate:'IV Bolus',                                   dil:'NSS',        route:'IV'  },
+  { name:'5-Fluorouracil (IV Bolus)',    trade:'5-FU',       exp:7,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:50,    unit:'mg',  cmt:'Do not refrigerate',                                                     rate:'IV Bolus',                                   dil:'NSS',        route:'IV'  },
+  { name:'Atezolizumab',                 trade:'Tecentriq',  exp:1,  expU:'day', stor:'2-8°C', storAlt:'6 hr at Room temp',  mono:true,  conc:60,    unit:'mg',  cmt:'-',                                                                      rate:'IV push slowly over 30 min',                 dil:'D5W',        route:'IV'  },
+  { name:'Bendamustine',                 trade:'Ribomustin', exp:1,  expU:'day', stor:'2-8°C', storAlt:'6 hr at Room temp',  mono:false, conc:2.5,   unit:'mg',  cmt:'Keep in refrigerator (2-8°C). Use only NON-PVC set',                     rate:'IV drip in 30 min',                          dil:'0.45% NaCl', route:'IV'  },
+  { name:'Bevacizumab (Vegzelma)',        trade:'',           exp:2,  expU:'day', stor:'RT',    storAlt:'',                   mono:true,  conc:25,    unit:'mg',  cmt:'Keep in refrigerator (2-8°C)',                                           rate:'IV drip in 60 min',                          dil:'D5S',        route:'IV'  },
+  { name:'Bevacizumab (Zirabev)',         trade:'',           exp:2,  expU:'day', stor:'RT',    storAlt:'',                   mono:true,  conc:25,    unit:'mg',  cmt:'Keep in refrigerator (2-8°C)',                                           rate:'IV drip in 60 min',                          dil:'D5S',        route:'IV'  },
+  { name:'Bleomycin',                    trade:'',           exp:1,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:1,     unit:'mg',  cmt:'-',                                                                      rate:'IV drip in 1 hr',                            dil:'D5N/2',      route:'IV'  },
+  { name:'Bortezomib (IV)',              trade:'MyBorte',    exp:15, expU:'day', stor:'2-8°C', storAlt:'',                   mono:false, conc:1,     unit:'mg',  cmt:'Keep in refrigerator (2-8°C). Protect from light',                       rate:'IV drip in 30 min',                          dil:'NSS',        route:'IV'  },
+  { name:'Bortezomib (SC)',              trade:'MyBorte',    exp:15, expU:'day', stor:'2-8°C', storAlt:'',                   mono:false, conc:2.5,   unit:'mg',  cmt:'Keep in refrigerator (2-8°C). Protect from light',                       rate:'SC injection',                               dil:'',           route:'SC'  },
+  { name:'Carboplatin (in D5W)',          trade:'',           exp:7,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:10,    unit:'mg',  cmt:'-',                                                                      rate:'IV drip in 2 hr',                            dil:'D5W',        route:'IV'  },
+  { name:'Carboplatin (in NSS)',          trade:'',           exp:1,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:10,    unit:'mg',  cmt:'-',                                                                      rate:'IV drip in 3 hr',                            dil:'NSS',        route:'IV'  },
+  { name:'Cetuximab',                    trade:'Erbitux',    exp:2,  expU:'day', stor:'2-8°C', storAlt:'',                   mono:true,  conc:5,     unit:'mg',  cmt:'Keep in refrigerator (2-8°C)',                                           rate:'IV drip in 4 hr',                            dil:'NSS',        route:'IV'  },
+  { name:'Cisplatin',                    trade:'',           exp:3,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:1,     unit:'mg',  cmt:'Do not refrigerate',                                                     rate:'IV drip in 22 hr',                           dil:'NSS',        route:'IV'  },
+  { name:'Cyclophosphamide',             trade:'',           exp:1,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:20,    unit:'mg',  cmt:'-',                                                                      rate:'IV push slowly',                             dil:'NSS',        route:'IV'  },
+  { name:'Cytarabine',                   trade:'Cytosar',    exp:7,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:100,   unit:'mg',  cmt:'-',                                                                      rate:'IV push slowly',                             dil:'NSS',        route:'IV'  },
+  { name:'Daratumumab',                  trade:'Darzalex',   exp:1,  expU:'day', stor:'2-8°C', storAlt:'',                   mono:true,  conc:20,    unit:'mg',  cmt:'Keep in (2-8°C). Protect from light. With filter 0.22 micron',           rate:'IV drip in 24 hr',                           dil:'NSS',        route:'IV'  },
+  { name:'Denosumab',                    trade:'',           exp:1,  expU:'day', stor:'2-8°C', storAlt:'',                   mono:true,  conc:70.59, unit:'mg',  cmt:'Protect from light',                                                     rate:'IV drip in 6 hr',                            dil:'NSS',        route:'IV'  },
+  { name:'Docetaxel',                    trade:'Daxotel',    exp:3,  expU:'day', stor:'2-8°C', storAlt:'6 hr at Room temp',  mono:false, conc:20,    unit:'mg',  cmt:'Use only NON-PVC set',                                                   rate:'IV drip in 2 hr',                            dil:'NSS',        route:'IV'  },
+  { name:'Doxorubicin',                  trade:'',           exp:2,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:2,     unit:'mg',  cmt:'-',                                                                      rate:'IV drip in 2 hr',                            dil:'NSS',        route:'IV'  },
+  { name:'Durvalumab',                   trade:'Imfinzi',    exp:1,  expU:'day', stor:'2-8°C', storAlt:'8 hr at Room temp',  mono:true,  conc:50,    unit:'mg',  cmt:'Keep in refrigerator (2-8°C)',                                           rate:'IV drip in 1 hr',                            dil:'NSS',        route:'IV'  },
+  { name:'Etoposide',                    trade:'',           exp:1,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:20,    unit:'mg',  cmt:'Use only NON-PVC set',                                                   rate:'IV drip in 2 hr',                            dil:'NSS',        route:'IV'  },
+  { name:'Fludarabine',                  trade:'Fludara',    exp:2,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:25,    unit:'mg',  cmt:'-',                                                                      rate:'IV drip in 30 min',                          dil:'NSS',        route:'IV'  },
+  { name:'Gemcitabine',                  trade:'Gemita',     exp:7,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:38,    unit:'mg',  cmt:'Do not refrigerate',                                                     rate:'IV drip 80 mL/hr for 1 hr, then 150 mL/hr', dil:'NSS',        route:'IV'  },
+  { name:'Idarubicin',                   trade:'Zavedos',    exp:3,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:1,     unit:'mg',  cmt:'-',                                                                      rate:'IV push slowly',                             dil:'NSS',        route:'IV'  },
+  { name:'Ipilimumab',                   trade:'Yervoy',     exp:1,  expU:'day', stor:'2-8°C', storAlt:'',                   mono:true,  conc:5,     unit:'mg',  cmt:'Keep in refrigerator (2-8°C). With in-line filter 0.22 micron',          rate:'IV drip in 90 min',                          dil:'NSS',        route:'IV'  },
+  { name:'Irinotecan',                   trade:'Irinotel',   exp:1,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:20,    unit:'mg',  cmt:'-',                                                                      rate:'IV drip in 90 min',                          dil:'D5W',        route:'IV'  },
+  { name:'Leucovorin',                   trade:'',           exp:1,  expU:'day', stor:'2-8°C', storAlt:'',                   mono:false, conc:10,    unit:'mg',  cmt:'Keep in refrigerator (2-8°C)',                                           rate:'IV drip in 2 hr',                            dil:'NSS',        route:'IV'  },
+  { name:'Liposomal Doxorubicin',        trade:'Lipodox',    exp:1,  expU:'day', stor:'2-8°C', storAlt:'',                   mono:false, conc:2,     unit:'mg',  cmt:'D5W only',                                                               rate:'IV drip in 4-6 hr',                          dil:'D5W',        route:'IV'  },
+  { name:'Methotrexate',                 trade:'MTX',        exp:7,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:25,    unit:'mg',  cmt:'-',                                                                      rate:'IV drip in 90 min',                          dil:'NSS',        route:'IV'  },
+  { name:'Mitomycin',                    trade:'',           exp:7,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:1,     unit:'mg',  cmt:'Protect from light',                                                     rate:'SC at abdomen / bladder irrigation',          dil:'SWI/NSS',    route:'SC'  },
+  { name:'Mitoxantrone',                 trade:'',           exp:2,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:2,     unit:'mg',  cmt:'-',                                                                      rate:'IV drip in 30 min',                          dil:'NSS',        route:'IV'  },
+  { name:'Nivolumab',                    trade:'Opdivo',     exp:1,  expU:'day', stor:'2-8°C', storAlt:'8 hr at Room temp',  mono:true,  conc:10,    unit:'mg',  cmt:'Keep in refrigerator (2-8°C). With in-line filter 0.22 micron',          rate:'As directed',                                dil:'NSS',        route:'IV'  },
+  { name:'Oxaliplatin',                  trade:'Eloxatin',   exp:1,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:5,     unit:'mg',  cmt:'D5W only. Do NOT use NaCl',                                              rate:'IV drip in 2 hr',                            dil:'D5W',        route:'IV'  },
+  { name:'Paclitaxel',                   trade:'Intaxel',    exp:1,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:6,     unit:'mg',  cmt:'Use only NON-PVC set',                                                   rate:'IV drip in 3 hr',                            dil:'NSS',        route:'IV'  },
+  { name:'Panitumumab',                  trade:'Vectibix',   exp:1,  expU:'day', stor:'2-8°C', storAlt:'',                   mono:true,  conc:20,    unit:'mg',  cmt:'Keep in refrigerator (2-8°C)',                                           rate:'IV drip in 60 min',                          dil:'NSS',        route:'IV'  },
+  { name:'Pembrolizumab',                trade:'Keytruda',   exp:1,  expU:'day', stor:'2-8°C', storAlt:'6 hr at Room temp',  mono:true,  conc:25,    unit:'mg',  cmt:'Keep in refrigerator (2-8°C). With in-line filter 0.22 micron',          rate:'IV drip in 30 min',                          dil:'NSS',        route:'IV'  },
+  { name:'Pemetrexed',                   trade:'Pexeda',     exp:1,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:25,    unit:'mg',  cmt:'Reconstitute/dilute with NSS only',                                      rate:'IV drip in 10 min',                          dil:'NSS',        route:'IV'  },
+  { name:'Ramucirumab',                  trade:'Cyramza',    exp:1,  expU:'day', stor:'2-8°C', storAlt:'4 hr at Room temp',  mono:true,  conc:10,    unit:'mg',  cmt:'Keep in refrigerator (2-8°C). With in-line filter 0.22 micron',          rate:'IV drip in 60 min',                          dil:'NSS',        route:'IV'  },
+  { name:'Rituximab',                    trade:'Mabthera',   exp:1,  expU:'day', stor:'2-8°C', storAlt:'12 hr at Room temp', mono:true,  conc:10,    unit:'mg',  cmt:'Keep in refrigerator (2-8°C). With in-line filter 0.22 micron',          rate:'IV drip — step rate (see rate card)',         dil:'NSS',        route:'IV'  },
+  { name:'Teclistamab',                  trade:'Tecvayli',   exp:20, expU:'hr',  stor:'2-8°C', storAlt:'',                   mono:true,  conc:90,    unit:'mg',  cmt:'Keep in refrigerator (2-8°C)',                                           rate:'IV drip in 1 hr',                            dil:'NSS',        route:'IV'  },
+  { name:'Tislelizumab',                 trade:'Tevimbra',   exp:1,  expU:'day', stor:'2-8°C', storAlt:'',                   mono:true,  conc:10,    unit:'mg',  cmt:'Keep in refrigerator (2-8°C). With in-line filter 0.22 micron',          rate:'IV Drip Over 3 hr',                          dil:'NSS',        route:'IV'  },
+  { name:'Trastuzumab',                  trade:'Herceptin',  exp:1,  expU:'day', stor:'2-8°C', storAlt:'',                   mono:true,  conc:21,    unit:'mg',  cmt:'Keep in refrigerator (2-8°C)',                                           rate:'IV drip in 30 min',                          dil:'NSS',        route:'IV'  },
+  { name:'Trastuzumab (Herzuma)',         trade:'Herzuma',    exp:1,  expU:'day', stor:'2-8°C', storAlt:'',                   mono:true,  conc:21,    unit:'mg',  cmt:'Keep in refrigerator (2-8°C)',                                           rate:'IV drip in 30 min',                          dil:'NSS',        route:'IV'  },
+  { name:'Trastuzumab deruxtecan',       trade:'ENHERTU',    exp:1,  expU:'day', stor:'2-8°C', storAlt:'',                   mono:false, conc:20,    unit:'mg',  cmt:'Keep in refrigerator (2-8°C). With in-line filter 0.22 micron',          rate:'IV drip in 30 min',                          dil:'D5W',        route:'IV'  },
+  { name:'Trastuzumab-Emtansine',        trade:'Kadcyla',    exp:1,  expU:'day', stor:'2-8°C', storAlt:'',                   mono:true,  conc:20,    unit:'mg',  cmt:'Keep in refrigerator (2-8°C). With in-line filter 0.22 micron',          rate:'IV drip in 30 min',                          dil:'NSS',        route:'IV'  },
+  { name:'Vabysmo (Faricimab)',           trade:'Vabysmo',    exp:37, expU:'day', stor:'2-8°C', storAlt:'',                   mono:true,  conc:120,   unit:'mg',  cmt:'Keep in refrigerator (2-8°C)',                                           rate:'Intravitreal injection into the eye',         dil:'',           route:'IVT' },
+  { name:'Vincristine',                  trade:'',           exp:2,  expU:'day', stor:'RT',    storAlt:'',                   mono:false, conc:1,     unit:'mg',  cmt:'-',                                                                      rate:'IV push slowly',                             dil:'NSS',        route:'IV'  },
+];
+
+const STAFF = [
+  'ACRO','Akira','Ananya','Apsorn','Chaninard','Chanapa','Chayaporn',
+  'Fonthip','Kanokporn','Ketsaraporn','Metawee','Narudee','Nongnapas',
+  'Onamon','Paninee','Patamaporn','Patcharee','Phattranit','Piyatida',
+  'Punyaporn','Siriporn','Siwawoot','Sopida','Sucheera','Suwimol',
+  'Tussanee','Waramporn','Yaowaporn',
+];
+
+// ══════════════════════════════════════════════════════════════════
+// DRUG DB (localStorage-backed)
+// ══════════════════════════════════════════════════════════════════
+
+let DRUGS = loadDrugs();
+
+function loadDrugs() {
+  try {
+    const s = localStorage.getItem('chemo-drugs-v2');
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return DEFAULT_DRUGS.map(d => ({ ...d }));
+}
+
+function persistDrugs() {
+  localStorage.setItem('chemo-drugs-v2', JSON.stringify(DRUGS));
+}
+
+// ══════════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════════
+
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  const [y, m, day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function doseMg(dose, unit) {
+  const v = parseFloat(dose) || 0;
+  if (unit === 'Gm')  return v * 1000;
+  if (unit === 'mcg') return v / 1000;
+  return v;
+}
+
+function fmtVol(v) {
+  if (v == null) return '';
+  const r = Math.round(v * 100) / 100;
+  return r % 1 === 0 ? String(r) : r.toFixed(2);
+}
+
+function calcExpiry(date, time, exp, expU) {
+  if (!date) return null;
+  const dt = new Date(`${date}T${time || '00:00'}`);
+  if (expU === 'hr') dt.setHours(dt.getHours() + exp);
+  else               dt.setDate(dt.getDate() + exp);
+  const p = n => String(n).padStart(2,'0');
+  return {
+    date: `${p(dt.getDate())}/${p(dt.getMonth()+1)}/${dt.getFullYear()}`,
+    time: `${p(dt.getHours())}:${p(dt.getMinutes())} น.`,
+  };
+}
+
+function storText(drug) {
+  if (!drug) return '';
+  if (drug.stor === 'RT')    return 'Room Temperature';
+  if (drug.stor === '2-8°C') return 'Refrigerator 2–8°C' + (drug.storAlt ? ' / ' + drug.storAlt : '');
+  return drug.stor;
+}
+
+function setAuto(id, text) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (text) { el.textContent = text; el.classList.remove('dim'); }
+  else      { el.textContent = '—';  el.classList.add('dim'); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════════════════════════
+
+function showTab(which) {
+  document.getElementById('tab-sticker').style.display = which === 'sticker' ? 'flex' : 'none';
+  document.getElementById('tab-db').style.display      = which === 'db'      ? 'flex' : 'none';
+  document.querySelectorAll('.tab-btn').forEach((b, i) =>
+    b.classList.toggle('active', (i === 0) === (which === 'sticker'))
+  );
+  if (which === 'db') renderDbTable();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════
+
+function init() {
+  rebuildDrugSelect();
+
+  ['f-prep','f-label','f-check'].forEach(id => {
+    const sel = document.getElementById(id);
+    STAFF.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      sel.appendChild(o);
+    });
+  });
+
+  const now = new Date();
+  const p   = n => String(n).padStart(2,'0');
+  document.getElementById('f-prepdate').value =
+    `${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())}`;
+  document.getElementById('f-preptime').value =
+    `${p(now.getHours())}:${p(now.getMinutes())}`;
+
+  document.getElementById('f-drug').addEventListener('change', () => {
+    const drug = getDrug();
+    if (drug) {
+      document.getElementById('f-unit').value = drug.unit;
+      document.getElementById('f-rate').value = drug.rate;
+      document.getElementById('f-bagvol').value =
+        (drug.route === 'SC' || drug.route === 'IVT') ? '0' : '';
+    }
+    update();
+  });
+
+  document.getElementById('f-ratecard').addEventListener('change', e => {
+    const on = e.target.checked;
+    document.getElementById('ratetext-wrap').classList.toggle('hidden', !on);
+    document.getElementById('rate-preview-outer').classList.toggle('hidden', !on);
+    update();
+  });
+
+  ['f-name','f-hn','f-room','f-dose','f-unit','f-bagvol',
+   'f-prepdate','f-preptime','f-rate','f-prep','f-label','f-check','f-ratetext']
+  .forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.addEventListener('input', update); el.addEventListener('change', update); }
+  });
+
+  document.getElementById('btn-print').addEventListener('click', doPrint);
+  document.getElementById('btn-clear').addEventListener('click', clearForm);
+  update();
+}
+
+function rebuildDrugSelect() {
+  const sel = document.getElementById('f-drug');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Select drug —</option>';
+  DRUGS.forEach((d, i) => {
+    const o = document.createElement('option');
+    o.value = i;
+    o.textContent = d.trade ? `${d.name}  [${d.trade}]` : d.name;
+    sel.appendChild(o);
+  });
+  sel.value = cur;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// UPDATE
+// ══════════════════════════════════════════════════════════════════
+
+function getDrug() {
+  const v = document.getElementById('f-drug').value;
+  return (v !== '') ? DRUGS[parseInt(v)] : null;
+}
+
+function update() {
+  const drug     = getDrug();
+  const dose     = parseFloat(document.getElementById('f-dose').value) || 0;
+  const unit     = document.getElementById('f-unit').value;
+  const bagVol   = parseFloat(document.getElementById('f-bagvol').value) || 0;
+  const prepDate = document.getElementById('f-prepdate').value;
+  const prepTime = document.getElementById('f-preptime').value;
+
+  const drugVol = drug ? (dose ? doseMg(dose, unit) / drug.conc : null) : null;
+
+  setAuto('d-dvol',  drugVol !== null ? fmtVol(drugVol) + ' mL' : '');
+  setAuto('d-dil',   drug ? (drug.dil || (drug.route !== 'IV' ? 'N/A' : '—')) : '');
+  setAuto('d-stor',  drug ? storText(drug) : '');
+  setAuto('d-conc',  drug ? drug.conc + ' mg/mL' : '');
+  setAuto('d-cmt',   drug && drug.cmt && drug.cmt !== '-' ? drug.cmt : '');
+
+  let expDate = '', expTime = '', expNote = '';
+  if (drug && prepDate) {
+    const e = calcExpiry(prepDate, prepTime, drug.exp, drug.expU);
+    expDate = e.date; expTime = e.time;
+    const pl = drug.exp > 1 && drug.expU === 'day' ? 's' : '';
+    expNote = `${drug.exp} ${drug.expU}${pl} after preparation`;
+    if (drug.storAlt) expNote += `  |  Stable ${drug.storAlt}`;
+  }
+  setAuto('d-expdate', expDate);
+  setAuto('d-exptime', expTime);
+  setAuto('d-expnote', expNote);
+
+  const data = {
+    name: document.getElementById('f-name').value.trim(),
+    hn:   document.getElementById('f-hn').value.trim(),
+    room: document.getElementById('f-room').value.trim(),
+    drug, dose, unit, drugVol, bagVol,
+    prepDate, prepTime, expDate, expTime,
+    rate:  document.getElementById('f-rate').value.trim(),
+    prep:  document.getElementById('f-prep').value,
+    label: document.getElementById('f-label').value,
+    check: document.getElementById('f-check').value,
+  };
+
+  const sHTML = buildSticker(data);
+  document.getElementById('stk-screen').innerHTML = sHTML;
+  document.getElementById('stk-print').innerHTML  = sHTML;
+
+  const rcHTML = buildRateCard(data);
+  document.getElementById('rc-screen').innerHTML = rcHTML;
+  document.getElementById('rc-print').innerHTML  = rcHTML;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// BUILD STICKER
+// ══════════════════════════════════════════════════════════════════
+
+function buildSticker(d) {
+  const { drug, dose, unit, drugVol, bagVol } = d;
+
+  const mono = drug && drug.mono;
+  const warnTop = mono
+    ? '&#9670; CYTOTOXIC DRUG (Monoclonal Ab) &#9670;'
+    : '&#9670; CYTOTOXIC DRUG &#9670;';
+  const warnBot = '&#9733; HIGH ALERT MEDICATION &#9733;';
+
+  /* ── Patient ── */
+  const nameDisp  = esc(d.name) || '<span style="color:#aaa;font-weight:normal">ชื่อ-สกุลผู้ป่วย</span>';
+  const hnRoomParts = [];
+  if (d.hn)   hnRoomParts.push('HN: ' + esc(d.hn));
+  if (d.room) hnRoomParts.push('Room ' + esc(d.room));
+  const hnRoomDisp = hnRoomParts.join('&nbsp;&nbsp;');
+
+  /* ── Drug (centered) ── */
+  let drugLine = '<span style="color:#aaa;font-weight:normal;font-size:11pt;">เลือกยาและใส่ขนาดด้านบน</span>';
+  let volLine  = '';
+
+  if (drug) {
+    const tradeDisp = drug.trade ? ` / ${drug.trade}` : '';
+    const doseDisp  = dose ? `  ${dose} ${unit}` : '';
+    const volDisp   = drugVol !== null ? `  (${fmtVol(drugVol)} mL)` : '';
+    drugLine = esc(drug.name + tradeDisp) + esc(doseDisp)
+      + (volDisp ? `<span style="font-weight:normal;font-size:11pt;">${esc(volDisp)}</span>` : '');
+
+    if (drug.route === 'IV') {
+      if (bagVol > 0 && drugVol !== null) {
+        const dilV = Math.max(0, bagVol - drugVol);
+        volLine = `+ ${fmtVol(dilV)} mL ${esc(drug.dil)}&nbsp;&nbsp;=&nbsp;&nbsp;<b>Total ${bagVol} mL</b>`;
+      } else if (drug.dil) {
+        volLine = `Diluent: ${esc(drug.dil)}`;
+      }
+    } else if (drug.route === 'SC')  volLine = 'SC injection';
+    else if  (drug.route === 'IVT') volLine = 'Intravitreal injection';
+  }
+
+  /* ── Dates ── */
+  const mfdDate  = d.prepDate ? esc(fmtDate(d.prepDate)) : '—';
+  const mfdTime  = d.prepTime ? esc(d.prepTime) + ' น.'  : '';
+  const expDate  = esc(d.expDate) || '—';
+  const expTime  = esc(d.expTime) || '';
+  const stabLine = drug
+    ? `(${drug.exp} ${drug.expU}${drug.exp > 1 && drug.expU === 'day' ? 's' : ''})`
+    : '';
+
+  /* ── Footer: storage + comment one line centered ── */
+  const stor = drug ? esc(storText(drug)) : '';
+  const cmt  = drug && drug.cmt && drug.cmt !== '-' ? esc(drug.cmt) : '';
+  const footerParts = [];
+  if (stor) footerParts.push('Storage: ' + stor);
+  if (cmt)  footerParts.push(cmt);
+  const footerLine = footerParts.join('  |  ');
+
+  return `
+<div class="stk-header">
+  <div class="stk-logospace"></div>
+  <div class="stk-warn">
+    <div class="stk-warn-top">${warnTop}</div>
+    <div class="stk-warn-bot">${warnBot}</div>
+  </div>
+</div>
+
+<div class="stk-patient">
+  <div class="stk-name">${nameDisp}</div>
+  <div class="stk-hn-room">${hnRoomDisp}</div>
+</div>
+
+<div class="stk-drug-sec">
+  <div class="stk-drug-name">${drugLine}</div>
+  ${volLine ? `<div class="stk-drug-row2">${volLine}</div>`           : ''}
+  ${d.rate  ? `<div class="stk-rate-line">Rate: ${esc(d.rate)}</div>` : ''}
+</div>
+
+<div class="stk-dates-staff">
+  <div class="stk-row">
+    <span>Mfd: ${mfdDate}&nbsp;${mfdTime}</span>
+    <span>Exp: ${expDate}&nbsp;${expTime}${stabLine ? '&nbsp;' + stabLine : ''}</span>
+  </div>
+  <div class="stk-row">
+    <span><span class="split-role">Prep by:&nbsp;</span>${esc(d.prep)  || '—'}</span>
+    <span><span class="split-role">STK by:&nbsp;</span>${esc(d.label) || '—'}</span>
+    <span><span class="split-role">Check by:&nbsp;</span>${esc(d.check) || '—'}</span>
+  </div>
+</div>
+
+${footerLine ? `<div class="stk-footer">${footerLine}</div>` : ''}`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// BUILD RATE CARD
+// ══════════════════════════════════════════════════════════════════
+
+function buildRateCard(d) {
+  const { drug, dose, unit, bagVol } = d;
+  const rateText = document.getElementById('f-ratetext').value.trim()
+    || (drug ? drug.rate : '');
+  const bagDisp  = bagVol > 0 && drug && drug.dil
+    ? ` + ${drug.dil} = Total ${bagVol} mL` : '';
+  const drugLabel = drug ? `${drug.name}  ${dose ? dose+' '+unit : ''}${bagDisp}` : '';
+
+  return `
+<div class="rc-header">
+  <div class="rc-logospace"></div>
+  <div class="rc-title-box">&#9670; RATE INSTRUCTION — CYTOTOXIC &#9670;</div>
+</div>
+<div class="rc-body">
+  <div class="rc-patient">${esc(d.name)}${d.hn ? '&nbsp;&nbsp;|&nbsp;&nbsp;HN: ' + esc(d.hn) : ''}</div>
+  <div class="rc-drug">${esc(drugLabel)}</div>
+  <div class="rc-text">${esc(rateText)}</div>
+</div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PRINT
+// ══════════════════════════════════════════════════════════════════
+
+function doPrint() {
+  const hn   = (document.getElementById('f-hn').value.trim() || 'HN').replace(/[^\w\-]/g,'_');
+  const date = (document.getElementById('f-prepdate').value || '').replace(/-/g,'');
+  document.title = `${hn}_prep_${date || 'date'}`;
+  const hasRC = document.getElementById('f-ratecard').checked;
+  document.getElementById('rc-print').classList.toggle('hidden', !hasRC);
+  window.print();
+  setTimeout(() => { document.title = 'Chemo Sticker'; }, 2000);
+}
+
+function clearForm() {
+  ['f-name','f-hn','f-room','f-dose','f-bagvol','f-ratetext'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('f-drug').value  = '';
+  document.getElementById('f-unit').value  = 'mg';
+  document.getElementById('f-prep').value  = '';
+  document.getElementById('f-label').value = '';
+  document.getElementById('f-check').value = '';
+  document.getElementById('f-rate').value  = '';
+  document.getElementById('f-bagvol').value = '0';
+  document.getElementById('f-ratecard').checked = false;
+  document.getElementById('ratetext-wrap').classList.add('hidden');
+  document.getElementById('rate-preview-outer').classList.add('hidden');
+  const now = new Date();
+  const p   = n => String(n).padStart(2,'0');
+  document.getElementById('f-prepdate').value =
+    `${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())}`;
+  document.getElementById('f-preptime').value =
+    `${p(now.getHours())}:${p(now.getMinutes())}`;
+  update();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// DATABASE EDITOR
+// ══════════════════════════════════════════════════════════════════
+
+function renderDbTable() {
+  const tbody = document.getElementById('db-tbody');
+  tbody.innerHTML = '';
+  DRUGS.forEach((d, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+<td style="text-align:center;color:var(--dim);width:30px;padding:4px;">${i+1}</td>
+<td><input type="text"   value="${esc(d.name)}"    onchange="dbSet(${i},'name',this.value)"></td>
+<td><input type="text"   value="${esc(d.trade)}"   onchange="dbSet(${i},'trade',this.value)"></td>
+<td><input type="number" value="${d.exp}"           onchange="dbSet(${i},'exp',+this.value)" style="width:50px;"></td>
+<td>
+  <select onchange="dbSet(${i},'expU',this.value)">
+    <option ${d.expU==='day'?'selected':''}>day</option>
+    <option ${d.expU==='hr'?'selected':''}>hr</option>
+  </select>
+</td>
+<td>
+  <select onchange="dbSet(${i},'stor',this.value)">
+    <option ${d.stor==='RT'?'selected':''}>RT</option>
+    <option ${d.stor==='2-8°C'?'selected':''}>2-8°C</option>
+  </select>
+</td>
+<td><input type="text"   value="${esc(d.storAlt)}"  onchange="dbSet(${i},'storAlt',this.value)"></td>
+<td style="text-align:center;">
+  <input type="checkbox" ${d.mono?'checked':''} onchange="dbSet(${i},'mono',this.checked)">
+</td>
+<td><input type="number" value="${d.conc}"           onchange="dbSet(${i},'conc',+this.value)" style="width:70px;"></td>
+<td>
+  <select onchange="dbSet(${i},'unit',this.value)">
+    ${['mg','Gm','mcg','Unit','mL'].map(u=>`<option ${d.unit===u?'selected':''}>${u}</option>`).join('')}
+  </select>
+</td>
+<td><input type="text"   value="${esc(d.cmt)}"       onchange="dbSet(${i},'cmt',this.value)"></td>
+<td><input type="text"   value="${esc(d.rate)}"      onchange="dbSet(${i},'rate',this.value)"></td>
+<td><input type="text"   value="${esc(d.dil)}"       onchange="dbSet(${i},'dil',this.value)" style="width:80px;"></td>
+<td>
+  <select onchange="dbSet(${i},'route',this.value)">
+    ${['IV','SC','IVT'].map(r=>`<option ${d.route===r?'selected':''}>${r}</option>`).join('')}
+  </select>
+</td>
+<td style="text-align:center;padding:4px;">
+  <button class="del-btn" onclick="dbDeleteRow(${i})">&#128465;</button>
+</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('db-count').textContent = `${DRUGS.length} drugs`;
+}
+
+function dbSet(i, key, val) {
+  DRUGS[i][key] = val;
+  persistDrugs();
+  rebuildDrugSelect();
+}
+
+function dbDeleteRow(i) {
+  if (!confirm(`Delete "${DRUGS[i].name}"?`)) return;
+  DRUGS.splice(i, 1);
+  persistDrugs();
+  rebuildDrugSelect();
+  renderDbTable();
+}
+
+function dbAddRow() {
+  DRUGS.push({
+    name:'New Drug', trade:'', exp:1, expU:'day', stor:'RT', storAlt:'',
+    mono:false, conc:1, unit:'mg', cmt:'-', rate:'IV drip', dil:'NSS', route:'IV'
+  });
+  persistDrugs();
+  rebuildDrugSelect();
+  renderDbTable();
+  document.getElementById('db-tbody').lastElementChild
+    .scrollIntoView({ behavior:'smooth' });
+}
+
+function dbResetDefaults() {
+  if (!confirm('Reset drug list to defaults? Custom edits will be lost.')) return;
+  DRUGS = DEFAULT_DRUGS.map(d => ({ ...d }));
+  persistDrugs();
+  rebuildDrugSelect();
+  renderDbTable();
+  toast('Drug list reset to defaults');
+}
+
+function dbSaveJSON() {
+  const blob = new Blob([JSON.stringify(DRUGS, null, 2)], { type:'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `chemo_drugs_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Saved as JSON');
+}
+
+function dbLoadJSON() {
+  document.getElementById('json-file-input').click();
+}
+
+function dbImportJSON(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error('Not an array');
+      DRUGS = data;
+      persistDrugs();
+      rebuildDrugSelect();
+      renderDbTable();
+      toast(`Loaded ${data.length} drugs from ${file.name}`);
+    } catch(err) {
+      alert('Error reading JSON: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════════════
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// START
+// ══════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

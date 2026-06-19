@@ -17,7 +17,7 @@ let _dates = { admission: "", discharge: "" };  // timeline endpoints
 // translation — the report is intentionally not localised.
 
 const STATUSES = ["continued", "new", "changed", "stopped"];
-const STATUS_TH = { continued: "ใช้ต่อ", new: "เริ่มใหม่", changed: "เปลี่ยน", stopped: "หยุด" };
+const STATUS_TH = { continued: "ใช้ต่อ", new: "เริ่มใหม่", changed: "เปลี่ยน", stopped: "ใช้ระหว่างนอน รพ." };
 
 /** Group rows by status (legend order), then alphabetically by medicine name. */
 function _sortRows() {
