@@ -523,6 +523,90 @@ body {
 /* ── Utility ─────────────────────────────────────────────────────── */
 .hidden { display: none !important; }
 
+
+/* ══ AUTH OVERLAY ════════════════════════════════════════════════════ */
+#auth-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(135deg, #1a2a4a 0%, #0f1e36 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.auth-card {
+  background: #fff; border-radius: 14px; padding: 40px 36px;
+  width: 360px; box-shadow: 0 8px 40px rgba(0,0,0,.45);
+  display: flex; flex-direction: column; gap: 18px;
+}
+.auth-logo {
+  text-align: center; font-size: 22px; font-weight: bold;
+  color: var(--hi); letter-spacing: 0.4px;
+}
+.auth-sub {
+  text-align: center; font-size: 12px; color: var(--dim); margin-top: -12px;
+}
+.auth-field { display: flex; flex-direction: column; gap: 5px; }
+.auth-field label { font-size: 13px; color: var(--dim); font-weight: 600; }
+.auth-field input {
+  padding: 10px 13px; border: 1.5px solid var(--brd2); border-radius: 7px;
+  font-family: var(--fam); font-size: 15px; color: var(--txt);
+  transition: border-color .15s, box-shadow .15s;
+}
+.auth-field input:focus {
+  outline: none; border-color: var(--hi);
+  box-shadow: 0 0 0 3px rgba(58,107,191,.12);
+}
+.auth-btn {
+  padding: 11px; background: var(--hi); color: #fff; border: none;
+  border-radius: 7px; font-size: 16px; font-family: var(--fam);
+  font-weight: bold; cursor: pointer; transition: filter .15s;
+}
+.auth-btn:hover { filter: brightness(1.12); }
+.auth-err {
+  background: #fdecea; border: 1px solid #e07070; color: var(--red);
+  padding: 8px 12px; border-radius: 6px; font-size: 13px; text-align: center;
+}
+.auth-ver { text-align: center; font-size: 11px; color: var(--dim); }
+
+/* ── About modal ───────────────────────────────────────────────────── */
+#about-modal {
+  position: fixed; inset: 0; z-index: 8888;
+  background: rgba(0,0,0,.50); display: flex;
+  align-items: center; justify-content: center;
+}
+.about-card {
+  background: var(--surf); border-radius: 12px; padding: 28px 30px;
+  width: 420px; box-shadow: 0 8px 32px rgba(0,0,0,.25);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.about-title { font-size: 16px; font-weight: bold; color: var(--hi); }
+.about-body  { font-size: 14px; color: var(--txt); line-height: 1.6; }
+.about-body  b { color: var(--hi); }
+.about-body  code {
+  background: var(--card); padding: 1px 5px; border-radius: 4px;
+  font-size: 13px; color: var(--red);
+}
+.about-close {
+  align-self: flex-end; padding: 7px 20px; background: var(--hi);
+  color: #fff; border: none; border-radius: 6px; font-family: var(--fam);
+  font-size: 14px; font-weight: bold; cursor: pointer; transition: filter .15s;
+}
+.about-close:hover { filter: brightness(1.12); }
+
+/* ── Nav extras ─────────────────────────────────────────────────────── */
+.nav-right {
+  margin-left: auto; display: flex; align-items: center; gap: 10px;
+}
+.ver-badge {
+  font-size: 11px; background: var(--hi2); color: var(--hi);
+  padding: 2px 8px; border-radius: 20px; font-weight: 600;
+  letter-spacing: .4px;
+}
+.about-btn {
+  height: 28px; padding: 0 12px; background: transparent;
+  border: 1px solid var(--brd2); border-radius: 14px;
+  font-family: var(--fam); font-size: 12px; color: var(--dim);
+  cursor: pointer; transition: color .15s, border-color .15s;
+}
+.about-btn:hover { color: var(--hi); border-color: var(--hi); }
+
 /* ══ PRINT ══════════════════════════════════════════════════════════ */
 @media print {
   @page { size: 10cm 5cm; margin: 0; }
@@ -546,6 +630,10 @@ body {
   <span class="app-logo">&#9651; Chemo BKN &amp; BUD</span>
   <button class="tab-btn active" onclick="showTab('sticker')">Label Generator</button>
   <button class="tab-btn"        onclick="showTab('db')">Drug Database</button>
+  <div class="nav-right">
+    <span class="ver-badge">v1.1</span>
+    <button class="about-btn" id="btnAbout">About &amp; Update</button>
+  </div>
 </nav>
 
 <!-- ══ TAB 1 — LABEL GENERATOR ═══════════════════════════════════ -->
@@ -758,6 +846,43 @@ body {
 <div id="print-area" style="display:none">
   <div class="sticker"   id="stk-print"></div>
   <div class="rate-card hidden" id="rc-print"></div>
+</div>
+
+
+<!-- ══ AUTH OVERLAY ══════════════════════════════════════════════ -->
+<div id="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-logo">&#9651; Chemo BKN &amp; BUD</div>
+    <div class="auth-sub">BKN Hospital Pharmacy Department</div>
+    <div class="auth-field">
+      <label>Username</label>
+      <input id="auth-user" type="text" autocomplete="username" spellcheck="false">
+    </div>
+    <div class="auth-field">
+      <label>Password</label>
+      <input id="auth-pass" type="password" autocomplete="current-password">
+    </div>
+    <div id="auth-err" class="auth-err hidden"></div>
+    <button class="auth-btn" id="auth-btn">Sign In</button>
+    <div class="auth-ver">v1.1 &middot; Chemo Label Generator</div>
+  </div>
+</div>
+
+<!-- ══ ABOUT MODAL ═══════════════════════════════════════════════ -->
+<div id="about-modal" class="hidden">
+  <div class="about-card">
+    <div class="about-title">&#9651; Chemo BKN &amp; BUD &nbsp;<span class="ver-badge">v1.1</span></div>
+    <div class="about-body">
+      <b>Self-contained single-file app.</b> No installation, no server needed.<br><br>
+      <b>Receiving an update?</b><br>
+      1. Save the new <code>chemo_bkn_bud.html</code> file into the <b>same folder</b> as your current file — keep the exact same filename.<br>
+      2. Open the new file. Your drug database is preserved automatically.<br><br>
+      <b>Changing folder or filename?</b><br>
+      Export your drug list first (Drug Database tab → <b>Save JSON</b>), then import it after opening the new file (<b>Load JSON</b>).<br><br>
+      BKN Hospital Pharmacy Department
+    </div>
+    <button class="about-close" id="btnAboutClose">Close</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1324,9 +1449,71 @@ function toast(msg) {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════════════
+
+const _AU = 'Chemobud';
+const _AH = '6d3ff8aca4ac88a5432477bfac6343604b6cdb39d2b2c500ad306eebb845de06';
+const _AK = 'chemo_bkn_bud_auth';
+
+async function _sha256(s) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function doLogin() {
+  const user  = document.getElementById('auth-user').value.trim();
+  const pass  = document.getElementById('auth-pass').value;
+  const errEl = document.getElementById('auth-err');
+  errEl.classList.add('hidden');
+  if (!user || !pass) {
+    errEl.textContent = 'Please enter username and password.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  const hash = await _sha256(pass);
+  if (user === _AU && hash === _AH) {
+    sessionStorage.setItem(_AK, '1');
+    document.getElementById('auth-overlay').style.display = 'none';
+    init();
+  } else {
+    errEl.textContent = 'Incorrect username or password.';
+    errEl.classList.remove('hidden');
+    document.getElementById('auth-pass').value = '';
+    document.getElementById('auth-pass').focus();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // START
 // ══════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  // About modal
+  document.getElementById('btnAbout').addEventListener('click', () => {
+    document.getElementById('about-modal').classList.remove('hidden');
+  });
+  document.getElementById('btnAboutClose').addEventListener('click', () => {
+    document.getElementById('about-modal').classList.add('hidden');
+  });
+  document.getElementById('about-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('about-modal'))
+      document.getElementById('about-modal').classList.add('hidden');
+  });
+
+  // Auth gate
+  if (sessionStorage.getItem(_AK) === '1') {
+    document.getElementById('auth-overlay').style.display = 'none';
+    init();
+    return;
+  }
+  const btn  = document.getElementById('auth-btn');
+  const pass = document.getElementById('auth-pass');
+  const user = document.getElementById('auth-user');
+  btn.addEventListener('click', doLogin);
+  pass.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  user.addEventListener('keydown', e => { if (e.key === 'Enter') pass.focus(); });
+  user.focus();
+});
 </script>
 </body>
 </html>
