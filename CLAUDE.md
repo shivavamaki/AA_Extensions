@@ -41,6 +41,7 @@ Extension pages:
 | iv-aux-sticker | [src/features/iv-aux-sticker/README.md](BKNPharmacyPortal/src/features/iv-aux-sticker/README.md) |
 | beedee-pdf | [src/features/beedee-pdf/README.md](BKNPharmacyPortal/src/features/beedee-pdf/README.md) |
 | report-print | [src/features/report-print/README.md](BKNPharmacyPortal/src/features/report-print/README.md) |
+| chemo-sticker | [`chemo-sticker/`](BKNPharmacyPortal/chemo-sticker/) — extension page clone of the standalone app; drug DB backed by `GET/PUT /api/chemo-drugs` on the pharmacy server |
 
 Extension architecture: [BKNPharmacyPortal/README.md](BKNPharmacyPortal/README.md)
 

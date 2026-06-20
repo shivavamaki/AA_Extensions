@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initIpdQueue();
   initIvSticker();
   initAuxSticker();
+  initChemoSticker();
   initVaccineSchedule();
   initReport();
   initReportToggles();
@@ -480,6 +481,13 @@ function initAuxSticker() {
   document.getElementById('openAuxSticker')
     ?.addEventListener('click', () => {
       chrome.tabs.create({ url: chrome.runtime.getURL('src/features/iv-aux-sticker/aux_sticker.html') });
+    });
+}
+
+function initChemoSticker() {
+  document.getElementById('openChemoSticker')
+    ?.addEventListener('click', () => {
+      chrome.tabs.create({ url: chrome.runtime.getURL('chemo-sticker/index.html') });
     });
 }
 

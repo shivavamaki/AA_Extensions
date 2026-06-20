@@ -116,6 +116,7 @@
         "src/features/report-print/report_print.html",
         "src/features/report-print/report_print.js",
         "src/features/report-print/report_print.css",
+        "chemo-sticker/index.html",
         "formulary/index.html",
         "formulary/app.js",
         "formulary/styles.css",
