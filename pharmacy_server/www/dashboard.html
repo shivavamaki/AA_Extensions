@@ -1,97 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BKN Pharmacy Server — Maprang Pixi Dashboard</title>
-  <link rel="stylesheet" href="/static/dashboard.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>BKN Pharmacy — Maprang Plays!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/dashboard.css"/>
 </head>
 <body>
   <main class="dashboard-shell">
-    <section class="topbar neon-panel">
+
+    <section class="topbar pixel-panel">
       <div class="top-item"><span class="icon cyan">◉</span><span id="serverUrl">http://127.0.0.1:8765</span></div>
       <div class="divider"></div>
-      <div class="top-item"><span class="icon orange">◴</span><span id="uptime">Uptime: 00:00:00</span></div>
+      <div class="top-item"><span class="icon orange">◴</span><span id="uptime">00:00:00</span></div>
       <div class="divider"></div>
-      <div class="top-item"><span class="icon magenta">▥</span><span id="reqCount">Requests: 0</span></div>
+      <div class="top-item"><span class="icon magenta">▥</span><span id="reqCount">0 reqs</span></div>
       <div class="divider"></div>
-      <div class="top-item grow"><span class="icon yellow">⚡</span><span id="lastRequest">Last: —</span></div>
+      <div class="top-item grow"><span class="icon yellow">⚡</span><span id="lastRequest">—</span></div>
     </section>
 
-    <section class="titlebar neon-panel">
-      <h1>✿ Maprang Plays! ✿</h1>
-      <div class="score">☆ Score: <span id="score">60</span> ☆</div>
+    <section class="titlebar pixel-panel">
+      <h1 class="game-title">✿ Maprang Plays! ✿</h1>
+      <div class="score-wrap">☆ Score: <span id="score">0</span> ☆</div>
       <div id="onlineBadge" class="badge online">ONLINE</div>
     </section>
 
     <section class="main-grid">
-      <div class="game-card neon-panel">
+
+      <div class="game-card pixel-panel">
         <div class="stage-tabs">
-          <button class="stage-tab active" data-stage="school">STAGE 1 · SCHOOL <span>☆</span></button>
-          <button class="stage-tab" data-stage="playground">STAGE 2 · PLAYGROUND <span>☆</span></button>
-          <div class="stage-hint">Use your APIs. Collect joy. 🐾</div>
+          <button class="stage-tab active" data-stage="school">
+            <span class="tab-num">1</span><span class="tab-name">SCHOOL</span>
+          </button>
+          <button class="stage-tab" data-stage="playground">
+            <span class="tab-num">2</span><span class="tab-name">PLAYGROUND</span>
+          </button>
+          <button class="stage-tab" data-stage="zootopia">
+            <span class="tab-num">3</span><span class="tab-name">ZOOTOPIA</span>
+          </button>
+          <button class="stage-tab" data-stage="minecraft">
+            <span class="tab-num">4</span><span class="tab-name">MINECRAFT</span>
+          </button>
+          <button class="stage-tab" data-stage="space">
+            <span class="tab-num">5</span><span class="tab-name">SPACE</span>
+          </button>
         </div>
+        <div class="auto-rotate-track"><div class="auto-rotate-fill" id="autoRotateFill"></div></div>
         <div class="game-head">
-          <div id="stageTitle">LEVEL 1 — SCHOOL DASH</div>
-          <div id="stageGoal">Goal: collect books, lunch, stars</div>
+          <span id="stageTitle">LEVEL 1 — SCHOOL DASH</span>
+          <span id="stageGoal">Collect books, lunch, stars</span>
         </div>
         <div id="pixiStage" class="pixi-stage"></div>
-        <div class="game-footer">
-          <div><span>♡</span> Lives: <b>3</b></div>
-          <div><span>☆</span> Stars: <b id="starsCount">0</b></div>
-          <div><span>⌂</span> Lunchbox: <b id="lunchCount">0</b></div>
-          <div><span>✿</span> Ribbon: <b id="ribbonCount">0</b></div>
-          <div><span>▭</span> Books: <b id="booksCount">0</b></div>
-        </div>
+        <div class="game-footer" id="gameFooter"></div>
       </div>
 
       <aside class="side-grid">
-        <section class="neon-panel small-panel">
+        <section class="pixel-panel small-panel">
           <h2>ENDPOINT HEALTH</h2>
           <div id="endpointList" class="endpoint-list"></div>
         </section>
-        <section class="neon-panel small-panel">
+        <section class="pixel-panel small-panel">
           <h2>SERVER STATS</h2>
           <div class="stats-list">
-            <div><span>API Load</span><meter id="apiLoad" min="0" max="100" value="0"></meter><b id="apiLoadText">0%</b></div>
-            <div><span>Data Health</span><meter id="dataHealth" min="0" max="100" value="0"></meter><b id="dataHealthText">—</b></div>
-            <div><span>Active Threads</span><meter id="threadsMeter" min="0" max="100" value="0"></meter><b id="threadsText">0</b></div>
-            <div><span>Req / Min</span><b id="rpmText">0</b></div>
-            <div><span>Avg Resp Time</span><b id="avgText">0ms</b></div>
+            <div class="stat-row"><span>API Load</span><div class="pixel-meter"><div class="pmf" id="apiLoad"></div></div><b id="apiLoadText">0%</b></div>
+            <div class="stat-row"><span>Data</span><div class="pixel-meter"><div class="pmf" id="dataHealth"></div></div><b id="dataHealthText">—</b></div>
+            <div class="stat-row"><span>Threads</span><div class="pixel-meter"><div class="pmf" id="threadsMeter"></div></div><b id="threadsText">0</b></div>
+            <div class="stat-row2"><span>Req / Min</span><b id="rpmText">0</b></div>
+            <div class="stat-row2"><span>Avg Resp</span><b id="avgText">0ms</b></div>
           </div>
-          <canvas id="sparkline" width="320" height="44"></canvas>
+          <canvas id="sparkline" width="280" height="40"></canvas>
         </section>
-        <section class="neon-panel small-panel">
+        <section class="pixel-panel small-panel">
           <h2>MODULE STATUS</h2>
           <div id="moduleList" class="module-list"></div>
         </section>
       </aside>
 
-      <section class="neon-panel recent-panel">
-        <h2>RECENT REQUESTS</h2>
-        <div class="filter-row">
-          <button class="filter active" data-filter="all">All</button>
-          <button class="filter" data-filter="errors">Errors</button>
+      <section class="pixel-panel recent-panel">
+        <div class="panel-head-row">
+          <h2>RECENT REQUESTS</h2>
+          <div class="filter-row">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="errors">Errors</button>
+          </div>
         </div>
         <div class="request-table" id="requestTable"></div>
       </section>
 
-      <section class="neon-panel live-panel">
+      <section class="pixel-panel live-panel">
         <h2>LIVE ACTIVITY</h2>
-        <div class="mini-scene" id="miniScene">Running smoothly! Keep going! 🚀</div>
+        <div class="speech-bubble" id="miniScene">Running smoothly! Keep going!</div>
         <div class="quick-actions">
-          <button id="openServer">Open Server</button>
-          <button id="copyUrl">Copy URL</button>
-          <button id="healthJson">Health JSON</button>
-          <button id="adminPortal">Admin Portal</button>
+          <button class="action-btn" id="openServer">OPEN SERVER</button>
+          <button class="action-btn" id="copyUrl">COPY URL</button>
+          <button class="action-btn" id="healthJson">HEALTH JSON</button>
+          <button class="action-btn" id="adminPortal">ADMIN PORTAL</button>
         </div>
       </section>
+
     </section>
 
-    <footer class="footer neon-panel">PixiJS game scene + HTML/CSS dashboard · Press Ctrl+C in server console to stop</footer>
+    <footer class="footer pixel-panel">Sprite art · Press D for debug overlay · Press Ctrl+C in server console to stop</footer>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
   <script src="/static/dashboard.js"></script>
 </body>
 </html>

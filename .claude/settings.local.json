@@ -111,7 +111,13 @@
       "Bash(git -C /workspaces/AA_Extensions push)",
       "Bash(git -C /workspaces/AA_Extensions stash drop)",
       "Bash(git -C /workspaces/AA_Extensions log --oneline --graph --decorate -10)",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(python -c \"p='pharmacy_server/bkn_ks_server.py'; compile\\(open\\(p,encoding='utf-8'\\).read\\(\\),p,'exec'\\)\")",
+      "Bash(node --check pharmacy_server/www/static/dashboard.js)",
+      "Bash(node --check /workspaces/AA_Extensions/pharmacy_server/www/static/dashboard.js)",
+      "Bash(xargs ls -lt)",
+      "Bash(find /tmp -maxdepth 3 \\\\\\( -name \"*.png\" -o -name \"*.jpg\" -o -name \"*.jpeg\" -o -name \"*.webp\" \\\\\\) 2>/dev/null | sort -n | head -20 && echo \"---\" && find /var /home /root -maxdepth 4 \\\\\\( -name \"*.png\" -o -name \"*.jpg\" \\\\\\) -newer /workspaces/AA_Extensions/CLAUDE.md 2>/dev/null | head -10)",
+      "Read(//var/**)"
     ],
     "additionalDirectories": [
       "/workspaces/AA_Extensions/BKNPharmacyPortal/src/features/home-med",
