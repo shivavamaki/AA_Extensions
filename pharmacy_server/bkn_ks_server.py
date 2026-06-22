@@ -445,14 +445,14 @@ def format_appointments_th(data):
                 'แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม')
     lines = []
     for a in appts:
-        service = _hm_norm((a.get('servicetypeuid') or {}).get('valuedescription') or '')
+        # service = _hm_norm((a.get('servicetypeuid') or {}).get('valuedescription') or '')
         start   = _thai_datetime(a.get('start') or '')
         dept    = _hm_norm(a.get('departmentname') or '')
         provider = _hm_norm(a.get('careprovidername') or '')
         comments = _hm_norm(a.get('comments') or '')
         # Tab separates line-1 (date/time) from line-2 (dept/provider/notes)
         # so the client can render two rows per appointment card.
-        line1 = f'คนไข้มีนัดหมาย{service} วันที่ {start}'
+        line1 = f'คนไข้มีนัดหมาย วันที่ {start}'
         line2 = f'ที่แผนก {dept} กับ {provider}'
         if comments:
             line2 += f' หมายเหตุ {comments}'
