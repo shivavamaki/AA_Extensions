@@ -378,6 +378,13 @@ tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
           <input id="md-has-image-display" readonly style="background:#f7f9fc;font-weight:600" placeholder="auto-detected from file"/>
         </div>
         <div class="form-field span2">
+          <label style="flex-direction:row;gap:8px;align-items:center;cursor:pointer;font-weight:600">
+            <input type="checkbox" id="md-copy-default-img" style="width:auto;margin:0;cursor:pointer">
+            Copy placeholder image on save
+          </label>
+          <div class="form-hint">Off by default. Copies <code>11001.jpg</code> → <code>{code}.jpg</code> on the server when enabled.</div>
+        </div>
+        <div class="form-field span2">
           <label>Drug Image</label>
           <div class="img-upload-wrap">
             <div class="img-preview-box" id="md-img-preview-box">
@@ -1046,6 +1053,7 @@ document.getElementById('btn-add-meddb').addEventListener('click', () => {
   document.getElementById('md-code').readOnly = false;
   document.getElementById('md-name').value   = '';
   document.getElementById('md-uom').value    = '';
+  document.getElementById('md-copy-default-img').checked = false;
   _setMdImagePreview(null, false);
   openModal('modal-meddb');
 });
@@ -1059,6 +1067,7 @@ function editMedDb(code) {
   document.getElementById('md-code').readOnly = true;
   document.getElementById('md-name').value   = d.name;
   document.getElementById('md-uom').value    = d.base_uom || '';
+  document.getElementById('md-copy-default-img').checked = false;
   const hasFile = fileStems.has(code);
   _setMdImagePreview(hasFile ? `/med-images/${code}.jpg` : null, hasFile);
   openModal('modal-meddb');
@@ -1118,6 +1127,14 @@ document.getElementById('md-img-remove-btn').addEventListener('click', () => {
 document.getElementById('md-save').addEventListener('click', async () => {
   const code = document.getElementById('md-code').value.trim();
   if (!code) { toast('Code is required', 'err'); return; }
+  if (document.getElementById('md-copy-default-img').checked) {
+    try {
+      await api('POST', `/api/med-images/${encodeURIComponent(code)}/copy-default`, {});
+      fileStems.add(code);
+    } catch(e) {
+      toast('Copy placeholder failed: ' + e.message, 'warn');
+    }
+  }
   const hasFile = fileStems.has(code);
   const name    = document.getElementById('md-name').value.trim();
   const uom     = document.getElementById('md-uom').value.trim();

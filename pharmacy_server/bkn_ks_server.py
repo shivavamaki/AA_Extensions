@@ -1663,6 +1663,10 @@ class Handler(BaseHTTPRequestHandler):
         if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'rx-note':
             return 'rx-note', urllib.parse.unquote(parts[2]), None
 
+        # /api/med-images/{code}/copy-default  — copy placeholder image to code
+        if len(parts) == 4 and parts[0] == 'api' and parts[1] == 'med-images' and parts[3] == 'copy-default':
+            return 'med-image-copy-default', urllib.parse.unquote(parts[2]), None
+
         # /api/med-images/:filename  — image upload
         if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'med-images':
             return 'med-image-upload', urllib.parse.unquote(parts[2]), None
@@ -2107,6 +2111,18 @@ class Handler(BaseHTTPRequestHandler):
             if h.startswith('Bearer '):
                 _sessions.pop(h[7:], None)
             self.send_json(200, {'ok': True}); return
+
+        # ── Copy default placeholder image ─────────────────────
+        if rtype == 'med-image-copy-default':
+            safe = _safe_filename(f'{key}.jpg')
+            if not safe:
+                self.send_json(400, {'error': 'Invalid code'}); return
+            src = MED_IMAGES_DIR / '11001.jpg'
+            if not src.exists():
+                self.send_json(404, {'error': 'Placeholder 11001.jpg not found on server'}); return
+            shutil.copy2(src, MED_IMAGES_DIR / safe)
+            self.send_json(200, {'ok': True, 'file': safe})
+            return
 
         # ── Med DB recheck ─────────────────────────────────────
         if rtype == 'med-db-recheck':
