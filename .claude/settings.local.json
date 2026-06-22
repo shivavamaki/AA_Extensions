@@ -100,7 +100,18 @@
       "Bash(python3)",
       "Bash(python3 -c \"from PIL import Image; print\\('PIL ok'\\)\")",
       "Bash(python3 -c \"import cairosvg; print\\('cairosvg ok'\\)\")",
-      "Bash(python3 -c \" *)"
+      "Bash(python3 -c \" *)",
+      "Bash(git -C /workspaces/AA_Extensions merge main --no-edit)",
+      "Bash(git -C /workspaces/AA_Extensions merge claude/amazing-lovelace-wh5ea6 --no-edit)",
+      "Bash(git -C /workspaces/AA_Extensions merge origin/claude/blissful-mccarthy-llgf5j --no-edit)",
+      "Bash(git -C /workspaces/AA_Extensions merge origin/claude/repo-pharmacy-portal-access-51os08 --no-edit)",
+      "Bash(git -C /workspaces/AA_Extensions merge origin/claude/running-sessions-visibility-64lj6 --no-edit)",
+      "Bash(git -C /workspaces/AA_Extensions merge origin/feat/home-med-thai-no-google --no-edit)",
+      "Bash(git -C /workspaces/AA_Extensions stash pop)",
+      "Bash(git -C /workspaces/AA_Extensions push)",
+      "Bash(git -C /workspaces/AA_Extensions stash drop)",
+      "Bash(git -C /workspaces/AA_Extensions log --oneline --graph --decorate -10)",
+      "Bash(python -c ' *)"
     ],
     "additionalDirectories": [
       "/workspaces/AA_Extensions/BKNPharmacyPortal/src/features/home-med",

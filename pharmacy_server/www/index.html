@@ -398,6 +398,18 @@ tbody td{padding:8px 12px;font-size:12px;vertical-align:middle}
             <div class="form-hint">Upload replaces the existing image file on server. Auto-detects has_image after upload.</div>
           </div>
         </div>
+        <div class="form-field span2" style="margin-top:4px">
+          <label style="font-weight:600">Patient Instruction (Thai)
+            <span style="font-size:11px;color:#888;font-weight:400"> — shown in Home Med Sheet note box</span>
+          </label>
+          <textarea id="md-instr-th" rows="3" placeholder="รับประทานยา… (leave blank to keep existing)"></textarea>
+        </div>
+        <div class="form-field span2">
+          <label>Patient Instruction (English)
+            <span style="font-size:11px;color:#888;font-weight:400"> — optional, fallback display text</span>
+          </label>
+          <textarea id="md-instr-en" rows="2" placeholder="Take… (optional)"></textarea>
+        </div>
       </div>
     </div>
     <div class="modal-foot">
@@ -1054,6 +1066,8 @@ document.getElementById('btn-add-meddb').addEventListener('click', () => {
   document.getElementById('md-name').value   = '';
   document.getElementById('md-uom').value    = '';
   document.getElementById('md-copy-default-img').checked = false;
+  document.getElementById('md-instr-th').value = '';
+  document.getElementById('md-instr-en').value = '';
   _setMdImagePreview(null, false);
   openModal('modal-meddb');
 });
@@ -1068,6 +1082,9 @@ function editMedDb(code) {
   document.getElementById('md-name').value   = d.name;
   document.getElementById('md-uom').value    = d.base_uom || '';
   document.getElementById('md-copy-default-img').checked = false;
+  const existingInstr = (d.instructions || []).find(i => i.type === 'Patient Instruction');
+  document.getElementById('md-instr-th').value = existingInstr?.TH || '';
+  document.getElementById('md-instr-en').value = (existingInstr?.EN !== existingInstr?.TH ? existingInstr?.EN : '') || '';
   const hasFile = fileStems.has(code);
   _setMdImagePreview(hasFile ? `/med-images/${code}.jpg` : null, hasFile);
   openModal('modal-meddb');
@@ -1155,6 +1172,20 @@ document.getElementById('md-save').addEventListener('click', async () => {
   medDbData[code] = entry;
   medDbArr = Object.values(medDbData);
   await saveMedDb();
+  // Persist Patient Instruction if filled
+  const instrTh = document.getElementById('md-instr-th').value.trim();
+  const instrEn = document.getElementById('md-instr-en').value.trim();
+  if (instrTh) {
+    try {
+      await api('PUT', `/api/rx-note/${encodeURIComponent(code)}`, { TH: instrTh, EN: instrEn, manual: true });
+      // Update local cache so editMedDb() shows the new values without a reload
+      const inss = (medDbData[code]?.instructions || []).filter(i => i.type !== 'Patient Instruction');
+      inss.push({ type: 'Patient Instruction', TH: instrTh, EN: instrEn || instrTh });
+      if (medDbData[code]) medDbData[code].instructions = inss;
+    } catch(e) {
+      toast('Instruction save failed: ' + e.message, 'warn');
+    }
+  }
   closeModal('modal-meddb');
 });
 
@@ -1533,9 +1564,12 @@ function renderExtralabel() {
     const txt = ins.text || '';
     const preview = txt.length > 70 ? txt.slice(0, 67) + '…' : txt;
     const tr = document.createElement('tr');
+    const srcBadge = r._source === 'med-db'
+      ? ' <span class="badge" style="background:#e8f4fd;color:#1a7abf;font-size:10px">Med DB</span>'
+      : '';
     tr.innerHTML = `
       <td><code>${esc(r.code)}</code></td>
-      <td>${esc(r.name)}</td>
+      <td>${esc(r.name)}${srcBadge}</td>
       <td style="max-width:320px;white-space:pre-wrap;word-break:break-word;font-size:11px">${esc(preview)}</td>
       <td><span class="badge badge-user">${esc(ins.localLanguage || '—')}</span></td>
       ${isEditor ? `<td class="td-actions">
@@ -1571,7 +1605,9 @@ function editExtralabel(code) {
   const r = extralabelArr.find(x => x.code === code);
   if (!r) return;
   const ins = (r.instructions || [])[0] || {};
-  document.getElementById('el-code').value = r.code;
+  const elCode = document.getElementById('el-code');
+  elCode.value = r.code;
+  elCode.dataset.source = r._source || '';
   document.getElementById('el-name').value = r.name;
   document.getElementById('el-lang').value = ins.localLanguage || '';
   document.getElementById('el-text').value = ins.text || '';
@@ -1579,11 +1615,18 @@ function editExtralabel(code) {
 }
 
 document.getElementById('el-save').addEventListener('click', async () => {
-  const code = document.getElementById('el-code').value;
-  const text = document.getElementById('el-text').value.trim();
-  const lang = document.getElementById('el-lang').value.trim();
+  const elCode = document.getElementById('el-code');
+  const code   = elCode.value;
+  const text   = document.getElementById('el-text').value.trim();
+  const lang   = document.getElementById('el-lang').value.trim();
+  const isMedDb = elCode.dataset.source === 'med-db';
   try {
-    await api('PUT', `/api/extralabel/${encodeURIComponent(code)}`, { text, localLanguage: lang });
+    if (isMedDb) {
+      // Entry lives in medication-db.json — save via rx-note endpoint (manual = never overwritten by auto-translate)
+      await api('PUT', `/api/rx-note/${encodeURIComponent(code)}`, { TH: lang, EN: text, manual: true });
+    } else {
+      await api('PUT', `/api/extralabel/${encodeURIComponent(code)}`, { text, localLanguage: lang });
+    }
     // Update in-memory
     const r = extralabelArr.find(x => x.code === code);
     if (r && r.instructions && r.instructions[0]) {

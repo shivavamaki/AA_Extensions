@@ -288,10 +288,11 @@ def _translate_note(en):
 
 _rx_note_lock = threading.Lock()
 
-def save_rx_note(code, th, en=''):
-    """Write a client-translated note for `code` into medication-db.json as a
-    synthesized "Patient Instruction" (TH/EN). Returns True if the code exists.
-    Invalidates the cached extralabel index so the new Thai is served at once."""
+def save_rx_note(code, th, en='', auto=True):
+    """Write a note for `code` into medication-db.json as a "Patient Instruction".
+    Returns True if the code exists in the DB.
+    auto=True  (default) — marks entry _auto:true so future auto-translates replace it.
+    auto=False            — marks entry as curated; auto-translate will not overwrite it."""
     global _extralabel_idx
     code = _hm_norm(code)
     with _rx_note_lock:
@@ -302,15 +303,17 @@ def save_rx_note(code, th, en=''):
         inss = entry.get('instructions')
         if not isinstance(inss, list):
             inss = []
-        # Replace any prior auto-note we wrote; keep other instruction types.
-        inss = [i for i in inss if not (isinstance(i, dict) and i.get('_auto'))]
-        inss.append({
-            'type': 'Patient Instruction',
-            'EN': en or th,
-            'TH': th,
-            '_auto': True,                 # marks a client-translated note
-            'autoAt': _now_iso(),
-        })
+        if auto:
+            # Replace previous auto-notes; preserve manually curated ones
+            inss = [i for i in inss if not (isinstance(i, dict) and i.get('_auto'))]
+        else:
+            # Manual save: replace ALL Patient Instructions (both auto and manual)
+            inss = [i for i in inss if (i.get('type') or '') != 'Patient Instruction']
+        new_ins = {'type': 'Patient Instruction', 'EN': en or th, 'TH': th}
+        if auto:
+            new_ins['_auto']  = True
+            new_ins['autoAt'] = _now_iso()
+        inss.append(new_ins)
         entry['instructions'] = inss
         entry['instructionCount'] = len(inss)
         db[code] = entry
@@ -1845,6 +1848,7 @@ class Handler(BaseHTTPRequestHandler):
         elif rtype == 'extralabel':
             raw = _load_orderitem_extralabel_raw()
             results = raw.get('results') or []
+            seen = set()
             out = []
             for r in results:
                 if r.get('status') != 'ok':
@@ -1853,15 +1857,37 @@ class Handler(BaseHTTPRequestHandler):
                         if i.get('type') == 'Patient Instruction']
                 if not inss:
                     continue
+                code = r.get('code', '')
+                seen.add(code)
                 name = (r.get('listRow') or {}).get('name') or ''
                 out.append({
-                    'code': r.get('code', ''),
+                    'code': code,
                     'name': name,
                     'instructions': [
                         {'text': i.get('text', ''), 'localLanguage': i.get('localLanguage', '')}
                         for i in inss
                     ],
                 })
+            # Also surface curated instructions from medication-db.json
+            db = load_rx('medication-db')
+            if isinstance(db, dict):
+                for code, entry in db.items():
+                    if code in seen:
+                        continue
+                    inss = [i for i in (entry.get('instructions') or [])
+                            if i.get('type') == 'Patient Instruction']
+                    if not inss:
+                        continue
+                    ins = inss[0]
+                    out.append({
+                        'code': code,
+                        'name': entry.get('name', ''),
+                        '_source': 'med-db',
+                        'instructions': [{
+                            'text':          ins.get('EN', '') or ins.get('TH', ''),
+                            'localLanguage': ins.get('TH', ''),
+                        }],
+                    })
             self.send_json(200, out)
         elif rtype == 'patient':
             self.send_json(200, load_or_create_patient(key))
@@ -1954,16 +1980,17 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, {'ok': True})
 
         elif rtype == 'rx-note':
-            # Persist a client-translated note (TH + optional EN) for an item code
-            # into medication-db.json, so next time the note is served as curated
-            # Thai instead of falling back to the live English order instruction.
+            # Persist a curated/translated note (TH + optional EN) for an item code
+            # into medication-db.json.  Pass manual:true in the body to save as a
+            # curated note that auto-translate will never overwrite.
             if not isinstance(body, dict):
                 self.send_json(400, {'error': 'Body must be a JSON object'}); return
             th = _hm_norm(body.get('TH') or '')
             en = _hm_norm(body.get('EN') or '')
             if not key or not th:
                 self.send_json(400, {'error': 'code (URL) and TH (body) required'}); return
-            ok = save_rx_note(key, th, en)
+            manual = bool(body.get('manual'))
+            ok = save_rx_note(key, th, en, auto=not manual)
             self.send_json(200 if ok else 404,
                            {'ok': ok} if ok else {'error': 'Unknown item code'})
 
