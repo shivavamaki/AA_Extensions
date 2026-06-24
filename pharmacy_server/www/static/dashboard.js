@@ -34,20 +34,24 @@
   const SHEET = {
     debug: false,
     // Maprang animation frames: [left, top, width, height] as 0–1 fractions
+    // Each frame is 1/5 of the ~49% width, starting after a small left margin.
+    // Characters start after title (~4%) + "MAPRANG (CHIBI)" label (~2%).
     frames: {
-      idle:  [0.008, 0.042, 0.093, 0.128],
-      run:   [0.109, 0.042, 0.093, 0.128],
-      jump:  [0.210, 0.042, 0.093, 0.128],
-      happy: [0.311, 0.042, 0.093, 0.128],
-      wave:  [0.410, 0.042, 0.093, 0.128],
+      idle:  [0.005, 0.058, 0.092, 0.108],
+      run:   [0.105, 0.058, 0.092, 0.108],
+      jump:  [0.205, 0.058, 0.092, 0.108],
+      happy: [0.305, 0.058, 0.092, 0.108],
+      wave:  [0.405, 0.058, 0.092, 0.108],
     },
     // Stage background scenes: [left, top, width, height] as 0–1 fractions
+    // 5 rows of equal height start at y≈0.195. Each row is 0.157 tall;
+    // the scene starts 0.015 into the row (after the stage-name label).
     bg: {
-      school:     [0.008, 0.187, 0.445, 0.103],
-      playground: [0.008, 0.340, 0.445, 0.103],
-      zootopia:   [0.008, 0.493, 0.445, 0.103],
-      minecraft:  [0.008, 0.646, 0.445, 0.103],
-      space:      [0.008, 0.799, 0.445, 0.103],
+      school:     [0.006, 0.210, 0.442, 0.107],
+      playground: [0.006, 0.367, 0.442, 0.107],
+      zootopia:   [0.006, 0.524, 0.442, 0.107],
+      minecraft:  [0.006, 0.681, 0.442, 0.107],
+      space:      [0.006, 0.838, 0.442, 0.107],
     },
     // Ground level within each background (0=top, 1=bottom of bg region)
     ground: {
