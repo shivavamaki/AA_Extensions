@@ -10,6 +10,7 @@ Internal tooling monorepo for the **BKN Hospital Pharmacy Department**. Chrome e
 EXT/
 ├── BKNPharmacyPortal/   ← primary extension (ACTIVE — v3.6.0)
 ├── Automate/            ← separate utility extension (Auto Dispense / IP Fill)
+├── chemo_sticker/       ← standalone chemo label web app (no build step)
 └── pharmacy_server/     ← Python stdlib HTTP server (data backend)
 ```
 
@@ -40,8 +41,15 @@ Extension pages:
 | iv-aux-sticker | [src/features/iv-aux-sticker/README.md](BKNPharmacyPortal/src/features/iv-aux-sticker/README.md) |
 | beedee-pdf | [src/features/beedee-pdf/README.md](BKNPharmacyPortal/src/features/beedee-pdf/README.md) |
 | report-print | [src/features/report-print/README.md](BKNPharmacyPortal/src/features/report-print/README.md) |
+| chemo-sticker | [`chemo-sticker/`](BKNPharmacyPortal/chemo-sticker/) — extension page clone of the standalone app; drug DB backed by `GET/PUT /api/chemo-drugs` on the pharmacy server |
 
 Extension architecture: [BKNPharmacyPortal/README.md](BKNPharmacyPortal/README.md)
+
+## Standalone apps
+
+| App | Path | Notes |
+| --- | --- | --- |
+| chemo-sticker | [`chemo_sticker/`](chemo_sticker/) | Standalone chemo label web app — open `index.html` directly in a browser, no build step. Drug list seeded from `chemo_drugs_default.json`. Thai fonts bundled in `fonts/`. |
 
 ## Running
 

@@ -158,11 +158,12 @@ function updateServerBar(configured, ok) {
   }
   const url = getServerUrl();
   const copyBtn = url
-    ? `<button onclick="navigator.clipboard?.writeText('${url}')" style="margin-left:6px;background:none;border:none;cursor:pointer;font-size:10px;color:inherit;opacity:.7;" title="Copy URL">⧉</button>`
+    ? `<button class="srv-copy-btn" style="margin-left:6px;background:none;border:none;cursor:pointer;font-size:10px;color:inherit;opacity:.7;" title="Copy URL">⧉</button>`
     : '';
   el.innerHTML = ok
     ? `<div class="server-bar-ok"><span class="server-dot-icon"></span>Server connected${copyBtn}</div>`
     : `<div class="server-bar-err"><span class="server-dot-icon"></span>Server unreachable${copyBtn}</div>`;
+  if (url) el.querySelector('.srv-copy-btn')?.addEventListener('click', () => navigator.clipboard?.writeText(url));
 }
 
 // ── File upload helper ─────────────────────────────────────────
@@ -312,7 +313,7 @@ function buildFaqCard(f) {
     </div>` : '';
 
   const images = (f.images || []).map(u =>
-    `<img src="${esc(u)}" class="faq-inline-img" loading="lazy" onerror="this.style.display='none'">`
+    `<img src="${esc(u)}" class="faq-inline-img" loading="lazy" data-err="hide">`
   ).join('');
 
   const attachments = (f.attachments || []).map(a =>
@@ -392,7 +393,7 @@ function buildDrugCard(item) {
     </div>` : '';
 
   const imgHtml = item.image
-    ? `<div class="drug-card-image"><img src="${esc(item.image)}" alt="${esc(item.name)}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`
+    ? `<div class="drug-card-image"><img src="${esc(item.image)}" alt="${esc(item.name)}" loading="lazy" data-err="parent"></div>`
     : '';
 
   const attachments = (item.attachments || []).map(a =>
@@ -470,7 +471,7 @@ function buildVdoCard(v) {
     <div class="vdo-card" data-open-vdo="${esc(v.id)}">
       ${adminBtns}
       <div class="vdo-thumb">
-        ${thumb ? `<img src="${esc(thumb)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
+        ${thumb ? `<img src="${esc(thumb)}" alt="" loading="lazy" data-err="hide">` : ''}
         <div class="vdo-play">▶️</div>
         ${v.duration ? `<div class="vdo-duration">${esc(v.duration)}</div>` : ''}
       </div>
@@ -545,7 +546,7 @@ function buildAdminItemsPage() {
     return `
       <tr>
         <td>
-          ${i.image ? `<img src="${esc(i.image)}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:6px" onerror="this.style.display='none'">` : ''}
+          ${i.image ? `<img src="${esc(i.image)}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:6px" data-err="hide">` : ''}
           <strong>${esc(i.name)}</strong><br><span style="font-size:11px;color:var(--text-soft)">${esc(i.generic || '')}</span>
         </td>
         <td><span class="cat-badge ${esc(cat.cls)}">${esc(cat.label)}</span> ${hasMedia}</td>
@@ -715,7 +716,7 @@ function buildEditForm(type, id) {
         <div id="ef-img-preview" class="ks-upload-preview">${
           (d.images || []).map((u, i) => `
             <div class="ks-preview-item" data-img-idx="${i}">
-              <img src="${esc(u)}" onerror="this.src=''">
+              <img src="${esc(u)}" data-err="clear">
               <button type="button" class="ks-remove-btn" data-rm-img="${i}">✕</button>
             </div>`).join('')
         }</div>
@@ -870,7 +871,7 @@ function _bindEditFormEvents(type) {
           const idx = list.length - 1;
           preview.insertAdjacentHTML('beforeend', `
             <div class="ks-preview-item" data-img-idx="${idx}">
-              <img src="${esc(url)}" onerror="this.src=''">
+              <img src="${esc(url)}" data-err="clear">
               <button type="button" class="ks-remove-btn" data-rm-img="${idx}">✕</button>
             </div>`);
         }
@@ -1142,6 +1143,16 @@ function showToast(msg, type = 'info') {
 // ════════════════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════════════════
+// Handle broken images without inline onerror (blocked by Extension CSP)
+document.addEventListener('error', e => {
+  const el = e.target;
+  if (el.tagName !== 'IMG') return;
+  const action = el.dataset.err;
+  if (action === 'hide')   el.style.display = 'none';
+  if (action === 'parent') el.parentElement.style.display = 'none';
+  if (action === 'clear')  el.src = '';
+}, true); // capture phase — error doesn't bubble
+
 document.addEventListener('DOMContentLoaded', async () => {
   const ok = await loadAllFromServer();
   state.serverOk = ok;
