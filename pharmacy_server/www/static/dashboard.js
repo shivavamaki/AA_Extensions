@@ -488,6 +488,7 @@
   });
   $('healthJson').addEventListener('click',  () => window.open('/api/server-status', '_blank'));
   $('adminPortal').addEventListener('click', () => window.open('/index', '_blank'));
+  $('hmrReport').addEventListener('click',   () => window.open('/hmr-report', '_blank'));
 
   // ── Boot ──────────────────────────────────────────────────────
   window._scene = new SpriteScene($('pixiStage'));

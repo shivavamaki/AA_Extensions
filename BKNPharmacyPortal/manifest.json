@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.6.6",
-  "version_name": "2026.06.16 — Pattern Editor: editable phrase overrides for the Home Med translator + Node test harness",
+  "version": "3.7.2",
+  "version_name": "2026.06.24 — HMR: visitid primary key, 1-week retention, nightly merge",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",
@@ -78,10 +78,12 @@
         "src/features/adrtimeline/adrtimeline-jasper.js",
         "src/features/adrtimeline/content-adrtimeline.js",
         "src/features/home-med/content-home-med.js",
+        "src/features/hmr/content-hmr.js",
         "content_script.js"
       ],
       "css": [
-        "src/styles/overlay.css"
+        "src/styles/overlay.css",
+        "src/features/hmr/hmr.css"
       ],
       "run_at": "document_idle"
     },

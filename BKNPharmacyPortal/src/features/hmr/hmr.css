@@ -1,0 +1,280 @@
+/* ══ BKN Home Medication Review (HMR) ════════════════════════════════ */
+
+/* Trigger button — sits next to "Visit Details" h4 */
+#hmr-trig-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px 3px 8px;
+  background: #e8f0fe;
+  color: #1565c0;
+  border: 1px solid #90caf9;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  line-height: 1.4;
+  white-space: nowrap;
+  transition: background 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
+}
+#hmr-trig-btn:hover {
+  background: #c8dcff;
+  box-shadow: 0 2px 6px rgba(21, 101, 192, 0.18);
+}
+/* workstation is open → orange/active appearance */
+#hmr-trig-btn.hmr-trig-open {
+  background: #fff3e0;
+  color: #e65100;
+  border-color: #ffcc80;
+}
+#hmr-trig-btn.hmr-trig-open:hover { background: #ffe0b2; }
+
+/* Workstation wrapper — injected inline before Patient Tracking row */
+#hmr-workstation {
+  margin: 0 0 12px 0;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  color: #222;
+  line-height: 1.4;
+}
+
+/* Card */
+.hmr-card {
+  background: #fff;
+  border: 1px solid #90caf9;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(21, 101, 192, 0.13), 0 1px 4px rgba(0, 0, 0, 0.07);
+  overflow: hidden;
+}
+
+/* Header */
+.hmr-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: linear-gradient(135deg, #1565c0, #1e88e5);
+}
+.hmr-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #fff;
+  flex: 1;
+  letter-spacing: 0.2px;
+}
+.hmr-room-chip {
+  background: rgba(255, 255, 255, 0.18);
+  color: #e3f2fd;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 8px;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hmr-x-btn {
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.12s;
+}
+.hmr-x-btn:hover { background: rgba(255, 255, 255, 0.26); }
+
+/* Body */
+.hmr-body { padding: 11px 13px 13px; }
+
+/* Section labels */
+.hmr-sec-lbl {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #607d8b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 10px 0 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.hmr-sec-lbl:first-child { margin-top: 0; }
+.hmr-auto-tag {
+  font-size: 8.5px;
+  background: #e3f2fd;
+  color: #1565c0;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+/* Discharge row */
+.hmr-dc-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 2px;
+}
+.hmr-dc-badge {
+  flex: 1;
+  padding: 5px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.hmr-dc-ok   { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+.hmr-dc-warn { background: #fff8e1; color: #f57f17; border: 1px solid #ffe082; }
+.hmr-detect-btn {
+  padding: 4px 9px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 10.5px;
+  color: #555;
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+  transition: background 0.12s;
+}
+.hmr-detect-btn:hover { background: #ebebeb; }
+
+/* Checklist */
+.hmr-checklist {
+  background: #fafcff;
+  border: 1px solid #e3eefa;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.hmr-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-bottom: 1px solid #eef2f8;
+}
+.hmr-check-row:last-child { border-bottom: none; }
+.hmr-check-text { flex: 1; min-width: 0; }
+.hmr-ck-th { font-size: 11.5px; color: #263238; font-weight: 500; }
+.hmr-ck-en { font-size: 9.5px;  color: #90a4ae; margin-top: 1px; }
+
+.hmr-yn-pair { display: flex; gap: 4px; flex-shrink: 0; }
+.hmr-yn {
+  padding: 4px 9px;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #bdbdbd;
+  background: #f5f5f5;
+  color: #666;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.hmr-yn-yes:hover       { background: #e8f5e9; border-color: #81c784; color: #2e7d32; }
+.hmr-yn-yes.hmr-yn-on   { background: #c8e6c9; border-color: #43a047; color: #1b5e20; }
+.hmr-yn-no:hover        { background: #ffebee; border-color: #ef9a9a; color: #c62828; }
+.hmr-yn-no.hmr-yn-on    { background: #ffcdd2; border-color: #e53935; color: #b71c1c; }
+
+/* Steps */
+.hmr-steps { display: flex; flex-direction: column; gap: 4px; }
+.hmr-step-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+  border-radius: 6px;
+  border: 1px solid;
+}
+.hmr-step-pend { background: #fafafa; border-color: #e0e0e0; color: #666; }
+.hmr-step-done { background: #e8f5e9; border-color: #a5d6a7; color: #2e7d32; }
+.hmr-step-skip { background: #f5f5f5; border-color: #e0e0e0; color: #9e9e9e; }
+.hmr-step-num {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.07);
+}
+.hmr-step-done .hmr-step-num { background: #43a047; color: #fff; }
+.hmr-step-name { flex: 1; font-size: 11px; }
+.hmr-step-tag {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #90a4ae;
+  background: #eceff1;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* Start Process — lives in the header */
+.hmr-btn-start {
+  padding: 4px 10px;
+  background: #fff;
+  color: #1565c0;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.14s, color 0.14s, opacity 0.14s;
+}
+.hmr-btn-start:hover:not(:disabled) {
+  background: #e8f0fe;
+  border-color: #fff;
+}
+.hmr-btn-start:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Status + actions */
+.hmr-mod-info { font-size: 10px; color: #7986cb; opacity: 0.85; }
+.hmr-statusbar {
+  margin-bottom: 10px;
+  padding: 7px 10px;
+  background: #f0f4ff;
+  border: 1px solid #c5cae9;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #3949ab;
+  line-height: 1.4;
+}
+.hmr-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 9px;
+}
+.hmr-btn-reset {
+  padding: 7px 12px;
+  background: #fff;
+  color: #666;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s;
+}
+.hmr-btn-reset:hover { background: #f2f2f2; }

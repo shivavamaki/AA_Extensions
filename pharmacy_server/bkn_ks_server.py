@@ -76,7 +76,7 @@ import threading
 import random
 import unicodedata
 import math
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 
@@ -101,6 +101,7 @@ KS_FILES_DIR  = DATA_DIR / 'ks' / 'files'
 SCHEDULE_DIR      = DATA_DIR / 'schedule'
 TEMP_REPORTS_DIR  = DATA_DIR / 'temp-reports'
 PATIENTS_DIR      = DATA_DIR / 'patients'
+HMR_DIR           = DATA_DIR / 'hmr'
 LOGS_DIR          = DATA_DIR / 'logs'
 WWW_DIR           = Path(__file__).parent / 'www'
 KS_COLS       = {'faqs', 'items', 'vdos'}
@@ -1252,6 +1253,130 @@ def _safe_puid(puid):
         return None
     return puid
 
+# ── HMR helpers ────────────────────────────────────────────────
+_VISITID_RE = re.compile(r'^I48-\d{2}-\d{6}$')
+_HN_RE      = re.compile(r'^48-\d{2}-\d{7}$')
+
+def _safe_visitid(vid):
+    return bool(vid and _VISITID_RE.match(vid))
+
+def hmr_file(vid):
+    return HMR_DIR / f'{vid}.json'
+
+def load_hmr(vid):
+    """Load individual HMR record; falls back to scanning daily archives."""
+    p = hmr_file(vid)
+    if p.exists():
+        try:
+            return json.loads(p.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+    # Scan daily archives newest-first
+    if HMR_DIR.exists():
+        for mp in sorted(HMR_DIR.glob('HM_*.json'), reverse=True):
+            try:
+                records = json.loads(mp.read_text(encoding='utf-8'))
+                if isinstance(records, list):
+                    for rec in records:
+                        if rec.get('visitid') == vid:
+                            return rec
+            except Exception:
+                pass
+    return None
+
+def load_all_hmr(from_date=None, to_date=None):
+    """Return all HMR records from live files and daily archives."""
+    if not HMR_DIR.exists():
+        return []
+    seen = {}
+    # Live individual files take priority
+    for p in HMR_DIR.glob('I*.json'):
+        try:
+            doc = json.loads(p.read_text(encoding='utf-8'))
+            vid = doc.get('visitid')
+            if vid:
+                seen[vid] = doc
+        except Exception:
+            pass
+    # Daily archive files fill in records no longer live
+    for mp in sorted(HMR_DIR.glob('HM_*.json')):
+        try:
+            records = json.loads(mp.read_text(encoding='utf-8'))
+            if isinstance(records, list):
+                for doc in records:
+                    vid = doc.get('visitid')
+                    if vid and vid not in seen:
+                        seen[vid] = doc
+        except Exception:
+            pass
+    result = list(seen.values())
+    if from_date or to_date:
+        def _date_key(d):
+            return (d.get('startedAt') or d.get('createdAt') or '')[:10]
+        result = [d for d in result
+                  if (not from_date or _date_key(d) >= from_date)
+                  and (not to_date   or _date_key(d) <= to_date)]
+    result.sort(key=lambda d: d.get('startedAt') or d.get('createdAt') or '', reverse=True)
+    return result
+
+def save_hmr(vid, doc):
+    HMR_DIR.mkdir(parents=True, exist_ok=True)
+    doc['updatedAt'] = _now_iso()
+    _atomic_write_json(hmr_file(vid), doc)
+
+# ── HMR nightly merge — one HM_YYYY-MM-DD.json per day, kept forever ──
+def _hmr_nightly_merge():
+    """Merge all live I*.json files into today's HM_YYYY-MM-DD.json, then delete live files."""
+    if not HMR_DIR.exists():
+        return
+    today = datetime.now().strftime('%Y-%m-%d')
+    live_files = list(HMR_DIR.glob('I*.json'))
+    if not live_files:
+        return
+    # Load or create today's daily archive
+    daily_path = HMR_DIR / f'HM_{today}.json'
+    merged = {}
+    if daily_path.exists():
+        try:
+            existing = json.loads(daily_path.read_text(encoding='utf-8'))
+            if isinstance(existing, list):
+                merged = {r.get('visitid'): r for r in existing if r.get('visitid')}
+        except Exception:
+            pass
+    # Upsert each live record (latest wins)
+    for p in live_files:
+        try:
+            doc = json.loads(p.read_text(encoding='utf-8'))
+            vid = doc.get('visitid')
+            if vid:
+                merged[vid] = doc
+        except Exception:
+            pass
+    _atomic_write_json(daily_path, list(merged.values()))
+    # Remove individual live files — they are now in the daily archive
+    for p in live_files:
+        try:
+            p.unlink()
+        except Exception:
+            pass
+
+def _seconds_until_2300():
+    now    = datetime.now()
+    target = now.replace(hour=23, minute=0, second=0, microsecond=0)
+    if target <= now:
+        target += timedelta(days=1)
+    return max(60, (target - now).total_seconds())
+
+def _hmr_nightly_job():
+    try:
+        _hmr_nightly_merge()
+    except Exception as e:
+        print(f'[HMR] Nightly merge error: {e}', file=sys.stderr)
+    threading.Timer(_seconds_until_2300(), _hmr_nightly_job).start()
+
+def _start_hmr_scheduler():
+    threading.Timer(_seconds_until_2300(), _hmr_nightly_job).start()
+
 def patient_file(puid):
     return PATIENTS_DIR / f'{puid}.json'
 
@@ -1413,6 +1538,7 @@ def _dashboard_scan():
             'Med images':    _count_files_safe(MED_IMAGES_DIR),
             'Patients':      _count_files_safe(PATIENTS_DIR, '*.json'),
             'Logs':          _count_files_safe(LOGS_DIR, '*.jsonl'),
+            'HMR (live)':    _count_files_safe(HMR_DIR, 'I*.json'),
         }
         with _dash_lock:
             _DASH_CACHE.update(at=time.time(), endpoints=endpoints, modules=modules, dataOk=data_ok)
@@ -1723,6 +1849,16 @@ class Handler(BaseHTTPRequestHandler):
                     return None, None, None
                 return 'patient-medcache', puid, visituid
 
+        # /api/hmr               → ('hmr-list', None, None)
+        # /api/hmr/{visitid}     → ('hmr', visitid, None)
+        if len(parts) >= 2 and parts[0] == 'api' and parts[1] == 'hmr':
+            if len(parts) == 2:
+                return 'hmr-list', None, None
+            vid = urllib.parse.unquote(parts[2])
+            if not _safe_visitid(vid):
+                return None, None, None
+            return 'hmr', vid, None
+
         # /api/extralabel                → ('extralabel', None, None)
         # /api/extralabel/<code>         → ('extralabel', code, None)
         if len(parts) >= 2 and parts[:2] == ['api', 'extralabel']:
@@ -1752,6 +1888,8 @@ class Handler(BaseHTTPRequestHandler):
         clean = urllib.parse.urlsplit(self.path).path
         if clean in ('/dashboard', '/dashboard.html'):
             self._serve_file(WWW_DIR / 'dashboard.html', 'text/html; charset=utf-8'); return
+        if clean in ('/hmr-report', '/hmr-report.html'):
+            self._serve_file(WWW_DIR / 'hmr-report.html', 'text/html; charset=utf-8'); return
         if clean in ('/index', '/home'):
             # Explicit route to the legacy index.html (dashboard.html shadows it at /).
             self._serve_file(WWW_DIR / 'index.html', 'text/html; charset=utf-8'); return
@@ -1901,6 +2039,14 @@ class Handler(BaseHTTPRequestHandler):
             doc = load_or_create_patient(key)
             entry = (doc.get('medicationCache') or {}).get(extra)
             self.send_json(200, entry)
+        elif rtype == 'hmr':
+            doc = load_hmr(key)
+            self.send_json(200, doc or {})
+        elif rtype == 'hmr-list':
+            qs        = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            from_date = (qs.get('from') or [None])[0]
+            to_date   = (qs.get('to')   or [None])[0]
+            self.send_json(200, load_all_hmr(from_date, to_date))
         else:
             self.send_json(404, {'error': 'Not found'})
 
@@ -1938,6 +2084,7 @@ class Handler(BaseHTTPRequestHandler):
             'kpi-day', 'kpi-section', 'ks', 'rx', 'rx-note',
             'med-image-upload', 'ks-file-upload', 'schedule',
             'patient', 'patient-context', 'patient-adr', 'patient-medcache',
+            'hmr',
         )
         if not ext_data_write:
             if not self._require('super_admin', 'admin', 'editor'): return
@@ -2090,6 +2237,30 @@ class Handler(BaseHTTPRequestHandler):
             cache[extra] = body
             doc['medicationCache'] = cache
             save_patient(key, doc)
+            self.send_json(200, {'ok': True})
+
+        elif rtype == 'hmr':
+            # Read-merge-write so multiple PCs can edit concurrently.
+            # Checklist/step fields: last-write-wins.
+            # auditLog: always append — entries from body are added to existing list.
+            if not isinstance(body, dict):
+                self.send_json(400, {'error': 'Body must be a JSON object'}); return
+            doc = load_hmr(key) or {
+                'visitid':   key,
+                'createdAt': _now_iso(),
+                'auditLog':  [],
+            }
+            protected = {'visitid', 'createdAt', 'auditLog', 'updatedAt'}
+            for k, v in body.items():
+                if k not in protected:
+                    doc[k] = v
+            # Append incoming audit log entries (never overwrite existing)
+            incoming_log = body.get('auditLog')
+            if isinstance(incoming_log, list):
+                existing = doc.get('auditLog') or []
+                existing.extend(incoming_log)
+                doc['auditLog'] = existing
+            save_hmr(key, doc)
             self.send_json(200, {'ok': True})
 
         elif rtype == 'users':
@@ -2495,6 +2666,8 @@ def start_server_background(port=None):
     # Warm the dashboard cache (the disk scan is slow over SMB) so the GUI's
     # first poll doesn't hit a multi-second cold call.
     threading.Thread(target=_dashboard_heavy, daemon=True).start()
+    # Schedule HMR nightly merge at 23:00
+    _start_hmr_scheduler()
     return server, ip, port
 
 

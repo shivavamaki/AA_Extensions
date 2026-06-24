@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>HMR Report — BKN Pharmacy</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: #f0f4f8;
+      color: #222;
+      font-size: 13px;
+    }
+    header {
+      background: linear-gradient(135deg, #1565c0, #1e88e5);
+      color: #fff;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    header h1 { font-size: 18px; font-weight: 700; flex: 1; }
+    header .back-btn {
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.35);
+      color: #fff;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    header .back-btn:hover { background: rgba(255,255,255,.28); }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      background: #fff;
+      border-bottom: 1px solid #dde4ef;
+      padding: 10px 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    }
+    .toolbar label { font-size: 12px; color: #555; font-weight: 600; }
+    .toolbar input[type="date"] {
+      padding: 5px 8px;
+      border: 1px solid #c5cae9;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #333;
+      outline: none;
+    }
+    .toolbar input[type="date"]:focus { border-color: #1e88e5; }
+    .btn {
+      padding: 6px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .88; }
+    .btn-primary { background: #1565c0; color: #fff; }
+    .btn-secondary { background: #eceff1; color: #546e7a; border: 1px solid #cfd8dc; }
+    .stat-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 14px 20px 0;
+    }
+    .chip {
+      background: #fff;
+      border: 1px solid #dde4ef;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    }
+    .chip .chip-val { font-size: 20px; font-weight: 700; color: #1565c0; line-height: 1.2; }
+    .chip .chip-lbl { color: #78909c; font-size: 10.5px; }
+    .table-wrap {
+      margin: 14px 20px 24px;
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid #dde4ef;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    thead th {
+      background: #e8eef8;
+      color: #37474f;
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      padding: 9px 12px;
+      text-align: left;
+      border-bottom: 1px solid #c5cae9;
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid #f0f4f8; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f5f8ff; }
+    tbody td { padding: 8px 12px; vertical-align: middle; }
+    .td-mono { font-family: "Consolas", monospace; font-size: 11.5px; color: #1565c0; }
+    .td-hn   { font-family: "Consolas", monospace; font-size: 11px; color: #546e7a; }
+    .td-date { font-size: 11px; color: #546e7a; white-space: nowrap; }
+    .dc-ok   { color: #2e7d32; font-weight: 600; }
+    .dc-none { color: #bdbdbd; }
+    .ck-yes  { color: #2e7d32; font-weight: 700; }
+    .ck-no   { color: #c62828; font-weight: 700; }
+    .ck-null { color: #bdbdbd; }
+    .badge-started { background: #e8f5e9; color: #2e7d32; padding: 2px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 600; white-space: nowrap; }
+    .badge-pending { background: #fff8e1; color: #f57f17; padding: 2px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 600; white-space: nowrap; }
+    .td-user { font-size: 11px; color: #455a64; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .td-log  { font-size: 11px; color: #78909c; text-align: center; }
+    .detail-btn {
+      padding: 3px 8px;
+      background: #e8eef8;
+      border: 1px solid #c5cae9;
+      border-radius: 5px;
+      color: #1565c0;
+      cursor: pointer;
+      font-size: 11px;
+      font-family: inherit;
+    }
+    .detail-btn:hover { background: #d0ddf5; }
+    .empty-row td { text-align: center; padding: 40px; color: #90a4ae; font-style: italic; }
+    .loading-row td { text-align: center; padding: 30px; color: #78909c; }
+
+    /* Modal overlay for audit log */
+    .modal-bg {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.38);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-bg.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.22);
+      width: 600px;
+      max-width: 95vw;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-hdr {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 16px;
+      border-bottom: 1px solid #e8eef8;
+    }
+    .modal-hdr h2 { font-size: 14px; flex: 1; }
+    .modal-close { cursor: pointer; font-size: 16px; color: #90a4ae; border: none; background: none; line-height: 1; padding: 4px; }
+    .modal-close:hover { color: #546e7a; }
+    .modal-body { overflow-y: auto; padding: 12px 16px; flex: 1; }
+    .log-row {
+      display: grid;
+      grid-template-columns: 160px 160px 1fr;
+      gap: 6px;
+      padding: 6px 0;
+      border-bottom: 1px solid #f0f4f8;
+      font-size: 11.5px;
+    }
+    .log-row:last-child { border-bottom: none; }
+    .log-ts   { color: #78909c; font-family: monospace; }
+    .log-user { color: #455a64; font-weight: 600; }
+    .log-act  { color: #263238; }
+    .modal-empty { text-align: center; padding: 24px; color: #90a4ae; font-style: italic; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="back-btn" href="/dashboard">← Dashboard</a>
+  <h1>💊 Home Medication Review (HMR) — Report</h1>
+</header>
+
+<div class="toolbar">
+  <label>From</label>
+  <input type="date" id="fromDate"/>
+  <label>To</label>
+  <input type="date" id="toDate"/>
+  <button class="btn btn-primary" id="loadBtn">Load</button>
+  <button class="btn btn-secondary" id="exportBtn">Export CSV</button>
+  <span id="statusMsg" style="font-size:11px;color:#78909c;margin-left:8px;"></span>
+</div>
+
+<div class="stat-chips">
+  <div class="chip"><span class="chip-val" id="statTotal">—</span><span class="chip-lbl">Total records</span></div>
+  <div class="chip"><span class="chip-val" id="statStarted">—</span><span class="chip-lbl">Process started</span></div>
+  <div class="chip"><span class="chip-val" id="statAllChecked">—</span><span class="chip-lbl">All checks done</span></div>
+  <div class="chip"><span class="chip-val" id="statAtb">—</span><span class="chip-lbl">Has ATB</span></div>
+</div>
+
+<div class="table-wrap">
+  <table id="hmrTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Visit ID</th>
+        <th>HN</th>
+        <th>Date</th>
+        <th>Discharge Status</th>
+        <th>ATB ก่อน D/C</th>
+        <th>คืนยาเหลือ</th>
+        <th>ยาเสพติดค้าง</th>
+        <th>Status</th>
+        <th>Last By</th>
+        <th>Logs</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody id="hmrTbody">
+      <tr class="empty-row"><td colspan="12">Select a date range and click Load</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Audit log modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2 id="modalTitle">Audit Log</h2>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  // Default date range: today
+  const today = new Date().toISOString().slice(0, 10);
+  const weekAgo = new Date(Date.now() - 6*24*3600*1000).toISOString().slice(0, 10);
+  $('fromDate').value = weekAgo;
+  $('toDate').value   = today;
+
+  let _records = [];
+
+  async function loadData() {
+    const from = $('fromDate').value;
+    const to   = $('toDate').value;
+    $('statusMsg').textContent = 'Loading…';
+    $('loadBtn').disabled = true;
+    try {
+      const qs = new URLSearchParams();
+      if (from) qs.set('from', from);
+      if (to)   qs.set('to',   to);
+      const res = await fetch('/api/hmr?' + qs);
+      if (!res.ok) throw new Error(res.statusText);
+      _records = await res.json();
+      renderTable(_records);
+      $('statusMsg').textContent = `${_records.length} record(s) loaded`;
+    } catch (e) {
+      $('statusMsg').textContent = 'Error: ' + e.message;
+    } finally {
+      $('loadBtn').disabled = false;
+    }
+  }
+
+  function ck(val) {
+    if (val === true)  return '<span class="ck-yes">YES</span>';
+    if (val === false) return '<span class="ck-no">NO</span>';
+    return '<span class="ck-null">—</span>';
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    const d = iso.slice(0, 10);
+    const t = iso.slice(11, 16);
+    return `<span title="${iso}">${d}<br><small>${t}</small></span>`;
+  }
+
+  function allChecked(cl) {
+    return cl && cl.hasAtb !== null && cl.medReturned !== null && cl.controlledRemaining !== null;
+  }
+
+  function renderTable(records) {
+    const tbody = $('hmrTbody');
+    if (!records.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="12">No records found for this date range</td></tr>';
+      updateStats([]);
+      return;
+    }
+    tbody.innerHTML = records.map((r, i) => {
+      const cl = r.checklist || {};
+      const dc = cl.dischargeStatus;
+      const started = r.completedAt || ((r.auditLog || []).some(l => l.action === 'start process clicked'));
+      const rowStatus = started
+        ? '<span class="badge-started">▶ Started</span>'
+        : (allChecked(cl) ? '<span class="badge-pending">✓ Ready</span>' : '<span class="badge-pending">In Progress</span>');
+      const logCount = (r.auditLog || []).length;
+      return `<tr>
+        <td class="td-log">${i+1}</td>
+        <td class="td-mono">${r.visitid || '—'}</td>
+        <td class="td-hn">${r.hn || '—'}</td>
+        <td class="td-date">${fmtDate(r.startedAt || r.createdAt)}</td>
+        <td>${dc ? `<span class="dc-ok">${escHtml(dc)}</span>` : '<span class="dc-none">—</span>'}</td>
+        <td>${ck(cl.hasAtb)}</td>
+        <td>${ck(cl.medReturned)}</td>
+        <td>${ck(cl.controlledRemaining)}</td>
+        <td>${rowStatus}</td>
+        <td class="td-user" title="${escHtml(r.lastModifiedBy||'')}">${escHtml(r.lastModifiedBy||'—')}</td>
+        <td class="td-log">${logCount}</td>
+        <td><button class="detail-btn" data-idx="${i}">Log</button></td>
+      </tr>`;
+    }).join('');
+    // Wire detail buttons
+    tbody.querySelectorAll('.detail-btn').forEach(btn => {
+      btn.addEventListener('click', () => showLog(Number(btn.dataset.idx)));
+    });
+    updateStats(records);
+  }
+
+  function updateStats(records) {
+    const cl_list = records.map(r => r.checklist || {});
+    $('statTotal').textContent     = records.length;
+    $('statStarted').textContent   = records.filter(r => r.completedAt || (r.auditLog||[]).some(l=>l.action==='start process clicked')).length;
+    $('statAllChecked').textContent = cl_list.filter(allChecked).length;
+    $('statAtb').textContent       = cl_list.filter(c => c.hasAtb === true).length;
+  }
+
+  function showLog(idx) {
+    const r = _records[idx];
+    if (!r) return;
+    $('modalTitle').textContent = `Audit Log — ${r.visitid || r.hn || '?'}`;
+    const logs = r.auditLog || [];
+    if (!logs.length) {
+      $('modalBody').innerHTML = '<div class="modal-empty">No audit log entries</div>';
+    } else {
+      $('modalBody').innerHTML = logs.map(l => `
+        <div class="log-row">
+          <span class="log-ts">${(l.ts||'').replace('T',' ').slice(0,19)}</span>
+          <span class="log-user">${escHtml(l.user||'—')}</span>
+          <span class="log-act">${escHtml(l.action||'—')}</span>
+        </div>`).join('');
+    }
+    $('modalBg').classList.add('open');
+  }
+
+  $('modalClose').addEventListener('click', () => $('modalBg').classList.remove('open'));
+  $('modalBg').addEventListener('click', e => { if (e.target === $('modalBg')) $('modalBg').classList.remove('open'); });
+  $('loadBtn').addEventListener('click', loadData);
+
+  $('exportBtn').addEventListener('click', () => {
+    if (!_records.length) { alert('Load data first'); return; }
+    const COLS = ['visitid','hn','startedAt','dischargeStatus','hasAtb','medReturned','controlledRemaining','status','lastModifiedBy','logCount'];
+    const header = COLS.join(',');
+    const rows = _records.map(r => {
+      const cl = r.checklist || {};
+      const started = r.completedAt || (r.auditLog||[]).some(l=>l.action==='start process clicked');
+      return [
+        r.visitid||'', r.hn||'',
+        (r.startedAt||r.createdAt||'').slice(0,19),
+        cl.dischargeStatus||'',
+        cl.hasAtb === true ? 'YES' : cl.hasAtb === false ? 'NO' : '',
+        cl.medReturned === true ? 'YES' : cl.medReturned === false ? 'NO' : '',
+        cl.controlledRemaining === true ? 'YES' : cl.controlledRemaining === false ? 'NO' : '',
+        started ? 'started' : (allChecked(cl) ? 'ready' : 'in_progress'),
+        r.lastModifiedBy||'',
+        (r.auditLog||[]).length,
+      ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
+    });
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `hmr_report_${$('fromDate').value}_${$('toDate').value}.csv`;
+    a.click();
+  });
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function allChecked(cl) {
+    return cl && cl.hasAtb !== null && cl.medReturned !== null && cl.controlledRemaining !== null;
+  }
+</script>
+</body>
+</html>
