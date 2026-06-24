@@ -117,7 +117,9 @@
       "Bash(node --check /workspaces/AA_Extensions/pharmacy_server/www/static/dashboard.js)",
       "Bash(xargs ls -lt)",
       "Bash(find /tmp -maxdepth 3 \\\\\\( -name \"*.png\" -o -name \"*.jpg\" -o -name \"*.jpeg\" -o -name \"*.webp\" \\\\\\) 2>/dev/null | sort -n | head -20 && echo \"---\" && find /var /home /root -maxdepth 4 \\\\\\( -name \"*.png\" -o -name \"*.jpg\" \\\\\\) -newer /workspaces/AA_Extensions/CLAUDE.md 2>/dev/null | head -10)",
-      "Read(//var/**)"
+      "Read(//var/**)",
+      "Bash(git merge *)",
+      "Bash(python3 -c \"import json; json.load\\(open\\('/workspaces/AA_Extensions/.claude/settings.local.json'\\)\\); print\\('JSON OK'\\)\")"
     ],
     "additionalDirectories": [
       "/workspaces/AA_Extensions/BKNPharmacyPortal/src/features/home-med",
