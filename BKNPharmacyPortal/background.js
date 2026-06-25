@@ -284,7 +284,9 @@ function _arcusExtractAngularCtx() {
       if (xhrCtx.patientuid      && !pc.patientuid)      pc.patientuid      = xhrCtx.patientuid;
       if (xhrCtx.patientvisituid && !pc.patientvisituid) pc.patientvisituid = xhrCtx.patientvisituid;
       out._raw.xhrTap = xhrCtx;
-      out._raw.arcusHdrs = {};  // populated by background from chrome.storage.session
+      // Read live XHR header values directly from window (always current, even after
+      // extension reload when early-sec-relay.js may have stopped receiving postMessages).
+      out._raw.arcusHdrs = window.__arcus_hdrs__ ? Object.assign({}, window.__arcus_hdrs__) : {};
       out._raw.medreconMap = window.__arcus_medrecon__ || {};
     } catch (_) {}
 
@@ -532,7 +534,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const data = results[0].result || {};
       chrome.storage.session.get(`_bkn_hdrs_${tabId}`, res => {
         data._raw = data._raw || {};
-        data._raw.arcusHdrs = (res && res[`_bkn_hdrs_${tabId}`]) || {};
+        // Live window headers (from XHR tap, always current) take priority.
+        // Storage fills any gaps — useful on first load before XHR tap fires.
+        const storHdrs    = (res && res[`_bkn_hdrs_${tabId}`]) || {};
+        const windowHdrs  = data._raw.arcusHdrs || {};
+        data._raw.arcusHdrs = Object.assign({}, storHdrs, windowHdrs);
         sendResponse({ ok: true, data });
       });
     });
