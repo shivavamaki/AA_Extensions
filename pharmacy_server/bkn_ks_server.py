@@ -1064,12 +1064,15 @@ def build_med_journey_from_arcus(data, reconcile_meds=None, prev_meds=None):
         # Keep anything that reaches discharge regardless (safety net).
         if not _is_discharge and re.search(r'intra-?\s*op', med.get('comment') or '', re.I):
             continue
-        # Drop ward-only supply / non-drug items: if a code isn't in the BKN
-        # medication DB it isn't a real medicine (NSS, alcohol swab, soap…).
-        # Discharge meds are always kept — non-formulary 011001 take-home meds
-        # aren't in the DB but must stay.
+        # Drop ward-only items whose code isn't in the BKN medication DB. The
+        # 51-prefix (BKN medicine codes) is always kept regardless, so a real
+        # ward drug missing from the DB is never dropped; this rule therefore
+        # only removes ward-only NON-51 items not found in the DB. Discharge meds
+        # are always kept — non-formulary 011001 take-home meds aren't in the DB
+        # but must stay.
         _code = med.get('code') or ''
-        if not _is_discharge and _code and _med_codes and _code not in _med_codes:
+        if (not _is_discharge and _code and _med_codes
+                and not _code.startswith('51') and _code not in _med_codes):
             continue
         d = (med.get('orderdate') or med.get('startdate') or '').strip()
         if d:
