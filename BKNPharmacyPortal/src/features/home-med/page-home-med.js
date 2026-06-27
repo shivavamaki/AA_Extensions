@@ -841,8 +841,8 @@ async function fetchAndRender() {
 /* ───────────────────────────── Print controls ─────────────────────────── */
 const PRINT_CONTROL_DEFAULTS = {
   marginMm: "8", previewScale: "1", fontSizeMode: "normal",
-  pictureSizeMode: "normal", compactMode: false, hideLogo: false, fitWidth: false,
-  includeMealCard: false,
+  pictureSizeMode: "normal", compactMode: false, fitWidth: false,
+  includeMealCard: false, mealCardBreak: true,
 };
 
 function _getPrintControls() {
@@ -852,9 +852,9 @@ function _getPrintControls() {
     fontSizeMode: document.getElementById("fontSizeMode"),
     pictureSizeMode: document.getElementById("pictureSizeMode"),
     compactMode: document.getElementById("compactMode"),
-    hideLogo: document.getElementById("hideLogo"),
     fitWidth: document.getElementById("fitWidth"),
     includeMealCard: document.getElementById("includeMealCard"),
+    mealCardBreak: document.getElementById("mealCardBreak"),
     printStatus: document.getElementById("printStatus"),
   };
 }
@@ -887,16 +887,16 @@ function applyPrintSettings(settings) {
   root.style.setProperty("--base-font-size", _fontSizePx(cfg.fontSizeMode));
   root.style.setProperty("--medicine-image-size", _pictureSizeMm(cfg.pictureSizeMode));
   body.classList.toggle("compact-mode", !!cfg.compactMode);
-  body.classList.toggle("hide-logo", !!cfg.hideLogo);
   body.classList.toggle("fit-width", !!cfg.fitWidth);
   body.classList.toggle("hm-with-mealcard", !!cfg.includeMealCard);
+  body.classList.toggle("hm-mealcard-break", !!cfg.mealCardBreak);
   const margin = Number(cfg.marginMm) || 8;
   _ensurePrintStyleTag().textContent = `@page { size: A4 portrait; margin: ${margin}mm; }`;
   const c = _getPrintControls();
   if (c.printStatus) {
     const compact = cfg.compactMode ? " · compact" : "";
-    const logo = cfg.hideLogo ? " · logo hidden" : "";
-    c.printStatus.textContent = `A4 portrait · margin ${margin} mm · ${Math.round(Number(cfg.previewScale) * 100)}% preview${compact}${logo}`;
+    const meal = cfg.includeMealCard ? (cfg.mealCardBreak ? " · จัดตามมื้อ (หน้าใหม่)" : " · จัดตามมื้อ (ต่อท้าย)") : "";
+    c.printStatus.textContent = `A4 portrait · margin ${margin} mm · ${Math.round(Number(cfg.previewScale) * 100)}% preview${compact}${meal}`;
   }
   return cfg;
 }
@@ -909,9 +909,9 @@ function currentPrintSettingsFromControls() {
     fontSizeMode: c.fontSizeMode?.value || PRINT_CONTROL_DEFAULTS.fontSizeMode,
     pictureSizeMode: c.pictureSizeMode?.value || PRINT_CONTROL_DEFAULTS.pictureSizeMode,
     compactMode: !!c.compactMode?.checked,
-    hideLogo: !!c.hideLogo?.checked,
     fitWidth: !!c.fitWidth?.checked,
     includeMealCard: !!c.includeMealCard?.checked,
+    mealCardBreak: !!c.mealCardBreak?.checked,
   };
 }
 
@@ -923,11 +923,11 @@ function bindPrintControls() {
   if (c.fontSizeMode) c.fontSizeMode.value = saved.fontSizeMode;
   if (c.pictureSizeMode) c.pictureSizeMode.value = saved.pictureSizeMode;
   if (c.compactMode) c.compactMode.checked = !!saved.compactMode;
-  if (c.hideLogo) c.hideLogo.checked = !!saved.hideLogo;
   if (c.fitWidth) c.fitWidth.checked = !!saved.fitWidth;
   if (c.includeMealCard) c.includeMealCard.checked = !!saved.includeMealCard;
+  if (c.mealCardBreak) c.mealCardBreak.checked = !!saved.mealCardBreak;
   applyPrintSettings(saved);
-  [c.printMargin, c.previewScale, c.fontSizeMode, c.pictureSizeMode, c.compactMode, c.hideLogo, c.fitWidth, c.includeMealCard]
+  [c.printMargin, c.previewScale, c.fontSizeMode, c.pictureSizeMode, c.compactMode, c.fitWidth, c.includeMealCard, c.mealCardBreak]
     .filter(Boolean)
     .forEach((el) => el.addEventListener("change", () => {
       _savePrintSettings(applyPrintSettings(currentPrintSettingsFromControls()));

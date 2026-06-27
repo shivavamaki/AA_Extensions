@@ -32,80 +32,88 @@
       font-size: var(--base-font-size);
     }
 
+    /* ── Control panel: fixed left sidebar (screen only), pastel-green ─────── */
+    body { padding-left: 236px; }   /* room for the sidebar; reset in @media print */
     .toolbar {
-      position: sticky;
-      top: 0;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
       z-index: 1000;
+      width: 220px;
+      overflow-y: auto;
       display: flex;
-      gap: 10px;
-      align-items: center;
-      padding: 10px 14px;
-      background: #1f2937;
-      color: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,.15);
-      flex-wrap: wrap;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      padding: 14px 12px;
+      background: #e6f5ec;
+      color: #14532d;
+      border-right: 1px solid #bfe6cd;
+      box-shadow: 2px 0 12px rgba(22,101,52,.10);
     }
+
+    .toolbar-title { font-size: 13px; font-weight: 800; color: #166534; letter-spacing: .02em; }
 
     .toolbar-group {
-      display: inline-flex;
-      align-items: center;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
       gap: 8px;
-      flex-wrap: wrap;
-      padding-right: 10px;
-      border-right: 1px solid rgba(255,255,255,.18);
+      padding: 0 0 12px;
+      border-bottom: 1px solid #cde9d8;
     }
 
-    .toolbar-group:last-child { border-right: 0; }
+    .toolbar-group:last-child { border-bottom: 0; padding-bottom: 0; }
 
     .toolbar button {
-      padding: 7px 12px;
+      width: 100%;
+      padding: 9px 12px;
       border: 0;
-      border-radius: 8px;
-      background: #2563eb;
+      border-radius: 9px;
+      background: #22c55e;
       color: #fff;
       font-size: 13px;
       cursor: pointer;
-      font-weight: 600;
+      font-weight: 700;
     }
 
-    .toolbar button.secondary { background: #4b5563; }
+    .toolbar button:hover { background: #16a34a; }
+    .toolbar button.secondary { background: #d4ecdc; color: #166534; }
+    .toolbar button.secondary:hover { background: #c2e3cd; }
 
     .toolbar label {
-      display: inline-flex;
+      display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 7px;
       font-size: 12px;
-      color: #e5e7eb;
-      white-space: nowrap;
+      color: #14532d;
     }
+
+    /* For "Label [select]" rows, push the select to the right edge. */
+    .toolbar label > select { margin-left: auto; }
 
     .toolbar select,
     .toolbar input[type="number"],
     .toolbar input[type="date"] {
       height: 30px;
+      max-width: 118px;
       border-radius: 7px;
-      border: 1px solid #64748b;
-      background: #111827;
-      color: #fff;
+      border: 1px solid #86efac;
+      background: #fff;
+      color: #14532d;
       padding: 4px 7px;
       font-size: 12px;
     }
 
-    .toolbar input[type="date"]::-webkit-calendar-picker-indicator {
-      filter: invert(1);
-      cursor: pointer;
-    }
-
     .toolbar input[type="checkbox"] {
-      width: 15px;
-      height: 15px;
-      accent-color: #38bdf8;
+      width: 16px;
+      height: 16px;
+      accent-color: #22c55e;
     }
 
     .print-status {
-      color: #bfdbfe;
-      font-size: 12px;
-      min-width: 160px;
+      color: #15803d;
+      font-size: 11.5px;
+      line-height: 1.35;
     }
 
     .sheet-wrap {
@@ -570,19 +578,6 @@
     body.compact-mode .instruction-card { padding: 4px 6px; }
     body.compact-mode .instruction-text { font-size: 13px; line-height: 1.25; }
     body.compact-mode .comment { font-size: 12px; padding: 4px 6px; }
-    body.hide-logo .logo-zone img { display: none; }
-    body.hide-logo .logo-zone::after {
-      content: "Logo";
-      color: #9ca3af;
-      font-size: 11px;
-      border: 1px dashed #cbd5e1;
-      border-radius: 8px;
-      width: 30mm;
-      height: 15mm;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
 
     /* ── Editing controls (screen only) ───────────────────────── */
     .col-act { width: 9mm; text-align: center; vertical-align: middle; }
@@ -694,7 +689,7 @@
     }
 
     @media print {
-      body { background: #fff; }
+      body { background: #fff; padding-left: 0 !important; }
       .toolbar { display: none !important; }
       .sheet-wrap {
         width: auto;
@@ -714,7 +709,7 @@
       tr { break-inside: avoid; page-break-inside: avoid; }
       .footer-note { break-inside: avoid; break-before: avoid; }
       /* By-meal card prints on its own page when included; keep slot colours. */
-      body.hm-with-mealcard .mealcard-section { break-before: page; page-break-before: always; }
+      body.hm-with-mealcard.hm-mealcard-break .mealcard-section { break-before: page; page-break-before: always; }
       .mc-slot { break-inside: avoid; page-break-inside: avoid; }
       .mc-slot-head, .mc-info { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       /* Header sections (.screen-only) now also print once at the top. */
@@ -754,6 +749,7 @@
 
 <body>
   <div class="toolbar" id="printToolbar">
+    <div class="toolbar-title">⚙️ ตั้งค่าการพิมพ์</div>
     <div class="toolbar-group">
       <button id="btnPrint" type="button">🖨 Print</button>
       <button id="btnPdf" type="button">📄 Save PDF</button>
@@ -797,11 +793,6 @@
     </div>
 
     <div class="toolbar-group" aria-label="Page format controls">
-      <label>Paper
-        <select id="paperSize">
-          <option value="A4" selected>A4 portrait</option>
-        </select>
-      </label>
       <label>Margin
         <select id="printMargin">
           <option value="6">6 mm</option>
@@ -836,9 +827,12 @@
         </select>
       </label>
       <label><input id="compactMode" type="checkbox" /> Compact rows</label>
-      <label><input id="hideLogo" type="checkbox" /> Hide logo</label>
       <label><input id="fitWidth" type="checkbox" /> Fit width</label>
+    </div>
+
+    <div class="toolbar-group" aria-label="By-meal page">
       <label><input id="includeMealCard" type="checkbox" /> แนบหน้า จัดตามมื้อ</label>
+      <label><input id="mealCardBreak" type="checkbox" checked /> ขึ้นหน้าใหม่ (จัดตามมื้อ)</label>
     </div>
 
     <div class="print-status" id="printStatus">A4 portrait · margin 8 mm</div>
