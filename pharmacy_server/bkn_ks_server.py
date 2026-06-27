@@ -1058,14 +1058,15 @@ def build_med_journey_from_arcus(data, reconcile_meds=None, prev_meds=None):
     for med in norm['items']:
         _ot_code = med.get('ordertypecode')
         _is_discharge = _journey_phase(med.get('ordertype'), _ot_code) == 'home'
-        # Drop ward items with no real usage instruction or an intra-operative
-        # one — these aren't part of the patient's medication journey:
-        #   • empty/null instruction  • "-"  • contains "Intra-Op"
-        #     (Propofol/Fentanyl/Esmeron/Bridion, soap/swab supplies, etc.)
-        # Anything that reaches discharge is kept regardless (safety net).
         _instr = (med.get('comment') or '').strip()
-        if not _is_discharge and (not _instr or _instr == '-'
-                                  or re.search(r'intra-?\s*op', _instr, re.I)):
+        # Intra-operative meds (Propofol/Fentanyl/Esmeron/Bridion…) are never
+        # part of the patient's medication journey — exclude unconditionally,
+        # regardless of order type or code (including 51-prefix).
+        if re.search(r'intra-?\s*op', _instr, re.I):
+            continue
+        # Ward items with no real usage instruction (empty/null or "-") are also
+        # dropped; discharge meds are kept regardless (safety net).
+        if not _is_discharge and (not _instr or _instr == '-'):
             continue
         # Drop ward-only items whose code isn't in the BKN medication DB. The
         # 51-prefix (BKN medicine codes) is always kept regardless, so a real
