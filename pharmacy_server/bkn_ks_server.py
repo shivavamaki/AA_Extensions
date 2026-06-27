@@ -1049,15 +1049,27 @@ def build_med_journey_from_arcus(data, reconcile_meds=None, prev_meds=None):
     #    (drop supplies/services/food/labs — code prefix 51 / cat Medicine).
     #    Track the earliest/latest order dates → admission / discharge endpoints
     #    for the bottom drug-timeline (phase-based bars labelled with real dates).
+    # Known medicine codes from the BKN medication DB — used to weed supply /
+    # non-drug items (NSS bags, alcohol swabs, soap, sterile water…) out of the
+    # ward column. Loaded once per build.
+    _meddb = load_rx('medication-db')
+    _med_codes = set(_meddb.keys()) if isinstance(_meddb, dict) else set()
     order_dates = []
     for med in norm['items']:
+        _ot_code = med.get('ordertypecode')
+        _is_discharge = _journey_phase(med.get('ordertype'), _ot_code) == 'home'
         # Drop operating-room / anaesthesia meds — given once intra-operatively
         # ("Infuse … Intra-Op", "Inject … Intra-Op": Propofol, Fentanyl, Esmeron,
         # Bridion, etc.). They are not part of the patient's medication journey.
         # Keep anything that reaches discharge regardless (safety net).
-        _ot_code = med.get('ordertypecode')
-        _is_discharge = _journey_phase(med.get('ordertype'), _ot_code) == 'home'
         if not _is_discharge and re.search(r'intra-?\s*op', med.get('comment') or '', re.I):
+            continue
+        # Drop ward-only supply / non-drug items: if a code isn't in the BKN
+        # medication DB it isn't a real medicine (NSS, alcohol swab, soap…).
+        # Discharge meds are always kept — non-formulary 011001 take-home meds
+        # aren't in the DB but must stay.
+        _code = med.get('code') or ''
+        if not _is_discharge and _code and _med_codes and _code not in _med_codes:
             continue
         d = (med.get('orderdate') or med.get('startdate') or '').strip()
         if d:
