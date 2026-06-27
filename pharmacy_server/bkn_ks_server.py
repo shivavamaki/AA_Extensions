@@ -645,9 +645,22 @@ def _arcus_patient_header(it):
     }
 
 
+def _clean_instruction_note(s):
+    """Drop ArcusAir cryptic instruction codes from a patient note. Single-letter
+    codes like "D"/"X" carry no patient meaning; a leading one-letter code before
+    a parenthetical ("X ( antihyperlipidemia )") is stripped to its useful tail."""
+    s = _hm_norm(s)
+    if not s:
+        return ''
+    if re.fullmatch(r'[A-Za-z]', s):          # bare one-letter code, e.g. "D"
+        return ''
+    s = re.sub(r'^[A-Za-z]\s+(?=[(\[])', '', s)   # "X ( ... )" → "( ... )"
+    return _hm_norm(s)
+
+
 def _arcus_item_to_med(it):
     """Map one getallorderitem entry → a med dict (or None). Also attaches the
-    order-type label and key dates so callers can place it on a timeline."""
+    order-type label/code and key dates so callers can place it on a timeline."""
     poi = it.get('patientorderitems') or {}
     name = _hm_norm(poi.get('orderitemname') or '')
     if not name:
@@ -693,13 +706,15 @@ def _arcus_item_to_med(it):
     qty_unit = _hm_norm((_arc_first(poi.get('quantityUOM')) or {}).get('valuedescription') or '')
     quantity = (str(qty_n) + (' ' + qty_unit if qty_unit else '')) if qty_n is not None else ''
 
-    # Free-text patient instructions from the order — keep the first only.
-    # ArcusAir can emit multiple entries for one order (drug class, warning,
-    # storage note, …) that when joined produce a confusingly long run-on line.
+    # Free-text patient instructions from the order — keep the first usable one.
+    # ArcusAir can emit multiple entries for one order; only the patient-facing
+    # ones carry valuecode INSTYP1 (others, e.g. INDIC, are clinician indications
+    # like the eGFR dosing note and must not reach the patient sheet). Cryptic
+    # one-letter codes ("D", "X") are dropped too.
     live_note_parts = [
-        _hm_norm(ins['instructiontext'])
+        _clean_instruction_note(ins.get('instructiontext'))
         for ins in (poi.get('instructions') or [])
-        if ins.get('instructiontext')
+        if (ins.get('valuecode') or 'INSTYP1') == 'INSTYP1'
     ]
     live_note = next((p for p in live_note_parts if p), '')
 
@@ -752,7 +767,9 @@ def _arcus_item_to_med(it):
     if not provider:
         provider = _hm_norm((_arc_first(it.get('careprovideruid')) or {}).get('name') or '')
 
-    ordertype = _hm_norm((_arc_first(it.get('ordertypeuid')) or {}).get('valuedescription') or '')
+    _ot = _arc_first(it.get('ordertypeuid')) or {}
+    ordertype = _hm_norm(_ot.get('valuedescription') or '')
+    ordertypecode = _hm_norm(_ot.get('valuecode') or '')
     status = _hm_norm((_arc_first(poi.get('statusuid')) or {}).get('valuedescription') or '')
     # Order category ("Medicine" vs supplies/services/food). Two sources seen:
     # item-level ordercattype = "MEDICINE", and orderitemuid.ordercatuid.name.
@@ -767,7 +784,7 @@ def _arcus_item_to_med(it):
         'route': route, 'frequency': freq, 'frequencyTh': freq_th, 'dosage': str(dosage or ''),
         'provider': provider,
         'oral': bool(re.search(r'oral|\btake\b|รับประทาน', route + ' ' + verb, re.I)),
-        'ordertype': ordertype, 'status': status, 'ordercat': ordercat,
+        'ordertype': ordertype, 'ordertypecode': ordertypecode, 'status': status, 'ordercat': ordercat,
         'orderdate': it.get('orderdate') or poi.get('startdate') or '',
         'startdate': poi.get('startdate') or '',
     }
@@ -842,7 +859,7 @@ def build_home_med_from_arcus(data):
         code = med.get('code') or ''
         name = med.get('drug') or ''
         # Drop the timeline-only fields for the home-med sheet shape.
-        for k in ('ordertype', 'status', 'ordercat', 'orderdate', 'startdate'):
+        for k in ('ordertype', 'ordertypecode', 'status', 'ordercat', 'orderdate', 'startdate'):
             med.pop(k, None)
         # De-dupe by (drug, code), NOT code alone: non-formulary items all share
         # the generic code "011001", so de-duping by code would silently drop
@@ -934,9 +951,26 @@ def build_prev_meds_from_visits(data, current_visit_uid=''):
     return prev
 
 
-def _journey_phase(ordertype):
-    """Map an order-type label → journey phase column.
-    admission = home/OPD meds (pre-admission) · ward = inpatient · home = discharge."""
+# ArcusAir order-type → journey phase, keyed on the STABLE valuecode (not the
+# free-text label, which could be localised/reworded). Confirmed from live data:
+#   ORDTYP3 = DISCHARGE MEDICATION → home
+#   ORDTYP2 = CONTINUOUS ORDER (inpatient) → ward
+#   ORDTYP1 = one-day/STAT inpatient order → ward
+# Edit this map if ArcusAir adds order types; the label substring check below is
+# only a last-resort fallback for unknown/blank codes.
+ORDERTYPE_PHASE_BY_CODE = {
+    'ORDTYP3': 'home',
+    'ORDTYP2': 'ward',
+    'ORDTYP1': 'ward',
+}
+
+def _journey_phase(ordertype, ordertypecode=''):
+    """Map an order to a journey phase column.
+    admission = home/OPD meds (pre-admission) · ward = inpatient · home = discharge.
+    Prefers the stable ordertype valuecode; falls back to label substrings."""
+    code = (ordertypecode or '').upper()
+    if code in ORDERTYPE_PHASE_BY_CODE:
+        return ORDERTYPE_PHASE_BY_CODE[code]
     t = (ordertype or '').upper()
     if 'DISCHARGE' in t:
         return 'home'
@@ -1016,7 +1050,7 @@ def build_med_journey_from_arcus(data, reconcile_meds=None, prev_meds=None):
         d = (med.get('orderdate') or med.get('startdate') or '').strip()
         if d:
             order_dates.append(d)
-        phase = _journey_phase(med.get('ordertype'))
+        phase = _journey_phase(med.get('ordertype'), med.get('ordertypecode'))
         row = _row_for(med['drug'], med.get('code'))
         cell = med.get('comment') or med.get('route') or ''
         if cell and not row[phase]:
