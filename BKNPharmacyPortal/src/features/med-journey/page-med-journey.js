@@ -299,11 +299,10 @@ function renderMealCard() {
     return `<div class="mc-item"><span class="mc-drug">${escapeHtml(it.drug)}</span>${dose}</div>`;
   };
 
-  let html = MEAL_SLOTS.map((s) => {
-    const items = buckets[s.key];
-    const body = items.length
-      ? items.map(itemHtml).join("")
-      : `<div class="mc-empty-slot">-</div>`;
+  // Only render meal slots that actually hold a med — empty slots are dropped so
+  // the card stays compact (cards then pack via the masonry columns in the CSS).
+  let html = MEAL_SLOTS.filter((s) => buckets[s.key].length).map((s) => {
+    const body = buckets[s.key].map(itemHtml).join("");
     return `<div class="mc-slot ${s.cls}">
       <div class="mc-slot-head"><span class="mc-ico">${s.ico}</span><span>${s.th}</span><span class="mc-en">${s.en}</span></div>
       <div class="mc-list">${body}</div>
