@@ -822,7 +822,7 @@ def build_home_med_from_arcus(data):
     items = (data or {}).get('orderitems') or []
     meds = []
     patient = {}
-    seen_codes = {}   # code → index in meds; later dispensed replaces earlier cancelled
+    seen_codes = {}   # (drug,code) → index in meds; later dispensed replaces earlier cancelled
     for it in items:
         med = _arcus_item_to_med(it)
         if not med:
@@ -840,17 +840,22 @@ def build_home_med_from_arcus(data):
         if not patient:
             patient = _arcus_patient_header(it)
         code = med.get('code') or ''
+        name = med.get('drug') or ''
         # Drop the timeline-only fields for the home-med sheet shape.
         for k in ('ordertype', 'status', 'ordercat', 'orderdate', 'startdate'):
             med.pop(k, None)
-        if code and code in seen_codes:
-            # Replace earlier entry for the same drug with the newer one
-            # (ArcusAir sorts by -orderdate so the first occurrence is newest;
-            # a second occurrence for the same code is an older superseded order).
+        # De-dupe by (drug, code), NOT code alone: non-formulary items all share
+        # the generic code "011001", so de-duping by code would silently drop
+        # every non-formulary drug after the first (e.g. carvedilol vanishing
+        # because sildenafil already claimed 011001). The first occurrence is the
+        # newest (ArcusAir sorts -orderdate); a later same-(drug,code) order is a
+        # superseded duplicate and is skipped.
+        dedup_key = (name.strip().lower(), code)
+        if code and dedup_key in seen_codes:
             pass
         else:
             if code:
-                seen_codes[code] = len(meds)
+                seen_codes[dedup_key] = len(meds)
             meds.append(med)
     return {'patient': patient, 'meds': meds, 'allMeds': len(meds)}
 
