@@ -528,6 +528,30 @@ async function renderMeds() {
   // Google fallback so any residual English / other languages still translate.
   _initTranslate();
   if (_currentLang) await _applyTranslate(_currentLang, _offlineOnly);
+
+  renderMealCard();  // keep the by-meal card in sync with the med list
+}
+
+/* ─────────────────── Daily Pill Journey Card (by meal) ─────────────────── */
+// Optional second page grouping the discharge meds by meal slot. Bucketing +
+// markup come from the shared engine (window.BKNMealSlots, src/shared/
+// meal-slots.js) so this matches the Medication Journey card exactly. The page
+// is toggled by the "แนบหน้า จัดตามมื้อ" control (body.hm-with-mealcard).
+function renderMealCard() {
+  const host = document.getElementById("mealcardGrid");
+  if (!host) return;
+  const MS = window.BKNMealSlots;
+  if (!_meds.length || !MS) {
+    host.innerHTML = `<div class="mc-emptyall">ไม่มียากลับบ้าน (no home medications)</div>`;
+    return;
+  }
+  // Match on the instruction plus the authoritative Thai frequency phrase, so a
+  // meal time supplied only by frequencyTh (not the English comment) still buckets.
+  const items = _meds.map((m) => {
+    const text = norm((m.instruction || "") + " " + (m.frequencyTh || ""));
+    return { drug: m.drug, text, dose: MS.doseSnippet(m.instruction || "") };
+  });
+  host.innerHTML = MS.gridHTML(items, escapeHtml);
 }
 
 /* ───────────────────────────── Translation ────────────────────────────── */
@@ -818,6 +842,7 @@ async function fetchAndRender() {
 const PRINT_CONTROL_DEFAULTS = {
   marginMm: "8", previewScale: "1", fontSizeMode: "normal",
   pictureSizeMode: "normal", compactMode: false, hideLogo: false, fitWidth: false,
+  includeMealCard: false,
 };
 
 function _getPrintControls() {
@@ -829,6 +854,7 @@ function _getPrintControls() {
     compactMode: document.getElementById("compactMode"),
     hideLogo: document.getElementById("hideLogo"),
     fitWidth: document.getElementById("fitWidth"),
+    includeMealCard: document.getElementById("includeMealCard"),
     printStatus: document.getElementById("printStatus"),
   };
 }
@@ -863,6 +889,7 @@ function applyPrintSettings(settings) {
   body.classList.toggle("compact-mode", !!cfg.compactMode);
   body.classList.toggle("hide-logo", !!cfg.hideLogo);
   body.classList.toggle("fit-width", !!cfg.fitWidth);
+  body.classList.toggle("hm-with-mealcard", !!cfg.includeMealCard);
   const margin = Number(cfg.marginMm) || 8;
   _ensurePrintStyleTag().textContent = `@page { size: A4 portrait; margin: ${margin}mm; }`;
   const c = _getPrintControls();
@@ -884,6 +911,7 @@ function currentPrintSettingsFromControls() {
     compactMode: !!c.compactMode?.checked,
     hideLogo: !!c.hideLogo?.checked,
     fitWidth: !!c.fitWidth?.checked,
+    includeMealCard: !!c.includeMealCard?.checked,
   };
 }
 
@@ -897,8 +925,9 @@ function bindPrintControls() {
   if (c.compactMode) c.compactMode.checked = !!saved.compactMode;
   if (c.hideLogo) c.hideLogo.checked = !!saved.hideLogo;
   if (c.fitWidth) c.fitWidth.checked = !!saved.fitWidth;
+  if (c.includeMealCard) c.includeMealCard.checked = !!saved.includeMealCard;
   applyPrintSettings(saved);
-  [c.printMargin, c.previewScale, c.fontSizeMode, c.pictureSizeMode, c.compactMode, c.hideLogo, c.fitWidth]
+  [c.printMargin, c.previewScale, c.fontSizeMode, c.pictureSizeMode, c.compactMode, c.hideLogo, c.fitWidth, c.includeMealCard]
     .filter(Boolean)
     .forEach((el) => el.addEventListener("change", () => {
       _savePrintSettings(applyPrintSettings(currentPrintSettingsFromControls()));

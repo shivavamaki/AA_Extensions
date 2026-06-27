@@ -55,13 +55,19 @@ The logo/title row, patient-info card, and diagnosis/allergy banner live inside 
 
 `#pageCounter` (`.page-counter`) is a `position: fixed` element, print-only, bottom-right of the sheet. The **current** page number comes from the CSS `counter(page)` trick (Chrome increments a `position: fixed` element's counter once per printed page) — no JS involved. The **total** page count has no native CSS equivalent in Chrome, so `updatePageCounterTotal()` (`page-home-med.js`, on `window.beforeprint`) estimates it from `.sheet.scrollHeight` vs. the A4 content height (297mm minus the current print margin), written to `data-total` and read via `attr(data-total)` in the `::before` content. It's an estimate, not exact pagination — close enough for "Page X / Y" on a discharge sheet.
 
+## Daily Pill Journey Card (optional by-meal page)
+
+An optional second page (`.mealcard-section` / `#mealcardGrid`) groups the discharge meds **by meal slot** (before/after × breakfast/lunch/dinner, then bedtime and PRN). It's gated behind the toolbar toggle **"แนบหน้า จัดตามมื้อ"** (`#includeMealCard`), which is part of the persisted print-settings config (`PRINT_CONTROL_DEFAULTS.includeMealCard` → `body.hm-with-mealcard`); when on, the card shows on screen and prints on its own page.
+
+`renderMealCard()` runs at the end of `renderMeds()` (so it tracks add/remove/edit) and delegates bucketing + markup to the shared **`window.BKNMealSlots`** engine (`../../shared/meal-slots.js`) — the same one the Medication Journey card uses. Matching runs on `instruction + frequencyTh`, so a meal time supplied only by the authoritative Thai frequency phrase still buckets. The `.mc-*` CSS lives in this page's `<style>` (2-column masonry for portrait); empty slots are dropped so the card stays compact.
+
 ## Files
 
 | File | Role |
 |---|---|
 | `content-home-med.js` | ArcusAir button injection, context extraction, route to page |
-| `page-home-med.html` | A4 layout + toolbar (language, paper, margin, scale, font, picture size) |
-| `page-home-med.js` | Fetch, build editable med list, render, translate, persist |
+| `page-home-med.html` | A4 layout + toolbar (language, paper, margin, scale, font, picture size, by-meal page) |
+| `page-home-med.js` | Fetch, build editable med list, render, translate, persist, by-meal card |
 
 ## Translation (offline-first, Thai default)
 

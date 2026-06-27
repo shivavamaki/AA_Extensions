@@ -204,69 +204,9 @@ function _renderAxisDates() {
 }
 
 /* ─────────────────── Daily Pill Journey Card (by meal) ─────────────────── */
-// A med can take a meal "before" or "after". Instructions list several meals
-// under one qualifier — Thai "หลังอาหาร เช้า เย็น" or English "Before Breakfast
-// and Dinner" = the qualifier applies to every meal in the run. _mealQualifier
-// finds, for ONE meal word, the nearest preceding before/after qualifier
-// (Thai ก่อน/หลัง or English before/after), carrying it across a meal list.
-// Returns "before" | "after" | "" (unqualified). Works in both languages.
-const _MEAL_RE = "เช้า|กลางวัน|เที่ยง|เย็น|breakfast|lunch|noon|midday|dinner|supper|evening|morning";
-const _QUAL_RE = "ก่อน|หลัง|before|after|\\bac\\b|\\bpc\\b";
-function _qualOf(tok) {
-  const t = tok.toLowerCase();
-  if (t === "ก่อน" || t === "before" || t === "ac") return "before";
-  if (t === "หลัง" || t === "after" || t === "pc") return "after";
-  return "";
-}
-function _mealQualifier(txt, mealWord) {
-  const re = new RegExp(`(${_QUAL_RE})|(${_MEAL_RE})`, "gi");
-  let m, qual = "";
-  while ((m = re.exec(txt)) !== null) {
-    if (m[1]) { qual = _qualOf(m[1]); continue; }   // before/after — carry it
-    if (m[2] && new RegExp(mealWord, "i").test(m[2])) return qual;  // this meal
-    // other meal word in the same run: keep the carried qualifier and continue.
-  }
-  return "";
-}
-// True if the instruction mentions this meal at all (Thai or English).
-const _hasMeal = (t, re) => new RegExp(re, "i").test(t);
-
-// Meal slots in day order: before/after × breakfast/lunch/dinner, then bedtime
-// and PRN. A drug lands in every slot it matches (BID = two slots). Unqualified
-// meal words default to "after" — the common convention for meds taken w/ food.
-function _mealSlotTest(mealRe, mealWord, wantBefore) {
-  return (t) => {
-    if (!_hasMeal(t, mealRe)) return false;
-    const q = _mealQualifier(t, mealWord);
-    return wantBefore ? q === "before" : q !== "before";  // unqualified → after
-  };
-}
-const MEAL_SLOTS = [
-  { key: "bbf", cls: "t-bbf", ico: "🌅", th: "ก่อนอาหารเช้า",  en: "Before breakfast",
-    test: _mealSlotTest("เช้า|breakfast|morning", "เช้า|breakfast|morning", true) },
-  { key: "abf", cls: "t-abf", ico: "☀️", th: "หลังอาหารเช้า",   en: "After breakfast",
-    test: _mealSlotTest("เช้า|breakfast|morning", "เช้า|breakfast|morning", false) },
-  { key: "blu", cls: "t-blu", ico: "🌤️", th: "ก่อนอาหารกลางวัน", en: "Before lunch",
-    test: _mealSlotTest("กลางวัน|เที่ยง|lunch|noon|midday", "กลางวัน|เที่ยง|lunch|noon|midday", true) },
-  { key: "alu", cls: "t-alu", ico: "🌞", th: "หลังอาหารกลางวัน",  en: "After lunch",
-    test: _mealSlotTest("กลางวัน|เที่ยง|lunch|noon|midday", "กลางวัน|เที่ยง|lunch|noon|midday", false) },
-  { key: "bdn", cls: "t-bdn", ico: "🌆", th: "ก่อนอาหารเย็น",  en: "Before dinner",
-    test: _mealSlotTest("เย็น|dinner|supper|evening", "เย็น|dinner|supper|evening", true) },
-  { key: "adn", cls: "t-adn", ico: "🌙", th: "หลังอาหารเย็น",   en: "After dinner",
-    test: _mealSlotTest("เย็น|dinner|supper|evening", "เย็น|dinner|supper|evening", false) },
-  { key: "bed", cls: "t-bed", ico: "🛏️", th: "ก่อนนอน",        en: "Bedtime",
-    test: (t) => /ก่อนนอน|ก่อนเข้านอน|bedtime|bed\s*time|\bhs\b|at\s+night/i.test(t) },
-  { key: "prn", cls: "t-prn", ico: "⭐", th: "เมื่อมีอาการ",     en: "When needed (PRN)",
-    test: (t) => /เมื่อมีอาการ|เวลามีอาการ|เมื่อปวด|เมื่อจำเป็น|\bprn\b|if\s+needed|as\s+needed|when\s+required/i.test(t) },
-];
-
-/** Pull a short dose phrase ("1 เม็ด", "1 Tablet", "1 PUFF") from the instruction
- * for the compact meal-card line. Falls back to "" (drug name carries it). */
-function _doseSnippet(txt) {
-  const t = norm(txt || "");
-  const m = t.match(/(\d+(?:[.,]\d+)?(?:\/\d+)?)\s*(เม็ด|แคปซูล|ซอง|มล\.?|ml|puff|spray\(?s?\)?|หยด|drops?|ช้อน|tablets?|capsules?|tab|cap|amp|vial|มก\.?|mg|มิลลิกรัม)/i);
-  return m ? m[0] : "";
-}
+// The meal-slot bucketing + card markup live in the shared engine
+// (window.BKNMealSlots, src/shared/meal-slots.js) so this page and the Home
+// Medication Sheet group meds identically.
 
 /** Home meds only, excluding stopped — these are what the patient takes home. */
 function _homeMeds() {
@@ -276,47 +216,17 @@ function _homeMeds() {
 function renderMealCard() {
   const host = document.getElementById("mealcardGrid");
   if (!host) return;
+  const MS = window.BKNMealSlots;
   const meds = _homeMeds();
-  if (!meds.length) {
+  if (!meds.length || !MS) {
     host.innerHTML = `<div class="mc-emptyall">ไม่มียากลับบ้าน (no home medications)</div>`;
     return;
   }
-  // Bucket each home med into every slot it matches.
-  const buckets = Object.fromEntries(MEAL_SLOTS.map((s) => [s.key, []]));
-  const unslotted = [];
-  meds.forEach((r) => {
-    const txt = norm(r.home || r.ward || r.admission || "");
-    const dose = _doseSnippet(txt);
-    let matched = false;
-    MEAL_SLOTS.forEach((s) => {
-      if (s.test(txt)) { buckets[s.key].push({ drug: r.drug, dose, prn: s.key === "prn", txt }); matched = true; }
-    });
-    if (!matched) unslotted.push({ drug: r.drug, dose, txt });
+  const items = meds.map((r) => {
+    const text = norm(r.home || r.ward || r.admission || "");
+    return { drug: r.drug, text, dose: MS.doseSnippet(text) };
   });
-
-  const itemHtml = (it) => {
-    const dose = it.dose ? ` <span class="mc-dose">${escapeHtml(it.dose)}</span>` : "";
-    return `<div class="mc-item"><span class="mc-drug">${escapeHtml(it.drug)}</span>${dose}</div>`;
-  };
-
-  // Only render meal slots that actually hold a med — empty slots are dropped so
-  // the card stays compact (cards then pack via the masonry columns in the CSS).
-  let html = MEAL_SLOTS.filter((s) => buckets[s.key].length).map((s) => {
-    const body = buckets[s.key].map(itemHtml).join("");
-    return `<div class="mc-slot ${s.cls}">
-      <div class="mc-slot-head"><span class="mc-ico">${s.ico}</span><span>${s.th}</span><span class="mc-en">${s.en}</span></div>
-      <div class="mc-list">${body}</div>
-    </div>`;
-  }).join("");
-
-  // Any home med whose schedule we couldn't classify → "อื่นๆ / ตามแพทย์สั่ง".
-  if (unslotted.length) {
-    html += `<div class="mc-slot t-prn">
-      <div class="mc-slot-head"><span class="mc-ico">📋</span><span>อื่นๆ / ตามแพทย์สั่ง</span><span class="mc-en">Other / as directed</span></div>
-      <div class="mc-list">${unslotted.map(itemHtml).join("")}</div>
-    </div>`;
-  }
-  host.innerHTML = html;
+  host.innerHTML = MS.gridHTML(items, escapeHtml);
 }
 
 /* ───────────────────────── Editing / add / remove ─────────────────────── */

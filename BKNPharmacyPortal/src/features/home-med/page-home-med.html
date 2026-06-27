@@ -656,6 +656,38 @@
     .add-opt:hover { background: #eff6ff; }
     .add-opt:last-child { border-bottom: 0; }
 
+    /* ── Daily Pill Journey Card (optional second page) ──────────────────── */
+    /* Hidden unless the "แนบหน้า จัดตามมื้อ" toggle adds .hm-with-mealcard. */
+    .mealcard-section { display: none; margin-top: 18px; }
+    body.hm-with-mealcard .mealcard-section { display: block; }
+    .mealcard-section .timeline-head { display: grid; grid-template-columns: 26mm 1fr 50mm; align-items: center; gap: 8px; border-bottom: 3px solid #111827; padding-bottom: 5px; margin-bottom: 10px; }
+    .mealcard-section .tt-logo { display: flex; align-items: center; }
+    .mealcard-section .tt-logo img { max-width: 24mm; max-height: 11mm; width: auto; display: block; object-fit: contain; }
+    .mealcard-section .th-titles { text-align: center; }
+    .mealcard-section h2 { margin: 0; font-size: 18px; line-height: 1.1; }
+    .mealcard-section .sub { font-size: 11px; color: #4b5563; margin-top: 1px; }
+    .mc-info { background: #eff6ff; color: #1e3a8a; border: 1px solid #dbeafe; border-radius: 8px; padding: 6px 12px; font-size: 12px; margin-bottom: 9px; }
+    /* Masonry columns: cards size to content and pack tightly; empty slots dropped. */
+    .mc-grid { column-count: 2; column-gap: 8px; }
+    .mc-slot { border: 1.5px solid #cbd5e1; border-radius: 10px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; margin: 0 0 8px; }
+    .mc-slot-head { display: flex; align-items: center; gap: 7px; padding: 5px 10px; font-weight: 800; font-size: 13px; color: #fff; }
+    .mc-slot-head .mc-ico { font-size: 15px; line-height: 1; }
+    .mc-slot-head .mc-en { font-weight: 500; font-size: 10px; opacity: .9; margin-left: auto; }
+    .mc-slot.t-bbf .mc-slot-head { background: #f59e0b; }
+    .mc-slot.t-abf .mc-slot-head { background: #f97316; }
+    .mc-slot.t-blu .mc-slot-head { background: #0ea5e9; }
+    .mc-slot.t-alu .mc-slot-head { background: #0284c7; }
+    .mc-slot.t-bdn .mc-slot-head { background: #6366f1; }
+    .mc-slot.t-adn .mc-slot-head { background: #4f46e5; }
+    .mc-slot.t-bed .mc-slot-head { background: #1e293b; }
+    .mc-slot.t-prn .mc-slot-head { background: #0d9488; }
+    .mc-list { padding: 3px 10px; }
+    .mc-item { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; border-bottom: 1px dashed #e5e7eb; font-size: 12px; }
+    .mc-item:last-child { border-bottom: 0; }
+    .mc-item .mc-drug { font-weight: 700; }
+    .mc-item .mc-dose { color: #475569; }
+    .mc-emptyall { color: #6b7280; font-style: italic; padding: 10px 2px; }
+
     @page {
       size: A4 portrait;
       margin: 8mm;
@@ -681,6 +713,10 @@
       tfoot { display: table-footer-group; }
       tr { break-inside: avoid; page-break-inside: avoid; }
       .footer-note { break-inside: avoid; break-before: avoid; }
+      /* By-meal card prints on its own page when included; keep slot colours. */
+      body.hm-with-mealcard .mealcard-section { break-before: page; page-break-before: always; }
+      .mc-slot { break-inside: avoid; page-break-inside: avoid; }
+      .mc-slot-head, .mc-info { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       /* Header sections (.screen-only) now also print once at the top. */
       /* Hide all editing chrome: action column, add-medicine row, suggestions */
       .no-print { display: none !important; }
@@ -802,6 +838,7 @@
       <label><input id="compactMode" type="checkbox" /> Compact rows</label>
       <label><input id="hideLogo" type="checkbox" /> Hide logo</label>
       <label><input id="fitWidth" type="checkbox" /> Fit width</label>
+      <label><input id="includeMealCard" type="checkbox" /> แนบหน้า จัดตามมื้อ</label>
     </div>
 
     <div class="print-status" id="printStatus">A4 portrait · margin 8 mm</div>
@@ -898,6 +935,21 @@
         </div>
       </div>
     </section>
+
+    <!-- Daily Pill Journey Card: discharge meds grouped by meal slot. Optional
+         (toggled by "แนบหน้า จัดตามมื้อ"); prints on its own page. -->
+    <section class="mealcard-section" id="mealcardSection" data-no-translate translate="no">
+      <div class="timeline-head">
+        <div class="tt-logo"><img src="../patient-sticker/bkh-logo.png" alt="BKH" /></div>
+        <div class="th-titles">
+          <h2>ยากลับบ้าน — จัดตามมื้อ</h2>
+          <span class="sub">Daily Pill Journey Card · เวลาในการรับประทานยาที่บ้าน</span>
+        </div>
+        <div></div>
+      </div>
+      <div class="mc-info">ℹ️ มียาหลายตัวในมื้อเดียวกัน โปรดสังเกตว่าตัวใดกินก่อนอาหาร และตัวใดกินหลังอาหาร</div>
+      <div class="mc-grid" id="mealcardGrid"><!-- slots injected by JS --></div>
+    </section>
   </main>
   <div class="page-counter" id="pageCounter" data-total="1"></div>
   </div>
@@ -908,6 +960,7 @@
   <script src="../../shared/shared-data-client.js"></script>
   <script src="../../shared/translate-core.js"></script>
   <script src="../../shared/medical-glossary.js"></script>
+  <script src="../../shared/meal-slots.js"></script>
   <script src="page-home-med.js"></script>
 </body>
 </html>

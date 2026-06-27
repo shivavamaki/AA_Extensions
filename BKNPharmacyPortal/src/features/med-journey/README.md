@@ -40,6 +40,8 @@ printed page. There is no separate Drug Timeline page.
 | `page-med-journey.html` | Continuity grid + in-table phase timeline + by-meal home-med card |
 | `page-med-journey.js` | Fetch, group, render, edit status/note, translate (Thai default) |
 
+> The by-meal "Daily Pill Journey Card" (last page) is built from the shared engine `window.BKNMealSlots` (`../../shared/meal-slots.js`), the same one the Home Medication Sheet uses — so meal grouping is identical across both reports.
+
 ## Gotchas
 
 - Instructions default to Thai via the shared glossary engine (`HMTranslate`). See [`../../shared/README.md`](../../shared/README.md).
