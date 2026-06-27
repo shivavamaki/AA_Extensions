@@ -833,29 +833,40 @@ def _log_home_med_fetch(ctx, raw, result):
         print(f'[home-med-log] failed: {e}', file=sys.stderr)
 
 
-def build_home_med_from_arcus(data):
-    """Map ArcusAir getallorderitem JSON → home-med rows: {patient, meds, allMeds}.
-    Each item already IS a discharge med (server filtered)."""
-    items = (data or {}).get('orderitems') or []
-    meds = []
+def _normalize_orderitems(raw):
+    """Single normalisation pass over a getallorderitem payload →
+    {patient, items}. Maps each order item via _arcus_item_to_med, then drops
+    non-medicine items (activities/nursing/diet/supplies — ArcusAir returns
+    OTHERS even with a medication filter) and cancelled orders. Both the Home
+    Medication Sheet and the Medication Journey build their views from this one
+    consistent list instead of each re-parsing the raw payload, so the two
+    reports can never disagree about what an order is."""
+    out = []
     patient = {}
-    seen_codes = {}   # (drug,code) → index in meds; later dispensed replaces earlier cancelled
-    for it in items:
+    for it in (raw or {}).get('orderitems') or []:
         med = _arcus_item_to_med(it)
         if not med:
             continue
-        # Skip non-medicine items (activities, nursing orders, diet, etc.).
-        # ArcusAir sometimes returns OTHERS-category items even with the
-        # DISCHARGEMEDICATION filter.
-        if not _is_medicine(med):
-            continue
-        # Skip cancelled orders — ArcusAir can return both a cancelled and a
-        # replacement dispensed order for the same drug in one response; the
-        # cancelled one must never reach the discharge sheet.
-        if re.search(r'cancel', med.get('status') or '', re.I):
-            continue
         if not patient:
             patient = _arcus_patient_header(it)
+        if not _is_medicine(med):
+            continue
+        # Cancelled orders never reach a report — ArcusAir can return both a
+        # cancelled order and its dispensed replacement for the same drug.
+        if re.search(r'cancel', med.get('status') or '', re.I):
+            continue
+        out.append(med)
+    return {'patient': patient, 'items': out}
+
+
+def build_home_med_from_arcus(data):
+    """ArcusAir getallorderitem JSON → home-med rows: {patient, meds, allMeds}.
+    A filtered view of the shared normalised order list (all items here are
+    discharge meds — the home-med fetch already filters by ordertype)."""
+    norm = _normalize_orderitems(data)
+    meds = []
+    seen_codes = {}   # (drug,code) → index in meds; later dispensed replaces earlier cancelled
+    for med in norm['items']:
         code = med.get('code') or ''
         name = med.get('drug') or ''
         # Drop the timeline-only fields for the home-med sheet shape.
@@ -874,7 +885,7 @@ def build_home_med_from_arcus(data):
             if code:
                 seen_codes[dedup_key] = len(meds)
             meds.append(med)
-    return {'patient': patient, 'meds': meds, 'allMeds': len(meds)}
+    return {'patient': norm['patient'], 'meds': meds, 'allMeds': len(meds)}
 
 
 def fetch_arcus_all_orders(ctx):
@@ -990,8 +1001,8 @@ def build_med_journey_from_arcus(data, reconcile_meds=None, prev_meds=None):
          which also carry an authoritative reconcilestatus.
     status stays editable.
     """
-    items = (data or {}).get('orderitems') or []
-    patient = {}
+    norm = _normalize_orderitems(data)
+    patient = norm['patient']
     by_drug = {}
     order_seen = []
 
@@ -1039,14 +1050,7 @@ def build_med_journey_from_arcus(data, reconcile_meds=None, prev_meds=None):
     #    Track the earliest/latest order dates → admission / discharge endpoints
     #    for the bottom drug-timeline (phase-based bars labelled with real dates).
     order_dates = []
-    for it in items:
-        med = _arcus_item_to_med(it)
-        if not med:
-            continue
-        if not patient:
-            patient = _arcus_patient_header(it)
-        if not _is_medicine(med):
-            continue
+    for med in norm['items']:
         # Drop operating-room / anaesthesia meds — given once intra-operatively
         # ("Infuse … Intra-Op", "Inject … Intra-Op": Propofol, Fentanyl, Esmeron,
         # Bridion, etc.). They are not part of the patient's medication journey.
