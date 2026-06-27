@@ -105,6 +105,12 @@
       MEAL_SLOTS.forEach((s) => {
         if (s.test(text)) { buckets[s.key].push(Object.assign({ prn: s.key === "prn" }, it)); matched = true; }
       });
+      // A once-daily order with NO explicit meal word defaults to the morning
+      // (after-breakfast) slot — the convention for once-daily home meds. Orders
+      // that DO name a meal ("Once Daily After Dinner") already matched above.
+      if (!matched && /once\s*daily|วันละ\s*1\s*ครั้ง|วันละครั้ง/i.test(text)) {
+        buckets["abf"].push(Object.assign({ prn: false }, it)); matched = true;
+      }
       if (!matched) unslotted.push(it);
     });
     return { buckets, unslotted };

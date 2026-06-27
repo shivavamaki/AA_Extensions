@@ -1047,6 +1047,14 @@ def build_med_journey_from_arcus(data, reconcile_meds=None, prev_meds=None):
             patient = _arcus_patient_header(it)
         if not _is_medicine(med):
             continue
+        # Drop operating-room / anaesthesia meds — given once intra-operatively
+        # ("Infuse … Intra-Op", "Inject … Intra-Op": Propofol, Fentanyl, Esmeron,
+        # Bridion, etc.). They are not part of the patient's medication journey.
+        # Keep anything that reaches discharge regardless (safety net).
+        _ot_code = med.get('ordertypecode')
+        _is_discharge = _journey_phase(med.get('ordertype'), _ot_code) == 'home'
+        if not _is_discharge and re.search(r'intra-?\s*op', med.get('comment') or '', re.I):
+            continue
         d = (med.get('orderdate') or med.get('startdate') or '').strip()
         if d:
             order_dates.append(d)
