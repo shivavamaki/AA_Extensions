@@ -18,15 +18,26 @@ Opened via `OPEN_MEDICATION_JOURNEY`-adjacent routing as `page-med-journey.html`
 
 `STATUSES = [continued, new, changed, stopped]`
 
-Thai labels: `{ continued: ใช้ต่อ, new: เริ่มใหม่, changed: เปลี่ยน, stopped: หยุด }`
+Thai labels: `{ continued: ใช้ต่อ, new: เริ่มใหม่, changed: เปลี่ยน, stopped: ใช้ระหว่างนอน รพ. }`
 
-Status and note are editable per row and saved back to the server.
+Status and note are editable per row and saved back to the server. The **สถานะ
+column is the last column and is screen-only (`no-print`)** — it is the editing
+control that tints each row's timeline bar; on paper the status is conveyed by
+the bar colour, decoded via the legend above the table.
+
+## Phase timeline (in-table)
+
+The **ช่วงการใช้ยา** column shows each drug's continuity as a single coloured
+bar spanning the phases it is present in (`admission → ward → home`), driven by
+`_barSpan(row.phases)`. The shared axis (phase labels, gradient line + dots,
+admission/discharge dates) lives in that column's `<th>` so it repeats on every
+printed page. There is no separate Drug Timeline page.
 
 ## Files
 
 | File | Role |
 |---|---|
-| `page-med-journey.html` | Timeline grid layout |
+| `page-med-journey.html` | Continuity grid + in-table phase timeline + by-meal home-med card |
 | `page-med-journey.js` | Fetch, group, render, edit status/note, translate (Thai default) |
 
 ## Gotchas

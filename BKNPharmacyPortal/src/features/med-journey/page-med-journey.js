@@ -90,29 +90,27 @@ function _statusOptions(sel) {
   ).join("");
 }
 
-/* Phase metadata in display order: key, Thai label, short tag. */
-const PHASES = [
-  { key: "admission", label: "ก่อน/แรกรับ", short: "ก่อน" },
-  { key: "ward",      label: "ระหว่างนอน รพ.", short: "ward" },
-  { key: "home",      label: "กลับบ้าน", short: "home" },
-];
-
 /** Pick the representative instruction for a drug: prefer home → ward → admission
  * (the most patient-relevant non-empty phase). Shown as-is (no translation). */
 function _repInstruction(row) {
   return row.home || row.ward || row.admission || "";
 }
 
-/** Compact phase bar: 3 segments (ก่อน│ward│home), filled when the drug is
- * present in that phase, tinted by status. Each segment tooltips its own text. */
-function _phaseBar(row) {
-  const segs = PHASES.map((p) => {
-    const v = norm(row[p.key] || "");
-    const on = v ? "on" : "";
-    const tip = v ? `${p.label}: ${v}` : `${p.label}: —`;
-    return `<span class="pb-seg ${on}" data-no-translate translate="no" title="${escapeHtml(tip)}"><span class="pb-lbl">${p.short}</span></span>`;
-  }).join("");
-  return `<div class="phase-bar" data-no-translate translate="no">${segs}</div>`;
+/** Status label shown inside the bar only when the bar is wide enough to hold
+ * it; narrow bars (e.g. ward-only) rely on colour + the legend. */
+function _barLabel(status, width) {
+  return width >= 50 ? (STATUS_TH[status] || "") : "";
+}
+
+/** Timeline cell: a single coloured bar spanning the phases the drug is present
+ * in (admission → ward → home), tinted by status via the row's data-status.
+ * Replaces the former 3-segment phase bar; mirrors the old bottom-page timeline. */
+function _timelineCell(row) {
+  const span = _barSpan(row.phases);
+  if (!span) return `<div class="tl-track"></div>`;
+  const label = _barLabel(row.status, span.width);
+  const tip = `${row.drug || ""} — ${STATUS_TH[row.status] || ""}`;
+  return `<div class="tl-track"><div class="tl-bar" style="left:${span.left}%;width:${span.width}%" title="${escapeHtml(tip)}">${escapeHtml(label)}</div></div>`;
 }
 
 function _buildRow(row, i) {
@@ -128,12 +126,12 @@ function _buildRow(row, i) {
       ${row.code ? `<div class="drug-code" data-no-translate translate="no">Code: ${escapeHtml(row.code)}</div>` : ""}
     </td>
     <td class="col-instr" contenteditable="true" data-field="${escapeHtml(_repField(row))}" data-ph="—">${escapeHtml(repText)}</td>
-    <td class="col-bar">${_phaseBar(row)}</td>
-    <td class="col-status">
-      <select class="status-sel no-print" data-field="status">${_statusOptions(row.status)}</select>
-      <span class="status-print" data-no-translate translate="no">${escapeHtml(STATUS_TH[row.status] || row.status || "")}</span>
-    </td>
+    <td class="col-bar" data-no-translate translate="no">${_timelineCell(row)}</td>
     <td class="col-note" contenteditable="true" data-field="note" data-ph="หมายเหตุ">${escapeHtml(row.note || "")}</td>
+    <td class="col-status no-print">
+      <select class="status-sel" data-field="status">${_statusOptions(row.status)}</select>
+      <span class="ui-tag">ตั้งค่าเพื่อกำหนดสี · ไม่พิมพ์</span>
+    </td>
   `;
   return tr;
 }
@@ -171,8 +169,8 @@ function renderRows() {
   _rows.forEach((r, i) => tbody.appendChild(_buildRow(r, i)));
   tbody.appendChild(_buildAddRow());
   _bindEditing(tbody);
-  renderTimeline();  // keep the bottom timeline in sync with the row set
-  renderMealCard();  // and the by-meal home-med card
+  _renderAxisDates();  // admission/discharge dates in the timeline column header
+  renderMealCard();    // the by-meal home-med card
 }
 
 /* ───────────────────────── Drug timeline (bottom page) ────────────────── */
@@ -198,29 +196,11 @@ function _barSpan(phases) {
   return { left, width };
 }
 
-function renderTimeline() {
-  const host = document.getElementById("timelineRows");
-  if (!host) return;
+/** Fill the admission/discharge dates in the timeline column header (the shared
+ * axis). The per-drug bars are drawn inline by _timelineCell during row build. */
+function _renderAxisDates() {
   safeSetText("tlDateAdm", _fmtDate(_dates.admission));
   safeSetText("tlDateDc", _fmtDate(_dates.discharge));
-
-  if (!_rows.length) {
-    host.innerHTML = `<div class="timeline-empty">ไม่มีรายการยา (no medications)</div>`;
-    return;
-  }
-  host.innerHTML = _rows.map((row) => {
-    const span = _barSpan(row.phases);
-    const cls = "s-" + (row.status || "");
-    const tag = STATUS_TH[row.status] || "";
-    const bar = span
-      ? `<div class="tl-bar ${cls}" style="left:${span.left}%;width:${span.width}%" title="${escapeHtml(row.drug + " — " + tag)}">${escapeHtml(tag)}</div>`
-      : "";
-    const code = row.code ? ` <span class="tl-code">${escapeHtml(row.code)}</span>` : "";
-    return `<div class="tl-row">
-      <div class="tl-name" title="${escapeHtml(row.drug)}">${escapeHtml(row.drug)}${code}</div>
-      <div class="tl-track">${bar}</div>
-    </div>`;
-  }).join("");
 }
 
 /* ─────────────────── Daily Pill Journey Card (by meal) ─────────────────── */
@@ -360,10 +340,9 @@ function _bindEditing(tbody) {
       const tr = sel.closest(".j-row"); if (!tr) return;
       const i = Number(tr.dataset.index);
       _commit(i, "status", sel.value);
-      tr.dataset.status = sel.value;
-      const sp = tr.querySelector(".status-print");
-      if (sp) sp.textContent = STATUS_TH[sel.value] || sel.value;
-      renderTimeline();  // recolour the matching bar on the timeline page
+      tr.dataset.status = sel.value;       // recolours the in-row timeline bar (CSS)
+      const cell = tr.querySelector(".col-bar");
+      if (cell) cell.innerHTML = _timelineCell(_rows[i]);  // refresh the in-bar label
       renderMealCard();  // stopped meds drop out of the by-meal card
     });
   });
@@ -477,7 +456,7 @@ async function _loadSaved() {
 async function fetchAndRender() {
   const tbody = document.querySelector("#journeyTable tbody");
   if (!_context || !_context.patientvisituid) {
-    if (tbody) { tbody.innerHTML = ""; const tr = document.createElement("tr"); tr.innerHTML = `<td colspan="7" class="empty">No patient context. Open from the Dispense Workbench.</td>`; tbody.appendChild(tr); }
+    if (tbody) { tbody.innerHTML = ""; const tr = document.createElement("tr"); tr.innerHTML = `<td colspan="6" class="empty">No patient context. Open from the Dispense Workbench.</td>`; tbody.appendChild(tr); }
     return;
   }
   if (!_context.incusToken) {
