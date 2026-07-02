@@ -278,6 +278,33 @@
   transition: background 0.12s;
 }
 .hmr-step-run-btn:hover { background: #1976d2; }
+.hmr-step-done-btn {
+  padding: 2px 7px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+.hmr-step-done-btn:hover { background: #c8e6c9; }
+.hmr-step-override-btn {
+  padding: 2px 7px;
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffcc80;
+  border-radius: 5px;
+  font-size: 10.5px;
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+.hmr-step-override-btn:hover { background: #ffe0b2; }
 
 /* ══ Step 7 floating overlay (Pharmacy Worklist) ══════════════════════ */
 #hmr-step7-overlay {

@@ -228,7 +228,7 @@
   // ── Page detection helpers ───────────────────────────────────────────
 
   function isWardView()        { return location.href.includes('inpatient/wardview'); }
-  function isPharmacyWorklist(){ return location.href.includes('dispenseworkbench'); }
+  function isPharmacyWorklist(){ return location.href.includes('dispenseworkbench/pharmacy/dispense'); }
 
   function findVisitDetailsH4() {
     for (const h of document.querySelectorAll('h4')) {
@@ -294,50 +294,366 @@
 
   async function fillWorklistHNSearch(hn) {
     const L = s => console.log(`[BKN-HMR S7] ${s}`);
+    if (_step7FillInProgress) { L('fillWorklistHNSearch skipped (already running)'); return false; }
+    _step7FillInProgress = true;
+    try {
+      return await _doFillWorklistHNSearch(hn, L);
+    } finally {
+      _step7FillInProgress = false;
+    }
+  }
+
+  async function _doFillWorklistHNSearch(hn, L) {
     L(`fillWorklistHNSearch hn="${hn}"`);
 
-    // The search widget is a custom MGS directive — must click the wrapper first
-    // to open search mode, then the real input appears inside it.
-    const wrapper = document.querySelector('#defaultPatWidId4MgsWrapper, .mgs-wrapper');
-    L(`mgs-wrapper: ${wrapper ? wrapper.id || wrapper.className : 'NOT FOUND'}`);
+    // 1. Find patient search wrapper (not the order-item wrapper)
+    const wrapper = Array.from(document.querySelectorAll('.mgs-wrapper')).find(
+      w => w.textContent.includes('Search MRN or Name')
+    );
+    L(`wrapper: ${wrapper ? '#' + wrapper.id : 'NOT FOUND'}`);
     if (!wrapper) return false;
 
-    wrapper.click();
-    await sleep(500);
+    // baseId: "defaultPatWidId2MgsWrapper" → "defaultPatWidId2"
+    const baseId      = (wrapper.id || '').replace('MgsWrapper', '');
+    const hasParamsId = baseId ? `${baseId}MgsHasParamsSearchInput0` : null;
 
-    // Input appears inside the wrapper after click
-    const input = wrapper.querySelector('input');
-    L(`input after click: ${input ? 'FOUND type=' + input.type : 'NOT FOUND'}`);
+    // 2. Open search mode only if suggestion chips are not already visible.
+    // Clicking when already open would TOGGLE it off.
+    const chipsVisible = () => document.querySelectorAll('span.sugsear-title').length > 0;
+    if (!chipsVisible()) {
+      wrapper.click();
+      await sleep(500);
+    }
+
+    // 3. Click the "MRN" chip (class sugsear-title, different widget ID than wrapper).
+    const mrnChip = Array.from(document.querySelectorAll('span.sugsear-title'))
+                      .find(el => el.textContent.trim() === 'MRN');
+    L(`MRN chip: ${mrnChip ? '#' + mrnChip.id : 'NOT FOUND'}`);
+    if (!mrnChip) return false;
+    mrnChip.click();
+
+    // 4. Wait for hasParams input to appear (Angular needs a digest cycle after chip click).
+    let input = null;
+    for (let i = 0; i < 8; i++) {
+      await sleep(150);
+      input = (hasParamsId && document.getElementById(hasParamsId))
+            || document.querySelector('[id*="MgsHasParamsSearchInput0"]');
+      if (input) break;
+    }
+    L(`hasParams input: ${input ? '#' + input.id : 'NOT FOUND after 1.2s'}`);
     if (!input) return false;
 
+    // 5. Set value via native setter so Angular ng-model + ng-change pick it up.
     input.focus();
-    // Use native setter so Angular's ng-model picks up the value
     const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-    if (nativeSetter) {
-      nativeSetter.call(input, hn);
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-    } else {
-      input.value = hn;
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-    }
+    if (nativeSetter) nativeSetter.call(input, hn);
+    else input.value = hn;
+    input.dispatchEvent(new Event('input',  { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
     await sleep(300);
-    input.dispatchEvent(new KeyboardEvent('keydown',  { key: 'Enter', keyCode: 13, bubbles: true }));
-    input.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter', keyCode: 13, bubbles: true }));
-    input.dispatchEvent(new KeyboardEvent('keyup',    { key: 'Enter', keyCode: 13, bubbles: true }));
-    L('HN dispatched to mgs-wrapper input');
+
+    // 6. Click the Search button (not Enter — Enter doesn't trigger dispensing search).
+    const searchBtn = document.getElementById('searchdispense');
+    L(`searchBtn: ${searchBtn ? 'found' : 'NOT FOUND'}`);
+    if (searchBtn) {
+      searchBtn.click();
+    } else {
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Enter', keyCode: 13, bubbles: true }));
+    }
+    L(`HN "${hn}" dispatched to #${input.id}`);
+
+    // 7. Wait for the first result row and click it to select the patient.
+    const rowId = hasParamsId ? hasParamsId.replace('MgsHasParamsSearchInput0', 'MgsGridOneRow0') : null;
+    let row = null;
+    for (let i = 0; i < 20; i++) {
+      await sleep(200);
+      row = (rowId && document.getElementById(rowId))
+          || document.querySelector('[id*="MgsGridOneRow0"]');
+      if (row) break;
+    }
+    L(`result row: ${row ? '#' + row.id : 'NOT FOUND after 4s'}`);
+    if (row) row.click();
+
+    // Stop re-processing — job is handed off to the pharmacist now.
+    _step7NoJob = true;
     return true;
   }
 
-  // ── Step 7 row filter helper (Automate panel) ────────────────────────
+  // ── HMR inline auto-dispense (ported from Automate extension) ──────────
 
-  function setAutomateFilterToDischarge() {
-    const sel = document.querySelector('#arcus-mode-select');
-    if (!sel) return;
-    sel.value = 'discharge';
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  let _hmrAutoRunning = false;
+  let _hmrAutoStop    = false;
+
+  // Utilities (ported from Automate/content/shared.js)
+  function _hmrIsVisible(el) {
+    if (!el) return false;
+    const s = getComputedStyle(el);
+    if (s.display === 'none' || s.visibility === 'hidden' || el.disabled) return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  }
+  async function _hmrClick(el) {
+    if (!el) return false;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    await sleep(250);
+    for (const t of ['mouseover','mouseenter','mousedown','mouseup','click']) {
+      el.dispatchEvent(new MouseEvent(t, { bubbles: true, cancelable: true, view: window }));
+    }
+    if (typeof el.click === 'function') el.click();
+    return true;
+  }
+  function _hmrText(el) {
+    return ((el && (el.innerText || el.textContent)) || '').replace(/\s+/g, ' ').trim();
+  }
+  async function _hmrWaitFor(fn, timeout = 12000, interval = 300) {
+    const end = Date.now() + timeout;
+    while (Date.now() < end) {
+      if (_hmrAutoStop) return null;
+      const v = fn();
+      if (v) return v;
+      await sleep(interval);
+    }
+    return null;
+  }
+  function _hmrQueryFirst(selectors, root = document) {
+    for (const sel of (Array.isArray(selectors) ? selectors : [selectors])) {
+      try { const el = root.querySelector(sel); if (el && _hmrIsVisible(el)) return el; } catch (_) {}
+    }
+    return null;
+  }
+  function _hmrIsWorkbench()   { return location.href.includes('dispenseworkbench/pharmacy/dispense'); }
+  function _hmrIsAllocate()    { return location.href.includes('allocatedispense'); }
+  function _hmrIsDispenseDept(){ return location.href.includes('dispensetodept'); }
+
+  function _hmrFindDialog() {
+    for (const sel of ['body > div.md-dialog-container.ng-scope > md-dialog',
+                        'body > div.md-dialog-container > md-dialog',
+                        '.md-dialog-container md-dialog', 'md-dialog', "[role='dialog']"]) {
+      try { const el = document.querySelector(sel); if (el && _hmrIsVisible(el)) return el; } catch (_) {}
+    }
+    return null;
+  }
+  function _hmrIsAlertDialog(d = _hmrFindDialog()) {
+    if (!d) return false;
+    const t = _hmrText(d).toLowerCase();
+    return t.includes('alerts') || !!d.querySelector('#closeBtn');
+  }
+  function _hmrIsOverrideDialog(d = _hmrFindDialog()) {
+    if (!d) return false;
+    const t = _hmrText(d).toLowerCase();
+    return ['override','reason','select reason','please select'].some(h => t.includes(h));
+  }
+
+  async function _hmrGetWorkbenchContainer() {
+    const selectors = ['body > div.full-height.ng-scope.layout-row > div > md-content > md-content > div > md-card > md-content > div',
+                        'md-card md-content > div', 'md-table-container'];
+    for (const sel of selectors) { try { const el = document.querySelector(sel); if (el) return el; } catch(_) {} }
+    return null;
+  }
+  async function _hmrWaitWorkbench() {
+    const c = await _hmrWaitFor(() => _hmrIsWorkbench() ? _hmrGetWorkbenchContainer() : null, 20000, 300);
+    if (!c) return null;
+    await sleep(700);
+    return c;
+  }
+  async function _hmrWaitAllocateSave() {
+    const SELS = ['#actiondiv > button.md-primary.md-button.md-incustheme-theme.md-ink-ripple',
+                  '#actiondiv button.md-primary', "button.md-primary[ng-click*='save']", 'button.md-primary'];
+    const btn = await _hmrWaitFor(() => _hmrIsAllocate() ? _hmrQueryFirst(SELS) : null, 20000, 300);
+    if (!btn) return null;
+    await sleep(700);
+    return btn;
+  }
+  async function _hmrWaitDispenseSave() {
+    const SELS = ['body > div.full-height.ng-scope.layout-row > div > md-content > md-card > md-card-content > div.layout-xs-column.layout-sm-column.layout-row > div > div > button.md-primary.md-button.md-incustheme-theme.md-ink-ripple',
+                  '#actiondiv button.md-primary', 'md-card-content button.md-primary',
+                  "button.md-primary[ng-click*='save']", 'button.md-primary'];
+    const btn = await _hmrWaitFor(() => _hmrIsDispenseDept() ? _hmrQueryFirst(SELS) : null, 20000, 300);
+    if (!btn) return null;
+    await sleep(700);
+    return btn;
+  }
+  async function _hmrCloseAlertDialog() {
+    const d = _hmrFindDialog();
+    if (!d || !_hmrIsAlertDialog(d)) return false;
+    const hideAll = document.querySelector('#hideAllAlerts');
+    if (hideAll && _hmrIsVisible(hideAll)) { await _hmrClick(hideAll); await sleep(500); }
+    else {
+      for (const btn of Array.from(d.querySelectorAll('button[id^="dontshow"]')).filter(_hmrIsVisible)) {
+        await _hmrClick(btn); await sleep(200);
+      }
+    }
+    const close = _hmrQueryFirst(['#closeBtn', "button[aria-label='Close']"], d);
+    if (close) { await _hmrClick(close); await sleep(900); }
+    return true;
+  }
+  async function _hmrCloseToolbarDialog() {
+    const d = _hmrFindDialog();
+    if (!d) return false;
+    const icon = _hmrQueryFirst(['body > div.md-dialog-container.ng-scope > md-dialog > form > md-toolbar > div > button > md-icon',
+                                  '.md-dialog-container md-toolbar button md-icon', 'md-dialog md-toolbar button']);
+    if (!icon) return false;
+    await _hmrClick(icon); await sleep(900);
+    return true;
+  }
+  async function _hmrWaitOverrideCompletion() {
+    const end = Date.now() + 180000;
+    while (Date.now() < end) {
+      if (_hmrAutoStop) return { ok: false, reason: 'stopped' };
+      const d = _hmrFindDialog();
+      if (!d) {
+        await sleep(1200);
+        if (_hmrIsAllocate() || _hmrIsDispenseDept() || _hmrIsWorkbench())
+          return { ok: true, reason: 'override dialog closed' };
+      }
+      await sleep(500);
+    }
+    return { ok: false, reason: 'timeout waiting for override' };
+  }
+
+  // Dispense-workbench row helpers
+  function _hmrGetCellText(row, col) {
+    const td = row.querySelector(`td:nth-child(${col}) > span`) || row.querySelector(`td:nth-child(${col})`);
+    return td ? _hmrText(td) : '';
+  }
+  function _hmrNormStatus(v) { return String(v || '').replace(/\s+/g, ' ').trim().toLowerCase(); }
+  function _hmrFindDischargeRows(targetStatus) {
+    const wanted = _hmrNormStatus(targetStatus);
+    return Array.from(document.querySelectorAll(
+      "tr[id^='slectDispense'], tr[id^='selectDispense'], [id^='slectDispense'], [id^='selectDispense']"
+    )).filter(row => {
+      if (!_hmrIsVisible(row)) return false;
+      if (_hmrNormStatus(_hmrGetCellText(row, 8)) !== wanted) return false;
+      if (!/^I/i.test(String(_hmrGetCellText(row, 10) || '').trim())) return false;
+      return _hmrText(row).toUpperCase().includes('DISCHARGE MEDICATION');
+    });
+  }
+
+  async function _hmrAllocateRow(row, setStatus) {
+    setStatus('Clicking row…');
+    await _hmrClick(row); await sleep(1000);
+    const d = _hmrFindDialog();
+    if (d && _hmrIsAlertDialog(d)) { await _hmrCloseAlertDialog(); await sleep(500); }
+
+    setStatus('Clicking Allocate…');
+    const allocBtn = await _hmrWaitFor(() => _hmrQueryFirst('#allocatedispense'), 18000, 300);
+    if (!allocBtn) return { ok: false, reason: '#allocatedispense not found' };
+    await _hmrClick(allocBtn); await sleep(1500);
+    await _hmrWaitFor(() => location.href.includes('allocatedispense'), 20000, 300);
+
+    setStatus('Saving allocation…');
+    const saveBtn = await _hmrWaitAllocateSave();
+    if (!saveBtn) return { ok: false, reason: 'allocate save button not found' };
+    await _hmrClick(saveBtn); await sleep(1800);
+
+    const d2 = _hmrFindDialog();
+    if (d2 && _hmrIsOverrideDialog(d2)) {
+      setStatus('Manual override needed — select reason & Save…');
+      const ow = await _hmrWaitOverrideCompletion();
+      if (!ow.ok) return ow;
+    } else if (d2) {
+      await _hmrCloseToolbarDialog();
+    }
+    await _hmrWaitWorkbench();
+    return { ok: true };
+  }
+
+  async function _hmrDispenseRow(row, setStatus) {
+    setStatus('Clicking row…');
+    await _hmrClick(row); await sleep(1000);
+    const d = _hmrFindDialog();
+    if (d && _hmrIsAlertDialog(d)) { await _hmrCloseAlertDialog(); await sleep(500); }
+
+    setStatus('Clicking Dispense To Dept…');
+    const dispBtn = await _hmrWaitFor(() => _hmrQueryFirst('#dispensetodept'), 18000, 300);
+    if (!dispBtn) return { ok: false, reason: '#dispensetodept not found' };
+    await _hmrClick(dispBtn); await sleep(1500);
+    await _hmrWaitFor(() => location.href.includes('dispensetodept'), 20000, 300);
+
+    setStatus('Saving dispense…');
+    const saveBtn = await _hmrWaitDispenseSave();
+    if (!saveBtn) return { ok: false, reason: 'dispensetodept save button not found' };
+    await _hmrClick(saveBtn); await sleep(1800);
+
+    const d2 = _hmrFindDialog();
+    if (d2 && _hmrIsOverrideDialog(d2)) {
+      setStatus('Manual override needed — select reason & Save…');
+      const ow = await _hmrWaitOverrideCompletion();
+      if (!ow.ok) return ow;
+    } else if (d2) {
+      await _hmrCloseToolbarDialog();
+      await _hmrCloseAlertDialog();
+    }
+    await _hmrWaitWorkbench();
+    return { ok: true };
+  }
+
+  async function runHmrAutoDispense(setStatus) {
+    if (_hmrAutoRunning) { setStatus('Auto dispense already running.'); return; }
+    _hmrAutoRunning = true;
+    _hmrAutoStop    = false;
+    try {
+      // ── Pass 1: Allocate all Ordered DISCHARGE MEDICATION rows ─────────
+      for (let pass = 0; pass < 30; pass++) {
+        if (_hmrAutoStop) break;
+        const rows = _hmrFindDischargeRows('Ordered');
+        if (!rows.length) break;
+        setStatus(`Allocating… (${rows.length} Ordered row(s) remain)`);
+        const r = await _hmrAllocateRow(rows[0], setStatus);
+        if (!r.ok) { setStatus(`Allocate failed: ${r.reason}`); break; }
+        await sleep(900);
+      }
+      if (_hmrAutoStop) { setStatus('Stopped.'); return; }
+
+      // ── Pass 2: Dispense all Allocated DISCHARGE MEDICATION rows ───────
+      for (let pass = 0; pass < 30; pass++) {
+        if (_hmrAutoStop) break;
+        // Refresh the workbench list before each dispense pass
+        const searchBtn = document.getElementById('searchdispense');
+        if (searchBtn) { searchBtn.click(); await sleep(1500); }
+        const rows = _hmrFindDischargeRows('Allocated');
+        if (!rows.length) break;
+        setStatus(`Dispensing… (${rows.length} Allocated row(s) remain)`);
+        const r = await _hmrDispenseRow(rows[0], setStatus);
+        if (!r.ok) { setStatus(`Dispense failed: ${r.reason}`); break; }
+        await sleep(900);
+      }
+
+      if (!_hmrAutoStop) setStatus('Auto dispense complete. Click ✓ Done — Close when ready.');
+    } finally {
+      _hmrAutoRunning = false;
+    }
   }
 
   // ── Step 7 floating overlay (shown on Pharmacy Worklist) ─────────────
+
+  function makeDraggable(el, handle) {
+    let ox = 0, oy = 0, startX = 0, startY = 0;
+    handle.style.cursor = 'grab';
+    handle.addEventListener('mousedown', e => {
+      if (e.target.closest('button')) return;
+      e.preventDefault();
+      startX = e.clientX; startY = e.clientY;
+      const r = el.getBoundingClientRect();
+      ox = r.left; oy = r.top;
+      el.style.right = 'auto';
+      el.style.left = ox + 'px';
+      el.style.top  = oy + 'px';
+      handle.style.cursor = 'grabbing';
+      function onMove(e) {
+        el.style.left = (ox + e.clientX - startX) + 'px';
+        el.style.top  = (oy + e.clientY - startY) + 'px';
+      }
+      function onUp() {
+        handle.style.cursor = 'grab';
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
 
   function showStep7Overlay(job) {
     document.getElementById('hmr-step7-overlay')?.remove();
@@ -364,11 +680,12 @@
         </div>
         <div class="hmrs7-status" id="hmrs7-status">HN filled. Please allocate first.</div>
         <div class="hmrs7-footer">
-          <button class="hmrs7-fin-btn" id="hmrs7-done-all" disabled>→ Discharge List</button>
+          <button class="hmrs7-fin-btn" id="hmrs7-done-all" style="opacity:1">✓ Done — Close</button>
           <button class="hmrs7-cancel-btn" id="hmrs7-cancel">Cancel</button>
         </div>
       </div>`;
     document.body.appendChild(el);
+    makeDraggable(el, el.querySelector('.hmrs7-hdr'));
     wireStep7Overlay(job);
   }
 
@@ -401,35 +718,18 @@
       const dispBtn = document.getElementById('hmrs7-run-disp');
       if (dispBtn) dispBtn.disabled = true;
 
-      // Try to use the Automate extension's dispense button
-      setAutomateFilterToDischarge();
-      await sleep(300);
+      await runHmrAutoDispense(setStatus);
 
-      const arcusDispBtn = document.querySelector('#arcus-btn-dispense');
-      if (arcusDispBtn && !arcusDispBtn.disabled) {
-        setStatus('Running Auto Dispense via Automate panel…');
-        arcusDispBtn.click();
-        setStatus('Dispense running. Click → Discharge List when done.');
-        document.getElementById('hmrs7-done-all').disabled = false;
-      } else if (arcusDispBtn && arcusDispBtn.disabled) {
-        setStatus('Automate is already running. Wait for it to finish, then click → Discharge List.');
-        document.getElementById('hmrs7-done-all').disabled = false;
-      } else {
-        setStatus('Automate panel not found. Please run dispense manually, then click → Discharge List.');
-        if (dispBtn) dispBtn.disabled = false;
-        document.getElementById('hmrs7-done-all').disabled = false;
-      }
+      if (dispBtn) dispBtn.disabled = false;
     });
 
     document.getElementById('hmrs7-done-all')?.addEventListener('click', async () => {
-      setStatus('Saving and navigating to Discharge List…');
-      // Mark step 7 done on server
+      _hmrAutoStop = true;
       await serverSave(job.visitid, {
         steps: { allocateDispensed: 'done' },
       }, makeLog('step 7: allocate/dispense completed'));
       await clearStep7Job();
       document.getElementById('hmr-step7-overlay')?.remove();
-      await navigateToDischargeList();
     });
   }
 
@@ -523,9 +823,14 @@
       const st  = steps[s.key];
       const cls = st === 'done' ? 'hmr-step-done' : st === 'skip' ? 'hmr-step-skip' : 'hmr-step-pend';
       const ic  = st === 'done' ? '✓' : st === 'skip' ? '—' : s.num;
-      const actionTag = s.runnable && st !== 'done'
-        ? `<button class="hmr-step-run-btn" data-step="${s.key}">▶ Run</button>`
-        : `<span class="hmr-step-tag">AUTO</span>`;
+      let actionTag;
+      if (st === 'done') {
+        actionTag = `<button class="hmr-step-override-btn" data-step="${s.key}" title="Mark as pending">↺</button>`;
+      } else if (s.runnable) {
+        actionTag = `<button class="hmr-step-run-btn" data-step="${s.key}">▶ Run</button>`;
+      } else {
+        actionTag = `<span class="hmr-step-tag">AUTO</span><button class="hmr-step-done-btn" data-step="${s.key}" title="Mark as done manually">✓</button>`;
+      }
       return `<div class="hmr-step-row ${cls}">
         <span class="hmr-step-num">${ic}</span>
         <span class="hmr-step-name">${s.label}</span>
@@ -729,6 +1034,28 @@
         await serverSave(visitid, {}, makeLog('step 7: launched from workstation'));
         await launchStep7(visitid, hn);
       });
+
+    // AUTO step manual override: ✓ button marks pending AUTO step as done
+    document.querySelectorAll('.hmr-step-done-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const key = btn.dataset.step;
+        if (!key) return;
+        _state.steps[key] = 'done';
+        rerender(visitid, _state);
+        await serverSave(visitid, { steps: _state.steps }, makeLog(`step ${key} manually marked done`));
+      });
+    });
+
+    // ↺ button reverts a done step back to pending
+    document.querySelectorAll('.hmr-step-override-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const key = btn.dataset.step;
+        if (!key) return;
+        _state.steps[key] = 'pending';
+        rerender(visitid, _state);
+        await serverSave(visitid, { steps: _state.steps }, makeLog(`step ${key} reset to pending`));
+      });
+    });
   }
 
   function rerender(visitid, state) {
@@ -745,8 +1072,9 @@
 
   // ── MutationObserver loop ────────────────────────────────────────────
 
-  let _step7ObsScheduled = false;
-  let _step7NoJob        = false;   // true once we confirmed no pending job — stops spam
+  let _step7ObsScheduled  = false;
+  let _step7NoJob         = false;   // true once we confirmed no pending job — stops spam
+  let _step7FillInProgress = false;  // mutex: prevent concurrent fillWorklistHNSearch
 
   async function handleStep7OnWorklist() {
     const L = s => console.log(`[BKN-HMR S7] ${s}`);
@@ -774,8 +1102,6 @@
     L(`fillWorklistHNSearch returned ${filled}`);
 
     await sleep(800);
-    setAutomateFilterToDischarge();
-
     showStep7Overlay(job);
     L('overlay shown');
     _step7ObsScheduled = false;
