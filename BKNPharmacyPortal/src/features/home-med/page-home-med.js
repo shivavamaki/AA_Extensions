@@ -547,11 +547,27 @@ function renderMealCard() {
   }
   // Match on the instruction plus the authoritative Thai frequency phrase, so a
   // meal time supplied only by frequencyTh (not the English comment) still buckets.
-  const items = _meds.map((m) => {
-    const text = norm((m.instruction || "") + " " + (m.frequencyTh || ""));
-    return { drug: m.drug, text, dose: MS.doseSnippet(m.instruction || "") };
+  // The per-dose amount ("1 แพ็ค", "5 มล.", "1 เม็ด") is read from the rendered
+  // Thai instruction the table shows; external/topical meds get a "ทา" label.
+  const domRows = document.querySelectorAll("#medTable tbody tr.med-row");
+  const items = _meds.map((m, i) => {
+    const domInstr = domRows[i] ? norm((domRows[i].querySelector(".instruction-text") || {}).textContent || "") : "";
+    const instrTh = domInstr || norm(m.instruction || "");
+    const text = norm(instrTh + " " + (m.frequencyTh || ""));
+    let dose = MS.doseSnippet(instrTh);
+    if (!dose && _isExternalMed(m, instrTh)) dose = "ทา";
+    return { drug: m.drug, text, dose };
   });
   host.innerHTML = MS.gridHTML(items, escapeHtml);
+}
+
+/** External / topical meds (creams, ointments) have no swallow-dose — they get a
+ * "ทา" (apply) label instead, detected from the "ยาใช้ภายนอก / ห้ามรับประทาน"
+ * note, an apply verb, or a cream/ointment/gel/lotion name. */
+function _isExternalMed(m, instrTh) {
+  return /ภายนอก|ห้ามรับประทาน/.test((m && m.note) || "")
+    || /^\s*ทา|ทาบริเวณ|ทาภายนอก/.test(instrTh || "")
+    || /cream|ครีม|ointment|ยาทา|\bgel\b|เจล|lotion|โลชั่น/i.test((m && m.drug) || "");
 }
 
 /* ───────────────────────────── Translation ────────────────────────────── */

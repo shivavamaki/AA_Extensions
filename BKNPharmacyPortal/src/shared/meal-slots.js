@@ -89,7 +89,7 @@
    * carries it). */
   function doseSnippet(txt) {
     const t = String(txt || "").trim();
-    const m = t.match(/(\d+(?:[.,]\d+)?(?:\/\d+)?)\s*(เม็ด|แคปซูล|ซอง|มล\.?|ml|puff|spray\(?s?\)?|หยด|drops?|ช้อน|tablets?|capsules?|tab|cap|amp|vial|มก\.?|mg|มิลลิกรัม)/i);
+    const m = t.match(/(\d+(?:[.,]\d+)?(?:\/\d+)?)\s*(เม็ด|แคปซูล|ซอง|แพ็?ค|หลอด|มล\.?|ml|puff|spray\(?s?\)?|หยด|drops?|ช้อน|tablets?|capsules?|tab|cap|amp|vial|มก\.?|mg|มิลลิกรัม)/i);
     return m ? m[0] : "";
   }
 
