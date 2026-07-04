@@ -86,6 +86,9 @@ Load order: core utils → `shared-data-client.js` → features → legacy `cont
 ### Stable internal identifiers — do not rename
 `MJ_*` message types, `OPEN_MEDICATION_JOURNEY`, `aa_medicationJourney` tab key, `arcus-medj-btn2` DOM id, `mj-*` CSS hooks, `MedicationJourney` namespace — load-bearing even though the user-facing feature is "ADR Timeline".
 
+### ArcusAir report pipeline is shared — keep both reports consistent
+The **Home Medication Sheet** (`/api/report/home-med-api`) and **Medication Journey** (`/api/report/med-journey`) both build from one server-side normaliser, `_normalize_orderitems` in `bkn_ks_server.py` (maps items, drops non-medicines/cancelled). De-dupe by `(drug, code)` — never code alone (`011001` is shared by all non-formulary meds). Phase comes from the stable `ordertypeuid` valuecode (`ORDERTYPE_PHASE_BY_CODE`), not the free-text label. The by-meal card grouping is client-side and **shared** via `window.BKNMealSlots` (`src/shared/meal-slots.js`) — edit the engine once, both report pages follow.
+
 ### Server safety
 Single-file stdlib server. JSON writes use `_atomic_write_json` (temp + `os.replace`). Static files served via `_serve_file_under` / `_path_within`. `TRUSTED_EXTENSION_ORIGINS` trusts any `chrome-extension://` origin for writes.
 
