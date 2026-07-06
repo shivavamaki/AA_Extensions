@@ -145,6 +145,7 @@
         "src/shared/shared-data-client.js",
         "src/shared/translate-core.js",
         "src/shared/medical-glossary.js",
+        "src/shared/meal-slots.js",
         "src/vendor/jsbarcode.min.js",
         "src/features/home-med/page-home-med.html",
         "src/features/home-med/page-home-med.js",

@@ -69,58 +69,78 @@
     .clinical-banner .allergy-line.nkda { background: #f3f4f6; color: #374151; }
     .clinical-banner .dx-line.empty { display: none; }
 
-    /* Phase legend */
-    .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; font-size: 12px; }
-    .legend .chip { padding: 3px 10px; border-radius: 14px; font-weight: 700; }
+    /* Status legend — decodes the timeline-bar colours (status no longer prints) */
+    .legend { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 6px 0 7px; font-size: 11px; }
+    .legend .lg-cap { color: #6b7280; font-weight: 700; }
+    .legend .chip { padding: 2px 10px; border-radius: 14px; font-weight: 700; }
     .chip.continued { background: #dcfce7; color: #166534; }
     .chip.new { background: #dbeafe; color: #1e40af; }
     .chip.changed { background: #fef3c7; color: #92400e; }
     .chip.stopped { background: #fee2e2; color: #991b1b; }
 
     table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.5px solid #0f172a; }
-    th { background: #0f766e; color: #fff; border: 1px solid #0f172a; padding: 7px 8px; text-align: left; font-size: 13px; }
+    th { background: #0f766e; color: #fff; border: 1px solid #0f172a; padding: 7px 8px; text-align: left; font-size: 13px; vertical-align: bottom; }
     th .th-sub { display: block; font-size: 11px; font-weight: 500; color: #ccfbf1; }
     td { border: 1px solid #94a3b8; padding: 7px 8px; vertical-align: top; font-size: 13px; line-height: 1.3; word-break: break-word; }
 
     .col-act { width: 8mm; text-align: center; }
-    .col-drug { width: 26%; }
-    .col-instr { width: 34%; }
-    .col-bar { width: 60mm; }
-    .col-status { width: 10%; }
-    .col-note { width: 18%; }
+    .col-drug { width: 22%; }
+    .col-instr { width: 25%; }
+    .col-bar { width: 33%; }
+    .col-note { width: 14%; }
+    .col-status { width: 34mm; }
 
     .drug-name { font-weight: 800; font-size: 14px; }
     .drug-code { font-size: 10px; color: #6b7280; margin-top: 2px; }
 
-    /* ── Phase bar (Before · Ward · Home) ─────────────────────────── */
-    .phase-bar { display: flex; gap: 4px; align-items: stretch; }
-    .pb-seg {
-      flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center;
-      height: 26px; border-radius: 6px; border: 1.5px solid #e2e8f0; background: #f8fafc;
-      color: #cbd5e1; font-size: 10px; font-weight: 700; letter-spacing: .2px;
-      position: relative; transition: none;
-    }
-    .pb-seg .pb-lbl { opacity: .85; }
-    /* "present in this phase" — filled, tinted by the row's status colour */
-    .pb-seg.on { color: #fff; border-color: transparent; }
-    tr[data-status="continued"] .pb-seg.on { background: #22c55e; }
-    tr[data-status="new"]       .pb-seg.on { background: #3b82f6; }
-    tr[data-status="changed"]   .pb-seg.on { background: #f59e0b; }
-    tr[data-status="stopped"]   .pb-seg.on { background: #ef4444; }
-    tr:not([data-status]) .pb-seg.on,
-    tr[data-status=""] .pb-seg.on { background: #64748b; }
-    /* connector dot between filled adjacent segments reads as continuity */
-    .pb-seg.on + .pb-seg.on::before {
-      content: ""; position: absolute; left: -5px; top: 50%; width: 6px; height: 2px;
-      background: currentColor; transform: translateY(-50%);
-    }
+    /* ── Timeline column header (shared axis, lives in the th) ────────────── */
+    th.col-timeline { padding: 5px 8px 6px; }
+    .tlh-title { font-size: 13px; font-weight: 700; color: #fff; }
+    .tlh-title .tlh-sub { font-size: 10px; font-weight: 500; color: #ccfbf1; }
+    .tlh-phases { display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; margin-top: 4px; }
+    .tlh-phases span { font-size: 9.5px; font-weight: 700; line-height: 1.15; }
+    .tlh-phases .p-bef { color: #cbd5e1; text-align: left; }
+    .tlh-phases .p-ward { color: #ffffff; }
+    .tlh-phases .p-home { color: #bbf7d0; text-align: right; }
+    .tlh-axis { position: relative; height: 5px; margin: 4px 0 3px; border-radius: 3px;
+      background: linear-gradient(to right, #cbd5e1 0% 33.3%, rgba(255,255,255,.28) 33.3% 66.6%, #86efac 66.6% 100%); }
+    .tlh-dot { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 11px; height: 11px; border-radius: 50%; border: 2px solid #0f766e; box-shadow: 0 0 0 1.5px rgba(255,255,255,.55); }
+    .tlh-dot.m-bef { left: 0%; background: #cbd5e1; }
+    .tlh-dot.m-ward { left: 33.3%; background: #ffffff; }
+    .tlh-dot.m-home { left: 100%; background: #4ade80; }
+    .tlh-dates { display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 9px; color: #ccfbf1; }
+    .tlh-dates .d-l { text-align: left; }
+    .tlh-dates .d-c { text-align: center; color: #ffffff; font-weight: 700; }
+    .tlh-dates .d-r { text-align: right; }
+
+    /* ── Timeline cell — per-drug coloured bar across the 3 zones ──────────── */
+    .tl-track { position: relative; height: 22px;
+      background: linear-gradient(to bottom, transparent calc(50% - 1px), #e2e8f0 calc(50% - 1px), #e2e8f0 calc(50% + 1px), transparent calc(50% + 1px)); }
+    .tl-track::before, .tl-track::after { content: ""; position: absolute; top: 0; bottom: 0; width: 1px; background: #e2e8f0; }
+    .tl-track::before { left: 33.333%; }
+    .tl-track::after  { left: 66.666%; }
+    .tl-bar { position: absolute; top: 50%; transform: translateY(-50%); height: 13px; border-radius: 7px;
+      display: flex; align-items: center; justify-content: center; padding: 0 8px;
+      font-size: 9px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+    .tl-bar::before, .tl-bar::after { content: ""; position: absolute; top: 50%; transform: translateY(-50%); width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.7); }
+    .tl-bar::before { left: 3px; background: rgba(255,255,255,.35); }
+    .tl-bar::after  { right: 3px; background: rgba(255,255,255,.35); }
+    tr[data-status="continued"] .tl-bar { background: #16a34a; }
+    tr[data-status="new"]       .tl-bar { background: #2563eb; }
+    tr[data-status="changed"]   .tl-bar { background: #d97706; }
+    tr[data-status="stopped"]   .tl-bar { background: #dc2626; }
+    tr:not([data-status]) .tl-bar, tr[data-status=""] .tl-bar { background: #64748b; }
+    .timeline-empty { color: #6b7280; font-style: italic; padding: 10px 2px; }
 
     [contenteditable] { outline: none; border-radius: 5px; padding: 1px 3px; min-height: 1.1em; cursor: text; }
     [contenteditable]:hover { background: #f1f5f9; }
     [contenteditable]:focus { background: #ecfeff; box-shadow: 0 0 0 2px #5eead4 inset; }
     [contenteditable]:empty::before { content: attr(data-ph); color: #9ca3af; font-weight: 400; }
 
+    /* Status — last column, screen-only control that tints the timeline bar. */
     .status-sel { width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px; font-family: inherit; font-size: 12px; }
+    .col-status .ui-tag { display: block; font-size: 8.5px; color: #94a3b8; margin-top: 3px; text-align: center; }
     /* Status cell tint */
     tr[data-status="continued"] .col-status { background: #f0fdf4; }
     tr[data-status="new"] .col-status { background: #eff6ff; }
@@ -145,101 +165,21 @@
     .footer-note { margin-top: 12px; padding-top: 8px; border-top: 1px solid #d1d5db; display: grid; grid-template-columns: 2fr 1fr; gap: 10px; font-size: 12px; color: #374151; }
     .sign-box { border: 1px dashed #9ca3af; border-radius: 8px; padding: 6px 8px; }
 
-    /* ── Bottom drug timeline (own print page) ───────────────────────────── */
-    .timeline-section { margin-top: 18px; }
+    /* ── Daily Pill Journey Card (home meds by meal) ─────────────────────── */
     .timeline-head { display: grid; grid-template-columns: 26mm 1fr 50mm; align-items: center; gap: 8px; border-bottom: 3px solid #111827; padding-bottom: 5px; margin-bottom: 10px; }
     .timeline-head .tt-logo { display: flex; align-items: center; }
     .timeline-head .tt-logo img { max-width: 24mm; max-height: 11mm; width: auto; display: block; object-fit: contain; }
     .timeline-head .th-titles { text-align: center; }
     .timeline-head h2 { margin: 0; font-size: 18px; line-height: 1.1; }
     .timeline-head .sub { font-size: 11px; color: #4b5563; margin-top: 1px; }
-
-    /* ── Simple Timeline axis ──────────────────────────────────────────── */
-    .tl-rail { display: grid; grid-template-columns: 110mm 1fr; gap: 0; margin-bottom: 2px; align-items: end; }
-    .tl-railhead { font-size: 11px; color: #64748b; font-weight: 700; padding-bottom: 34px; padding-left: 2px; }
-
-    /* Axis panel */
-    .tl-axis { padding-bottom: 2px; }
-    .tl-phase-row { display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; margin-bottom: 5px; }
-    .tl-phase-lbl { font-size: 10px; font-weight: 700; color: #94a3b8; line-height: 1.2; }
-    .tl-phase-lbl.p-ward { color: #0f766e; }
-    .tl-phase-lbl.p-home { color: #22c55e; }
-    /* Gradient horizontal axis line */
-    .tl-axis-line {
-      position: relative; height: 5px;
-      background: linear-gradient(to right, #94a3b8 0% 33.3%, #0f766e 33.3% 66.6%, #22c55e 66.6% 100%);
-      border-radius: 3px; margin: 0 0 5px;
-    }
-    /* Milestone dots sit on the axis */
-    .tl-mdots { position: absolute; top: 50%; transform: translateY(-50%); left: 0; right: 0; }
-    .tl-mdot {
-      position: absolute; top: 50%; transform: translate(-50%, -50%);
-      width: 13px; height: 13px; border-radius: 50%; border: 2.5px solid #fff;
-      box-shadow: 0 0 0 1.5px rgba(0,0,0,.15); z-index: 1;
-    }
-    .tl-mdot.m-bef  { left: 0%;     background: #94a3b8; }
-    .tl-mdot.m-ward { left: 33.3%;  background: #0f766e; }
-    .tl-mdot.m-home { left: 100%;   background: #22c55e; }
-    /* Dates below the axis */
-    .tl-date-row { display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 9px; color: #94a3b8; text-align: center; }
-    .tl-date-row .tl-dr-l { text-align: left; }
-    .tl-date-row .tl-dr-r { text-align: right; }
-
-    /* ── Drug rows ─────────────────────────────────────────────────────── */
-    .tl-rows { display: flex; flex-direction: column; gap: 0; }
-    .tl-row { display: grid; grid-template-columns: 110mm 1fr; align-items: center; gap: 0; min-height: 26px; }
-    .tl-row:nth-child(even) { background: #f8fafc; }
-    .tl-name { font-size: 11.5px; font-weight: 700; padding: 3px 8px 3px 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .tl-name .tl-code { font-weight: 400; color: #94a3b8; font-size: 8.5px; }
-    /* Track: thin grey baseline + the coloured bar floats on top */
-    .tl-track {
-      position: relative; height: 26px;
-      background: linear-gradient(to bottom,
-        transparent calc(50% - 1px),
-        #e2e8f0 calc(50% - 1px),
-        #e2e8f0 calc(50% + 1px),
-        transparent calc(50% + 1px));
-    }
-    /* Faint zone dividers at 1/3 and 2/3 */
-    .tl-track::before, .tl-track::after {
-      content: ""; position: absolute; top: 0; bottom: 0; width: 1px; background: #e2e8f0;
-    }
-    .tl-track::before { left: 33.333%; }
-    .tl-track::after  { left: 66.666%; }
-    /* Coloured floating bar */
-    .tl-bar {
-      position: absolute; top: 50%; transform: translateY(-50%);
-      height: 12px; border-radius: 6px;
-      display: flex; align-items: center; justify-content: center;
-      padding: 0 8px; font-size: 9px; font-weight: 800; color: #fff;
-      white-space: nowrap; letter-spacing: .2px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.18);
-    }
-    /* Endpoint circles */
-    .tl-bar::before, .tl-bar::after {
-      content: ""; position: absolute; top: 50%; transform: translateY(-50%);
-      width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.7);
-    }
-    .tl-bar::before { left:  3px; background: rgba(255,255,255,.35); }
-    .tl-bar::after  { right: 3px; background: rgba(255,255,255,.35); }
-    .tl-bar.s-continued { background: #16a34a; }
-    .tl-bar.s-new       { background: #2563eb; }
-    .tl-bar.s-changed   { background: #d97706; }
-    .tl-bar.s-stopped   { background: #dc2626; }
-    .tl-bar.s-          { background: #64748b; }
-    .timeline-empty { color: #6b7280; font-style: italic; padding: 10px 2px; }
-    /* Print: force colour for bars and axis */
-    .tl-bar, .tl-axis-line, .tl-mdot {
-      -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
-    }
-
-    /* ── Daily Pill Journey Card (home meds by meal) ─────────────────────── */
     .mealcard-section { margin-top: 18px; }
-    .mc-info { background: #eff6ff; color: #1e3a8a; border: 1px solid #dbeafe; border-radius: 8px; padding: 7px 12px; font-size: 12px; margin-bottom: 12px; }
-    .mc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .mc-slot { border: 1.5px solid #cbd5e1; border-radius: 10px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; }
-    .mc-slot-head { display: flex; align-items: center; gap: 8px; padding: 7px 12px; font-weight: 800; font-size: 13px; color: #fff; }
-    .mc-slot-head .mc-ico { font-size: 16px; line-height: 1; }
+    .mc-info { background: #eff6ff; color: #1e3a8a; border: 1px solid #dbeafe; border-radius: 8px; padding: 6px 12px; font-size: 12px; margin-bottom: 9px; }
+    /* Masonry columns: cards size to their content and pack tightly across the
+     * wide landscape page (no row-stretch gaps, no empty slots reserved). */
+    .mc-grid { column-count: 3; column-gap: 8px; }
+    .mc-slot { border: 1.5px solid #cbd5e1; border-radius: 10px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; margin: 0 0 8px; }
+    .mc-slot-head { display: flex; align-items: center; gap: 7px; padding: 5px 10px; font-weight: 800; font-size: 13px; color: #fff; }
+    .mc-slot-head .mc-ico { font-size: 15px; line-height: 1; }
     .mc-slot-head .mc-en { font-weight: 500; font-size: 10px; opacity: .9; margin-left: auto; }
     /* Slot accent colours — morning warm, midday bright, evening/night cool. */
     .mc-slot.t-bbf .mc-slot-head { background: #f59e0b; }
@@ -250,13 +190,12 @@
     .mc-slot.t-adn .mc-slot-head { background: #4f46e5; }
     .mc-slot.t-bed .mc-slot-head { background: #1e293b; }
     .mc-slot.t-prn .mc-slot-head { background: #0d9488; }
-    .mc-list { padding: 6px 10px; }
-    .mc-item { display: flex; align-items: baseline; gap: 6px; padding: 4px 0; border-bottom: 1px dashed #e5e7eb; font-size: 12px; }
+    .mc-list { padding: 3px 10px; }
+    .mc-item { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; border-bottom: 1px dashed #e5e7eb; font-size: 12px; }
     .mc-item:last-child { border-bottom: 0; }
     .mc-item .mc-drug { font-weight: 700; }
     .mc-item .mc-dose { color: #475569; }
     .mc-item .mc-prn-cond { color: #92400e; font-style: italic; }
-    .mc-empty-slot { color: #9ca3af; font-style: italic; font-size: 12px; padding: 4px 0; }
     .mc-emptyall { color: #6b7280; font-style: italic; padding: 10px 2px; }
 
     @page { size: A4 landscape; margin: 8mm; }
@@ -273,21 +212,14 @@
       .add-suggest { display: none !important; }
       [contenteditable] { background: none !important; box-shadow: none !important; }
       [contenteditable]:empty::before { content: "" !important; }
-      /* Keep the phase-bar colours when printing / saving PDF. */
-      .pb-seg, .pb-seg.on, .col-status,
-      .tl-axis-line, .tl-mdot, .tl-bar, .tl-track,
+      /* Keep the teal header, timeline bars and meal-card colours when printing. */
+      th, .tlh-axis, .tlh-dot, .tl-bar, .tl-track, .col-status, .chip,
       .mc-slot-head, .mc-info {
         -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
       }
-      /* Timeline and meal card each get their own page after the table. */
-      .timeline-section { break-before: page; page-break-before: always; }
-      .tl-row { break-inside: avoid; page-break-inside: avoid; }
+      /* Meal card gets its own page after the table. */
       .mealcard-section { break-before: page; page-break-before: always; }
-      /* Replace the status <select> with its text value for print (set by JS). */
-      .status-sel { display: none !important; }
-      .status-print { display: inline !important; }
     }
-    .status-print { display: none; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -330,20 +262,34 @@
       </section>
     </div>
 
+    <div class="legend" data-no-translate translate="no">
+      <span class="lg-cap">สถานะ / Status:</span>
+      <span class="chip continued">ใช้ต่อ · Continued</span>
+      <span class="chip new">เริ่มใหม่ · New</span>
+      <span class="chip changed">เปลี่ยน · Changed</span>
+      <span class="chip stopped">ใช้ระหว่างนอน รพ. · Stopped</span>
+    </div>
+
     <table id="journeyTable">
       <colgroup>
         <col class="no-print" style="width:8mm">
-        <col style="width:26%"><col style="width:34%">
-        <col style="width:60mm"><col style="width:10%"><col style="width:18%">
+        <col style="width:22%"><col style="width:25%">
+        <col style="width:33%"><col style="width:14%">
+        <col class="no-print" style="width:34mm">
       </colgroup>
       <thead>
         <tr>
           <th class="col-act no-print"></th>
           <th class="col-drug">ชื่อยา<span class="th-sub">Medicine</span></th>
           <th class="col-instr">วิธีใช้<span class="th-sub">Instruction</span></th>
-          <th class="col-bar">ช่วงการใช้ยา<span class="th-sub">Before · Ward · Home</span></th>
-          <th class="col-status">สถานะ<span class="th-sub">Status</span></th>
+          <th class="col-bar col-timeline" data-no-translate translate="no">
+            <div class="tlh-title">ช่วงการใช้ยา <span class="tlh-sub">· แรกรับ → จำหน่าย</span></div>
+            <div class="tlh-phases"><span class="p-bef">ก่อน/แรกรับ</span><span class="p-ward">ระหว่างนอน รพ.</span><span class="p-home">กลับบ้าน</span></div>
+            <div class="tlh-axis"><span class="tlh-dot m-bef"></span><span class="tlh-dot m-ward"></span><span class="tlh-dot m-home"></span></div>
+            <div class="tlh-dates"><span class="d-l" id="tlDateAdm">—</span><span class="d-c">Ward</span><span class="d-r" id="tlDateDc">—</span></div>
+          </th>
           <th class="col-note">หมายเหตุ<span class="th-sub">Note</span></th>
+          <th class="col-status no-print">สถานะ<span class="th-sub">Status (จอเท่านั้น)</span></th>
         </tr>
       </thead>
       <tbody><!-- rows injected by JS --></tbody>
@@ -352,41 +298,6 @@
     <section class="footer-note">
       <div class="sign-box"><strong>คำแนะนำ / Note</strong><br/>หากไม่แน่ใจวิธีใช้ยา กรุณาปรึกษาเภสัชกรก่อนกลับบ้าน</div>
       <div class="sign-box"><strong>เภสัชกร (Pharmacist)</strong><br/><span id="pharmacistName">-</span></div>
-    </section>
-
-    <!-- Drug timeline: starts on its own print page (page-break-before). -->
-    <section class="timeline-section" id="timelineSection" data-no-translate translate="no">
-      <div class="timeline-head">
-        <div class="tt-logo"><img src="../patient-sticker/bkh-logo.png" alt="BKH" /></div>
-        <div class="th-titles">
-          <h2>แผนเวลาการใช้ยา</h2>
-          <span class="sub">Drug Timeline · แรกรับ → จำหน่าย (Admission → Discharge)</span>
-        </div>
-        <div></div>
-      </div>
-      <div class="tl-rail">
-        <div class="tl-railhead">ชื่อยา / Medicine</div>
-        <div class="tl-axis">
-          <div class="tl-phase-row">
-            <div class="tl-phase-lbl">ก่อน/แรกรับ</div>
-            <div class="tl-phase-lbl p-ward">ระหว่างนอน รพ.</div>
-            <div class="tl-phase-lbl p-home">กลับบ้าน</div>
-          </div>
-          <div class="tl-axis-line">
-            <div class="tl-mdots">
-              <div class="tl-mdot m-bef"></div>
-              <div class="tl-mdot m-ward"></div>
-              <div class="tl-mdot m-home"></div>
-            </div>
-          </div>
-          <div class="tl-date-row">
-            <div class="tl-dr-l" id="tlDateAdm">—</div>
-            <div style="text-align:center;color:#0f766e;font-weight:700">Ward</div>
-            <div class="tl-dr-r" id="tlDateDc">—</div>
-          </div>
-        </div>
-      </div>
-      <div class="tl-rows" id="timelineRows"><!-- injected by JS --></div>
     </section>
 
     <!-- Daily Pill Journey Card: home meds grouped by meal slot. Own page. -->
@@ -409,6 +320,7 @@
   <script src="../../core/utils.js"></script>
   <script src="../../core/dom.js"></script>
   <script src="../../shared/shared-data-client.js"></script>
+  <script src="../../shared/meal-slots.js"></script>
   <script src="page-med-journey.js"></script>
 </body>
 </html>

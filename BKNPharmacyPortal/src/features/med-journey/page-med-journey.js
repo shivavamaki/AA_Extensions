@@ -90,29 +90,27 @@ function _statusOptions(sel) {
   ).join("");
 }
 
-/* Phase metadata in display order: key, Thai label, short tag. */
-const PHASES = [
-  { key: "admission", label: "ก่อน/แรกรับ", short: "ก่อน" },
-  { key: "ward",      label: "ระหว่างนอน รพ.", short: "ward" },
-  { key: "home",      label: "กลับบ้าน", short: "home" },
-];
-
 /** Pick the representative instruction for a drug: prefer home → ward → admission
  * (the most patient-relevant non-empty phase). Shown as-is (no translation). */
 function _repInstruction(row) {
   return row.home || row.ward || row.admission || "";
 }
 
-/** Compact phase bar: 3 segments (ก่อน│ward│home), filled when the drug is
- * present in that phase, tinted by status. Each segment tooltips its own text. */
-function _phaseBar(row) {
-  const segs = PHASES.map((p) => {
-    const v = norm(row[p.key] || "");
-    const on = v ? "on" : "";
-    const tip = v ? `${p.label}: ${v}` : `${p.label}: —`;
-    return `<span class="pb-seg ${on}" data-no-translate translate="no" title="${escapeHtml(tip)}"><span class="pb-lbl">${p.short}</span></span>`;
-  }).join("");
-  return `<div class="phase-bar" data-no-translate translate="no">${segs}</div>`;
+/** Status label shown inside the bar only when the bar is wide enough to hold
+ * it; narrow bars (e.g. ward-only) rely on colour + the legend. */
+function _barLabel(status, width) {
+  return width >= 50 ? (STATUS_TH[status] || "") : "";
+}
+
+/** Timeline cell: a single coloured bar spanning the phases the drug is present
+ * in (admission → ward → home), tinted by status via the row's data-status.
+ * Replaces the former 3-segment phase bar; mirrors the old bottom-page timeline. */
+function _timelineCell(row) {
+  const span = _barSpan(row.phases);
+  if (!span) return `<div class="tl-track"></div>`;
+  const label = _barLabel(row.status, span.width);
+  const tip = `${row.drug || ""} — ${STATUS_TH[row.status] || ""}`;
+  return `<div class="tl-track"><div class="tl-bar" style="left:${span.left}%;width:${span.width}%" title="${escapeHtml(tip)}">${escapeHtml(label)}</div></div>`;
 }
 
 function _buildRow(row, i) {
@@ -128,12 +126,12 @@ function _buildRow(row, i) {
       ${row.code ? `<div class="drug-code" data-no-translate translate="no">Code: ${escapeHtml(row.code)}</div>` : ""}
     </td>
     <td class="col-instr" contenteditable="true" data-field="${escapeHtml(_repField(row))}" data-ph="—">${escapeHtml(repText)}</td>
-    <td class="col-bar">${_phaseBar(row)}</td>
-    <td class="col-status">
-      <select class="status-sel no-print" data-field="status">${_statusOptions(row.status)}</select>
-      <span class="status-print" data-no-translate translate="no">${escapeHtml(STATUS_TH[row.status] || row.status || "")}</span>
-    </td>
+    <td class="col-bar" data-no-translate translate="no">${_timelineCell(row)}</td>
     <td class="col-note" contenteditable="true" data-field="note" data-ph="หมายเหตุ">${escapeHtml(row.note || "")}</td>
+    <td class="col-status no-print">
+      <select class="status-sel" data-field="status">${_statusOptions(row.status)}</select>
+      <span class="ui-tag">ตั้งค่าเพื่อกำหนดสี · ไม่พิมพ์</span>
+    </td>
   `;
   return tr;
 }
@@ -171,8 +169,8 @@ function renderRows() {
   _rows.forEach((r, i) => tbody.appendChild(_buildRow(r, i)));
   tbody.appendChild(_buildAddRow());
   _bindEditing(tbody);
-  renderTimeline();  // keep the bottom timeline in sync with the row set
-  renderMealCard();  // and the by-meal home-med card
+  _renderAxisDates();  // admission/discharge dates in the timeline column header
+  renderMealCard();    // the by-meal home-med card
 }
 
 /* ───────────────────────── Drug timeline (bottom page) ────────────────── */
@@ -198,95 +196,17 @@ function _barSpan(phases) {
   return { left, width };
 }
 
-function renderTimeline() {
-  const host = document.getElementById("timelineRows");
-  if (!host) return;
+/** Fill the admission/discharge dates in the timeline column header (the shared
+ * axis). The per-drug bars are drawn inline by _timelineCell during row build. */
+function _renderAxisDates() {
   safeSetText("tlDateAdm", _fmtDate(_dates.admission));
   safeSetText("tlDateDc", _fmtDate(_dates.discharge));
-
-  if (!_rows.length) {
-    host.innerHTML = `<div class="timeline-empty">ไม่มีรายการยา (no medications)</div>`;
-    return;
-  }
-  host.innerHTML = _rows.map((row) => {
-    const span = _barSpan(row.phases);
-    const cls = "s-" + (row.status || "");
-    const tag = STATUS_TH[row.status] || "";
-    const bar = span
-      ? `<div class="tl-bar ${cls}" style="left:${span.left}%;width:${span.width}%" title="${escapeHtml(row.drug + " — " + tag)}">${escapeHtml(tag)}</div>`
-      : "";
-    const code = row.code ? ` <span class="tl-code">${escapeHtml(row.code)}</span>` : "";
-    return `<div class="tl-row">
-      <div class="tl-name" title="${escapeHtml(row.drug)}">${escapeHtml(row.drug)}${code}</div>
-      <div class="tl-track">${bar}</div>
-    </div>`;
-  }).join("");
 }
 
 /* ─────────────────── Daily Pill Journey Card (by meal) ─────────────────── */
-// A med can take a meal "before" or "after". Instructions list several meals
-// under one qualifier — Thai "หลังอาหาร เช้า เย็น" or English "Before Breakfast
-// and Dinner" = the qualifier applies to every meal in the run. _mealQualifier
-// finds, for ONE meal word, the nearest preceding before/after qualifier
-// (Thai ก่อน/หลัง or English before/after), carrying it across a meal list.
-// Returns "before" | "after" | "" (unqualified). Works in both languages.
-const _MEAL_RE = "เช้า|กลางวัน|เที่ยง|เย็น|breakfast|lunch|noon|midday|dinner|supper|evening|morning";
-const _QUAL_RE = "ก่อน|หลัง|before|after|\\bac\\b|\\bpc\\b";
-function _qualOf(tok) {
-  const t = tok.toLowerCase();
-  if (t === "ก่อน" || t === "before" || t === "ac") return "before";
-  if (t === "หลัง" || t === "after" || t === "pc") return "after";
-  return "";
-}
-function _mealQualifier(txt, mealWord) {
-  const re = new RegExp(`(${_QUAL_RE})|(${_MEAL_RE})`, "gi");
-  let m, qual = "";
-  while ((m = re.exec(txt)) !== null) {
-    if (m[1]) { qual = _qualOf(m[1]); continue; }   // before/after — carry it
-    if (m[2] && new RegExp(mealWord, "i").test(m[2])) return qual;  // this meal
-    // other meal word in the same run: keep the carried qualifier and continue.
-  }
-  return "";
-}
-// True if the instruction mentions this meal at all (Thai or English).
-const _hasMeal = (t, re) => new RegExp(re, "i").test(t);
-
-// Meal slots in day order: before/after × breakfast/lunch/dinner, then bedtime
-// and PRN. A drug lands in every slot it matches (BID = two slots). Unqualified
-// meal words default to "after" — the common convention for meds taken w/ food.
-function _mealSlotTest(mealRe, mealWord, wantBefore) {
-  return (t) => {
-    if (!_hasMeal(t, mealRe)) return false;
-    const q = _mealQualifier(t, mealWord);
-    return wantBefore ? q === "before" : q !== "before";  // unqualified → after
-  };
-}
-const MEAL_SLOTS = [
-  { key: "bbf", cls: "t-bbf", ico: "🌅", th: "ก่อนอาหารเช้า",  en: "Before breakfast",
-    test: _mealSlotTest("เช้า|breakfast|morning", "เช้า|breakfast|morning", true) },
-  { key: "abf", cls: "t-abf", ico: "☀️", th: "หลังอาหารเช้า",   en: "After breakfast",
-    test: _mealSlotTest("เช้า|breakfast|morning", "เช้า|breakfast|morning", false) },
-  { key: "blu", cls: "t-blu", ico: "🌤️", th: "ก่อนอาหารกลางวัน", en: "Before lunch",
-    test: _mealSlotTest("กลางวัน|เที่ยง|lunch|noon|midday", "กลางวัน|เที่ยง|lunch|noon|midday", true) },
-  { key: "alu", cls: "t-alu", ico: "🌞", th: "หลังอาหารกลางวัน",  en: "After lunch",
-    test: _mealSlotTest("กลางวัน|เที่ยง|lunch|noon|midday", "กลางวัน|เที่ยง|lunch|noon|midday", false) },
-  { key: "bdn", cls: "t-bdn", ico: "🌆", th: "ก่อนอาหารเย็น",  en: "Before dinner",
-    test: _mealSlotTest("เย็น|dinner|supper|evening", "เย็น|dinner|supper|evening", true) },
-  { key: "adn", cls: "t-adn", ico: "🌙", th: "หลังอาหารเย็น",   en: "After dinner",
-    test: _mealSlotTest("เย็น|dinner|supper|evening", "เย็น|dinner|supper|evening", false) },
-  { key: "bed", cls: "t-bed", ico: "🛏️", th: "ก่อนนอน",        en: "Bedtime",
-    test: (t) => /ก่อนนอน|ก่อนเข้านอน|bedtime|bed\s*time|\bhs\b|at\s+night/i.test(t) },
-  { key: "prn", cls: "t-prn", ico: "⭐", th: "เมื่อมีอาการ",     en: "When needed (PRN)",
-    test: (t) => /เมื่อมีอาการ|เวลามีอาการ|เมื่อปวด|เมื่อจำเป็น|\bprn\b|if\s+needed|as\s+needed|when\s+required/i.test(t) },
-];
-
-/** Pull a short dose phrase ("1 เม็ด", "1 Tablet", "1 PUFF") from the instruction
- * for the compact meal-card line. Falls back to "" (drug name carries it). */
-function _doseSnippet(txt) {
-  const t = norm(txt || "");
-  const m = t.match(/(\d+(?:[.,]\d+)?(?:\/\d+)?)\s*(เม็ด|แคปซูล|ซอง|มล\.?|ml|puff|spray\(?s?\)?|หยด|drops?|ช้อน|tablets?|capsules?|tab|cap|amp|vial|มก\.?|mg|มิลลิกรัม)/i);
-  return m ? m[0] : "";
-}
+// The meal-slot bucketing + card markup live in the shared engine
+// (window.BKNMealSlots, src/shared/meal-slots.js) so this page and the Home
+// Medication Sheet group meds identically.
 
 /** Home meds only, excluding stopped — these are what the patient takes home. */
 function _homeMeds() {
@@ -296,48 +216,17 @@ function _homeMeds() {
 function renderMealCard() {
   const host = document.getElementById("mealcardGrid");
   if (!host) return;
+  const MS = window.BKNMealSlots;
   const meds = _homeMeds();
-  if (!meds.length) {
+  if (!meds.length || !MS) {
     host.innerHTML = `<div class="mc-emptyall">ไม่มียากลับบ้าน (no home medications)</div>`;
     return;
   }
-  // Bucket each home med into every slot it matches.
-  const buckets = Object.fromEntries(MEAL_SLOTS.map((s) => [s.key, []]));
-  const unslotted = [];
-  meds.forEach((r) => {
-    const txt = norm(r.home || r.ward || r.admission || "");
-    const dose = _doseSnippet(txt);
-    let matched = false;
-    MEAL_SLOTS.forEach((s) => {
-      if (s.test(txt)) { buckets[s.key].push({ drug: r.drug, dose, prn: s.key === "prn", txt }); matched = true; }
-    });
-    if (!matched) unslotted.push({ drug: r.drug, dose, txt });
+  const items = meds.map((r) => {
+    const text = norm(r.home || r.ward || r.admission || "");
+    return { drug: r.drug, text, dose: MS.doseSnippet(text) };
   });
-
-  const itemHtml = (it) => {
-    const dose = it.dose ? ` <span class="mc-dose">${escapeHtml(it.dose)}</span>` : "";
-    return `<div class="mc-item"><span class="mc-drug">${escapeHtml(it.drug)}</span>${dose}</div>`;
-  };
-
-  let html = MEAL_SLOTS.map((s) => {
-    const items = buckets[s.key];
-    const body = items.length
-      ? items.map(itemHtml).join("")
-      : `<div class="mc-empty-slot">-</div>`;
-    return `<div class="mc-slot ${s.cls}">
-      <div class="mc-slot-head"><span class="mc-ico">${s.ico}</span><span>${s.th}</span><span class="mc-en">${s.en}</span></div>
-      <div class="mc-list">${body}</div>
-    </div>`;
-  }).join("");
-
-  // Any home med whose schedule we couldn't classify → "อื่นๆ / ตามแพทย์สั่ง".
-  if (unslotted.length) {
-    html += `<div class="mc-slot t-prn">
-      <div class="mc-slot-head"><span class="mc-ico">📋</span><span>อื่นๆ / ตามแพทย์สั่ง</span><span class="mc-en">Other / as directed</span></div>
-      <div class="mc-list">${unslotted.map(itemHtml).join("")}</div>
-    </div>`;
-  }
-  host.innerHTML = html;
+  host.innerHTML = MS.gridHTML(items, escapeHtml);
 }
 
 /* ───────────────────────── Editing / add / remove ─────────────────────── */
@@ -360,10 +249,9 @@ function _bindEditing(tbody) {
       const tr = sel.closest(".j-row"); if (!tr) return;
       const i = Number(tr.dataset.index);
       _commit(i, "status", sel.value);
-      tr.dataset.status = sel.value;
-      const sp = tr.querySelector(".status-print");
-      if (sp) sp.textContent = STATUS_TH[sel.value] || sel.value;
-      renderTimeline();  // recolour the matching bar on the timeline page
+      tr.dataset.status = sel.value;       // recolours the in-row timeline bar (CSS)
+      const cell = tr.querySelector(".col-bar");
+      if (cell) cell.innerHTML = _timelineCell(_rows[i]);  // refresh the in-bar label
       renderMealCard();  // stopped meds drop out of the by-meal card
     });
   });
@@ -477,7 +365,7 @@ async function _loadSaved() {
 async function fetchAndRender() {
   const tbody = document.querySelector("#journeyTable tbody");
   if (!_context || !_context.patientvisituid) {
-    if (tbody) { tbody.innerHTML = ""; const tr = document.createElement("tr"); tr.innerHTML = `<td colspan="7" class="empty">No patient context. Open from the Dispense Workbench.</td>`; tbody.appendChild(tr); }
+    if (tbody) { tbody.innerHTML = ""; const tr = document.createElement("tr"); tr.innerHTML = `<td colspan="6" class="empty">No patient context. Open from the Dispense Workbench.</td>`; tbody.appendChild(tr); }
     return;
   }
   if (!_context.incusToken) {

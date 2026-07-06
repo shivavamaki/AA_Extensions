@@ -10,24 +10,41 @@ Opened via `OPEN_MEDICATION_JOURNEY`-adjacent routing as `page-med-journey.html`
 
 ## Data flow
 
-1. **`POST /api/report/med-journey`** → server hits ArcusAir `getallorderitem` for **all order types** and groups them into a continuity timeline.
-2. Rows returned: `{ drug, code, admission, ward, home, status, note, provider }`.
+1. **`POST /api/report/med-journey`** → server hits ArcusAir `getallorderitem` for **all order types**, normalises them (shared `_normalize_orderitems`), and groups them by drug into a continuity timeline. Phase comes from the stable `ordertypeuid` valuecode, and OR/intra-op + supply noise is filtered — see [`../../../../pharmacy_server/README.md`](../../../../pharmacy_server/README.md) (Reports).
+2. Rows returned: `{ drug, code, admission, ward, home, status, note, provider, phases:{admission,ward,home} }`, plus `dates:{admission,discharge}` for the header axis.
 3. Drug photos: **`GET /api/medication-db`** (name/code index) + **`GET /med-image/{code}`**.
 
 ## Status model
 
 `STATUSES = [continued, new, changed, stopped]`
 
-Thai labels: `{ continued: ใช้ต่อ, new: เริ่มใหม่, changed: เปลี่ยน, stopped: หยุด }`
+Thai labels: `{ continued: ใช้ต่อ, new: เริ่มใหม่, changed: เปลี่ยน, stopped: ใช้ระหว่างนอน รพ. }`
 
-Status and note are editable per row and saved back to the server.
+Status and note are editable per row and saved back to the server. The **สถานะ
+column is the last column and is screen-only (`no-print`)** — it is the editing
+control that tints each row's timeline bar; on paper the status is conveyed by
+the bar colour, decoded via the legend above the table.
+
+## Phase timeline (in-table)
+
+The **ช่วงการใช้ยา** column shows each drug's continuity as a single coloured
+bar spanning the phases it is present in (`admission → ward → home`), driven by
+`_barSpan(row.phases)`. The shared axis (phase labels, gradient line + dots,
+admission/discharge dates) lives in that column's `<th>` so it repeats on every
+printed page. There is no separate Drug Timeline page.
 
 ## Files
 
 | File | Role |
 |---|---|
-| `page-med-journey.html` | Timeline grid layout |
+| `page-med-journey.html` | Continuity grid + in-table phase timeline + by-meal home-med card |
 | `page-med-journey.js` | Fetch, group, render, edit status/note, translate (Thai default) |
+
+> The by-meal "Daily Pill Journey Card" (last page) is built from the shared engine `window.BKNMealSlots` (`../../shared/meal-slots.js`), the same one the Home Medication Sheet uses — so meal grouping is identical across both reports.
+
+## Screenshots
+
+Presentation assets (PDPA-blurred) live in [`screenshots/`](screenshots/): `01-overview`, `02-timeline-closeup`, `03-meal-card`, `04-editing-view`. Regenerate by print-rendering the page (A4 landscape) via headless Chromium.
 
 ## Gotchas
 

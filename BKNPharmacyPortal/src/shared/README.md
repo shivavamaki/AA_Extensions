@@ -56,6 +56,19 @@ When `MASTER_RE` can't parse the freq/timing tail **but `opts.freqOverride` is s
 
 **`MEDICAL_GLOSSARY`** — per-language word maps (`th / lo / my / km / …`). Built for **dosage vocabulary** (take, tablet, ml, times/day, etc.) — not free-text warnings. Note translation is handled server-side via `note-glossary.json`.
 
+## `meal-slots.js` — `window.BKNMealSlots` (Daily Pill Journey Card engine)
+
+Groups a patient's home/discharge meds into meal slots (before/after × breakfast/lunch/dinner, then bedtime and PRN) by parsing each med's instruction text. **Language-agnostic** — handles Thai (`เช้า/กลางวัน/เย็น`, `ก่อน/หลัง`) and English (`breakfast/lunch/dinner`, `before/after/ac/pc`), so it works on the raw English order line (med-journey) or the offline-translated Thai line (home-med). A qualifier carries across a meal run (`หลังอาหาร เช้า เย็น` / `Before Breakfast and Dinner`); unqualified meal words default to **after**.
+
+| Export | What it does |
+|---|---|
+| `MEAL_SLOTS` | Slot metadata array: `{ key, cls, ico, th, en, test(text) }` |
+| `doseSnippet(text)` | Short dose phrase (`1 เม็ด`, `1 Tablet`, `1 PUFF`) or `""` |
+| `bucket(items)` | `{ buckets:{key:[item]}, unslotted:[item] }` — a med lands in every slot it matches |
+| `gridHTML(items, esc)` | `.mc-grid` card HTML (non-empty slots + an "อื่นๆ / ตามแพทย์สั่ง" card for the unclassified); `esc` = `CoreDom.escapeHtml` |
+
+`items` are `{ drug, text, dose? }` — `text` drives matching, `drug`/`dose` display. The `.mc-*` CSS lives in each consuming page's `<style>` (med-journey landscape, home-med portrait); only the engine + markup are shared, so the bucketing rules stay identical across both reports.
+
 ---
 
 ## Related server data

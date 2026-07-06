@@ -11,7 +11,7 @@
 
 ## Overview
 
-`bkn_ks_server.py` is a single-file HTTP server that backs the KPI, Knowledge, Formulary, and IV-Sticker features of the BKN Pharmacy Chrome Extension (`rx_menu/`). It stores all data as plain JSON files and exposes a REST-like API on localhost.
+`bkn_ks_server.py` is a single-file HTTP server that backs the **BKN Pharmacy Portal** extension (`BKNPharmacyPortal/`) — KPI, Knowledge, Formulary, IV-Sticker, and the ArcusAir-backed **reports** (Home Medication Sheet, Medication Journey). It stores all data as plain JSON files, proxies live ArcusAir order fetches, and exposes a REST-like API on localhost.
 
 ---
 
@@ -73,6 +73,24 @@ The server prints its URL on startup. The extension connects to it automatically
 | `GET` | `/api/iv-staff` | Pharmacy staff list |
 | `PUT` | `/api/iv-staff` | Replace pharmacy staff list |
 | `GET` | `/api/medication-db` | BKN medication database keyed by item code |
+
+### Reports (ArcusAir-backed)
+
+These endpoints fetch live orders from ArcusAir (`getallorderitem`) and shape them into printable reports. Body: `{ context: { patientuid, patientvisituid, incusToken, … } }`.
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/report/home-med-api` | Discharge meds → Home Medication Sheet: `{ patient, meds[], allMeds, allergies, appointmentText }` |
+| `POST` | `/api/report/med-journey` | All orders grouped by drug into a continuity timeline: `{ patient, rows[], dates, allergies, hasReconcile, hasVisitHistory }` |
+
+Both reports build from **one shared normaliser** so they never disagree about what an order is. Rules (all in `bkn_ks_server.py`):
+
+- **Normalise once** — `_normalize_orderitems(raw)` maps each item (`_arcus_item_to_med`), then drops non-medicines and cancelled orders.
+- **De-dupe by `(drug, code)`** — non-formulary items all share code `011001`; de-duping by code alone silently drops real take-home drugs (e.g. carvedilol vanishing behind sildenafil).
+- **Phase by stable valuecode** — `ORDERTYPE_PHASE_BY_CODE` maps `ORDTYP3`→home, `ORDTYP2`/`ORDTYP1`→ward; the free-text label is only a fallback for unknown codes.
+- **Journey noise filter** — exclude any `Intra-Op` instruction (any code/phase, incl. `51`); exclude ward-only items whose instruction is empty/`-`, or whose non-`51` code is absent from the medication DB. Discharge meds are always kept (safety net).
+- **Note hygiene** — the patient note uses only `INSTYP1` instruction entries (clinician `INDIC` text never reaches the sheet) and strips cryptic 1-char codes (`D`, `X …`).
+- **By-meal grouping** is client-side in `window.BKNMealSlots` (shared by both report pages), not the server.
 
 ### Static Files
 
