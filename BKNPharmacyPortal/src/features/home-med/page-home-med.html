@@ -450,6 +450,27 @@
       color: #374151;
     }
 
+    /* Appointment card: solid blue border + blue gradient header bar,
+       replacing the plain dashed .sign-box look for this one section. */
+    .sign-box.appt-box {
+      padding: 0;
+      border: 1px solid #90caf9;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .sign-box.appt-box > .label-ul {
+      display: block;
+      background: linear-gradient(135deg, #1565c0, #1e88e5);
+      color: #fff;
+      font-weight: 700;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    .sign-box.appt-box .appt-list {
+      margin-top: 0;
+      padding: 6px 8px 7px;
+    }
+
     .appt-list {
       margin-top: 5px;
       display: flex;

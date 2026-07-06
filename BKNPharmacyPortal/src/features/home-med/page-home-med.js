@@ -987,8 +987,28 @@ function updatePageCounterTotal() {
   const marginMm = Number(c.printMargin?.value) || PRINT_CONTROL_DEFAULTS.marginMm;
   const MM_TO_PX = 96 / 25.4;
   const pageContentPx = (297 - marginMm * 2) * MM_TO_PX;
-  const totalPx = sheetEl.scrollHeight;
-  const totalPages = Math.max(1, Math.ceil(totalPx / pageContentPx));
+
+  // The Daily Pill Journey Card (meal card) forces itself onto a fresh page
+  // when both toggles are on (break-before: page in CSS). That wastes
+  // whatever room was left on the last main-content page, so it must be
+  // counted as its own page group rather than summed into one continuous
+  // height — otherwise a short med list + short meal card can understate
+  // by rounding e.g. 20% + 20% = 1 page instead of the real 1 + 1 = 2 pages.
+  const mealEl = document.getElementById("mealcardSection");
+  const mealCardShown  = document.body.classList.contains("hm-with-mealcard");
+  const mealCardBroken = document.body.classList.contains("hm-mealcard-break");
+
+  let totalPages;
+  if (mealCardShown && mealCardBroken && mealEl) {
+    const mealPx = mealEl.scrollHeight;
+    const mainPx = sheetEl.scrollHeight - mealPx;
+    const mainPages = Math.max(1, Math.ceil(mainPx / pageContentPx));
+    const mealPages = Math.max(1, Math.ceil(mealPx / pageContentPx));
+    totalPages = mainPages + mealPages;
+  } else {
+    const totalPx = sheetEl.scrollHeight;
+    totalPages = Math.max(1, Math.ceil(totalPx / pageContentPx));
+  }
   counterEl.dataset.total = String(totalPages);
 }
 
