@@ -290,6 +290,55 @@
     return true;
   }
 
+  // Generic "wait until fn() returns truthy" poll — unlike _hmrWaitFor (defined
+  // further down), this one doesn't bail out when _hmrAutoStop is set, since it
+  // is used after the auto-dispense run has already finished.
+  async function _waitForEl(fn, timeout = 15000, interval = 250) {
+    const end = Date.now() + timeout;
+    while (Date.now() < end) {
+      const v = fn();
+      if (v) return v;
+      await sleep(interval);
+    }
+    return null;
+  }
+
+  // Step 7 finale: return to Ward View and re-search the same patient by HN
+  // so the pharmacist can continue on to Step 8 (print reports).
+  async function navigateToWardViewAndSearchHN(hn) {
+    const L = s => console.log(`[BKN-HMR S7] ${s}`);
+    L(`navigateToWardViewAndSearchHN hn=${hn}`);
+    location.hash = '#!/inpatient/wardview';
+
+    const sidebarBtn = await _waitForEl(() => document.getElementById('LNDOpenSidebarBtn'), 20000, 300);
+    L(`sidebarBtn found: ${!!sidebarBtn}`);
+    if (!sidebarBtn) return false;
+    await sleep(500);
+    sidebarBtn.click();
+
+    const wrapper = await _waitForEl(() => document.getElementById('ipdWardViewPatientWidgetMgsWrapper'), 10000, 300);
+    L(`wardview wrapper found: ${!!wrapper}`);
+    if (!wrapper) return false;
+    await sleep(400);
+    wrapper.click();
+
+    const input = await _waitForEl(() => document.getElementById('ipdWardViewPatientWidgetMgsHasParamsSearchInput0'), 8000, 200);
+    L(`wardview search input found: ${!!input}`);
+    if (!input) return false;
+
+    input.focus();
+    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+    if (nativeSetter) nativeSetter.call(input, hn);
+    else input.value = hn;
+    input.dispatchEvent(new Event('input',  { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    await sleep(300);
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Enter', keyCode: 13, bubbles: true }));
+    L('Enter dispatched on wardview search');
+    return true;
+  }
+
   // ── Worklist search helper ───────────────────────────────────────────
 
   async function fillWorklistHNSearch(hn) {
@@ -306,9 +355,11 @@
   async function _doFillWorklistHNSearch(hn, L) {
     L(`fillWorklistHNSearch hn="${hn}"`);
 
-    // 1. Find patient search wrapper (not the order-item wrapper)
+    // 1. Find patient search wrapper (id like "defaultPatWidId8MgsWrapper") —
+    // NOT the order-item wrapper ("orderItemWidget4MgsWrapper"), which shares
+    // the same "Search MRN or Name" placeholder text.
     const wrapper = Array.from(document.querySelectorAll('.mgs-wrapper')).find(
-      w => w.textContent.includes('Search MRN or Name')
+      w => /PatWid/i.test(w.id) && w.textContent.includes('Search MRN or Name')
     );
     L(`wrapper: ${wrapper ? '#' + wrapper.id : 'NOT FOUND'}`);
     if (!wrapper) return false;
@@ -680,7 +731,7 @@
         </div>
         <div class="hmrs7-status" id="hmrs7-status">HN filled. Please allocate first.</div>
         <div class="hmrs7-footer">
-          <button class="hmrs7-fin-btn" id="hmrs7-done-all" style="opacity:1">✓ Done — Close</button>
+          <button class="hmrs7-fin-btn" id="hmrs7-done-all" style="opacity:1">→ Discharge List</button>
           <button class="hmrs7-cancel-btn" id="hmrs7-cancel">Cancel</button>
         </div>
       </div>`;
@@ -730,6 +781,7 @@
       }, makeLog('step 7: allocate/dispense completed'));
       await clearStep7Job();
       document.getElementById('hmr-step7-overlay')?.remove();
+      await navigateToWardViewAndSearchHN(job.hn || job.visitid);
     });
   }
 
