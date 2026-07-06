@@ -227,6 +227,15 @@ const VACCINES = [
     remarkExtra: 'ห้ามในผู้แพ้รุนแรงต่อส่วนประกอบ/เข็มก่อนหน้า/วัคซีนที่มี tetanus toxoid; ภูมิคุ้มกันบกพร่องอาจตอบสนองลดลง',
     available: 'MenQuadfi Vaccine (0.5 mL)',
   },
+  {
+    name: 'Shingrix Vaccine',
+    route: 'IM',
+    factor: 'month',
+    schedule: [0, 2],
+    remark: 'Shingrix — Zoster Vaccine Recombinant, Adjuvanted (ไม่ป้องกันอีสุกอีใส)\nขนาด 0.5 mL IM (ตำแหน่งที่แนะนำ: deltoid)\nผู้ใหญ่ ≥50 ปี; ผู้ใหญ่ ≥18 ปีที่มี/จะมีภาวะภูมิคุ้มกันบกพร่อง (ความเสี่ยง HZ สูงขึ้นจากโรคหรือการรักษา)\nStandard schedule: เข็ม 1 เดือน 0, เข็ม 2 ห่าง 2–6 เดือน',
+    remarkExtra: 'Shortened schedule (ภูมิคุ้มกันบกพร่องที่ต้องการภูมิคุ้มกันเร็วขึ้น): เข็ม 1 เดือน 0, เข็ม 2 ห่าง 1–2 เดือน\nห้ามในผู้มีประวัติแพ้รุนแรง (เช่น anaphylaxis) ต่อส่วนประกอบวัคซีนหรือหลังเข็มก่อนหน้า\nระวัง: Guillain-Barré syndrome ภายใน 42 วันหลังฉีด (พบใน postmarketing studies); syncope\nการเก็บรักษา: แช่เย็น 2–8°C ห้ามแช่แข็ง; ถ้านำออกจากตู้เย็นแล้ว ใช้ได้ภายใน 72 ชม.ที่ 8–25°C (prefilled syringe)',
+    available: 'Shingrix Vaccine (0.5 mL)',
+  },
  ];
 
 // ── Clinical metadata ───────────────────────────────────────────
@@ -332,6 +341,10 @@ const CLINICAL_META = {
   'Meningococcal ACWY (MenQuadfi)': {
     type: 'inactive', route: 'IM', ageRange: 'ตั้งแต่อายุ 6 สัปดาห์ขึ้นไปตามเอกสารล่าสุด; อายุ 2 ปีขึ้นไปมักเป็น single dose',
     precaution: 'ห้ามในผู้แพ้รุนแรงต่อส่วนประกอบ/เข็มก่อนหน้า/วัคซีนที่มี tetanus toxoid; altered immunocompetence อาจตอบสนองลดลง; ระวัง syncope',
+  },
+  'Shingrix Vaccine': {
+    type: 'inactive', route: 'IM', ageRange: 'ผู้ใหญ่ ≥50 ปี; หรือ ≥18 ปีที่มี/จะมีภาวะภูมิคุ้มกันบกพร่อง (ความเสี่ยง HZ สูงขึ้น); ไม่ใช้ป้องกันอีสุกอีใส',
+    precaution: 'ห้ามในผู้แพ้รุนแรงต่อส่วนประกอบ/เข็มก่อนหน้า; ระวัง Guillain-Barré syndrome ภายใน 42 วันหลังฉีด และ syncope',
   },
 };
 
@@ -632,6 +645,7 @@ function vaccineType(vac) {
 
 function vaccineEmoji(vac) {
   const text = `${vac.name} ${vac.remark || ''} ${vac.available || ''}`.toLowerCase();
+  if (text.includes('shingrix') || text.includes('zoster') || text.includes('shingles')) return '🔥';
   if (text.includes('rsv') || text.includes('arexvy') || text.includes('abrysvo')) return '🫁';
   if (text.includes('bexsero') || text.includes('menquadfi') || text.includes('menactra') || text.includes('meningococcal')) return '🧠';
   if (text.includes('deng')) return '🦟';
