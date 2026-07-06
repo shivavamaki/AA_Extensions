@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.6.6 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.8.6 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -182,6 +182,13 @@ Flow:
 ---
 
 ## Version History
+
+### v3.8.6 — 2026-06-28
+- **Medication Journey redesign** — the `ช่วงการใช้ยา` column now shows an in-table phase timeline (admission → ward → home) with the shared axis in the column header; the `สถานะ` column moved last and is screen-only (colour + legend carry status on paper); the standalone Drug Timeline page was removed
+- **Shared by-meal engine** — new `src/shared/meal-slots.js` (`window.BKNMealSlots`), used by both the Medication Journey and Home Medication Sheet so the "Daily Pill Journey Card" groups meds identically; bare once-daily meds default to the morning slot
+- **Home Med Sheet** — added an optional by-meal page with `แนบหน้า จัดตามมื้อ` + `ขึ้นหน้าใหม่ (จัดตามมื้อ)` toggles; reworked the control panel into a pastel-green left sidebar; removed the dead Paper select and the Hide-logo toggle
+- **Server report pipeline** — Home Med + Journey now build from one `_normalize_orderitems` pass: de-dupe by `(drug, code)` (fixes non-formulary `011001` meds being dropped), phase from the stable `ordertypeuid` valuecode, intra-op/supply/empty-instruction filtering, and INSTYP1-only note hygiene
+- Added PDPA-blurred presentation assets under `src/features/med-journey/screenshots/`; registered `src/shared/meal-slots.js` in `web_accessible_resources`
 
 ### v3.6.6 — 2026-06-16
 - Added `BKNPharmacyPortal/test/test-pattern-matcher.js` — a standalone Node test harness for the Home Med Sheet's offline pattern matcher (`medical-glossary.js`), loaded via `vm` with no browser/build step; run with `node test/test-pattern-matcher.js`

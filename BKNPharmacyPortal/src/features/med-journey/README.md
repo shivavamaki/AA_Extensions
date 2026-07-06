@@ -10,8 +10,8 @@ Opened via `OPEN_MEDICATION_JOURNEY`-adjacent routing as `page-med-journey.html`
 
 ## Data flow
 
-1. **`POST /api/report/med-journey`** → server hits ArcusAir `getallorderitem` for **all order types** and groups them into a continuity timeline.
-2. Rows returned: `{ drug, code, admission, ward, home, status, note, provider }`.
+1. **`POST /api/report/med-journey`** → server hits ArcusAir `getallorderitem` for **all order types**, normalises them (shared `_normalize_orderitems`), and groups them by drug into a continuity timeline. Phase comes from the stable `ordertypeuid` valuecode, and OR/intra-op + supply noise is filtered — see [`../../../../pharmacy_server/README.md`](../../../../pharmacy_server/README.md) (Reports).
+2. Rows returned: `{ drug, code, admission, ward, home, status, note, provider, phases:{admission,ward,home} }`, plus `dates:{admission,discharge}` for the header axis.
 3. Drug photos: **`GET /api/medication-db`** (name/code index) + **`GET /med-image/{code}`**.
 
 ## Status model
@@ -41,6 +41,10 @@ printed page. There is no separate Drug Timeline page.
 | `page-med-journey.js` | Fetch, group, render, edit status/note, translate (Thai default) |
 
 > The by-meal "Daily Pill Journey Card" (last page) is built from the shared engine `window.BKNMealSlots` (`../../shared/meal-slots.js`), the same one the Home Medication Sheet uses — so meal grouping is identical across both reports.
+
+## Screenshots
+
+Presentation assets (PDPA-blurred) live in [`screenshots/`](screenshots/): `01-overview`, `02-timeline-closeup`, `03-meal-card`, `04-editing-view`. Regenerate by print-rendering the page (A4 landscape) via headless Chromium.
 
 ## Gotchas
 

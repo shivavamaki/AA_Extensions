@@ -15,6 +15,24 @@ Printable A4 **เอกสารแนะนำการใช้ยากล�
 4. Renders an editable A4 table plus a follow-up appointment line. User edits persist per-visit via `BKNData.saveMedCache`.
 
 > The file-header comment mentioning a Jasper XLS flow is **stale** — the sheet now fetches from the ArcusAir API via the server.
+>
+> The `home-med-api` handler shares its ArcusAir parsing with the Medication Journey via `_normalize_orderitems` in `bkn_ks_server.py` — see [`../../../../pharmacy_server/README.md`](../../../../pharmacy_server/README.md) (Reports) for the de-dupe / phase / note-hygiene rules.
+
+## Control panel (left sidebar)
+
+The on-screen controls live in a fixed **left sidebar** (`.toolbar`, pastel-green; screen only — `@media print` hides it and clears the body's left offset so the printed A4 is unchanged). All controls persist to `localStorage` (`hm:homeMedPrintSettings`) via the `PRINT_CONTROL_DEFAULTS` / `applyPrintSettings` config in `page-home-med.js`.
+
+| Control | Effect |
+|---|---|
+| Print / Save PDF / Revert | `window.print()` (title = `buildFileName`) · reload |
+| Language | Re-translate instructions (offline engine; user pick allows Google fallback) |
+| Margin · Preview scale | `@page` margin · on-screen `--screen-scale` |
+| Font · Picture | `--base-font-size` · `--medicine-image-size` |
+| Compact rows · Fit width | `body.compact-mode` · `body.fit-width` |
+| แนบหน้า จัดตามมื้อ (`includeMealCard`) | Show the by-meal page (`body.hm-with-mealcard`) |
+| ขึ้นหน้าใหม่ (จัดตามมื้อ) (`mealCardBreak`, default on) | Whether the by-meal page starts on a **new** print page (`body.hm-mealcard-break`); off = flows after the table |
+
+> Removed: the dead **Paper** select (only A4, never wired) and the **Hide logo** toggle. When editing the config, keep all five spots in sync — `PRINT_CONTROL_DEFAULTS`, `_getPrintControls`, `applyPrintSettings`, `currentPrintSettingsFromControls`, and the `bindPrintControls` set + listener array.
 
 ## Follow-up appointment section
 
@@ -57,7 +75,7 @@ The logo/title row, patient-info card, and diagnosis/allergy banner live inside 
 
 ## Daily Pill Journey Card (optional by-meal page)
 
-An optional second page (`.mealcard-section` / `#mealcardGrid`) groups the discharge meds **by meal slot** (before/after × breakfast/lunch/dinner, then bedtime and PRN). It's gated behind the toolbar toggle **"แนบหน้า จัดตามมื้อ"** (`#includeMealCard`), which is part of the persisted print-settings config (`PRINT_CONTROL_DEFAULTS.includeMealCard` → `body.hm-with-mealcard`); when on, the card shows on screen and prints on its own page.
+An optional second page (`.mealcard-section` / `#mealcardGrid`) groups the discharge meds **by meal slot** (before/after × breakfast/lunch/dinner, then bedtime and PRN). It's gated behind the toolbar toggle **"แนบหน้า จัดตามมื้อ"** (`#includeMealCard` → `body.hm-with-mealcard`). A second toggle **"ขึ้นหน้าใหม่ (จัดตามมื้อ)"** (`#mealCardBreak` → `body.hm-mealcard-break`, default on) controls whether it starts on its own print page: the `break-before: page` rule requires **both** classes, so unchecking flows the card directly after the table. Both persist with the other print settings.
 
 `renderMealCard()` runs at the end of `renderMeds()` (so it tracks add/remove/edit) and delegates bucketing + markup to the shared **`window.BKNMealSlots`** engine (`../../shared/meal-slots.js`) — the same one the Medication Journey card uses. Matching runs on `instruction + frequencyTh`, so a meal time supplied only by the authoritative Thai frequency phrase still buckets. The `.mc-*` CSS lives in this page's `<style>` (2-column masonry for portrait); empty slots are dropped so the card stays compact.
 
