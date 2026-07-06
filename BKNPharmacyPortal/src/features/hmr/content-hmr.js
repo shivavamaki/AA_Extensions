@@ -142,7 +142,7 @@
 
         const dp = r.json.dischargeprocess;
         if (dp === null && attempt < 2) continue;
-        if (dp === null) return { status: 'Not ready', homemedordered: null, openordersprocessed: null };
+        if (dp === null) return { status: 'Not ready', homemedordered: null, openordersprocessed: null, pharmacyreturnscompleted: null };
 
         let status;
         if (dp.finaldischargedon)        status = 'Final Discharge';
@@ -153,8 +153,9 @@
 
         return {
           status,
-          homemedordered:      typeof dp.homemedordered      === 'boolean' ? dp.homemedordered      : null,
-          openordersprocessed: typeof dp.openordersprocessed === 'boolean' ? dp.openordersprocessed : null,
+          homemedordered:           typeof dp.homemedordered           === 'boolean' ? dp.homemedordered           : null,
+          openordersprocessed:      typeof dp.openordersprocessed      === 'boolean' ? dp.openordersprocessed      : null,
+          pharmacyreturnscompleted: typeof dp.pharmacyreturnscompleted === 'boolean' ? dp.pharmacyreturnscompleted : null,
         };
       } catch (_) { continue; }
     }
@@ -162,12 +163,13 @@
   }
 
   function _emptyDi() {
-    return { status: null, homemedordered: null, openordersprocessed: null };
+    return { status: null, homemedordered: null, openordersprocessed: null, pharmacyreturnscompleted: null };
   }
 
   function applyDischargeInfo(state, di) {
     state.checklist.dischargeStatus  = di.status;
     state.checklist.homemedordered   = di.homemedordered;
+    state.checklist.medReturned      = di.pharmacyreturnscompleted;
     state.steps.continueOrdersOff    = di.openordersprocessed === true ? 'done' : 'pending';
   }
 
@@ -308,7 +310,14 @@
   async function navigateToWardViewAndSearchHN(hn) {
     const L = s => console.log(`[BKN-HMR S7] ${s}`);
     L(`navigateToWardViewAndSearchHN hn=${hn}`);
-    location.hash = '#!/inpatient/wardview';
+
+    // Setting location.hash directly trips ArcusAir's "back button navigation"
+    // security guard — must navigate via the side-menu link's own ng-click.
+    const wardBoardBtn = await _waitForEl(() => findSideMenuButton('Ward Board'), 10000, 300);
+    L(`wardBoardBtn found: ${!!wardBoardBtn}`);
+    if (!wardBoardBtn) return false;
+    wardBoardBtn.click();
+    L('clicked Ward Board');
 
     const sidebarBtn = await _waitForEl(() => document.getElementById('LNDOpenSidebarBtn'), 20000, 300);
     L(`sidebarBtn found: ${!!sidebarBtn}`);
@@ -319,23 +328,60 @@
     const wrapper = await _waitForEl(() => document.getElementById('ipdWardViewPatientWidgetMgsWrapper'), 10000, 300);
     L(`wardview wrapper found: ${!!wrapper}`);
     if (!wrapper) return false;
-    await sleep(400);
-    wrapper.click();
+    // "ipdWardViewPatientWidgetMgsWrapper" → "ipdWardViewPatientWidgetMgs"
+    const baseId = wrapper.id.replace(/Wrapper$/, '');
 
-    const input = await _waitForEl(() => document.getElementById('ipdWardViewPatientWidgetMgsHasParamsSearchInput0'), 8000, 200);
-    L(`wardview search input found: ${!!input}`);
+    // Open search mode only if the suggestions/selected-params box isn't
+    // already showing — clicking an already-open widget toggles it closed.
+    let suggBox = document.getElementById(`${baseId}SuggestedSearches`);
+    if (!suggBox) {
+      await sleep(400);
+      wrapper.click();
+      suggBox = await _waitForEl(() => document.getElementById(`${baseId}SuggestedSearches`), 8000, 200);
+    }
+    L(`suggested-searches box found: ${!!suggBox}`);
+    if (!suggBox) return false;
+
+    // The widget pre-selects a blank "defaultQuery" param (a free-text field
+    // that does NOT search by MRN) — explicitly pick the "MRN" suggestion
+    // chip so the value goes into the right search parameter.
+    const selectedContainer = document.getElementById(`${baseId}SelectedSearches`);
+    let mrnSpan = selectedContainer
+      && Array.from(selectedContainer.querySelectorAll('.selsear-title')).find(el => el.textContent.trim() === 'MRN');
+    if (!mrnSpan) {
+      const mrnChip = Array.from(suggBox.querySelectorAll('*'))
+        .find(el => el.children.length === 0 && el.textContent.trim() === 'MRN');
+      L(`MRN suggestion chip found: ${!!mrnChip}`);
+      if (!mrnChip) return false;
+      mrnChip.click();
+      const found = await _waitForEl(() => {
+        const c = document.getElementById(`${baseId}SelectedSearches`);
+        return c && Array.from(c.querySelectorAll('.selsear-title')).find(el => el.textContent.trim() === 'MRN');
+      }, 5000, 150);
+      mrnSpan = found || null;
+    }
+    L(`MRN selected-search span found: ${!!mrnSpan}`);
+    if (!mrnSpan) return false;
+
+    const input = mrnSpan.parentElement.querySelector('input.selsear-value');
+    L(`wardview MRN input found: ${!!input}`);
     if (!input) return false;
 
-    input.focus();
-    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-    if (nativeSetter) nativeSetter.call(input, hn);
-    else input.value = hn;
-    input.dispatchEvent(new Event('input',  { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-    await sleep(300);
+    const existing = (input.value || '').trim();
+    if (existing && existing.includes(hn)) {
+      L(`input already contains "${existing}", skipping fill`);
+    } else {
+      input.focus();
+      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+      if (nativeSetter) nativeSetter.call(input, hn);
+      else input.value = hn;
+      input.dispatchEvent(new Event('input',  { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      await sleep(300);
+    }
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
     input.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Enter', keyCode: 13, bubbles: true }));
-    L('Enter dispatched on wardview search');
+    L('Enter dispatched on wardview MRN search');
     return true;
   }
 
@@ -714,7 +760,7 @@
     el.innerHTML = `
       <div class="hmrs7-hdr">
         💊 HMR Step 7 — ${job.hn ? 'HN ' + job.hn : job.visitid}
-        <button class="hmrs7-close" id="hmrs7-close">✕</button>
+        <button class="hmrs7-min" id="hmrs7-min-btn" title="Minimize">−</button>
       </div>
       <div class="hmrs7-body">
         <div class="hmrs7-row" id="hmrs7-alloc-row">
@@ -746,8 +792,14 @@
       if (el) el.textContent = msg;
     };
 
-    document.getElementById('hmrs7-close')?.addEventListener('click', () => {
-      document.getElementById('hmr-step7-overlay')?.remove();
+    document.getElementById('hmrs7-min-btn')?.addEventListener('click', e => {
+      e.stopPropagation();
+      const el     = document.getElementById('hmr-step7-overlay');
+      const minBtn = document.getElementById('hmrs7-min-btn');
+      if (!el || !minBtn) return;
+      const minimized = el.classList.toggle('hmrs7-minimized');
+      minBtn.textContent = minimized ? '+' : '−';
+      minBtn.title       = minimized ? 'Expand' : 'Minimize';
     });
 
     document.getElementById('hmrs7-cancel')?.addEventListener('click', async () => {
@@ -827,9 +879,11 @@
 
   // ── Render ───────────────────────────────────────────────────────────
 
+  // 'medReturned' is auto-detected from the discharge process API
+  // (pharmacyreturnscompleted) — see applyDischargeInfo() — so it's no
+  // longer a manual YES/NO check here.
   const CHECKS = [
     { key: 'hasAtb',              th: 'มี ATB ก่อน D/C?',        en: 'ATB before discharge?' },
-    { key: 'medReturned',         th: 'คืนยาเหลือแล้ว?',         en: 'Unused meds returned?' },
     { key: 'controlledRemaining', th: 'ยาเสพติด/วอ. ค้างอยู่?', en: 'Controlled drugs remaining?' },
   ];
 
@@ -841,9 +895,10 @@
 
   function renderWS(state) {
     const { checklist, steps, visitid, hn, lastModifiedBy } = state;
-    const allChecked = CHECKS.every(c => checklist[c.key] !== null);
+    const allChecked = CHECKS.every(c => checklist[c.key] !== null) && checklist.medReturned !== null;
     const dc  = checklist.dischargeStatus;
     const hmo = checklist.homemedordered;
+    const mr  = checklist.medReturned;
 
     const dcHtml = !dc
       ? `<span class="hmr-dc-badge hmr-dc-warn">D/C status not detected</span>`
@@ -856,6 +911,12 @@
       : hmo === false
         ? `<span class="hmr-hmo-badge hmr-hmo-no">Home Med ✗</span>`
         : `<span class="hmr-hmo-badge hmr-hmo-null">Home Med —</span>`;
+
+    const mrHtml = mr === true
+      ? `<span class="hmr-hmo-badge hmr-hmo-yes">Meds Returned ✓</span>`
+      : mr === false
+        ? `<span class="hmr-hmo-badge hmr-hmo-no">Meds Returned ✗</span>`
+        : `<span class="hmr-hmo-badge hmr-hmo-null">Meds Returned —</span>`;
 
     const checkHtml = CHECKS.map(c => {
       const v = checklist[c.key];
@@ -904,7 +965,7 @@
       <div class="hmr-body">
 
         <div class="hmr-statusbar" id="hmr-statusbar">
-          ${allChecked ? '✓ Ready — click Start Process' : 'Complete all 3 manual checks above'}
+          ${allChecked ? '✓ Ready — click Start Process' : 'Complete all manual checks above'}
           ${modInfo ? `<span class="hmr-mod-info"> · ${modInfo}</span>` : ''}
         </div>
 
@@ -912,6 +973,7 @@
         <div class="hmr-dc-row">
           ${dcHtml}
           ${hmoHtml}
+          ${mrHtml}
           <button class="hmr-detect-btn" id="hmr-detect-btn">↻ Detect</button>
         </div>
 
@@ -1047,7 +1109,8 @@
       const log = makeLog(
         `D/C re-detected: ${di.status || '—'}, ` +
         `Home Med: ${di.homemedordered === true ? 'YES' : di.homemedordered === false ? 'NO' : '—'}, ` +
-        `Open Orders: ${di.openordersprocessed === true ? 'YES' : di.openordersprocessed === false ? 'NO' : '—'}`
+        `Open Orders: ${di.openordersprocessed === true ? 'YES' : di.openordersprocessed === false ? 'NO' : '—'}, ` +
+        `Meds Returned: ${di.pharmacyreturnscompleted === true ? 'YES' : di.pharmacyreturnscompleted === false ? 'NO' : '—'}`
       );
       await serverSave(visitid, { checklist: _state.checklist, steps: _state.steps }, log);
     });

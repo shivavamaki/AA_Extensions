@@ -331,17 +331,18 @@
   font-size: 12px;
   font-weight: 700;
 }
-.hmrs7-close {
+.hmrs7-min {
   background: rgba(255,255,255,.15);
   border: 1px solid rgba(255,255,255,.3);
   color: #fff;
   border-radius: 4px;
   cursor: pointer;
   font-size: 11px;
-  padding: 2px 6px;
+  padding: 2px 8px;
   line-height: 1;
 }
-.hmrs7-close:hover { background: rgba(255,255,255,.28); }
+.hmrs7-min:hover { background: rgba(255,255,255,.28); }
+#hmr-step7-overlay.hmrs7-minimized .hmrs7-body { display: none; }
 .hmrs7-body { padding: 11px 13px 13px; display: flex; flex-direction: column; gap: 8px; }
 .hmrs7-row {
   display: flex;
