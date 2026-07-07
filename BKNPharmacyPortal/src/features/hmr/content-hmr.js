@@ -883,8 +883,8 @@
   // (pharmacyreturnscompleted) — see applyDischargeInfo() — so it's no
   // longer a manual YES/NO check here.
   const CHECKS = [
-    { key: 'hasAtb',              th: 'มี ATB ก่อน D/C?',        en: 'ATB before discharge?' },
-    { key: 'controlledRemaining', th: 'ยาเสพติด/วอ. ค้างอยู่?', en: 'Controlled drugs remaining?' },
+    { key: 'hasAtb',              th: 'มี ATB ก่อน D/C?',              en: 'ATB before discharge?' },
+    { key: 'controlledRemaining', th: 'จัดการยาเสพติดค้างจ่าย',        en: 'Controlled drugs completed?', singleComplete: true },
   ];
 
   const STEPS = [
@@ -920,14 +920,17 @@
 
     const checkHtml = CHECKS.map(c => {
       const v = checklist[c.key];
+      const actionHtml = c.singleComplete
+        ? `<button class="hmr-yn hmr-yn-yes ${v === true ? 'hmr-yn-on' : ''}" data-ck="${c.key}" data-v="true">${v === true ? '✓ Completed' : 'Completed'}</button>`
+        : `<button class="hmr-yn hmr-yn-yes ${v === true  ? 'hmr-yn-on' : ''}" data-ck="${c.key}" data-v="true">YES</button>
+           <button class="hmr-yn hmr-yn-no  ${v === false ? 'hmr-yn-on' : ''}" data-ck="${c.key}" data-v="false">NO</button>`;
       return `<div class="hmr-check-row">
         <div class="hmr-check-text">
           <div class="hmr-ck-th">${c.th}</div>
           <div class="hmr-ck-en">${c.en}</div>
         </div>
         <div class="hmr-yn-pair">
-          <button class="hmr-yn hmr-yn-yes ${v === true  ? 'hmr-yn-on' : ''}" data-ck="${c.key}" data-v="true">YES</button>
-          <button class="hmr-yn hmr-yn-no  ${v === false ? 'hmr-yn-on' : ''}" data-ck="${c.key}" data-v="false">NO</button>
+          ${actionHtml}
         </div>
       </div>`;
     }).join('');

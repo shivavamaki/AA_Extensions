@@ -1,0 +1,228 @@
+/* ══ HM Process Queue — floating popup (Ward View + Return workbench) ══ */
+#hmq-card {
+  position: fixed;
+  top: 90px;
+  right: 20px;
+  width: 300px;
+  background: #fff;
+  border: 1px solid #90caf9;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(21,101,192,.18), 0 2px 6px rgba(0,0,0,.08);
+  overflow: hidden;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 12px;
+  color: #263238;
+  z-index: 99998;
+}
+.hmq-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #1565c0, #1e88e5);
+  color: #fff;
+  padding: 9px 10px;
+  cursor: grab;
+}
+.hmq-title { font-weight: 700; font-size: 12.5px; flex: 1; }
+.hmq-total-badge {
+  background: rgba(255,255,255,.22);
+  border: 1px solid rgba(255,255,255,.4);
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 8px;
+}
+.hmq-min-btn {
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.35);
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  width: 20px;
+  height: 20px;
+  line-height: 1;
+  padding: 0;
+}
+.hmq-min-btn:hover { background: rgba(255,255,255,.28); }
+
+#hmq-card.min .hmq-body { display: none; }
+#hmq-card.min { width: 240px; }
+
+.hmq-body {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.hmq-section + .hmq-section { border-top: 1px solid #eef2f8; }
+.hmq-sec-hdr {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  cursor: pointer;
+  user-select: none;
+}
+.hmq-sec-hdr.proc { background: #e3f2fd; color: #0d47a1; }
+.hmq-sec-hdr.new  { background: #fff3e0; color: #e65100; }
+.hmq-sec-hdr.done { background: #e8f5e9; color: #1b5e20; }
+.hmq-sec-label { flex: 1; }
+.hmq-sec-count {
+  background: rgba(0,0,0,.08);
+  border-radius: 999px;
+  padding: 0 7px;
+  font-size: 10px;
+}
+.hmq-sec-caret {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 9px;
+  color: inherit;
+  cursor: pointer;
+  transition: transform .15s;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+.hmq-section.collapsed .hmq-sec-caret { transform: rotate(-90deg); }
+.hmq-section.collapsed .hmq-rows { display: none; }
+
+.hmq-rows { display: flex; flex-direction: column; }
+.hmq-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-bottom: 1px solid #f1f3f6;
+}
+.hmq-rows .hmq-row:last-child { border-bottom: none; }
+.hmq-qnum {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 20px;
+  border-radius: 5px;
+  background: #eceff1;
+  color: #546e7a;
+  font-weight: 700;
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.hmq-row-info { flex: 1; min-width: 0; }
+.hmq-row-name {
+  font-weight: 600;
+  font-size: 11px;
+  color: #1a2027;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hmq-hn { font-weight: 400; color: #78909c; font-size: 9.5px; margin-left: 4px; }
+.hmq-row-loc {
+  font-size: 9.5px;
+  color: #90a4ae;
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hmq-log-btn {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: #90a4ae;
+  padding: 3px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.hmq-log-btn:hover { background: #eceff1; color: #546e7a; }
+
+.hmq-action-btn {
+  flex: 0 0 auto;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 9px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.hmq-action-start { background: #e3f2fd; color: #0d47a1; }
+.hmq-action-start:hover:not(:disabled) { background: #bbdefb; }
+.hmq-action-done  { background: #e8f5e9; color: #1b5e20; }
+.hmq-action-done:hover:not(:disabled) { background: #c8e6c9; }
+.hmq-action-btn:disabled { opacity: .5; cursor: default; }
+.hmq-done-check { flex: 0 0 auto; font-size: 10px; color: #7cb342; font-weight: 700; }
+.hmq-done-time { flex: 0 0 auto; font-size: 9.5px; color: #b0bec5; }
+
+.hmq-empty { padding: 12px 10px; font-size: 10.5px; color: #b0bec5; font-style: italic; }
+
+/* ── Per-patient log modal ─────────────────────────────────────────────── */
+.hmq-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,.45);
+  z-index: 99999;
+  align-items: center;
+  justify-content: center;
+}
+.hmq-modal-overlay.open { display: flex; }
+.hmq-modal {
+  width: 320px;
+  max-height: 70vh;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0,0,0,.3);
+  display: flex;
+  flex-direction: column;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+.hmq-modal-hdr {
+  background: linear-gradient(135deg, #1565c0, #1e88e5);
+  color: #fff;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hmq-modal-title { flex: 1; font-weight: 700; font-size: 12.5px; }
+.hmq-modal-sub { font-size: 10px; opacity: .85; margin-top: 1px; }
+.hmq-modal-close {
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.35);
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  line-height: 1;
+  padding: 0;
+  font-size: 12px;
+}
+.hmq-modal-close:hover { background: rgba(255,255,255,.28); }
+.hmq-modal-body { padding: 6px 0; overflow-y: auto; }
+.hmq-log-entry { display: flex; gap: 9px; padding: 8px 14px; font-size: 11.5px; }
+.hmq-log-entry + .hmq-log-entry { border-top: 1px solid #f1f3f6; }
+.hmq-log-time {
+  flex: 0 0 auto;
+  color: #90a4ae;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  padding-top: 1px;
+}
+.hmq-log-text { flex: 1; color: #37474f; }
+.hmq-log-user { color: #90a4ae; font-size: 10px; margin-top: 1px; }
+
+/* ── "Add new case" toolbar button (Return workbench) ──────────────────── */
+#hmq-add-btn { color: #1565c0; position: relative; }
+.hmq-add-icon { font-size: 18px; line-height: 1; }

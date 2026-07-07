@@ -102,6 +102,7 @@ SCHEDULE_DIR      = DATA_DIR / 'schedule'
 TEMP_REPORTS_DIR  = DATA_DIR / 'temp-reports'
 PATIENTS_DIR      = DATA_DIR / 'patients'
 HMR_DIR           = DATA_DIR / 'hmr'
+HMQ_DIR           = DATA_DIR / 'hmq'
 LOGS_DIR          = DATA_DIR / 'logs'
 WWW_DIR           = Path(__file__).parent / 'www'
 KS_COLS       = {'faqs', 'items', 'vdos'}
@@ -509,6 +510,18 @@ _RECON_STATUS_MAP = {
     'HOLD': 'changed', 'CHANGE': 'changed', 'CHANGED': 'changed', 'MODIFY': 'changed',
     'NEW': 'new', 'START': 'new',
 }
+
+def build_reconcile_meds_for_home_med(data):
+    """Like build_reconcile_meds(), plus the normalized status (continued/
+    stopped/changed/new — same _RECON_STATUS_MAP the Medication Journey
+    continuity grid uses) and an 'addable' flag for the Home Med Sheet's
+    reconciliation panel. Only 'stopped' items are non-addable — a
+    discontinued medication shouldn't be pulled forward as a home med."""
+    out = []
+    for m in build_reconcile_meds(data):
+        status = _RECON_STATUS_MAP.get((m.get('status') or '').upper(), 'new')
+        out.append({**m, 'status': status, 'statusRaw': m.get('status') or '', 'addable': status != 'stopped'})
+    return out
 
 
 def fetch_arcus_allergies(ctx):
@@ -1330,6 +1343,11 @@ _HN_RE      = re.compile(r'^48-\d{2}-\d{7}$')
 def _safe_visitid(vid):
     return bool(vid and _VISITID_RE.match(vid))
 
+_HMQ_ID_RE = re.compile(r'^HMQ-\d{8}-\d{4}$')
+
+def _safe_hmq_id(eid):
+    return bool(eid and _HMQ_ID_RE.match(eid))
+
 def hmr_file(vid):
     return HMR_DIR / f'{vid}.json'
 
@@ -1446,6 +1464,175 @@ def _hmr_nightly_job():
 
 def _start_hmr_scheduler():
     threading.Timer(_seconds_until_2300(), _hmr_nightly_job).start()
+
+# ── HMQ (HM Process Queue) helpers ──────────────────────────────────────
+# Data model per entry:
+#   { id, queueNum, hn, name, ward, room, status ('new'|'process'|'done'),
+#     createdAt, startedAt, completedAt, addedBy, auditLog: [{ts,user,action}] }
+# Live entries: one file per entry (HMQ_DIR/HMQ-YYYYMMDD-NNNN.json). The nightly
+# merge (23:00) folds each day's live entries into HMQ_DIR/DAY_YYYY-MM-DD.json
+# and deletes the live files — same pattern as the HMR nightly merge above.
+
+def hmq_file(entry_id):
+    return HMQ_DIR / f'{entry_id}.json'
+
+def _hmq_today():
+    return datetime.now().strftime('%Y-%m-%d')
+
+def load_hmq_entry(entry_id):
+    p = hmq_file(entry_id)
+    if p.exists():
+        try:
+            return json.loads(p.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+    # Fall back to today's archive (in case the nightly merge already ran).
+    daily_path = HMQ_DIR / f'DAY_{_hmq_today()}.json'
+    if daily_path.exists():
+        try:
+            records = json.loads(daily_path.read_text(encoding='utf-8'))
+            if isinstance(records, list):
+                for rec in records:
+                    if rec.get('id') == entry_id:
+                        return rec
+        except Exception:
+            pass
+    return None
+
+def save_hmq_entry(doc):
+    HMQ_DIR.mkdir(parents=True, exist_ok=True)
+    doc['updatedAt'] = _now_iso()
+    _atomic_write_json(hmq_file(doc['id']), doc)
+
+def load_all_hmq(from_date=None, to_date=None):
+    """Return all HMQ entries (live + daily archives), newest first, optionally
+    filtered by createdAt date (YYYY-MM-DD, inclusive)."""
+    if not HMQ_DIR.exists():
+        return []
+    seen = {}
+    for p in HMQ_DIR.glob('HMQ-*.json'):
+        try:
+            doc = json.loads(p.read_text(encoding='utf-8'))
+            eid = doc.get('id')
+            if eid:
+                seen[eid] = doc
+        except Exception:
+            pass
+    for mp in sorted(HMQ_DIR.glob('DAY_*.json')):
+        try:
+            records = json.loads(mp.read_text(encoding='utf-8'))
+            if isinstance(records, list):
+                for doc in records:
+                    eid = doc.get('id')
+                    if eid and eid not in seen:
+                        seen[eid] = doc
+        except Exception:
+            pass
+    result = list(seen.values())
+    if from_date or to_date:
+        def _date_key(d):
+            return (d.get('createdAt') or '')[:10]
+        result = [d for d in result
+                  if (not from_date or _date_key(d) >= from_date)
+                  and (not to_date   or _date_key(d) <= to_date)]
+    result.sort(key=lambda d: d.get('createdAt') or '', reverse=True)
+    return result
+
+def _hmq_next_seq(today):
+    """Next display queue number for today (Q1, Q2, …) — resets daily."""
+    return len(load_all_hmq(today, today)) + 1
+
+def hmq_find_active_by_hn(hn):
+    """Return today's queue entry for this HN if it's still 'new' or 'process'."""
+    today = _hmq_today()
+    for rec in load_all_hmq(today, today):
+        if rec.get('hn') == hn and rec.get('status') in ('new', 'process'):
+            return rec
+    return None
+
+def create_hmq_entry(hn, name, ward, room, added_by):
+    today = _hmq_today()
+    seq = _hmq_next_seq(today)
+    entry_id = f'HMQ-{today.replace("-", "")}-{seq:04d}'
+    now = _now_iso()
+    doc = {
+        'id':          entry_id,
+        'queueNum':    seq,
+        'hn':          hn,
+        'name':        name,
+        'ward':        ward,
+        'room':        room,
+        'status':      'new',
+        'createdAt':   now,
+        'startedAt':   None,
+        'completedAt': None,
+        'addedBy':     added_by,
+        'auditLog':    [{'ts': now, 'user': added_by, 'action': 'Added to queue (New Case)'}],
+    }
+    save_hmq_entry(doc)
+    return doc
+
+def transition_hmq_entry(entry_id, action, user):
+    """action: 'start' (new→process) or 'complete' (process→done)."""
+    doc = load_hmq_entry(entry_id)
+    if not doc:
+        return None
+    now = _now_iso()
+    if action == 'start' and doc.get('status') == 'new':
+        doc['status']    = 'process'
+        doc['startedAt'] = now
+        doc.setdefault('auditLog', []).append({'ts': now, 'user': user, 'action': 'Started — moved to On Process'})
+    elif action == 'complete' and doc.get('status') == 'process':
+        doc['status']      = 'done'
+        doc['completedAt'] = now
+        doc.setdefault('auditLog', []).append({'ts': now, 'user': user, 'action': 'Completed'})
+    else:
+        return doc  # invalid transition — return unchanged, caller decides how to respond
+    save_hmq_entry(doc)
+    return doc
+
+# ── HMQ nightly merge — one DAY_YYYY-MM-DD.json per day, kept forever ──
+def _hmq_nightly_merge():
+    """Merge all live HMQ-*.json files into today's DAY_YYYY-MM-DD.json, then delete live files."""
+    if not HMQ_DIR.exists():
+        return
+    today = datetime.now().strftime('%Y-%m-%d')
+    live_files = list(HMQ_DIR.glob('HMQ-*.json'))
+    if not live_files:
+        return
+    daily_path = HMQ_DIR / f'DAY_{today}.json'
+    merged = {}
+    if daily_path.exists():
+        try:
+            existing = json.loads(daily_path.read_text(encoding='utf-8'))
+            if isinstance(existing, list):
+                merged = {r.get('id'): r for r in existing if r.get('id')}
+        except Exception:
+            pass
+    for p in live_files:
+        try:
+            doc = json.loads(p.read_text(encoding='utf-8'))
+            eid = doc.get('id')
+            if eid:
+                merged[eid] = doc
+        except Exception:
+            pass
+    _atomic_write_json(daily_path, list(merged.values()))
+    for p in live_files:
+        try:
+            p.unlink()
+        except Exception:
+            pass
+
+def _hmq_nightly_job():
+    try:
+        _hmq_nightly_merge()
+    except Exception as e:
+        print(f'[HMQ] Nightly merge error: {e}', file=sys.stderr)
+    threading.Timer(_seconds_until_2300(), _hmq_nightly_job).start()
+
+def _start_hmq_scheduler():
+    threading.Timer(_seconds_until_2300(), _hmq_nightly_job).start()
 
 def patient_file(puid):
     return PATIENTS_DIR / f'{puid}.json'
@@ -1609,6 +1796,7 @@ def _dashboard_scan():
             'Patients':      _count_files_safe(PATIENTS_DIR, '*.json'),
             'Logs':          _count_files_safe(LOGS_DIR, '*.jsonl'),
             'HMR (live)':    _count_files_safe(HMR_DIR, 'I*.json'),
+            'HMQ (live)':    _count_files_safe(HMQ_DIR, 'HMQ-*.json'),
         }
         with _dash_lock:
             _DASH_CACHE.update(at=time.time(), endpoints=endpoints, modules=modules, dataOk=data_ok)
@@ -1898,6 +2086,11 @@ class Handler(BaseHTTPRequestHandler):
         if parts == ['api', 'report', 'med-journey']:
             return 'report-med-journey', None, None
 
+        # /api/report/reconcile-api — standalone reconciliation refresh (Home
+        # Medication Sheet's ↻ button, without re-running the whole discharge fetch)
+        if parts == ['api', 'report', 'reconcile-api']:
+            return 'report-reconcile-api', None, None
+
         # /api/patients/{puid}                              -> 'patient', puid, None
         # /api/patients/{puid}/context                      -> 'patient-context', puid, None
         # /api/patients/{puid}/adr-timeline                 -> 'patient-adr', puid, None
@@ -1928,6 +2121,16 @@ class Handler(BaseHTTPRequestHandler):
             if not _safe_visitid(vid):
                 return None, None, None
             return 'hmr', vid, None
+
+        # /api/hmq               → ('hmq-list', None, None)  (GET: list, POST: add)
+        # /api/hmq/{id}          → ('hmq', id, None)          (PUT: start/complete)
+        if len(parts) >= 2 and parts[0] == 'api' and parts[1] == 'hmq':
+            if len(parts) == 2:
+                return 'hmq-list', None, None
+            eid = urllib.parse.unquote(parts[2])
+            if not _safe_hmq_id(eid):
+                return None, None, None
+            return 'hmq', eid, None
 
         # /api/extralabel                → ('extralabel', None, None)
         # /api/extralabel/<code>         → ('extralabel', code, None)
@@ -1960,6 +2163,9 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_file(WWW_DIR / 'dashboard.html', 'text/html; charset=utf-8'); return
         if clean in ('/hmr-report', '/hmr-report.html'):
             self._serve_file(WWW_DIR / 'hmr-report.html', 'text/html; charset=utf-8'); return
+
+        if clean in ('/hmq-report', '/hmq-report.html'):
+            self._serve_file(WWW_DIR / 'hmq-report.html', 'text/html; charset=utf-8'); return
         if clean in ('/index', '/home'):
             # Explicit route to the legacy index.html (dashboard.html shadows it at /).
             self._serve_file(WWW_DIR / 'index.html', 'text/html; charset=utf-8'); return
@@ -2117,6 +2323,14 @@ class Handler(BaseHTTPRequestHandler):
             from_date = (qs.get('from') or [None])[0]
             to_date   = (qs.get('to')   or [None])[0]
             self.send_json(200, load_all_hmr(from_date, to_date))
+        elif rtype == 'hmq':
+            doc = load_hmq_entry(key)
+            self.send_json(200, doc or {})
+        elif rtype == 'hmq-list':
+            qs        = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            from_date = (qs.get('from') or [None])[0]
+            to_date   = (qs.get('to')   or [None])[0]
+            self.send_json(200, load_all_hmq(from_date, to_date))
         else:
             self.send_json(404, {'error': 'Not found'})
 
@@ -2154,7 +2368,7 @@ class Handler(BaseHTTPRequestHandler):
             'kpi-day', 'kpi-section', 'ks', 'rx', 'rx-note',
             'med-image-upload', 'ks-file-upload', 'schedule',
             'patient', 'patient-context', 'patient-adr', 'patient-medcache',
-            'hmr',
+            'hmr', 'hmq',
         )
         if not ext_data_write:
             if not self._require('super_admin', 'admin', 'editor'): return
@@ -2333,6 +2547,19 @@ class Handler(BaseHTTPRequestHandler):
             save_hmr(key, doc)
             self.send_json(200, {'ok': True})
 
+        elif rtype == 'hmq':
+            # Advance a queue entry: {'action': 'start'|'complete', 'user': name}
+            if not isinstance(body, dict):
+                self.send_json(400, {'error': 'Body must be a JSON object'}); return
+            action = body.get('action')
+            user   = body.get('user') or 'Unknown'
+            if action not in ('start', 'complete'):
+                self.send_json(400, {'error': "action must be 'start' or 'complete'"}); return
+            doc = transition_hmq_entry(key, action, user)
+            if doc is None:
+                self.send_json(404, {'error': 'Queue entry not found'}); return
+            self.send_json(200, doc)
+
         elif rtype == 'users':
             if not self._require('super_admin'): return
             if not key:
@@ -2431,6 +2658,21 @@ class Handler(BaseHTTPRequestHandler):
             _save_users(users)
             self.send_json(201, {'ok': True, 'username': uname, 'role': role}); return
 
+        # ── HMQ: add a new case to today's queue ────────────────
+        if rtype == 'hmq-list':
+            hn   = (body.get('hn') or '').strip()
+            name = (body.get('name') or '').strip()
+            if not hn or not name:
+                self.send_json(400, {'error': 'hn and name are required'}); return
+            ward     = (body.get('ward') or '').strip()
+            room     = (body.get('room') or '').strip()
+            added_by = (body.get('addedBy') or 'Unknown').strip()
+            dup = hmq_find_active_by_hn(hn)
+            if dup:
+                self.send_json(409, {'error': 'duplicate', 'existing': dup}); return
+            doc = create_hmq_entry(hn, name, ward, room, added_by)
+            self.send_json(201, doc); return
+
         # ── Jasper report server-side fetch (trusted extension only) ─
         if rtype == 'report-fetch':
             url = body.get('url', '').strip()
@@ -2508,9 +2750,31 @@ class Handler(BaseHTTPRequestHandler):
                     'แต่ถ้าพบอาการผิดปรกติหรืออาการแย่ลง '
                     'แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม'
                 )
+            # Medication Reconciliation panel — best-effort, only available if the
+            # pharmacist opened ArcusAir's Med Reconcile screen this session (same
+            # medreconcileuid capture Medication Journey relies on).
+            try:
+                recon_raw = fetch_arcus_medreconcile(ctx)
+                result['reconcileMeds'] = build_reconcile_meds_for_home_med(recon_raw) if recon_raw else []
+            except Exception:
+                result['reconcileMeds'] = []
+            result['hasReconcile'] = bool(result['reconcileMeds'])
             result['ok'] = True
             result['source'] = 'arcus-api'
             self.send_json(200, result)
+            return
+
+        # ── Standalone reconciliation refresh (Home Med Sheet's ↻ button) ──
+        if rtype == 'report-reconcile-api':
+            ctx = body.get('context') or {}
+            if not ctx.get('incusToken'):
+                self.send_json(400, {'error': 'incusToken missing — open the patient on ArcusAir first'}); return
+            try:
+                recon_raw = fetch_arcus_medreconcile(ctx)
+                recon_meds = build_reconcile_meds_for_home_med(recon_raw) if recon_raw else []
+            except Exception as e:
+                self.send_json(500, {'error': f'ArcusAir fetch error: {e}'}); return
+            self.send_json(200, {'ok': True, 'reconcileMeds': recon_meds, 'hasReconcile': bool(recon_meds)})
             return
 
         # ── Medication Journey: all orders grouped into a continuity timeline ──
@@ -2736,8 +3000,9 @@ def start_server_background(port=None):
     # Warm the dashboard cache (the disk scan is slow over SMB) so the GUI's
     # first poll doesn't hit a multi-second cold call.
     threading.Thread(target=_dashboard_heavy, daemon=True).start()
-    # Schedule HMR nightly merge at 23:00
+    # Schedule HMR / HMQ nightly merges at 23:00
     _start_hmr_scheduler()
+    _start_hmq_scheduler()
     return server, ip, port
 
 

@@ -191,31 +191,20 @@ function _uniquePhysicians(meds) {
   return list;
 }
 
-function _renderProviderList(elId, names) {
-  const el = document.getElementById(elId);
-  if (!el) return;
-  el.innerHTML = "";
-  if (!names.length) { el.textContent = "-"; return; }
-  names.forEach((name) => {
-    const div = document.createElement("div");
-    div.textContent = name;
-    el.appendChild(div);
-  });
-}
-
 function populateHeader(header, context, meds) {
   const h = header || {};
   const c = context || {};
   // Physician isn't in the report header; collect every distinct provider
-  // across the discharge meds (a visit can involve more than one).
+  // across the discharge meds (a visit can involve more than one) and show
+  // them inline, above Diagnosis, comma-separated.
   const physicians = _uniquePhysicians(meds);
   safeSetText("patientName", h.patientName || c.patientName || "-");
   safeSetText("patientHN",   h.hn || c.hn || c.patientId || "-");
   safeSetText("patientAN",   h.an || c.an || c.patientVisitId || "-");
   safeSetText("patientRoom", h.room || c.bed || "-");
   safeSetText("sheetDate",   h.visitDate || new Date().toLocaleDateString("th-TH"));
-  safeSetText("pharmacistName", c.pharmacistName || "-");
-  _renderProviderList("physicianName", physicians);
+  safeSetText("pharmacistCheckedName", c.pharmacistName || "-");
+  safeSetText("physicianNameTop", physicians.length ? physicians.join(", ") : "-");
 }
 
 /* ─────────────────────── Diagnosis + Allergy banner ───────────────────── */
@@ -488,7 +477,7 @@ function _buildMedRow(med, index) {
       <div class="med-cell">
 ${photo}
         <div class="med-text">
-          <div class="med-name" contenteditable="true" data-field="drug" data-ph="ชื่อยา" data-no-translate translate="no">${escapeHtml(med.drug || "")}</div>
+          <div class="med-name" contenteditable="true" data-field="drug" data-ph="ชื่อยา" data-no-translate translate="no">${escapeHtml(med.drug || "")}</div>${med.source === "pom" ? `<span class="pom-badge no-translate" data-no-translate translate="no" title="Patient's Own Medication — added from Medication Reconciliation">POM</span>` : ""}
           ${med.code ? `<div class="med-code">Code: ${escapeHtml(med.code)}</div>` : ""}
         </div>
       </div>
@@ -630,7 +619,7 @@ function _addMed(med) {
   _meds.push({
     drug: norm(med.drug || ""), instruction: norm(med.instruction || ""),
     note: "", quantity: norm(med.quantity || ""), code: norm(med.code || ""),
-    provider: "",
+    provider: "", source: norm(med.source || ""),
   });
   _persist();
   renderMeds();
@@ -828,6 +817,7 @@ async function fetchAndRender() {
       quantity: norm(m.quantity || ""),
       code: norm(m.code || ""), provider: norm(m.provider || ""),
       frequencyTh: norm(m.frequencyTh || ""),
+      source: norm(m.source || ""),
     }));
     // Detect new discharge meds added after the cache was saved and inject them.
     const savedCodes = new Set(_meds.map((m) => m.code).filter(Boolean));
@@ -851,7 +841,189 @@ async function fetchAndRender() {
   renderDiagnosis(_context && _context.diagnosis);
   renderAllergies(data.allergies);
   renderAppointments(data.appointmentText);
+  const checklistHn = (data.patient && data.patient.hn) || (_context && (_context.hn || _context.patientId)) || "";
+  fetchAndRenderChecklist(checklistHn);  // best-effort, non-blocking
+  _setReconMeds(data.reconcileMeds);
   await renderMeds();
+}
+
+/* ─────────────────── HM Process Checklist card (read-only) ────────────────
+ * Pulls the same checklist the ward-view HM Process widget writes
+ * (src/features/hmr/content-hmr.js), via /api/hmr, matched by HN since this
+ * page doesn't have the I48-xx-xxxxxx visitid HMR is keyed by. Read-only —
+ * the sheet never writes back to the HMR record. */
+async function fetchAndRenderChecklist(hn) {
+  if (!hn || hn === "-" || !window.BKNData || !window.BKNData.serverFetch) {
+    _renderChecklist(null);
+    return;
+  }
+  try {
+    const to   = new Date().toISOString().slice(0, 10);
+    const from = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const r = await window.BKNData.serverFetch(`/api/hmr?from=${from}&to=${to}`);
+    const list = (r && r.ok && Array.isArray(r.json)) ? r.json : [];
+    const rec = list.find((d) => norm(d.hn || "") === norm(hn));
+    _renderChecklist(rec);
+  } catch (_e) {
+    _renderChecklist(null);
+  }
+}
+
+function _renderChecklist(rec) {
+  const cl = (rec && rec.checklist) || {};
+  document.querySelectorAll("#hmprocBox .hmproc-check-row[data-check]").forEach((row) => {
+    const dot = row.querySelector(".chk-dot");
+    if (!dot) return;
+    const v = cl[row.dataset.check];
+    dot.classList.remove("yes", "no");
+    if (v === true)       { dot.classList.add("yes"); dot.textContent = "✓"; }
+    else if (v === false) { dot.classList.add("no");  dot.textContent = "✗"; }
+    else                  { dot.textContent = "—"; }
+  });
+  safeSetText("hmprocMeta", rec ? `Last saved by ${rec.lastModifiedBy || "-"}` : "HM Process not started for this visit");
+}
+
+/* ─────────────── Medication Reconciliation panel (right sidebar) ──────────
+ * Shows the patient's pre-admission/home meds — the same ArcusAir
+ * medreconcile data Medication Journey already fetches — so the pharmacist
+ * can pick items to add into the sheet's medicine table, tagged POM
+ * (Patient's Own Medication). Requires context.medreconcileuid, which is
+ * only captured if the pharmacist opened ArcusAir's Med Reconcile screen for
+ * this patient this session (see content-home-med.js). */
+let _reconMeds  = [];   // [{drug, code, status, statusRaw, instruction, frequency, route, note, addable, _id, _added}]
+let _reconFilter = "all";
+const _reconSelected = new Set();
+
+const _RECON_STATUS_LABEL = { continued: "CONTINUE", stopped: "STOP", changed: "CHANGE", new: "NEW" };
+const _RECON_FILTERS = ["all", "continued", "stopped", "changed", "new"];
+
+function _setReconMeds(list) {
+  _reconMeds = (list || []).map((m, i) => ({ ...m, _id: i, _added: false }));
+  _reconFilter = "all";
+  _reconSelected.clear();
+  renderReconPanel();
+}
+
+function _reconCounts() {
+  const counts = { all: _reconMeds.length, continued: 0, stopped: 0, changed: 0, new: 0 };
+  _reconMeds.forEach((m) => { counts[m.status] = (counts[m.status] || 0) + 1; });
+  return counts;
+}
+
+function renderReconPanel() {
+  const sub     = document.getElementById("reconSub");
+  const filters = document.getElementById("reconFilters");
+  const list    = document.getElementById("reconList");
+  const addBtn  = document.getElementById("reconAddBtn");
+  const footer  = document.getElementById("reconFooter");
+  if (!sub || !filters || !list || !addBtn) return;
+
+  if (!_reconMeds.length) {
+    sub.textContent = "";
+    filters.innerHTML = "";
+    footer.style.display = "none";
+    list.innerHTML = `<div class="recon-empty">
+      <span class="recon-empty-icon">🔍</span>
+      Reconciliation data not loaded for this visit.<br><br>
+      Open <b>Med Reconcile</b> in ArcusAir for this patient once this session,
+      then click ↻ to fetch the list here.
+    </div>`;
+    return;
+  }
+  footer.style.display = "";
+
+  const counts = _reconCounts();
+  sub.textContent = `medreconcileuid captured · ${counts.all} items`;
+  filters.innerHTML = _RECON_FILTERS.map((key) => {
+    const label = key === "all" ? "All" : _RECON_STATUS_LABEL[key];
+    const n = counts[key] || 0;
+    if (key !== "all" && n === 0) return "";
+    const active = key === _reconFilter ? "active" : "";
+    return `<span class="recon-chip ${active}" data-status="${key}">${label} ${n}</span>`;
+  }).join("");
+
+  const filtered = _reconFilter === "all" ? _reconMeds : _reconMeds.filter((m) => m.status === _reconFilter);
+  list.innerHTML = filtered.length
+    ? filtered.map(_reconItemHtml).join("")
+    : `<div class="recon-list-empty">No items in this filter</div>`;
+
+  _updateReconAddButton();
+}
+
+function _reconItemHtml(m) {
+  const label = _RECON_STATUS_LABEL[m.status] || m.statusRaw || "—";
+  const meta  = [m.frequency, m.route].filter(Boolean).map(escapeHtml).join(" · ") || escapeHtml(m.instruction || "");
+  const checked  = m._added ? "checked" : "";
+  const disabled = (!m.addable || m._added) ? "disabled" : "";
+  return `<div class="recon-item ${m._added ? "added" : ""}" data-id="${m._id}">
+    <input type="checkbox" ${checked} ${disabled} data-id="${m._id}" />
+    <div class="recon-item-body">
+      <div class="recon-drug">${escapeHtml(m.drug || "")}</div>
+      <div class="recon-meta">${meta}</div>
+      ${m._added ? `<div class="recon-added-tag">✓ Added as POM</div>` : ""}
+    </div>
+    <span class="recon-status ${m.status}">${label}</span>
+  </div>`;
+}
+
+function _updateReconAddButton() {
+  const addBtn = document.getElementById("reconAddBtn");
+  if (!addBtn) return;
+  const n = _reconMeds.filter((m) => m.addable && !m._added && _reconSelected.has(m._id)).length;
+  addBtn.textContent = `+ Add Selected (${n}) as POM`;
+  addBtn.disabled = n === 0;
+}
+
+function _bindReconPanel() {
+  document.getElementById("reconFilters").addEventListener("click", (e) => {
+    const chip = e.target.closest(".recon-chip");
+    if (!chip) return;
+    _reconFilter = chip.dataset.status;
+    renderReconPanel();
+  });
+
+  document.getElementById("reconList").addEventListener("change", (e) => {
+    const cb = e.target.closest('input[type="checkbox"]');
+    if (!cb) return;
+    const id = Number(cb.dataset.id);
+    if (cb.checked) _reconSelected.add(id); else _reconSelected.delete(id);
+    _updateReconAddButton();
+  });
+
+  document.getElementById("reconAddBtn").addEventListener("click", () => {
+    const toAdd = _reconMeds.filter((m) => m.addable && !m._added && _reconSelected.has(m._id));
+    toAdd.forEach((m) => {
+      const instruction = [m.frequency, m.route, m.instruction].filter(Boolean).join(" ");
+      _addMed({ drug: m.drug, code: m.code, instruction, quantity: "", source: "pom" });
+      m._added = true;
+      _reconSelected.delete(m._id);
+    });
+    renderReconPanel();
+  });
+
+  document.getElementById("reconReloadBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("reconReloadBtn");
+    btn.disabled = true;
+    await fetchAndRenderReconcile();
+    btn.disabled = false;
+  });
+}
+
+async function fetchAndRenderReconcile() {
+  if (!_context || !window.BKNData || !window.BKNData.serverFetch) {
+    _setReconMeds([]);
+    return;
+  }
+  try {
+    const r = await window.BKNData.serverFetch("/api/report/reconcile-api", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ context: _context }),
+    });
+    _setReconMeds((r && r.ok && r.json && Array.isArray(r.json.reconcileMeds)) ? r.json.reconcileMeds : []);
+  } catch (_e) {
+    _setReconMeds([]);
+  }
 }
 
 /* ───────────────────────────── Print controls ─────────────────────────── */
@@ -1044,6 +1216,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindPrintControls();
   bindToolbar();
   bindLangControl();
+  _bindReconPanel();
 
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === MSG.LOAD_MED_TABLE) _applyContextAndRender(msg);

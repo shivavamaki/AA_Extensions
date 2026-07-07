@@ -524,7 +524,7 @@
       </div>
     `).join(''));
 
-    setHTML('moduleList', Object.entries(data.modules || {}).slice(0, 8).map(([name, count]) => `
+    setHTML('moduleList', Object.entries(data.modules || {}).slice(0, 10).map(([name, count]) => `
       <div class="module-row">
         <span>${name}</span>
         <b>${count}</b>
@@ -999,6 +999,10 @@
 
   addClickHandler('hmrReport', () => {
     window.open('/hmr-report', '_blank', 'noopener,noreferrer');
+  });
+
+  addClickHandler('hmqReport', () => {
+    window.open('/hmq-report', '_blank', 'noopener,noreferrer');
   });
 
   // ── Boot ───────────────────────────────────────────────────────

@@ -33,7 +33,9 @@
     }
 
     /* ── Control panel: fixed left sidebar (screen only), pastel-green ─────── */
-    body { padding-left: 236px; }   /* room for the sidebar; reset in @media print */
+    /* padding-right reserves room for the Medication Reconciliation panel (screen
+       only); both reset in @media print. */
+    body { padding-left: 236px; padding-right: 280px; }
     .toolbar {
       position: fixed;
       top: 0; left: 0; bottom: 0;
@@ -114,6 +116,154 @@
       color: #15803d;
       font-size: 11.5px;
       line-height: 1.35;
+    }
+
+    /* ── Medication Reconciliation panel: fixed right sidebar (screen only) ──
+       Pulls the patient's pre-admission/home meds (same ArcusAir data
+       Medication Journey already fetches) so the pharmacist can pick items to
+       add as POM (Patient's Own Medication) into the sheet below. ──────────── */
+    .recon-panel {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      bottom: 16px;
+      width: 260px;
+      background: #fff;
+      border: 1px solid #90caf9;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(21,101,192,.12);
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 11.5px;
+      color: #263238;
+      display: flex;
+      flex-direction: column;
+      z-index: 999;
+    }
+    .recon-hdr {
+      background: linear-gradient(135deg, #1565c0, #1e88e5);
+      color: #fff;
+      padding: 9px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+    .recon-title { font-weight: 700; font-size: 12.5px; flex: 1; }
+    .recon-reload {
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.35);
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      padding: 3px 7px;
+      font-family: inherit;
+    }
+    .recon-reload:hover { background: rgba(255,255,255,.28); }
+    .recon-reload:disabled { opacity: .5; cursor: default; }
+    .recon-sub {
+      padding: 6px 10px;
+      font-size: 9.5px;
+      color: #607d8b;
+      background: #f5f9ff;
+      border-bottom: 1px solid #e3eefa;
+      flex: 0 0 auto;
+    }
+    .recon-filters {
+      display: flex;
+      gap: 4px;
+      padding: 7px 10px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid #eef2f8;
+      flex: 0 0 auto;
+    }
+    .recon-chip {
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      background: #f1f3f5;
+      color: #607d8b;
+      font-family: inherit;
+    }
+    .recon-chip.active[data-status="all"]       { background: #e0e0e0; color: #37474f; border-color: #bdbdbd; }
+    .recon-chip.active[data-status="continued"] { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+    .recon-chip.active[data-status="stopped"]   { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
+    .recon-chip.active[data-status="changed"]   { background: #e3f2fd; color: #0d47a1; border-color: #90caf9; }
+    .recon-chip.active[data-status="new"]       { background: #f3e5f5; color: #6a1b9a; border-color: #ce93d8; }
+
+    .recon-list { overflow-y: auto; flex: 1; }
+    .recon-item {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      padding: 8px 10px;
+      border-bottom: 1px solid #f1f3f6;
+    }
+    .recon-item:last-child { border-bottom: none; }
+    .recon-item input[type="checkbox"] { margin-top: 2px; flex: 0 0 auto; width: 13px; height: 13px; accent-color: #1565c0; }
+    .recon-item.added { background: #f5fbf6; }
+    .recon-item-body { flex: 1; min-width: 0; }
+    .recon-drug { font-weight: 600; font-size: 11.5px; color: #1a2027; }
+    .recon-meta { font-size: 9.5px; color: #78909c; margin-top: 1px; line-height: 1.35; }
+    .recon-added-tag { font-size: 9px; font-weight: 700; color: #2e7d32; margin-top: 2px; }
+    .recon-status {
+      flex: 0 0 auto;
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      padding: 2px 6px;
+      border-radius: 999px;
+      white-space: nowrap;
+      margin-top: 1px;
+    }
+    .recon-status.continued { background: #e8f5e9; color: #2e7d32; }
+    .recon-status.stopped   { background: #ffebee; color: #c62828; }
+    .recon-status.changed   { background: #e3f2fd; color: #0d47a1; }
+    .recon-status.new       { background: #f3e5f5; color: #6a1b9a; }
+
+    .recon-footer { padding: 8px 10px; border-top: 1px solid #eef2f8; background: #fafcff; flex: 0 0 auto; }
+    .recon-add-btn {
+      width: 100%;
+      background: #1565c0;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 8px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .recon-add-btn:disabled { background: #cfd8dc; cursor: default; }
+    .recon-add-hint { font-size: 9px; color: #90a4ae; text-align: center; margin-top: 4px; }
+
+    .recon-empty, .recon-list-empty {
+      padding: 28px 18px;
+      text-align: center;
+      color: #90a4ae;
+      font-size: 11.5px;
+      line-height: 1.6;
+    }
+    .recon-empty-icon { font-size: 26px; margin-bottom: 8px; display: block; }
+    .recon-empty b { color: #607d8b; }
+
+    /* Tag on a medicine row added from the reconciliation panel. */
+    .pom-badge {
+      display: inline-block;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: .03em;
+      background: #ede9fe;
+      color: #6d28d9;
+      border: 1px solid #ddd6fe;
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-left: 5px;
+      vertical-align: middle;
     }
 
     .sheet-wrap {
@@ -228,13 +378,21 @@
       border-top: 1.5px solid #111827;
     }
     .clinical-banner .dx-line,
-    .clinical-banner .allergy-line {
+    .clinical-banner .allergy-line,
+    .clinical-banner .physician-line {
       display: flex;
       align-items: baseline;
       gap: 8px;
       padding: 4px 10px;
       font-size: 12px;
       line-height: 1.25;
+    }
+    /* Physician — sits above Diagnosis, neutral tone (not blue/red like the
+       clinical lines below it). */
+    .clinical-banner .physician-line {
+      background: #f3f4f6;
+      color: #374151;
+      border-bottom: 1px solid #e5e7eb;
     }
     /* Diagnosis on the upper line — distinct blue tone. */
     .clinical-banner .dx-line {
@@ -243,9 +401,11 @@
       border-bottom: 1px solid #dbeafe;
     }
     .clinical-banner .dx-label,
-    .clinical-banner .allergy-label { font-weight: 400; white-space: nowrap; }
+    .clinical-banner .allergy-label,
+    .clinical-banner .physician-label { font-weight: 400; white-space: nowrap; }
     .clinical-banner .dx-value,
-    .clinical-banner .allergy-value { font-weight: 400; word-break: break-word; }
+    .clinical-banner .allergy-value,
+    .clinical-banner .physician-value { font-weight: 400; word-break: break-word; }
     /* Allergy line: red when present, calm grey for NKDA. */
     .clinical-banner .allergy-line {
       background: #fef2f2;
@@ -444,10 +604,11 @@
       padding-top: 8px;
       border-top: 1px solid #d1d5db;
       display: grid;
-      grid-template-columns: 2fr .8fr;
+      grid-template-columns: 5fr 3fr 2fr;
       gap: 8px;
       font-size: 11px;
       color: #374151;
+      align-items: stretch;
     }
 
     /* Appointment card: solid blue border + blue gradient header bar,
@@ -525,7 +686,25 @@
       .appt-remove { display: none; }
     }
 
-    .providers-box {
+    /* Pharmacist sign-off card: same solid-blue-border + gradient-header
+       treatment as the appointment card and the Checklist card, so all three
+       footer boxes read as one family instead of two styles side by side. */
+    .sign-box.providers-box {
+      padding: 0;
+      border: 1px solid #90caf9;
+      border-radius: 8px;
+      overflow: hidden;
+      display: block;
+    }
+    .providers-hdr {
+      background: linear-gradient(135deg, #1565c0, #1e88e5);
+      color: #fff;
+      font-weight: 700;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    .providers-body {
+      padding: 6px 8px 7px;
       display: flex;
       flex-direction: column;
       gap: 0;
@@ -536,7 +715,7 @@
     }
 
     .provider-block + .provider-block {
-      border-top: 1px dashed #d1d5db;
+      border-top: 1px solid rgba(21,101,192,.28);
     }
 
     .provider-block .provider-value {
@@ -546,6 +725,48 @@
     .provider-block .provider-value div + div {
       margin-top: 2px;
     }
+
+    /* Blank signature line — no name, just room to sign by hand on paper. */
+    .provider-signature {
+      min-height: 18px;
+      border-bottom: 1px dashed #9ca3af;
+    }
+
+    /* ── Checklist card: mirrors the ward-view HM Process widget's manual
+       checks, plus 2 blank paper checkboxes with no digital backing. ──────── */
+    .hmproc-box {
+      padding: 0;
+      border: 1px solid #90caf9;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .hmproc-hdr {
+      background: linear-gradient(135deg, #1565c0, #1e88e5);
+      color: #fff;
+      font-weight: 700;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    .hmproc-body { padding: 6px 8px 7px; display: flex; flex-direction: column; gap: 4px; }
+    .hmproc-checks { display: flex; flex-direction: column; gap: 3px; }
+    .hmproc-check-row { display: flex; align-items: flex-start; gap: 5px; font-size: 10px; color: #374151; line-height: 1.3; }
+    .chk-dot {
+      width: 13px; height: 13px; border-radius: 50%; flex: 0 0 auto;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 8.5px; font-weight: 700; color: #fff;
+      background: #9e9e9e;
+      margin-top: 1px;
+    }
+    .chk-dot.yes { background: #43a047; }
+    .chk-dot.no  { background: #e53935; }
+    .chk-box {
+      width: 11px; height: 11px; border-radius: 2px; flex: 0 0 auto;
+      border: 1.3px solid #78909c;
+      background: #fff;
+      margin-top: 2px;
+    }
+    .foot-semi-line { border-top: 1px solid rgba(21,101,192,.28); margin: 2px 0; }
+    .hmproc-meta { font-size: 9px; color: #90a4ae; margin-top: 2px; }
 
     /* ── Print-repeating page header — lives inside <thead> so the logo/title,
        patient info, and diagnosis/allergy banner repeat on every printed page. ── */
@@ -710,8 +931,9 @@
     }
 
     @media print {
-      body { background: #fff; padding-left: 0 !important; }
+      body { background: #fff; padding-left: 0 !important; padding-right: 0 !important; }
       .toolbar { display: none !important; }
+      .recon-panel { display: none !important; }
       .sheet-wrap {
         width: auto;
         margin: 0;
@@ -859,6 +1081,20 @@
     <div class="print-status" id="printStatus">A4 portrait · margin 8 mm</div>
   </div>
 
+  <div class="recon-panel no-print" id="reconPanel">
+    <div class="recon-hdr">
+      <span class="recon-title">📋 Med Reconciliation</span>
+      <button class="recon-reload" id="reconReloadBtn" title="Refresh from ArcusAir">↻</button>
+    </div>
+    <div class="recon-sub" id="reconSub">กำลังโหลด…</div>
+    <div class="recon-filters" id="reconFilters"></div>
+    <div class="recon-list" id="reconList"></div>
+    <div class="recon-footer" id="reconFooter">
+      <button class="recon-add-btn" id="reconAddBtn" disabled>+ Add Selected (0) as POM</button>
+      <div class="recon-add-hint">Select items on the left, then add</div>
+    </div>
+  </div>
+
   <div class="sheet-wrap">
   <main class="sheet">
     <table id="medTable">
@@ -909,6 +1145,10 @@
               </section>
 
               <section class="clinical-banner" id="clinicalBanner" data-no-translate translate="no">
+                <div class="physician-line" id="physicianLine">
+                  <span class="physician-label">แพทย์ (Physician):</span>
+                  <span class="physician-value" id="physicianNameTop">-</span>
+                </div>
                 <div class="dx-line" id="dxLine">
                   <span class="dx-label"> Diagnosis / การวินิจฉัย:</span>
                   <span class="dx-value" id="diagnosisValue">-</span>
@@ -939,14 +1179,35 @@
         <span class="label-ul">นัดหมายติดตามอาการ</span>
         <div class="appt-list" id="appointmentList"></div>
       </div>
-      <div class="sign-box providers-box">
-        <div class="provider-block">
-          <span class="label-ul">Physician</span>
-          <div class="provider-value" id="physicianName">-</div>
+
+      <div class="hmproc-box" id="hmprocBox">
+        <div class="hmproc-hdr">💊 Checklist</div>
+        <div class="hmproc-body">
+          <div class="hmproc-checks">
+            <div class="hmproc-check-row" data-check="hasAtb"><span class="chk-dot">—</span> รับยาปฏิชีวนะก่อนกลับบ้าน</div>
+            <div class="hmproc-check-row" data-check="medReturned"><span class="chk-dot">—</span> คืนยาเหลือแล้ว</div>
+            <div class="hmproc-check-row" data-check="controlledRemaining"><span class="chk-dot">—</span> ไม่มียาเสพติดค้าง</div>
+
+            <div class="foot-semi-line"></div>
+
+            <div class="hmproc-check-row"><span class="chk-box"></span> อธิบายยากลับบ้าน</div>
+            <div class="hmproc-check-row"><span class="chk-box"></span> ผู้ป่วย/ผู้ปกครอง ทราบและเข้าใจการใช้ยาดีแล้ว</div>
+          </div>
+          <div class="hmproc-meta" id="hmprocMeta">HM Process not started for this visit</div>
         </div>
-        <div class="provider-block">
-          <span class="label-ul">เภสัชกร (Pharmacist)</span>
-          <div class="provider-value" id="pharmacistName">-</div>
+      </div>
+
+      <div class="sign-box providers-box">
+        <div class="providers-hdr">ลงชื่อเภสัชกร</div>
+        <div class="providers-body">
+          <div class="provider-block">
+            <span class="label-ul">ผู้ตรวจสอบรายการยา</span>
+            <div class="provider-value" id="pharmacistCheckedName">-</div>
+          </div>
+          <div class="provider-block">
+            <span class="label-ul">ผู้จ่ายยา</span>
+            <div class="provider-value provider-signature">&nbsp;</div>
+          </div>
         </div>
       </div>
     </section>

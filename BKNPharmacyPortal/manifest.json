@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.9.5",
-  "version_name": "2026.06.25 — HMR: fix auth headers for getdischargeprocess — incus-token now live from window",
+  "version": "3.10.0",
+  "version_name": "2026.07.07 — HM Process Queue popup + Home Med Sheet checklist/pharmacist sign-off",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",
@@ -79,11 +79,13 @@
         "src/features/adrtimeline/content-adrtimeline.js",
         "src/features/home-med/content-home-med.js",
         "src/features/hmr/content-hmr.js",
+        "src/features/hmq/content-hmq.js",
         "content_script.js"
       ],
       "css": [
         "src/styles/overlay.css",
-        "src/features/hmr/hmr.css"
+        "src/features/hmr/hmr.css",
+        "src/features/hmq/hmq.css"
       ],
       "run_at": "document_idle"
     },
