@@ -65,6 +65,18 @@
   function detectVisitId() { return detectInPanel(VISITID_RE); }
   function detectHN()      { return detectInPanel(HN_RE); }
 
+  // Best-effort patient name for the HM Process Queue "Add" button — same
+  // banner class ArcusAir uses on the Return workbench (content-hmq.js reads
+  // it there too). Ward/room aren't reliably detectable here, so they're
+  // left blank when adding from this button.
+  function detectPatientNameForQueue() {
+    const h4 = document.querySelector('h4.patientbannername');
+    if (!h4) return null;
+    const full = norm(h4.textContent);
+    const m = /\(48-\d{2}-\d{6,7}\)/.exec(full);
+    return norm(m ? full.slice(0, m.index) : full);
+  }
+
   // ── ArcusAir discharge process API ──────────────────────────────────
 
   // Ask arcus-xhr-tap.js (MAIN world) to scan the Angular scope of the element
@@ -383,6 +395,108 @@
     input.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Enter', keyCode: 13, bubbles: true }));
     L('Enter dispatched on wardview MRN search');
     return true;
+  }
+
+  // ── Step 5: Med Reconcile automation (captures medreconcileuid) ─────
+  // Drives EMR → Med Reconcile → View so the getdetail XHR fires; the MAIN-
+  // world tap (arcus-xhr-tap.js) already scans that call's body for
+  // medreconcileuid and stores it in window.__arcus_medrecon__, keyed by
+  // patientvisituid — same map content-home-med.js reads for the Home
+  // Medication Sheet's reconciliation panel. This step just drives the UI
+  // to trigger that capture, then reads it back via MJ_EXTRACT_ANGULAR_CTX.
+
+  async function _hmrWaitForUrl(substr, timeout = 15000, interval = 300) {
+    const end = Date.now() + timeout;
+    while (Date.now() < end) {
+      if (location.href.includes(substr)) return true;
+      await sleep(interval);
+    }
+    return false;
+  }
+
+  async function _hmrWaitForEl(selectorFn, timeout = 15000, interval = 250) {
+    const end = Date.now() + timeout;
+    while (Date.now() < end) {
+      const el = selectorFn();
+      if (el) return el;
+      await sleep(interval);
+    }
+    return null;
+  }
+
+  async function _extractAngularCtx() {
+    return new Promise(resolve =>
+      chrome.runtime.sendMessage({ type: 'MJ_EXTRACT_ANGULAR_CTX' }, r => resolve(r))
+    );
+  }
+
+  async function resolvePatientVisitUid(visitid) {
+    const ctx = await _extractAngularCtx();
+    if (!ctx?.ok) return null;
+    const visitMap = ctx.data?._raw?.xhrTap?.visitMap || {};
+    const mapped   = visitid ? visitMap[visitid] : null;
+    if (mapped?.patientvisituid) return mapped.patientvisituid;
+    const sd = await getAngularScopeUIDs(visitid);
+    return sd.patientvisituid || null;
+  }
+
+  async function fetchMedReconcileUid(patientvisituid) {
+    const ctx = await _extractAngularCtx();
+    const map = ctx?.data?._raw?.medreconMap || {};
+    return map[patientvisituid] || null;
+  }
+
+  async function runMedReconcileAutomation(visitid, hn, setStatus) {
+    const L = s => console.log(`[BKN-HMR MedRecon] ${s}`);
+
+    setStatus('Med Reconcile: opening EMR…');
+    const viewEmrBtn = document.getElementById('opdvisitviewemrlanding');
+    L(`viewEmrBtn found: ${!!viewEmrBtn}`);
+    if (!viewEmrBtn) return { ok: false, reason: 'View EMR button not found — select the patient in Ward View first' };
+    if (viewEmrBtn.disabled) return { ok: false, reason: 'View EMR button is disabled for this patient' };
+    viewEmrBtn.click();
+
+    const onLanding = await _hmrWaitForUrl('/emr/emrview/emr/ipdlanding');
+    L(`reached ipdlanding: ${onLanding}`);
+    if (!onLanding) return { ok: false, reason: 'Timed out waiting for the EMR landing page' };
+    await sleep(700);
+
+    setStatus('Med Reconcile: opening Med Reconcile menu…');
+    const medReconBtn = await _hmrWaitForEl(() =>
+      document.querySelector('button[aria-label="Med Reconcile"]') || document.getElementById('emrsidemenus6')
+    );
+    L(`medReconBtn found: ${!!medReconBtn}`);
+    if (!medReconBtn) return { ok: false, reason: 'Med Reconcile menu button not found' };
+    medReconBtn.click();
+
+    const onMedRecon = await _hmrWaitForUrl('/emr/emrview/emr/medreconcile');
+    L(`reached medreconcile: ${onMedRecon}`);
+    if (!onMedRecon) return { ok: false, reason: 'Timed out waiting for the Med Reconcile page' };
+    await sleep(700);
+
+    setStatus('Med Reconcile: opening reconciliation record…');
+    const viewBtn = await _hmrWaitForEl(() =>
+      document.getElementById('viewMedReconcile0') || document.querySelector('[id^="viewMedReconcile"]')
+    );
+    L(`viewBtn found: ${!!viewBtn}`);
+    if (!viewBtn) return { ok: false, reason: 'No reconciliation record found for this visit' };
+    if (viewBtn.disabled) return { ok: false, reason: 'Reconciliation record is not active (isactive=false)' };
+    viewBtn.click();
+    await sleep(1200);   // let the getdetail XHR fire + the MAIN-world tap capture it
+
+    setStatus('Med Reconcile: capturing medreconcileuid…');
+    const patientvisituid = await resolvePatientVisitUid(visitid);
+    L(`patientvisituid resolved: ${patientvisituid}`);
+    if (!patientvisituid) return { ok: false, reason: 'Could not resolve patientvisituid for this visit' };
+
+    let mu = await fetchMedReconcileUid(patientvisituid);
+    for (let i = 0; i < 6 && !mu; i++) { await sleep(500); mu = await fetchMedReconcileUid(patientvisituid); }
+    L(`medreconcileuid: ${mu}`);
+    if (!mu) return { ok: false, reason: 'medreconcileuid was not captured — the getdetail call may not have fired' };
+
+    setStatus('Med Reconcile: returning to Ward View…');
+    await navigateToWardViewAndSearchHN(hn || visitid);
+    return { ok: true, medreconcileuid: mu };
   }
 
   // ── Worklist search helper ───────────────────────────────────────────
@@ -866,10 +980,12 @@
         controlledRemaining: null,
       },
       steps: {
+        medReconcile:      'pending',
         continueOrdersOff: 'pending',
         allocateDispensed: 'pending',
         reportsPrinted:    'pending',
       },
+      medreconcileuid: null,
       lastModifiedBy: detectUsername(),
       lastModifiedAt: new Date().toISOString(),
       auditLog:    [],
@@ -888,6 +1004,7 @@
   ];
 
   const STEPS = [
+    { key: 'medReconcile',      num: 5, label: 'Med Reconcile', runnable: true },
     { key: 'continueOrdersOff', num: 6, label: 'Off continue orders' },
     { key: 'allocateDispensed', num: 7, label: 'Allocate / Dispense', runnable: true },
     { key: 'reportsPrinted',    num: 8, label: 'Print reports' },
@@ -960,6 +1077,7 @@
 
     return `<div class="hmr-card">
       <div class="hmr-hdr">
+        <button class="hmr-queue-btn" id="hmr-queue-btn" title="Add this patient to the HM Process Queue">➕</button>
         <span class="hmr-title">💊 HM Process</span>
         <span class="hmr-room-chip" title="${chipLabel}">${chipLabel}</span>
         <button class="hmr-btn-start" id="hmr-btn-start" ${allChecked ? '' : 'disabled'}>▶ Start Process</button>
@@ -988,6 +1106,7 @@
 
         <div class="hmr-actions">
           <button class="hmr-btn-reset" id="hmr-btn-reset">Reset</button>
+          <button class="hmr-btn-complete" id="hmr-btn-complete" title="Mark this patient's HM Process Queue entry as Completed">✓ Complete</button>
         </div>
 
       </div>
@@ -1103,6 +1222,19 @@
       await serverSave(visitid, {}, makeLog('closed workstation'));
     });
 
+    document.getElementById('hmr-queue-btn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('hmr-queue-btn');
+      if (!window.BKN_HMQ) { alert('[HM Process Queue] Not loaded yet — reload the page and try again.'); return; }
+      const hn = await resolveHN(visitid, state);
+      if (!hn) { alert('[HM Process Queue] HN not detected.'); return; }
+      const name = detectPatientNameForQueue() || hn;
+      if (btn) btn.disabled = true;
+      const result = await window.BKN_HMQ.addCase({ hn, name, ward: '', room: '' });
+      if (btn) btn.disabled = false;
+      if (!result.ok) { alert(`[HM Process Queue] ${result.reason}`); return; }
+      await serverSave(visitid, {}, makeLog(`Added to HM Process Queue (Q${result.entry.queueNum})`));
+    });
+
     document.getElementById('hmr-detect-btn')?.addEventListener('click', async () => {
       setLoadingStatus('Fetching discharge status…');
       document.getElementById('hmr-detect-btn').disabled = true;
@@ -1143,6 +1275,37 @@
       rerender(visitid, fresh);
       await serverSave(visitid, { ...fresh, auditLog: [] }, makeLog('workstation reset'));
     });
+
+    document.getElementById('hmr-btn-complete')?.addEventListener('click', async () => {
+      const btn = document.getElementById('hmr-btn-complete');
+      if (!window.BKN_HMQ) { alert('[HM Process Queue] Not loaded yet — reload the page and try again.'); return; }
+      const hn = await resolveHN(visitid, state);
+      if (!hn) { alert('[HM Process Queue] HN not detected.'); return; }
+      if (btn) btn.disabled = true;
+      const result = await window.BKN_HMQ.completeActiveByHn(hn);
+      if (btn) btn.disabled = false;
+      if (!result.ok) { alert(`[HM Process Queue] ${result.reason}`); return; }
+      await serverSave(visitid, {}, makeLog(`HM Process Queue: Q${result.entry.queueNum} marked Completed`));
+    });
+
+    // Step 5 ▶ Run button — Med Reconcile capture
+    document.querySelector('.hmr-step-run-btn[data-step="medReconcile"]')
+      ?.addEventListener('click', async () => {
+        const runBtn = document.querySelector('.hmr-step-run-btn[data-step="medReconcile"]');
+        if (runBtn) { runBtn.disabled = true; runBtn.textContent = '⏳ Running…'; }
+        const hn = await resolveHN(visitid, state);
+        const r = await runMedReconcileAutomation(visitid, hn, setLoadingStatus);
+        if (r.ok) {
+          _state.steps.medReconcile = 'done';
+          _state.medreconcileuid    = r.medreconcileuid;
+          await serverSave(visitid, { steps: _state.steps, medreconcileuid: r.medreconcileuid }, makeLog('Med Reconcile: captured medreconcileuid'));
+          rerender(visitid, _state);
+        } else {
+          alert(`[HMR] Med Reconcile automation failed: ${r.reason}`);
+          setLoadingStatus(`Med Reconcile failed: ${r.reason}`);
+          if (runBtn) { runBtn.disabled = false; runBtn.textContent = '▶ Run'; }
+        }
+      });
 
     // Step 7 ▶ Run button
     document.querySelector('.hmr-step-run-btn[data-step="allocateDispensed"]')

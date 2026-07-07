@@ -4,6 +4,8 @@
   top: 90px;
   right: 20px;
   width: 300px;
+  min-width: 260px;
+  max-width: 640px;
   background: #fff;
   border: 1px solid #90caf9;
   border-radius: 10px;
@@ -13,6 +15,7 @@
   font-size: 12px;
   color: #263238;
   z-index: 99998;
+  resize: horizontal;
 }
 .hmq-hdr {
   display: flex;
@@ -47,7 +50,7 @@
 .hmq-min-btn:hover { background: rgba(255,255,255,.28); }
 
 #hmq-card.min .hmq-body { display: none; }
-#hmq-card.min { width: 240px; }
+#hmq-card.min { width: 240px; resize: none; }
 
 .hmq-body {
   display: flex;
@@ -162,6 +165,21 @@
 .hmq-action-btn:disabled { opacity: .5; cursor: default; }
 .hmq-done-check { flex: 0 0 auto; font-size: 10px; color: #7cb342; font-weight: 700; }
 .hmq-done-time { flex: 0 0 auto; font-size: 9.5px; color: #b0bec5; }
+
+.hmq-revert-btn {
+  flex: 0 0 auto;
+  border: none;
+  background: #fff3e0;
+  color: #e65100;
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+}
+.hmq-revert-btn:hover:not(:disabled) { background: #ffe0b2; }
+.hmq-revert-btn:disabled { opacity: .5; cursor: default; }
 
 .hmq-empty { padding: 12px 10px; font-size: 10.5px; color: #b0bec5; font-style: italic; }
 

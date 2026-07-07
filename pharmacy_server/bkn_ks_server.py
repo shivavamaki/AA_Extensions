@@ -1573,7 +1573,10 @@ def create_hmq_entry(hn, name, ward, room, added_by):
     return doc
 
 def transition_hmq_entry(entry_id, action, user):
-    """action: 'start' (new→process) or 'complete' (process→done)."""
+    """action: 'start' (new→process), 'complete' (process→done),
+    'revert-process' (done→process), or 'revert-new' (process→new). Reverts
+    clear the timestamp of the stage being undone and log the action, same
+    as forward transitions."""
     doc = load_hmq_entry(entry_id)
     if not doc:
         return None
@@ -1586,6 +1589,14 @@ def transition_hmq_entry(entry_id, action, user):
         doc['status']      = 'done'
         doc['completedAt'] = now
         doc.setdefault('auditLog', []).append({'ts': now, 'user': user, 'action': 'Completed'})
+    elif action == 'revert-process' and doc.get('status') == 'done':
+        doc['status']      = 'process'
+        doc['completedAt'] = None
+        doc.setdefault('auditLog', []).append({'ts': now, 'user': user, 'action': 'Reverted — Completed back to On Process'})
+    elif action == 'revert-new' and doc.get('status') == 'process':
+        doc['status']    = 'new'
+        doc['startedAt'] = None
+        doc.setdefault('auditLog', []).append({'ts': now, 'user': user, 'action': 'Reverted — On Process back to New Case'})
     else:
         return doc  # invalid transition — return unchanged, caller decides how to respond
     save_hmq_entry(doc)
@@ -2548,13 +2559,14 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, {'ok': True})
 
         elif rtype == 'hmq':
-            # Advance a queue entry: {'action': 'start'|'complete', 'user': name}
+            # Advance/revert a queue entry:
+            # {'action': 'start'|'complete'|'revert-process'|'revert-new', 'user': name}
             if not isinstance(body, dict):
                 self.send_json(400, {'error': 'Body must be a JSON object'}); return
             action = body.get('action')
             user   = body.get('user') or 'Unknown'
-            if action not in ('start', 'complete'):
-                self.send_json(400, {'error': "action must be 'start' or 'complete'"}); return
+            if action not in ('start', 'complete', 'revert-process', 'revert-new'):
+                self.send_json(400, {'error': "action must be 'start', 'complete', 'revert-process', or 'revert-new'"}); return
             doc = transition_hmq_entry(key, action, user)
             if doc is None:
                 self.send_json(404, {'error': 'Queue entry not found'}); return

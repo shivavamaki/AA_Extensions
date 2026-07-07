@@ -93,6 +93,23 @@
 }
 .hmr-x-btn:hover { background: rgba(255, 255, 255, 0.26); }
 
+.hmr-queue-btn {
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.12s;
+}
+.hmr-queue-btn:hover { background: rgba(255, 255, 255, 0.26); }
+
 /* Body */
 .hmr-body { padding: 11px 13px 13px; }
 
@@ -437,3 +454,19 @@
   transition: background 0.12s;
 }
 .hmr-btn-reset:hover { background: #f2f2f2; }
+
+.hmr-btn-complete {
+  padding: 7px 12px;
+  background: #e8f5e9;
+  color: #1b5e20;
+  border: 1px solid #a5d6a7;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s;
+  margin-left: auto;
+}
+.hmr-btn-complete:hover:not(:disabled) { background: #c8e6c9; }
+.hmr-btn-complete:disabled { opacity: .5; cursor: default; }

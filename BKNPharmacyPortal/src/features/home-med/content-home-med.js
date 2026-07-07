@@ -176,6 +176,23 @@
           ctx.medreconcileuid = mrMap[ctx.patientvisituid];
         }
 
+        // Fallback: the HM Process workstation's "Med Reconcile" step (▶ Run,
+        // src/features/hmr/content-hmr.js) captures + persists medreconcileuid
+        // to the HMR server record — reuse it here if this session never
+        // opened ArcusAir's Med Reconcile screen itself (e.g. a different
+        // workstation ran the capture earlier today).
+        if (!ctx.medreconcileuid && (ctx.hn || ctx.patientId) && window.BKNData && window.BKNData.serverFetch) {
+          try {
+            const hn = ctx.hn || ctx.patientId;
+            const to = new Date().toISOString().slice(0, 10);
+            const from = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+            const r = await window.BKNData.serverFetch(`/api/hmr?from=${from}&to=${to}`);
+            const list = (r && r.ok && Array.isArray(r.json)) ? r.json : [];
+            const rec = list.find((d) => d.medreconcileuid && norm(d.hn || "") === norm(hn));
+            if (rec) ctx.medreconcileuid = rec.medreconcileuid;
+          } catch (_) { /* best-effort */ }
+        }
+
         const ok = ctx.patientuid && ctx.patientvisituid && ctx.loginuid;
         console.group("[home-med] context after merge");
         console.log("patientuid      :", ctx.patientuid       || "⚠️ MISSING");

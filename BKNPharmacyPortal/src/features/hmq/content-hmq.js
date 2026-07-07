@@ -62,6 +62,16 @@
     } catch (_) { return null; }
   }
 
+  // ── Position + width persistence (per browser/workstation) ─────────────
+  const POS_KEY = 'bkn:hmqPopupPos';
+
+  function loadSavedPos() {
+    try { return JSON.parse(localStorage.getItem(POS_KEY) || 'null'); } catch (_) { return null; }
+  }
+  function patchSavedPos(patch) {
+    try { localStorage.setItem(POS_KEY, JSON.stringify({ ...(loadSavedPos() || {}), ...patch })); } catch (_) {}
+  }
+
   // ── Draggable header (same pattern as content-hmr.js's Step 7 overlay) ──
   function makeDraggable(el, handle) {
     let ox = 0, oy = 0, startX = 0, startY = 0;
@@ -84,10 +94,38 @@
         handle.style.cursor = 'grab';
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
+        const r2 = el.getBoundingClientRect();
+        patchSavedPos({ left: Math.round(r2.left), top: Math.round(r2.top) });
       }
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     });
+  }
+
+  // Native CSS `resize: horizontal` (see hmq.css) gives the user a drag handle
+  // to widen the card; ResizeObserver just persists whatever width they land on.
+  function watchResize(el) {
+    if (!window.ResizeObserver) return;
+    let saveTimer = null;
+    const ro = new ResizeObserver(() => {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        if (el.classList.contains('min')) return;
+        patchSavedPos({ width: Math.round(el.getBoundingClientRect().width) });
+      }, 400);
+    });
+    ro.observe(el);
+  }
+
+  function applySavedPos(el) {
+    const saved = loadSavedPos();
+    if (!saved) return;
+    if (saved.left != null && saved.top != null) {
+      el.style.right = 'auto';
+      el.style.left  = saved.left + 'px';
+      el.style.top   = saved.top + 'px';
+    }
+    if (saved.width) el.style.width = saved.width + 'px';
   }
 
   // ── Popup DOM ────────────────────────────────────────────────────────────
@@ -108,10 +146,12 @@
     if (entry.status === 'new') {
       actionHtml = `<button class="hmq-action-btn hmq-action-start" data-id="${entry.id}">▶ Start</button>`;
     } else if (entry.status === 'process') {
-      actionHtml = `<button class="hmq-action-btn hmq-action-done" data-id="${entry.id}">✓ Complete</button>`;
+      actionHtml = `<button class="hmq-revert-btn" data-id="${entry.id}" data-revert="revert-new" title="Revert to New Case">↺</button>
+        <button class="hmq-action-btn hmq-action-done" data-id="${entry.id}">✓ Complete</button>`;
     } else {
       const t = (entry.completedAt || '').slice(11, 16);
-      actionHtml = `<span class="hmq-done-check">✓</span><span class="hmq-done-time">${t}</span>`;
+      actionHtml = `<button class="hmq-revert-btn" data-id="${entry.id}" data-revert="revert-process" title="Revert to On Process">↺</button>
+        <span class="hmq-done-check">✓</span><span class="hmq-done-time">${t}</span>`;
     }
     return `<div class="hmq-row" data-id="${entry.id}">
       <span class="hmq-qnum">Q${entry.queueNum != null ? entry.queueNum : '?'}</span>
@@ -166,7 +206,9 @@
           </div>`).join('')}
       </div>`;
     document.body.appendChild(el);
+    applySavedPos(el);
     makeDraggable(el, document.getElementById('hmq-hdr'));
+    watchResize(el);
     wirePopup();
   }
 
@@ -186,9 +228,10 @@
     // Delegated: rows re-render on every poll, so Start/Complete/Log are wired
     // once on the card container rather than per-row.
     document.getElementById('hmq-card').addEventListener('click', async (e) => {
-      const startBtn = e.target.closest('.hmq-action-start');
-      const doneBtn  = e.target.closest('.hmq-action-done');
-      const logBtn   = e.target.closest('.hmq-log-btn');
+      const startBtn  = e.target.closest('.hmq-action-start');
+      const doneBtn   = e.target.closest('.hmq-action-done');
+      const logBtn    = e.target.closest('.hmq-log-btn');
+      const revertBtn = e.target.closest('.hmq-revert-btn');
       if (startBtn) {
         startBtn.disabled = true;
         await putTransition(startBtn.dataset.id, 'start');
@@ -196,6 +239,10 @@
       } else if (doneBtn) {
         doneBtn.disabled = true;
         await putTransition(doneBtn.dataset.id, 'complete');
+        await refreshQueue();
+      } else if (revertBtn) {
+        revertBtn.disabled = true;
+        await putTransition(revertBtn.dataset.id, revertBtn.dataset.revert);
         await refreshQueue();
       } else if (logBtn) {
         showLog(logBtn.dataset.id);
@@ -289,29 +336,55 @@
     return { ward: '', room: '' };
   }
 
-  async function onAddCaseClick() {
+  // Shared add-case logic — used by this file's own "Add new case" button
+  // (Return workbench) and exposed via window.BKN_HMQ for other content
+  // scripts (e.g. content-hmr.js's Ward View "+ Add to Queue" button) to
+  // reuse the exact same server call + duplicate handling.
+  async function addCaseFlow({ hn, name, ward, room }) {
     const L = s => console.log(`[BKN-HMQ] ${s}`);
+    if (!hn || !name) return { ok: false, reason: 'Patient name/HN missing.' };
+    L(`adding case hn=${hn} name="${name}" ward="${ward || ''}" room="${room || ''}"`);
+    const r = await postAddCase({ hn, name, ward: ward || '', room: room || '', addedBy: detectUsername() });
+    if (r && r.status === 409) {
+      const existing = r.json && r.json.existing;
+      const where = existing && existing.status === 'process' ? 'On Process' : 'New Case';
+      return {
+        ok: false, duplicate: true, existing,
+        reason: `HN ${hn} (${name}) is already in the queue — ${where}. Complete it first, or wait for it to finish.`,
+      };
+    }
+    if (!r || !r.ok) return { ok: false, reason: 'Failed to add case — check the pharmacy server connection.' };
+    ensurePopup();
+    await refreshQueue();
+    return { ok: true, entry: r.json };
+  }
+
+  async function onAddCaseClick() {
     const patient = extractPatientFromBanner();
     if (!patient) {
       alert('[HM Process Queue] Could not detect the patient name/HN — make sure a patient is selected.');
       return;
     }
     const { ward, room } = extractWardRoom();
-    L(`adding case hn=${patient.hn} name="${patient.name}" ward="${ward}" room="${room}"`);
-    const r = await postAddCase({ hn: patient.hn, name: patient.name, ward, room, addedBy: detectUsername() });
-    if (r && r.status === 409) {
-      const existing = r.json && r.json.existing;
-      const where = existing && existing.status === 'process' ? 'On Process' : 'New Case';
-      alert(`[HM Process Queue] HN ${patient.hn} (${patient.name}) is already in the queue — ${where}.\nComplete it first, or wait for it to finish.`);
-      return;
-    }
-    if (!r || !r.ok) {
-      alert('[HM Process Queue] Failed to add case — check the pharmacy server connection.');
-      return;
-    }
-    ensurePopup();
-    await refreshQueue();
+    const result = await addCaseFlow({ hn: patient.hn, name: patient.name, ward, room });
+    if (!result.ok) alert(`[HM Process Queue] ${result.reason}`);
   }
+
+  // Complete the active ("process") queue entry for this HN, if any — shared
+  // by the popup's own ✓ Complete button and exposed via window.BKN_HMQ so
+  // content-hmr.js's Ward View card can complete the same entry directly.
+  async function completeActiveByHn(hn) {
+    if (!hn) return { ok: false, reason: 'HN missing.' };
+    const list = await fetchQueue();
+    const entry = list.find(e => e.hn === hn && e.status === 'process');
+    if (!entry) return { ok: false, reason: `No active (On Process) queue entry found for HN ${hn} today.` };
+    const r = await putTransition(entry.id, 'complete');
+    if (!r || !r.ok) return { ok: false, reason: 'Failed to complete the queue entry.' };
+    await refreshQueue();
+    return { ok: true, entry: r.json };
+  }
+
+  window.BKN_HMQ = { addCase: addCaseFlow, completeActiveByHn };
 
   function injectAddCaseButton() {
     if (document.getElementById('hmq-add-btn')) return;
