@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.10.0",
-  "version_name": "2026.07.07 — HM Process Queue popup + Home Med Sheet checklist/pharmacist sign-off",
+  "version": "3.11.0",
+  "version_name": "2026.07.08 — HM Process Med Reconcile automation + Home Med Sheet reconciliation panel",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",

@@ -273,6 +273,20 @@
     return new Promise(r => setTimeout(r, ms));
   }
 
+  // Every automated click that changes the DOM/URL (page nav, menu switch,
+  // search, row select…) can pop a native/AngularMD alert or confirm dialog
+  // that would otherwise block the rest of the sequence. Escape closes
+  // AngularMaterial dialogs by default and is harmless when nothing is open,
+  // so fire it a few times after each such click rather than trying to
+  // detect every possible dialog shape.
+  async function dismissAlerts(times = 3, delay = 250) {
+    for (let i = 0; i < times; i++) {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));
+      document.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));
+      await sleep(delay);
+    }
+  }
+
   async function navigateToPharmacyWorklist() {
     const L = s => console.log(`[BKN-HMR S7] ${s}`);
     const pharmacyBtn = findSideMenuButton('Pharmacy');
@@ -281,12 +295,14 @@
     if (!findSideMenuButton('Pharmacy Worklist')) {
       L('expanding Pharmacy submenu');
       pharmacyBtn.click();
+      await dismissAlerts();
       await sleep(600);
     }
     const worklistBtn = findSideMenuButton('Pharmacy Worklist');
     L(`worklistBtn found: ${!!worklistBtn}`);
     if (!worklistBtn) return false;
     worklistBtn.click();
+    await dismissAlerts();
     L('clicked Pharmacy Worklist');
     return true;
   }
@@ -296,11 +312,12 @@
     if (!btn) {
       // Submenu may need opening
       const pharmBtn = findSideMenuButton('Pharmacy');
-      if (pharmBtn) { pharmBtn.click(); await sleep(500); }
+      if (pharmBtn) { pharmBtn.click(); await dismissAlerts(); await sleep(500); }
       btn = findSideMenuButton('Discharge List');
     }
     if (!btn) return false;
     btn.click();
+    await dismissAlerts();
     return true;
   }
 
@@ -329,6 +346,7 @@
     L(`wardBoardBtn found: ${!!wardBoardBtn}`);
     if (!wardBoardBtn) return false;
     wardBoardBtn.click();
+    await dismissAlerts();
     L('clicked Ward Board');
 
     const sidebarBtn = await _waitForEl(() => document.getElementById('LNDOpenSidebarBtn'), 20000, 300);
@@ -336,6 +354,7 @@
     if (!sidebarBtn) return false;
     await sleep(500);
     sidebarBtn.click();
+    await dismissAlerts();
 
     const wrapper = await _waitForEl(() => document.getElementById('ipdWardViewPatientWidgetMgsWrapper'), 10000, 300);
     L(`wardview wrapper found: ${!!wrapper}`);
@@ -349,6 +368,7 @@
     if (!suggBox) {
       await sleep(400);
       wrapper.click();
+      await dismissAlerts();
       suggBox = await _waitForEl(() => document.getElementById(`${baseId}SuggestedSearches`), 8000, 200);
     }
     L(`suggested-searches box found: ${!!suggBox}`);
@@ -366,6 +386,7 @@
       L(`MRN suggestion chip found: ${!!mrnChip}`);
       if (!mrnChip) return false;
       mrnChip.click();
+      await dismissAlerts();
       const found = await _waitForEl(() => {
         const c = document.getElementById(`${baseId}SelectedSearches`);
         return c && Array.from(c.querySelectorAll('.selsear-title')).find(el => el.textContent.trim() === 'MRN');
@@ -393,17 +414,40 @@
     }
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
     input.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Enter', keyCode: 13, bubbles: true }));
+    await dismissAlerts();
     L('Enter dispatched on wardview MRN search');
     return true;
   }
 
   // ── Step 5: Med Reconcile automation (captures medreconcileuid) ─────
-  // Drives EMR → Med Reconcile → View so the getdetail XHR fires; the MAIN-
-  // world tap (arcus-xhr-tap.js) already scans that call's body for
+  // Drives EMR → Med Reconcile, then STOPS on the Med Reconcile page and
+  // waits for the pharmacist to review the list and click an injected
+  // "Continue" button — only then does it open the reconciliation record
+  // (firing the getdetail XHR) and capture medreconcileuid. The MAIN-world
+  // tap (arcus-xhr-tap.js) already scans that call's body for
   // medreconcileuid and stores it in window.__arcus_medrecon__, keyed by
   // patientvisituid — same map content-home-med.js reads for the Home
-  // Medication Sheet's reconciliation panel. This step just drives the UI
-  // to trigger that capture, then reads it back via MJ_EXTRACT_ANGULAR_CTX.
+  // Medication Sheet's reconciliation panel.
+  //
+  // Job survives the EMR navigation via chrome.storage.local, same pattern
+  // as the Step 7 (Allocate/Dispense) job below.
+
+  const MEDRECON_STORE_KEY = 'bkn_hmr_medrecon';
+
+  async function saveMedReconJob(job) {
+    try { await chrome.storage.local.set({ [MEDRECON_STORE_KEY]: job }); } catch (_) {}
+  }
+  async function getMedReconJob() {
+    try {
+      const r = await chrome.storage.local.get(MEDRECON_STORE_KEY);
+      return r?.[MEDRECON_STORE_KEY] || null;
+    } catch (_) { return null; }
+  }
+  async function clearMedReconJob() {
+    try { await chrome.storage.local.remove(MEDRECON_STORE_KEY); } catch (_) {}
+  }
+
+  function isMedReconcilePage() { return location.href.includes('/emr/emrview/emr/medreconcile'); }
 
   async function _hmrWaitForUrl(substr, timeout = 15000, interval = 300) {
     const end = Date.now() + timeout;
@@ -431,13 +475,28 @@
   }
 
   async function resolvePatientVisitUid(visitid) {
-    const ctx = await _extractAngularCtx();
-    if (!ctx?.ok) return null;
-    const visitMap = ctx.data?._raw?.xhrTap?.visitMap || {};
-    const mapped   = visitid ? visitMap[visitid] : null;
-    if (mapped?.patientvisituid) return mapped.patientvisituid;
-    const sd = await getAngularScopeUIDs(visitid);
-    return sd.patientvisituid || null;
+    // Same 3-tier fallback + retry as fetchDischargeInfo() (which reliably
+    // resolves patientuid/patientvisituid for this same card) — visitMap and
+    // getAngularScopeUIDs can both legitimately come up empty, but
+    // ctx.data.patientCtx (a separate, broader Angular-scope walk done by
+    // _arcusExtractAngularCtx in background.js) is already sitting in the
+    // same ctx response and was previously never checked here.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) await sleep(1200);
+      const ctx = await _extractAngularCtx();
+      if (!ctx?.ok) continue;
+
+      const visitMap = ctx.data?._raw?.xhrTap?.visitMap || {};
+      const mapped    = visitid ? visitMap[visitid] : null;
+      if (mapped?.patientvisituid) return mapped.patientvisituid;
+
+      const sd = await getAngularScopeUIDs(visitid);
+      if (sd.patientvisituid) return sd.patientvisituid;
+
+      const pc = ctx.data?.patientCtx || {};
+      if (pc.patientvisituid) return pc.patientvisituid;
+    }
+    return null;
   }
 
   async function fetchMedReconcileUid(patientvisituid) {
@@ -446,8 +505,34 @@
     return map[patientvisituid] || null;
   }
 
-  async function runMedReconcileAutomation(visitid, hn, setStatus) {
+  // The Med Reconcile page's medication list actually loads via
+  // emr/medicationhistory/getdetails, fired automatically as soon as the page
+  // renders — before any button on it can be clicked. arcus-xhr-tap.js caches
+  // that response verbatim (there's no standalone reconcile ID in the request
+  // to "steal" — just patientuid + a date range), so read it back here
+  // instead of trying to trigger/await a fresh call.
+  async function fetchMedHistorySnapshot(patientvisituid) {
+    const ctx = await _extractAngularCtx();
+    const map = ctx?.data?._raw?.medhistoryMap || {};
+    return map[patientvisituid] || null;
+  }
+
+  // Phase 1 (triggered by the ▶ Run button): navigate EMR → Med Reconcile,
+  // then save the job and stop — the pharmacist reviews the list and clicks
+  // the injected "Continue" button (phase 2) when ready.
+  async function launchMedReconcileStep5(visitid, hn, setStatus) {
     const L = s => console.log(`[BKN-HMR MedRecon] ${s}`);
+
+    // Resolve patientvisituid NOW, while still on Ward View — visitMap /
+    // Angular-scope scanning both depend on the "Visit Details" panel DOM
+    // that only exists here. Trying to re-resolve it later on the EMR pages
+    // (different route, different DOM) is what was failing with "Could not
+    // resolve patientvisituid for this visit" — so carry it through the job
+    // instead of re-deriving it after navigating away.
+    setStatus('Med Reconcile: resolving patient visit…');
+    const patientvisituid = await resolvePatientVisitUid(visitid);
+    L(`patientvisituid resolved up front: ${patientvisituid}`);
+    if (!patientvisituid) return { ok: false, reason: 'Could not resolve patientvisituid for this visit — try re-opening the patient in Ward View' };
 
     setStatus('Med Reconcile: opening EMR…');
     const viewEmrBtn = document.getElementById('opdvisitviewemrlanding');
@@ -455,6 +540,7 @@
     if (!viewEmrBtn) return { ok: false, reason: 'View EMR button not found — select the patient in Ward View first' };
     if (viewEmrBtn.disabled) return { ok: false, reason: 'View EMR button is disabled for this patient' };
     viewEmrBtn.click();
+    await dismissAlerts();
 
     const onLanding = await _hmrWaitForUrl('/emr/emrview/emr/ipdlanding');
     L(`reached ipdlanding: ${onLanding}`);
@@ -468,35 +554,94 @@
     L(`medReconBtn found: ${!!medReconBtn}`);
     if (!medReconBtn) return { ok: false, reason: 'Med Reconcile menu button not found' };
     medReconBtn.click();
+    await dismissAlerts();
 
     const onMedRecon = await _hmrWaitForUrl('/emr/emrview/emr/medreconcile');
     L(`reached medreconcile: ${onMedRecon}`);
     if (!onMedRecon) return { ok: false, reason: 'Timed out waiting for the Med Reconcile page' };
-    await sleep(700);
 
-    setStatus('Med Reconcile: opening reconciliation record…');
-    const viewBtn = await _hmrWaitForEl(() =>
-      document.getElementById('viewMedReconcile0') || document.querySelector('[id^="viewMedReconcile"]')
-    );
-    L(`viewBtn found: ${!!viewBtn}`);
-    if (!viewBtn) return { ok: false, reason: 'No reconciliation record found for this visit' };
-    if (viewBtn.disabled) return { ok: false, reason: 'Reconciliation record is not active (isactive=false)' };
-    viewBtn.click();
-    await sleep(1200);   // let the getdetail XHR fire + the MAIN-world tap capture it
+    _medreconNoJob = false;
+    await saveMedReconJob({ visitid, hn, patientvisituid });
+    setStatus('Med Reconcile: review the list, then click Continue on this page.');
+    return { ok: true, waiting: true };
+  }
 
-    setStatus('Med Reconcile: capturing medreconcileuid…');
-    const patientvisituid = await resolvePatientVisitUid(visitid);
-    L(`patientvisituid resolved: ${patientvisituid}`);
-    if (!patientvisituid) return { ok: false, reason: 'Could not resolve patientvisituid for this visit' };
+  // Phase 2 (▶ Continue button injected on the Med Reconcile page): read back
+  // the medicationhistory/getdetails snapshot arcus-xhr-tap.js already
+  // cached when the page loaded (no button click needed to trigger it — see
+  // fetchMedHistorySnapshot), persist it + mark the step done, then return
+  // to Ward View.
+  async function _continueMedReconcile(job) {
+    const L = s => console.log(`[BKN-HMR MedRecon] ${s}`);
+    const btn = document.getElementById('hmr-medrecon-continue-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Working…'; }
 
-    let mu = await fetchMedReconcileUid(patientvisituid);
-    for (let i = 0; i < 6 && !mu; i++) { await sleep(500); mu = await fetchMedReconcileUid(patientvisituid); }
-    L(`medreconcileuid: ${mu}`);
-    if (!mu) return { ok: false, reason: 'medreconcileuid was not captured — the getdetail call may not have fired' };
+    const fail = (reason) => {
+      L(`failed: ${reason}`);
+      alert(`[HM Process] Med Reconcile: ${reason}`);
+      if (btn) { btn.disabled = false; btn.textContent = '▶ Continue'; }
+    };
 
-    setStatus('Med Reconcile: returning to Ward View…');
-    await navigateToWardViewAndSearchHN(hn || visitid);
-    return { ok: true, medreconcileuid: mu };
+    // Resolved up front in launchMedReconcileStep5 while still on Ward View
+    // (see that function's comment) — re-resolving it here on the EMR page
+    // is what used to fail with "Could not resolve patientvisituid".
+    const patientvisituid = job.patientvisituid || await resolvePatientVisitUid(job.visitid);
+    L(`patientvisituid: ${patientvisituid}`);
+    if (!patientvisituid) return fail('Could not resolve patientvisituid for this visit — re-run this step from Ward View');
+
+    // The list's own getdetails call already fired when the page rendered,
+    // so this should already be cached — poll briefly in case it's still in
+    // flight (slow network, or the page just finished navigating).
+    let snapshot = await fetchMedHistorySnapshot(patientvisituid);
+    for (let i = 0; i < 8 && !snapshot; i++) { await sleep(500); snapshot = await fetchMedHistorySnapshot(patientvisituid); }
+    L(`medhistory snapshot captured: ${!!snapshot}`);
+    if (!snapshot) return fail('Reconciliation data was not captured — reload this Med Reconcile page and try again');
+
+    // Also grab a medreconcileuid if this session ever produces one (e.g. a
+    // different ArcusAir call shape) — best-effort, not required.
+    const mu = await fetchMedReconcileUid(patientvisituid);
+
+    // Read-merge-write: don't clobber other steps that may already be saved.
+    const doc   = (await serverLoad(job.visitid)) || {};
+    const steps = { ...(doc.steps || {}), medReconcile: 'done' };
+    const patch = { steps, medreconcileSnapshot: snapshot };
+    if (mu) patch.medreconcileuid = mu;
+    await serverSave(job.visitid, patch, makeLog('Med Reconcile: captured reconciliation snapshot'));
+
+    await clearMedReconJob();
+    document.getElementById('hmr-medrecon-continue-btn')?.remove();
+    await navigateToWardViewAndSearchHN(job.hn || job.visitid);
+  }
+
+  // ── Med Reconcile page: inject the "Continue" button next to eConsent ──
+
+  let _medreconObsScheduled = false;
+  let _medreconNoJob        = false;
+
+  function _findEconsentAnchor() {
+    return document.querySelector('span[aria-label="eConsent"]');
+  }
+
+  async function handleMedReconOnPage() {
+    if (_medreconObsScheduled || _medreconNoJob) return;
+    _medreconObsScheduled = true;
+
+    const job = await getMedReconJob();
+    if (!job) { _medreconNoJob = true; _medreconObsScheduled = false; return; }
+    if (document.getElementById('hmr-medrecon-continue-btn')) { _medreconObsScheduled = false; return; }
+
+    const anchor = _findEconsentAnchor();
+    if (!anchor) { _medreconObsScheduled = false; return; }   // try again on next mutation tick
+
+    const btn = document.createElement('button');
+    btn.id = 'hmr-medrecon-continue-btn';
+    btn.type = 'button';
+    btn.className = 'hmr-medrecon-continue-btn';
+    btn.textContent = '▶ Continue';
+    btn.title = 'Open the reconciliation record and capture it for the HM Process';
+    btn.addEventListener('click', () => _continueMedReconcile(job));
+    anchor.after(btn);
+    _medreconObsScheduled = false;
   }
 
   // ── Worklist search helper ───────────────────────────────────────────
@@ -533,6 +678,7 @@
     const chipsVisible = () => document.querySelectorAll('span.sugsear-title').length > 0;
     if (!chipsVisible()) {
       wrapper.click();
+      await dismissAlerts();
       await sleep(500);
     }
 
@@ -542,6 +688,7 @@
     L(`MRN chip: ${mrnChip ? '#' + mrnChip.id : 'NOT FOUND'}`);
     if (!mrnChip) return false;
     mrnChip.click();
+    await dismissAlerts();
 
     // 4. Wait for hasParams input to appear (Angular needs a digest cycle after chip click).
     let input = null;
@@ -572,6 +719,7 @@
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
       input.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Enter', keyCode: 13, bubbles: true }));
     }
+    await dismissAlerts();
     L(`HN "${hn}" dispatched to #${input.id}`);
 
     // 7. Wait for the first result row and click it to select the patient.
@@ -584,7 +732,7 @@
       if (row) break;
     }
     L(`result row: ${row ? '#' + row.id : 'NOT FOUND after 4s'}`);
-    if (row) row.click();
+    if (row) { row.click(); await dismissAlerts(); }
 
     // Stop re-processing — job is handed off to the pharmacist now.
     _step7NoJob = true;
@@ -986,6 +1134,7 @@
         reportsPrinted:    'pending',
       },
       medreconcileuid: null,
+      medreconcileSnapshot: null,
       lastModifiedBy: detectUsername(),
       lastModifiedAt: new Date().toISOString(),
       auditLog:    [],
@@ -1288,19 +1437,32 @@
       await serverSave(visitid, {}, makeLog(`HM Process Queue: Q${result.entry.queueNum} marked Completed`));
     });
 
-    // Step 5 ▶ Run button — Med Reconcile capture
+    // Step 5 ▶ Run button — Med Reconcile: navigates to the Med Reconcile
+    // page and stops there; the pharmacist reviews the list and clicks the
+    // injected "Continue" button, which finishes the capture and marks this
+    // step done (see _continueMedReconcile / handleMedReconOnPage).
     document.querySelector('.hmr-step-run-btn[data-step="medReconcile"]')
       ?.addEventListener('click', async () => {
         const runBtn = document.querySelector('.hmr-step-run-btn[data-step="medReconcile"]');
-        if (runBtn) { runBtn.disabled = true; runBtn.textContent = '⏳ Running…'; }
-        const hn = await resolveHN(visitid, state);
-        const r = await runMedReconcileAutomation(visitid, hn, setLoadingStatus);
-        if (r.ok) {
-          _state.steps.medReconcile = 'done';
-          _state.medreconcileuid    = r.medreconcileuid;
-          await serverSave(visitid, { steps: _state.steps, medreconcileuid: r.medreconcileuid }, makeLog('Med Reconcile: captured medreconcileuid'));
+        if (runBtn) { runBtn.disabled = true; runBtn.textContent = '⏳ Checking…'; }
+
+        // Server first — a fresh load (not the possibly-stale in-memory
+        // _state) in case a different workstation already captured this
+        // visit's reconciliation data since we opened this card.
+        const fresh = await serverLoad(visitid);
+        if (fresh?.medreconcileSnapshot || fresh?.medreconcileuid) {
+          _state.steps.medReconcile     = 'done';
+          _state.medreconcileuid        = fresh.medreconcileuid || null;
+          _state.medreconcileSnapshot   = fresh.medreconcileSnapshot || null;
           rerender(visitid, _state);
-        } else {
+          await serverSave(visitid, { steps: _state.steps }, makeLog('Med Reconcile: already captured (found on server)'));
+          return;
+        }
+
+        if (runBtn) runBtn.textContent = '⏳ Running…';
+        const hn = await resolveHN(visitid, state);
+        const r = await launchMedReconcileStep5(visitid, hn, setLoadingStatus);
+        if (!r.ok) {
           alert(`[HMR] Med Reconcile automation failed: ${r.reason}`);
           setLoadingStatus(`Med Reconcile failed: ${r.reason}`);
           if (runBtn) { runBtn.disabled = false; runBtn.textContent = '▶ Run'; }
@@ -1389,6 +1551,14 @@
   }
 
   function syncUI() {
+    // ── Med Reconcile page: inject the pending "Continue" button ──────
+    if (isMedReconcilePage()) {
+      if (!document.getElementById('hmr-medrecon-continue-btn')) {
+        handleMedReconOnPage();
+      }
+      return;
+    }
+
     // ── Pharmacy Worklist: handle pending step 7 job ──────────────────
     if (isPharmacyWorklist()) {
       if (!document.getElementById('hmr-step7-overlay')) {

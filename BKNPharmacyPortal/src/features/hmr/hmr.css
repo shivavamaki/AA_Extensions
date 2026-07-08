@@ -470,3 +470,25 @@
 }
 .hmr-btn-complete:hover:not(:disabled) { background: #c8e6c9; }
 .hmr-btn-complete:disabled { opacity: .5; cursor: default; }
+
+/* Injected on ArcusAir's own Med Reconcile page (src/features/hmr/content-hmr.js
+   Step 5) — deliberately bold/high-contrast since it sits inside a native
+   ArcusAir toolbar, not our own card. */
+.hmr-medrecon-continue-btn {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #1565c0, #1e88e5);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: "Segoe UI", Arial, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(21,101,192,.35);
+  vertical-align: middle;
+}
+.hmr-medrecon-continue-btn:hover:not(:disabled) { background: linear-gradient(135deg, #0d47a1, #1565c0); }
+.hmr-medrecon-continue-btn:disabled { opacity: .6; cursor: default; }

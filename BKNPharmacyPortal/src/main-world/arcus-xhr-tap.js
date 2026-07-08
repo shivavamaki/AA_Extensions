@@ -220,13 +220,22 @@
      opens the Med Reconcile screen (the only place the uid appears). Later, on
      the Dispense Workbench in the same SPA tab, the journey can look it up. */
   window.__arcus_medrecon__ = window.__arcus_medrecon__ || {};
+  /* The Med Reconcile page's medication list actually loads via
+     emr/medicationhistory/getdetails, fired automatically as soon as the page
+     starts rendering — before any button on that page can be clicked. Its
+     request body carries no standalone reconcile ID at all (just patientuid +
+     a date range), so there's nothing to "click to trigger" — we cache the
+     RESPONSE verbatim, keyed by patientvisituid, and let the extension read
+     it directly instead of trying to replay this query itself later. */
+  window.__arcus_medhistory__ = window.__arcus_medhistory__ || {};
   var ID24 = /([a-f0-9]{24})/i;
 
   var _origOpen = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function (method, url) {
     try {
       _scan(String(url));
-      this.__bkn_medrecon  = /\/medreconcile\//i.test(String(url));
+      this.__bkn_medrecon    = /\/medreconcile\//i.test(String(url));
+      this.__bkn_medhistory  = /\/medicationhistory\/getdetails/i.test(String(url));
       // Flag inpatient API calls — their RESPONSES carry patientvisituid in JSON
       // even though the request URL uses path-params (not query-params).
       this.__bkn_scan_resp = /\/inpatient\//i.test(String(url));
@@ -250,12 +259,28 @@
     try {
       if (this.__bkn_medrecon && typeof body === 'string') {
         var mu = '';
-        try { var jb = JSON.parse(body); mu = jb.medreconcileuid || ''; } catch (_) {}
-        if (!mu) { var mm = ID24.exec(body); if (mm) mu = mm[1]; }
+        var jb = null;
+        try { jb = JSON.parse(body); mu = jb.medreconcileuid || ''; } catch (_) {}
+        // Only fall back to a bare-ID scan when the body has no patientuid
+        // object of its own — otherwise this wrongly grabs patientuid._id.
+        if (!mu && !(jb && jb.patientuid)) { var mm = ID24.exec(body); if (mm) mu = mm[1]; }
         var vid = window.__arcus_pctx__.patientvisituid || '';
         if (mu && vid) window.__arcus_medrecon__[vid] = String(mu);
       }
     } catch (_) {}
+    // Cache the medicationhistory/getdetails RESPONSE verbatim (see comment
+    // above) — this fires on page load, not on a button click, so it must be
+    // captured passively here rather than awaited after the fact.
+    if (this.__bkn_medhistory) {
+      var _xhr2 = this;
+      _xhr2.addEventListener('load', function () {
+        if (_xhr2.status !== 200) return;
+        try {
+          var vid2 = window.__arcus_pctx__.patientvisituid || '';
+          if (vid2) window.__arcus_medhistory__[vid2] = JSON.parse(_xhr2.responseText);
+        } catch (_) {}
+      }, { once: true, passive: true });
+    }
     return _origSend.apply(this, arguments);
   };
   var _origFetch = window.fetch;

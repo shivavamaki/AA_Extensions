@@ -169,28 +169,32 @@
         const hdrs = (pageCtx._raw && pageCtx._raw.arcusHdrs) || {};
         if (hdrs["incus-token"]) ctx.incusToken = hdrs["incus-token"];
 
-        // medreconcileuid for THIS visit, captured when the pharmacist opened
-        // the Med Reconcile screen earlier this session (keyed by visituid).
-        const mrMap = (pageCtx._raw && pageCtx._raw.medreconMap) || {};
-        if (ctx.patientvisituid && mrMap[ctx.patientvisituid]) {
-          ctx.medreconcileuid = mrMap[ctx.patientvisituid];
-        }
-
-        // Fallback: the HM Process workstation's "Med Reconcile" step (▶ Run,
-        // src/features/hmr/content-hmr.js) captures + persists medreconcileuid
-        // to the HMR server record — reuse it here if this session never
-        // opened ArcusAir's Med Reconcile screen itself (e.g. a different
-        // workstation ran the capture earlier today).
-        if (!ctx.medreconcileuid && (ctx.hn || ctx.patientId) && window.BKNData && window.BKNData.serverFetch) {
+        // Reconciliation data for THIS visit. The server is the source of
+        // truth — the HM Process workstation's "Med Reconcile" step (▶ Run,
+        // src/features/hmr/content-hmr.js) persists the captured
+        // medicationhistory/getdetails snapshot to the HMR record as soon as
+        // it's captured, so any workstation can reuse it without re-running
+        // the EMR navigation. Check there first.
+        if ((ctx.hn || ctx.patientId) && window.BKNData && window.BKNData.serverFetch) {
           try {
             const hn = ctx.hn || ctx.patientId;
             const to = new Date().toISOString().slice(0, 10);
             const from = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString().slice(0, 10);
             const r = await window.BKNData.serverFetch(`/api/hmr?from=${from}&to=${to}`);
             const list = (r && r.ok && Array.isArray(r.json)) ? r.json : [];
-            const rec = list.find((d) => d.medreconcileuid && norm(d.hn || "") === norm(hn));
-            if (rec) ctx.medreconcileuid = rec.medreconcileuid;
+            const rec = list.find((d) => (d.medreconcileSnapshot || d.medreconcileuid) && norm(d.hn || "") === norm(hn));
+            if (rec) {
+              if (rec.medreconcileSnapshot) ctx.medreconcileSnapshot = rec.medreconcileSnapshot;
+              if (rec.medreconcileuid)      ctx.medreconcileuid      = rec.medreconcileuid;
+            }
           } catch (_) { /* best-effort */ }
+        }
+
+        // Fallback: this session's own live capture (keyed by visituid) —
+        // only used if the server doesn't have a snapshot/uid yet for this visit.
+        const mrMap = (pageCtx._raw && pageCtx._raw.medreconMap) || {};
+        if (!ctx.medreconcileSnapshot && !ctx.medreconcileuid && ctx.patientvisituid && mrMap[ctx.patientvisituid]) {
+          ctx.medreconcileuid = mrMap[ctx.patientvisituid];
         }
 
         const ok = ctx.patientuid && ctx.patientvisituid && ctx.loginuid;
