@@ -68,9 +68,12 @@ window.BKN_HMQ = {
   is rejected (`409`) if that HN already has a `new` or `process` entry
   today; allowed if its only entries today are `done`.
 - **Storage**: one live JSON file per entry (`data/hmq/HMQ-YYYYMMDD-NNNN.json`).
-  A nightly job at 23:00 (`_hmq_nightly_merge`, same pattern as HMR's) folds
-  the day's live files into `data/hmq/DAY_YYYY-MM-DD.json` and deletes them —
-  `load_all_hmq()` transparently merges live + archived when answering `GET`.
+  A nightly job at 23:00 (`_hmq_nightly_merge`) archives only `done` entries
+  into `data/hmq/DAY_YYYY-MM-DD.json` and deletes just those live files —
+  `new`/`process` entries are left as live files, untouched, so a patient
+  still mid-case stays on the active queue overnight instead of being
+  archived away before they're actually complete. `load_all_hmq()`
+  transparently merges live + archived when answering `GET` either way.
 - **Revert transitions** clear the timestamp of the stage being undone
   (`completedAt`/`startedAt` → `null`) and append an audit-log entry, same as
   forward transitions.

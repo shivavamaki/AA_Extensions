@@ -73,20 +73,26 @@
   }
 
   // ── Draggable header (same pattern as content-hmr.js's Step 7 overlay) ──
-  function makeDraggable(el, handle) {
-    let ox = 0, oy = 0, startX = 0, startY = 0;
+  // `handle` may itself be a <button> (the minimized FAB) — in that case a
+  // plain click still needs to work, so a real drag is only recognized once
+  // the pointer has moved past a small threshold; a click-sized mousedown+up
+  // fires `opts.onClick` instead of saving a position.
+  function makeDraggable(el, handle, opts = {}) {
+    let ox = 0, oy = 0, startX = 0, startY = 0, moved = false;
     handle.style.cursor = 'grab';
     handle.addEventListener('mousedown', e => {
-      if (e.target.closest('button')) return;
+      const btn = e.target.closest('button');
+      if (btn && btn !== handle) return;
       e.preventDefault();
       startX = e.clientX; startY = e.clientY;
+      moved = false;
       const r = el.getBoundingClientRect();
       ox = r.left; oy = r.top;
-      el.style.right = 'auto';
-      el.style.left = ox + 'px';
-      el.style.top  = oy + 'px';
       handle.style.cursor = 'grabbing';
       function onMove(e) {
+        if (!moved && (Math.abs(e.clientX - startX) > 3 || Math.abs(e.clientY - startY) > 3)) moved = true;
+        if (!moved) return;
+        el.style.right = 'auto';
         el.style.left = (ox + e.clientX - startX) + 'px';
         el.style.top  = (oy + e.clientY - startY) + 'px';
       }
@@ -94,8 +100,12 @@
         handle.style.cursor = 'grab';
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
-        const r2 = el.getBoundingClientRect();
-        patchSavedPos({ left: Math.round(r2.left), top: Math.round(r2.top) });
+        if (moved) {
+          const r2 = el.getBoundingClientRect();
+          patchSavedPos({ left: Math.round(r2.left), top: Math.round(r2.top) });
+        } else if (typeof opts.onClick === 'function') {
+          opts.onClick();
+        }
       }
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
@@ -117,15 +127,33 @@
     ro.observe(el);
   }
 
+  // Default anchor (first run, before the user has ever dragged the popup):
+  // sit just to the right of Ward View's "Ward Board" toolbar title instead
+  // of an arbitrary fixed corner. Only present on Ward View — falls back to
+  // the CSS default (top-right corner) on the Return workbench.
+  function findWardBoardTitle() {
+    for (const span of document.querySelectorAll('h3.toolBarTitleCont span.toolbar-title')) {
+      if (norm(span.textContent) === 'Ward Board') return span.closest('h3');
+    }
+    return null;
+  }
+
   function applySavedPos(el) {
     const saved = loadSavedPos();
-    if (!saved) return;
-    if (saved.left != null && saved.top != null) {
+    if (saved && saved.left != null && saved.top != null) {
       el.style.right = 'auto';
       el.style.left  = saved.left + 'px';
       el.style.top   = saved.top + 'px';
+    } else {
+      const anchor = findWardBoardTitle();
+      if (anchor) {
+        const r = anchor.getBoundingClientRect();
+        el.style.right = 'auto';
+        el.style.left  = (r.right + 16) + 'px';
+        el.style.top   = Math.max(8, r.top - 4) + 'px';
+      }
     }
-    if (saved.width) el.style.width = saved.width + 'px';
+    if (saved && saved.width) el.style.width = saved.width + 'px';
   }
 
   // ── Popup DOM ────────────────────────────────────────────────────────────
@@ -169,6 +197,8 @@
     if (!card) return;
     const totalBadge = card.querySelector('#hmq-total-badge');
     if (totalBadge) totalBadge.textContent = String(_queue.length);
+    const fabBadge = card.querySelector('#hmq-fab-badge');
+    if (fabBadge) fabBadge.textContent = String(_queue.length);
 
     SECTIONS.forEach(sec => {
       const rows = _queue
@@ -189,6 +219,9 @@
     const el = document.createElement('div');
     el.id = 'hmq-card';
     el.innerHTML = `
+      <button class="hmq-fab" id="hmq-fab" title="Expand HM Process Queue">
+        📋<span class="hmq-fab-badge" id="hmq-fab-badge">0</span>
+      </button>
       <div class="hmq-hdr" id="hmq-hdr">
         <span class="hmq-title">📋 HM Process Queue</span>
         <span class="hmq-total-badge" id="hmq-total-badge">0</span>
@@ -207,18 +240,24 @@
       </div>`;
     document.body.appendChild(el);
     applySavedPos(el);
+    if ((loadSavedPos() || {}).minimized) el.classList.add('min');
     makeDraggable(el, document.getElementById('hmq-hdr'));
+    // The FAB is itself the drag handle while minimized — a real drag (past
+    // the movement threshold) repositions it, a plain click re-expands it.
+    makeDraggable(el, document.getElementById('hmq-fab'), {
+      onClick: () => {
+        el.classList.remove('min');
+        patchSavedPos({ minimized: false });
+      },
+    });
     watchResize(el);
     wirePopup();
   }
 
   function wirePopup() {
     document.getElementById('hmq-min-btn').addEventListener('click', () => {
-      const card = document.getElementById('hmq-card');
-      const btn  = document.getElementById('hmq-min-btn');
-      const minimized = card.classList.toggle('min');
-      btn.textContent = minimized ? '+' : '−';
-      btn.title       = minimized ? 'Expand' : 'Minimize';
+      document.getElementById('hmq-card').classList.add('min');
+      patchSavedPos({ minimized: true });
     });
 
     document.querySelectorAll('#hmq-card .hmq-sec-hdr').forEach(hdr => {

@@ -49,8 +49,53 @@
 }
 .hmq-min-btn:hover { background: rgba(255,255,255,.28); }
 
+/* Minimized: collapse the whole card (header + body) down to a single
+   floating button rather than leaving a shrunken header bar behind. */
+#hmq-card.min {
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  resize: none;
+  overflow: visible;
+}
+#hmq-card.min .hmq-hdr,
 #hmq-card.min .hmq-body { display: none; }
-#hmq-card.min { width: 240px; resize: none; }
+#hmq-card:not(.min) .hmq-fab { display: none; }
+
+.hmq-fab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid #90caf9;
+  background: linear-gradient(135deg, #1565c0, #1e88e5);
+  box-shadow: 0 6px 18px rgba(21,101,192,.28), 0 2px 6px rgba(0,0,0,.12);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+}
+.hmq-fab:hover { filter: brightness(1.08); }
+.hmq-fab-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #e53935;
+  color: #fff;
+  border-radius: 999px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 16px;
+  border: 1px solid #fff;
+}
 
 .hmq-body {
   display: flex;
