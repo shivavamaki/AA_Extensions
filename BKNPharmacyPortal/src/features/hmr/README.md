@@ -69,27 +69,45 @@ The pharmacist reviews the Med Reconcile list, then clicks a **"▶ Continue"**
 button injected by `handleMedReconOnPage()` next to the page's eConsent icon
 (`span[aria-label="eConsent"]`) — reappears across Angular route
 re-renders via the same `MutationObserver` that drives ward-view sync.
-Continuing (`_continueMedReconcile`) reads back
-`window.__arcus_medhistory__[patientvisituid]` — a snapshot of ArcusAir's own
-`emr/medicationhistory/getdetails` response, which fires **automatically when
-the Med Reconcile page loads** (before any button click), so
-`arcus-xhr-tap.js`/`background.js` cache it passively rather than trying to
-trigger/await it. That snapshot is persisted as `medreconcileSnapshot` on the
-HMR record (read-merge-write, so it never clobbers other steps), the step is
-marked done, and the flow returns to Ward View via
-`navigateToWardViewAndSearchHN(hn)`.
+
+Continuing (`_continueMedReconcile`) captures reconciliation data from two
+sources, preferring the first:
+
+1. **`medreconcileuid`** — `_clickFirstMedReconcileViewButton()` clicks
+   `#viewMedReconcile0`, the **View** button on the list's newest row (ArcusAir
+   sorts newest-first, so index 0 is always this admission's record). That
+   click fires `ordermanagement/medreconcile/getdetail`, which — unlike
+   `medicationhistory/getdetails` below — carries `{"medreconcileuid": "..."}`
+   in its own **request body**. `arcus-xhr-tap.js`/`background.js` grab it from
+   there into `window.__arcus_medrecon__[patientvisituid]`; `_continueMedReconcile`
+   polls for up to ~2.4s after the click for it to land. Best-effort: if the
+   button is missing/disabled (no record prepared yet for this admission),
+   this just no-ops and falls through to (2).
+2. **`medreconcileSnapshot`** — `window.__arcus_medhistory__[patientvisituid]`,
+   a passive cache of ArcusAir's own `emr/medicationhistory/getdetails`
+   response, which fires **automatically when the Med Reconcile page loads**
+   (before any button click) — kept as a fallback source only.
+
+Whichever of the two is captured (or both) is persisted onto the HMR record
+(read-merge-write, so it never clobbers other steps), the step is marked
+done, and the flow returns to Ward View via `navigateToWardViewAndSearchHN(hn)`.
+It only fails outright if **neither** source produced anything.
 
 Clicking ▶ Run always re-checks the server first
-(`serverLoad(visitid).medreconcileSnapshot`) — if a different workstation
-already captured this visit's reconciliation data, the whole EMR navigation is
-skipped.
+(`serverLoad(visitid).medreconcileuid || .medreconcileSnapshot`) — if a
+different workstation already captured this visit's reconciliation data, the
+whole EMR navigation is skipped.
 
 `page-home-med.js`'s reconciliation panel (see
-[`../home-med/README.md`](../home-med/README.md)) is the consumer of
-`medreconcileSnapshot` — `bkn_ks_server.py`'s `build_reconcile_meds_from_snapshot()`
-parses it, trying several plausible container keys since the exact response
-shape hasn't been confirmed against a live capture; treat an empty parse as
-"shape not recognized yet," not "no reconciliation data."
+[`../home-med/README.md`](../home-med/README.md)) is the consumer.
+`bkn_ks_server.py`'s `_resolve_reconcile_meds()` prefers a live
+`fetch_arcus_medreconcile()` call using the stored `medreconcileuid` — the
+exact endpoint + shape `build_reconcile_meds_for_home_med()` was written for,
+and it works even on a later day as long as a fresh `incusToken` is supplied.
+It only falls back to `build_reconcile_meds_from_snapshot()` (which tries
+several plausible container keys, since `medreconcileSnapshot`'s exact
+response shape has never been confirmed) if no `medreconcileuid` is
+available or the live call fails.
 
 ## Step 7 — Allocate / Dispense (semi-automated, cross-page job)
 
@@ -124,6 +142,16 @@ Two buttons call the shared API `window.BKN_HMQ` exposed by
 - **✓ Complete** (next to Reset) → `BKN_HMQ.completeActiveByHn(hn)`, completing
   this patient's active ("On Process") queue entry from wherever it currently
   is, without needing the floating popup open.
+
+`maybeAutoAddToQueue()` also calls `BKN_HMQ.addCase` automatically — with no
+button click — whenever `fetchDischargeInfo()` resolves a raw `dischargestage`
+of `1` (Discharge Advice) or `2` (Discharge Order), i.e. as soon as the ward
+has started the discharge process. It's wired into both places discharge
+info gets (re)fetched: opening the workstation (`onTriggerClick`) and the
+manual **↻ Detect** button. It's safe to call repeatedly — the server's own
+duplicate guard (`hmq_find_active_by_hn`) silently no-ops if the HN already
+has an active `new`/`process` entry today — so failures are logged to the
+console rather than surfaced to the pharmacist.
 
 ## Alert dismissal
 

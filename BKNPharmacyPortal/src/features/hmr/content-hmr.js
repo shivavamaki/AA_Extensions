@@ -154,17 +154,21 @@
 
         const dp = r.json.dischargeprocess;
         if (dp === null && attempt < 2) continue;
-        if (dp === null) return { status: 'Not ready', homemedordered: null, openordersprocessed: null, pharmacyreturnscompleted: null };
+        if (dp === null) return { status: 'Not ready', dischargeStage: null, homemedordered: null, openordersprocessed: null, pharmacyreturnscompleted: null };
 
-        let status;
-        if (dp.finaldischargedon)        status = 'Final Discharge';
-        else if (dp.medicaldischargedon) status = 'Medical Discharge';
-        else if (dp.dischargeorderedon)  status = 'Discharge Order';
-        else if (dp.dischargeadvicedon)  status = 'Discharge Advice';
-        else                             status = DISCHARGE_STAGE[dp.dischargestage] || 'In Progress';
+        let status, dischargeStage;
+        if (dp.finaldischargedon)        { status = 'Final Discharge';   dischargeStage = 4; }
+        else if (dp.medicaldischargedon) { status = 'Medical Discharge'; dischargeStage = 3; }
+        else if (dp.dischargeorderedon)  { status = 'Discharge Order';   dischargeStage = 2; }
+        else if (dp.dischargeadvicedon)  { status = 'Discharge Advice';  dischargeStage = 1; }
+        else {
+          dischargeStage = dp.dischargestage ?? null;
+          status = DISCHARGE_STAGE[dischargeStage] || 'In Progress';
+        }
 
         return {
           status,
+          dischargeStage,
           homemedordered:           typeof dp.homemedordered           === 'boolean' ? dp.homemedordered           : null,
           openordersprocessed:      typeof dp.openordersprocessed      === 'boolean' ? dp.openordersprocessed      : null,
           pharmacyreturnscompleted: typeof dp.pharmacyreturnscompleted === 'boolean' ? dp.pharmacyreturnscompleted : null,
@@ -175,7 +179,7 @@
   }
 
   function _emptyDi() {
-    return { status: null, homemedordered: null, openordersprocessed: null, pharmacyreturnscompleted: null };
+    return { status: null, dischargeStage: null, homemedordered: null, openordersprocessed: null, pharmacyreturnscompleted: null };
   }
 
   function applyDischargeInfo(state, di) {
@@ -183,6 +187,30 @@
     state.checklist.homemedordered   = di.homemedordered;
     state.checklist.medReturned      = di.pharmacyreturnscompleted;
     state.steps.continueOrdersOff    = di.openordersprocessed === true ? 'done' : 'pending';
+  }
+
+  // Discharge stage 1 (Discharge Advice) / 2 (Discharge Order) means the ward
+  // has started the discharge process — auto-enqueue the patient into the HM
+  // Process Queue instead of waiting for the pharmacist to click "+ Add to
+  // Queue" by hand. Best-effort/silent: the server's own duplicate guard
+  // (active 'new'/'process' entry for this HN today) makes this safe to call
+  // every time discharge info is (re)fetched, so failures are just logged.
+  async function maybeAutoAddToQueue(visitid, state, di) {
+    if (di.dischargeStage !== 1 && di.dischargeStage !== 2) return;
+    if (!window.BKN_HMQ) return;
+    try {
+      const hn = await resolveHN(visitid, state);
+      if (!hn) return;
+      const name = detectPatientNameForQueue() || hn;
+      const result = await window.BKN_HMQ.addCase({ hn, name, ward: '', room: '' });
+      if (result.ok) {
+        await serverSave(visitid, {}, makeLog(`Auto-added to HM Process Queue (Q${result.entry.queueNum}) — ${di.status}`));
+      } else {
+        console.log(`[BKN-HMR] auto-add to queue skipped: ${result.reason}`);
+      }
+    } catch (e) {
+      console.log(`[BKN-HMR] auto-add to queue failed: ${e}`);
+    }
   }
 
   // ── Server persistence ───────────────────────────────────────────────
@@ -566,11 +594,29 @@
     return { ok: true, waiting: true };
   }
 
-  // Phase 2 (▶ Continue button injected on the Med Reconcile page): read back
-  // the medicationhistory/getdetails snapshot arcus-xhr-tap.js already
-  // cached when the page loaded (no button click needed to trigger it — see
-  // fetchMedHistorySnapshot), persist it + mark the step done, then return
-  // to Ward View.
+  // Force ordermanagement/medreconcile/getdetail to fire by clicking the
+  // most recent reconciliation record's "View" button (viewMedReconcile0 —
+  // the list is newest-first, so index 0 is the current admission's record).
+  // Unlike medicationhistory/getdetails (auto-fired, no id in the request),
+  // this call only carries {"medreconcileuid": "..."} in its OWN request
+  // body if something actually triggers it — the MAIN-world tap
+  // (arcus-xhr-tap.js/background.js) can only grab it once this click
+  // happens. Best-effort: if the button is missing or disabled (no
+  // reconciliation record has been prepared for this admission yet), this
+  // just no-ops and the caller falls back to the medicationhistory snapshot.
+  async function _clickFirstMedReconcileViewButton() {
+    const btn = document.getElementById('viewMedReconcile0');
+    if (!btn || btn.disabled) return false;
+    btn.click();
+    await dismissAlerts();
+    return true;
+  }
+
+  // Phase 2 (▶ Continue button injected on the Med Reconcile page): click the
+  // current reconciliation record's View button to capture medreconcileuid,
+  // fall back to the medicationhistory/getdetails snapshot arcus-xhr-tap.js
+  // already cached when the page loaded, persist whichever was captured +
+  // mark the step done, then return to Ward View.
   async function _continueMedReconcile(job) {
     const L = s => console.log(`[BKN-HMR MedRecon] ${s}`);
     const btn = document.getElementById('hmr-medrecon-continue-btn');
@@ -589,24 +635,31 @@
     L(`patientvisituid: ${patientvisituid}`);
     if (!patientvisituid) return fail('Could not resolve patientvisituid for this visit — re-run this step from Ward View');
 
+    const clickedView = await _clickFirstMedReconcileViewButton();
+    L(`viewMedReconcile0 clicked: ${clickedView}`);
+    let mu = clickedView ? null : await fetchMedReconcileUid(patientvisituid);
+    for (let i = 0; clickedView && i < 6 && !mu; i++) { await sleep(400); mu = await fetchMedReconcileUid(patientvisituid); }
+    L(`medreconcileuid captured: ${mu || '(none)'}`);
+
     // The list's own getdetails call already fired when the page rendered,
     // so this should already be cached — poll briefly in case it's still in
-    // flight (slow network, or the page just finished navigating).
+    // flight (slow network, or the page just finished navigating). Kept as a
+    // fallback source only — the server prefers medreconcileuid when both
+    // are present (see _resolve_reconcile_meds in bkn_ks_server.py).
     let snapshot = await fetchMedHistorySnapshot(patientvisituid);
     for (let i = 0; i < 8 && !snapshot; i++) { await sleep(500); snapshot = await fetchMedHistorySnapshot(patientvisituid); }
     L(`medhistory snapshot captured: ${!!snapshot}`);
-    if (!snapshot) return fail('Reconciliation data was not captured — reload this Med Reconcile page and try again');
 
-    // Also grab a medreconcileuid if this session ever produces one (e.g. a
-    // different ArcusAir call shape) — best-effort, not required.
-    const mu = await fetchMedReconcileUid(patientvisituid);
+    if (!mu && !snapshot) return fail('Reconciliation data was not captured — reload this Med Reconcile page and try again');
 
     // Read-merge-write: don't clobber other steps that may already be saved.
     const doc   = (await serverLoad(job.visitid)) || {};
     const steps = { ...(doc.steps || {}), medReconcile: 'done' };
-    const patch = { steps, medreconcileSnapshot: snapshot };
-    if (mu) patch.medreconcileuid = mu;
-    await serverSave(job.visitid, patch, makeLog('Med Reconcile: captured reconciliation snapshot'));
+    const patch = { steps };
+    if (snapshot) patch.medreconcileSnapshot = snapshot;
+    if (mu)       patch.medreconcileuid      = mu;
+    const captured = [mu && 'medreconcileuid', snapshot && 'reconciliation snapshot'].filter(Boolean).join(' + ');
+    await serverSave(job.visitid, patch, makeLog(`Med Reconcile: captured ${captured}`));
 
     await clearMedReconJob();
     document.getElementById('hmr-medrecon-continue-btn')?.remove();
@@ -1321,6 +1374,7 @@
 
     showWorkstation(visitid, state);
     await serverSave(visitid, { ...state, auditLog: [] }, makeLog('opened workstation'));
+    await maybeAutoAddToQueue(visitid, state, di);
   }
 
   function _showSkeleton() {
@@ -1397,6 +1451,7 @@
         `Meds Returned: ${di.pharmacyreturnscompleted === true ? 'YES' : di.pharmacyreturnscompleted === false ? 'NO' : '—'}`
       );
       await serverSave(visitid, { checklist: _state.checklist, steps: _state.steps }, log);
+      await maybeAutoAddToQueue(visitid, _state, di);
     });
 
     document.querySelectorAll('.hmr-yn').forEach(btn => {

@@ -79,7 +79,9 @@ Data layout:
   data/hmr/{visitid}.json           — live HM Process record; HM_YYYY-MM-DD.json daily archives
                                        (nightly merge at 23:00, see _hmr_nightly_merge)
   data/hmq/{id}.json                — live HM Process Queue entry; DAY_YYYY-MM-DD.json daily
-                                       archives (nightly merge at 23:00, see _hmq_nightly_merge)
+                                       archives. Nightly at 23:00 (_hmq_nightly_merge), only
+                                       'done' entries are folded in and their live files
+                                       deleted — 'new'/'process' entries stay live untouched.
   data/schedule/, data/auth/, data/med-images/, data/ks/files/, data/temp-reports/, data/logs/
                                      — shift schedule, users, med images, KS attachments,
                                        downloaded Jasper XLS, home-med fetch logs
@@ -496,9 +498,13 @@ def format_appointments_th(data):
 
 
 def fetch_arcus_medreconcile(ctx):
-    """POST to ArcusAir medreconcile/getdetail. Needs ctx.medreconcileuid
-    (captured when the pharmacist opened the Med Reconcile screen). Returns JSON.
-    Best-effort — caller swallows errors when the uid is absent."""
+    """POST to ArcusAir medreconcile/getdetail. Needs ctx.medreconcileuid —
+    captured client-side when the pharmacist clicks "View" on a record in
+    ArcusAir's Med Reconcile list (viewMedReconcileN → this exact endpoint,
+    with {"medreconcileuid": "..."} in the request body) and persisted onto
+    the HMR record by content-hmr.js. Returns JSON. Best-effort — caller
+    swallows errors when the uid is absent or the call fails (expired
+    incusToken, ArcusAir down, etc.)."""
     mu = ctx.get('medreconcileuid')
     if not mu:
         return None
@@ -554,20 +560,33 @@ def build_reconcile_meds_for_home_med(data):
     return out
 
 def _resolve_reconcile_meds(ctx):
-    """Prefer the client-captured medicationhistory/getdetails snapshot (the
-    live ArcusAir call needs a medreconcileuid this session rarely has —
-    see fetch_arcus_medreconcile's docstring); fall back to a live fetch in
-    case a medreconcileuid IS available some other way."""
+    """Prefer a live ArcusAir call using the client-captured medreconcileuid:
+    it's captured reliably when the pharmacist clicks "View" on a
+    reconciliation record on ArcusAir's Med Reconcile list (the resulting
+    ordermanagement/medreconcile/getdetail request body carries
+    {"medreconcileuid": "..."}) — see the __bkn_medrecon tap in
+    src/main-world's XHR hook (background.js). content-hmr.js persists that
+    uid onto the HMR record as soon as it's captured, so it's available on
+    a later day too, as long as a fresh incusToken is supplied here. This is
+    the exact endpoint + shape build_reconcile_meds_for_home_med() expects,
+    so it's tried first. Falls back to the medicationhistory/getdetails
+    snapshot (auto-captured, no id required, but its response shape is only
+    guessed at) if no uid is available or the live call fails."""
+    if ctx.get('medreconcileuid'):
+        try:
+            recon_raw = fetch_arcus_medreconcile(ctx)
+            if recon_raw:
+                meds = build_reconcile_meds_for_home_med(recon_raw)
+                if meds:
+                    return meds
+        except Exception:
+            pass
     snapshot = ctx.get('medreconcileSnapshot')
     if snapshot:
         meds = build_reconcile_meds_from_snapshot(snapshot)
         if meds:
             return meds
-    try:
-        recon_raw = fetch_arcus_medreconcile(ctx)
-        return build_reconcile_meds_for_home_med(recon_raw) if recon_raw else []
-    except Exception:
-        return []
+    return []
 
 def build_reconcile_meds_from_snapshot(snapshot):
     """Parse a client-captured emr/medicationhistory/getdetails response
@@ -1545,8 +1564,9 @@ def _start_hmr_scheduler():
 #   { id, queueNum, hn, name, ward, room, status ('new'|'process'|'done'),
 #     createdAt, startedAt, completedAt, addedBy, auditLog: [{ts,user,action}] }
 # Live entries: one file per entry (HMQ_DIR/HMQ-YYYYMMDD-NNNN.json). The nightly
-# merge (23:00) folds each day's live entries into HMQ_DIR/DAY_YYYY-MM-DD.json
-# and deletes the live files — same pattern as the HMR nightly merge above.
+# merge (23:00) folds only 'done' entries into HMQ_DIR/DAY_YYYY-MM-DD.json and
+# deletes just those live files — 'new'/'process' entries are left live so a
+# patient still mid-case isn't archived away before they're actually done.
 
 def hmq_file(entry_id):
     return HMQ_DIR / f'{entry_id}.json'
@@ -1679,7 +1699,11 @@ def transition_hmq_entry(entry_id, action, user):
 
 # ── HMQ nightly merge — one DAY_YYYY-MM-DD.json per day, kept forever ──
 def _hmq_nightly_merge():
-    """Merge all live HMQ-*.json files into today's DAY_YYYY-MM-DD.json, then delete live files."""
+    """Archive only completed ('done') live HMQ-*.json entries into today's
+    DAY_YYYY-MM-DD.json, then delete just those live files. 'new' and
+    'process' entries are left as live files, untouched — patients still
+    being worked overnight stay on the active queue instead of being swept
+    into the archive mid-case."""
     if not HMQ_DIR.exists():
         return
     today = datetime.now().strftime('%Y-%m-%d')
@@ -1695,16 +1719,22 @@ def _hmq_nightly_merge():
                 merged = {r.get('id'): r for r in existing if r.get('id')}
         except Exception:
             pass
+    to_delete = []
     for p in live_files:
         try:
             doc = json.loads(p.read_text(encoding='utf-8'))
-            eid = doc.get('id')
-            if eid:
-                merged[eid] = doc
         except Exception:
-            pass
+            continue
+        if doc.get('status') != 'done':
+            continue
+        eid = doc.get('id')
+        if eid:
+            merged[eid] = doc
+        to_delete.append(p)
+    if not to_delete:
+        return
     _atomic_write_json(daily_path, list(merged.values()))
-    for p in live_files:
+    for p in to_delete:
         try:
             p.unlink()
         except Exception:
