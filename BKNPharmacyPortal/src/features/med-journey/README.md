@@ -13,6 +13,7 @@ Opened via `OPEN_MEDICATION_JOURNEY`-adjacent routing as `page-med-journey.html`
 1. **`POST /api/report/med-journey`** → server hits ArcusAir `getallorderitem` for **all order types**, normalises them (shared `_normalize_orderitems`), and groups them by drug into a continuity timeline. Phase comes from the stable `ordertypeuid` valuecode, and OR/intra-op + supply noise is filtered — see [`../../../../pharmacy_server/README.md`](../../../../pharmacy_server/README.md) (Reports).
 2. Rows returned: `{ drug, code, admission, ward, home, status, note, provider, phases:{admission,ward,home} }`, plus `dates:{admission,discharge}` for the header axis.
 3. Drug photos: **`GET /api/medication-db`** (name/code index) + **`GET /med-image/{code}`**.
+4. **Admission-column fallback chain** (best-effort, in priority order): last-10-visits history (`fetch_arcus_visit_history` → `build_prev_meds_from_visits`, tagged "(last visit)") is the primary source and needs no `medreconcileuid`; a live ArcusAir medreconcile fetch (`fetch_arcus_medreconcile`) only fills remaining gaps, and only when `context.medreconcileuid` happens to be available (rare — see [`../hmr/README.md`](../hmr/README.md#step-5--med-reconcile-semi-automated) for how the HM Process card now captures this reliably instead). `result.hasReconcile`/`hasVisitHistory` flags are returned but **not read by `page-med-journey.js`** — an absent reconcile source silently has no effect on the UI.
 
 ## Status model
 

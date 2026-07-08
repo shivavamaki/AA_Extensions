@@ -8,7 +8,7 @@ Internal tooling monorepo for the **BKN Hospital Pharmacy Department**. Chrome e
 
 ```text
 EXT/
-├── BKNPharmacyPortal/   ← primary extension (ACTIVE — v3.6.0)
+├── BKNPharmacyPortal/   ← primary extension (ACTIVE — v3.10.0)
 ├── Automate/            ← separate utility extension (Auto Dispense / IP Fill)
 ├── chemo_sticker/       ← standalone chemo label web app (no build step)
 └── pharmacy_server/     ← Python stdlib HTTP server (data backend)
@@ -27,6 +27,9 @@ ArcusAir-injected features (`BKNPharmacyPortal/src/features/`):
 | patient-sticker | [src/features/patient-sticker/README.md](BKNPharmacyPortal/src/features/patient-sticker/README.md) |
 | adrtimeline | [src/features/adrtimeline/README.md](BKNPharmacyPortal/src/features/adrtimeline/README.md) |
 | med-journey | [src/features/med-journey/README.md](BKNPharmacyPortal/src/features/med-journey/README.md) |
+| hmr (HM Process) | [src/features/hmr/README.md](BKNPharmacyPortal/src/features/hmr/README.md) |
+| hmq (HM Process Queue) | [src/features/hmq/README.md](BKNPharmacyPortal/src/features/hmq/README.md) |
+| pattern-editor | [src/features/pattern-editor/README.md](BKNPharmacyPortal/src/features/pattern-editor/README.md) |
 | shared | [src/shared/README.md](BKNPharmacyPortal/src/shared/README.md) |
 
 Extension pages:
@@ -84,10 +87,16 @@ Load order: core utils → `shared-data-client.js` → features → legacy `cont
 `window.BKNData` (`src/shared/shared-data-client.js`) is the only sanctioned cross-feature data API. No localStorage caches for cross-workstation data.
 
 ### Stable internal identifiers — do not rename
-`MJ_*` message types, `OPEN_MEDICATION_JOURNEY`, `aa_medicationJourney` tab key, `arcus-medj-btn2` DOM id, `mj-*` CSS hooks, `MedicationJourney` namespace — load-bearing even though the user-facing feature is "ADR Timeline".
+`MJ_*` message types, `OPEN_MEDICATION_JOURNEY`, `aa_medicationJourney` tab key, `arcus-medj-btn2` DOM id, `mj-*` CSS hooks, `MedicationJourney` namespace — load-bearing even though the user-facing feature is "ADR Timeline". Likewise `HMR`/`hmr-*` naming throughout the `hmr` feature is historical ("Home Medication Review") even though the user-facing name is "HM Process".
+
+### Cross-feature APIs live on `window`, not messages
+`hmr`'s Ward View card calls `hmq`'s queue directly via `window.BKN_HMQ = { addCase, completeActiveByHn }` (set by `content-hmq.js`, consumed by `content-hmr.js`) — both content scripts run in the same page/world, so a plain `window` object avoids a `chrome.runtime` round-trip. If a third feature needs the queue, extend this object rather than adding a new message type.
 
 ### ArcusAir report pipeline is shared — keep both reports consistent
 The **Home Medication Sheet** (`/api/report/home-med-api`) and **Medication Journey** (`/api/report/med-journey`) both build from one server-side normaliser, `_normalize_orderitems` in `bkn_ks_server.py` (maps items, drops non-medicines/cancelled). De-dupe by `(drug, code)` — never code alone (`011001` is shared by all non-formulary meds). Phase comes from the stable `ordertypeuid` valuecode (`ORDERTYPE_PHASE_BY_CODE`), not the free-text label. The by-meal card grouping is client-side and **shared** via `window.BKNMealSlots` (`src/shared/meal-slots.js`) — edit the engine once, both report pages follow.
+
+### Medication reconciliation data is client-captured, not server-fetched
+ArcusAir's Med Reconcile page loads its medication list via `emr/medicationhistory/getdetails`, fired automatically on page load with no reusable ID in the request — so `arcus-xhr-tap.js` passively caches that **response** (`window.__arcus_medhistory__`, keyed by `patientvisituid`) instead of the server replaying the query live. `hmr`'s Step 5 persists it server-side as `medreconcileSnapshot` on the HMR record; `bkn_ks_server.py`'s `_resolve_reconcile_meds()` prefers that snapshot over a live `fetch_arcus_medreconcile()` call. See [`BKNPharmacyPortal/src/features/hmr/README.md`](BKNPharmacyPortal/src/features/hmr/README.md#step-5--med-reconcile-semi-automated).
 
 ### Server safety
 Single-file stdlib server. JSON writes use `_atomic_write_json` (temp + `os.replace`). Static files served via `_serve_file_under` / `_path_within`. `TRUSTED_EXTENSION_ORIGINS` trusts any `chrome-extension://` origin for writes.

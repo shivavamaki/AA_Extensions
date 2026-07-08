@@ -53,13 +53,67 @@ The sheet footer shows **นัดหมายติดตามอาการ*
 
 The action column (`.col-act`, screen-only edit buttons) is the true first DOM child but is hidden in print, which would shift the visible left edge/rounded corner onto the "#" column with nothing there to draw it. A `@media print` override moves the left border + corner radius from `:first-child` to `:nth-child(2)` to compensate — if the column layout changes, double-check both the screen and print corner rules still target the right cells.
 
-## Footer layout — appointment + providers
+## Footer layout — appointment + Checklist + pharmacist sign-off
 
-The footer (`.footer-note`) is a 2-column grid:
-- **Left** (`appt-box`, wider): the appointment card list above.
-- **Right** (`providers-box`): a single merged box with two stacked sections — **Physician** then **เภสัชกร (Pharmacist)** — separated by a dashed rule, instead of three separate boxes.
-  - `populateHeader()` collects **every distinct provider** across the discharge meds (`_uniquePhysicians()`), not just the first one, since a visit can involve more than one prescriber. Each name renders on its own line via `_renderProviderList()`.
-  - Pharmacist stays single-value (from `context.pharmacistName`).
+The footer (`.footer-note`) is a **3-column** grid (`5fr 3fr 2fr`), all three
+boxes sharing one visual family (solid blue border + blue gradient header —
+see `.sign-box.appt-box`, `.hmproc-box`, `.sign-box.providers-box` in
+`page-home-med.html`):
+
+- **นัดหมายติดตามอาการ** (`appt-box`, widest) — the appointment card list.
+- **Checklist** (`hmproc-box`, middle, new) — read-only mirror of the ward-view
+  HM Process card's 3 manual/auto checks (green ✓ dots), fetched by HN via
+  `fetchAndRenderChecklist()` → `GET /api/hmr?from=&to=` (matched by HN, not
+  visitid — this page never has the `I48-xx-xxxxxx` visitid HMR is keyed by),
+  plus **2 blank paper checkboxes** with no digital backing at all (อธิบายยา
+  กลับบ้าน, ผู้ป่วย/ผู้ปกครอง ทราบและเข้าใจ) for the pharmacist to hand-tick on
+  the printed copy. Shows "HM Process not started for this visit" — a normal,
+  expected state, not an error — when no HMR record exists yet. See
+  [`../hmr/README.md`](../hmr/README.md) for what populates that record.
+- **ลงชื่อเภสัชกร** (`providers-box`, narrowest) — two rows: **ผู้ตรวจสอบ
+  รายการยา** (from `context.pharmacistName`, `#pharmacistCheckedName`) and
+  **ผู้จ่ายยา** — a blank dashed signature line, no name, by design.
+
+**Physician moved out of the footer** — it's now an inline line
+(`.physician-line`, `#physicianNameTop`) at the **top of the clinical banner**,
+above Diagnosis, styled neutrally (not blue/red like Diagnosis/Allergy below
+it). `populateHeader()` collects **every distinct provider** across the
+discharge meds (`_uniquePhysicians()`), comma-joined on one line — a visit can
+involve more than one prescriber.
+
+## Medication Reconciliation panel (right sidebar, POM tagging)
+
+> Not to be confused with `src/features/patient-sticker/page-med-reconcile.html`
+> — a separate, older sticker/label page opened via `OPEN_MED_RECONCILE`
+> (patient-sticker's own feature, see its README). This panel is a new,
+> unrelated inline sidebar on the Home Medication Sheet itself.
+
+`.recon-panel` (`#reconPanel`, fixed right sidebar, screen-only, mirrors the
+left print-control sidebar's positioning) lets the pharmacist pull items from
+the patient's pre-admission/home medications into the sheet, tagged **POM**
+(Patient's Own Medication — matches ArcusAir's own vocabulary for this).
+
+- **Data source**: `data.reconcileMeds` from the same `POST
+  /api/report/home-med-api` response (also independently refreshable via
+  `POST /api/report/reconcile-api`, the ↻ button — `fetchAndRenderReconcile()`).
+  Server-side, `_resolve_reconcile_meds()` prefers a client-captured
+  `medreconcileSnapshot` (see [`../hmr/README.md`](../hmr/README.md#step-5--med-reconcile-semi-automated))
+  over a live ArcusAir re-fetch.
+- **Status → action**: items are normalized to `continued`/`stopped`/
+  `changed`/`new` (`_RECON_STATUS_LABEL`). Only `stopped` items are
+  non-addable — a discontinued medication shouldn't become a home med.
+- **Add Selected** calls the sheet's existing `_addMed()` primitive per
+  checked item (same function the manual add-box already uses) with
+  `source: "pom"`; the row then shows a small purple **POM** badge next to the
+  drug name (`_buildMedRow`). `source` is preserved through the
+  save/reload cache path (`_persist`/`fetchAndRender`'s saved-meds remap) so it
+  survives edits and reloads.
+- Added items **stay in the list**, checkbox disabled, marked "✓ Added as
+  POM" (not removed from the panel) — so the pharmacist can see what's already
+  on the sheet without the list shifting under them.
+- **Unavailable state**: if `context.medreconcileuid`/`medreconcileSnapshot`
+  was never captured for this visit, the panel shows a "not loaded" message
+  instructing the pharmacist to run the HM Process card's Med Reconcile step.
 
 ## Emphasis style — plain weight, no underline or bold
 
@@ -72,6 +126,16 @@ The logo/title row, patient-info card, and diagnosis/allergy banner live inside 
 ## Page number footer (print)
 
 `#pageCounter` (`.page-counter`) is a `position: fixed` element, print-only, bottom-right of the sheet. The **current** page number comes from the CSS `counter(page)` trick (Chrome increments a `position: fixed` element's counter once per printed page) — no JS involved. The **total** page count has no native CSS equivalent in Chrome, so `updatePageCounterTotal()` (`page-home-med.js`, on `window.beforeprint`) estimates it from `.sheet.scrollHeight` vs. the A4 content height (297mm minus the current print margin), written to `data-total` and read via `attr(data-total)` in the `::before` content. It's an estimate, not exact pagination — close enough for "Page X / Y" on a discharge sheet.
+
+When the by-meal page is enabled **and** forced onto its own page
+(`hm-with-mealcard` + `hm-mealcard-break`, see below), the meal card's height
+is measured **separately** from the rest of the sheet and each rounded up to
+whole pages independently before summing — not summed first, then divided.
+`break-before: page` always wastes whatever room was left on the previous
+page, so a short med list (e.g. 20% of a page) plus a short meal card (20%)
+is 2 physical pages, not `ceil(0.4) = 1`. Falls back to the simple
+sum-then-divide estimate when the meal card is off or not forced onto its own
+page (content flows continuously there, so summing first is correct).
 
 ## Daily Pill Journey Card (optional by-meal page)
 

@@ -673,12 +673,6 @@
       }
 
       this._loadSpriteSheet([
-        '/static/maprang-assets-fixed.png',
-        './static/maprang-assets-fixed.png',
-        'static/maprang-assets-fixed.png',
-        './maprang-assets-fixed.png',
-        'maprang-assets-fixed.png',
-
         '/static/maprang-assets.png',
         './static/maprang-assets.png',
         'static/maprang-assets.png',
@@ -693,22 +687,16 @@
       if (index >= paths.length) {
         this.ready = false;
         this.loadError = true;
-        console.error('[Dashboard] Could not load maprang-assets-fixed.png or maprang-assets.png');
+        console.error('[Dashboard] Could not load maprang-assets.png');
         return;
       }
 
       const image = new Image();
 
       image.onload = () => {
-        let source = image;
         const path = paths[index];
-
-        if (path.includes('maprang-assets.png') && !path.includes('fixed')) {
-          source = makeTransparentSpriteSheet(image);
-          console.info('[Dashboard] Loaded original asset and auto-removed checkerboard:', path);
-        } else {
-          console.info('[Dashboard] Loaded fixed transparent asset:', path);
-        }
+        const source = makeTransparentSpriteSheet(image);
+        console.info('[Dashboard] Loaded asset and auto-removed checkerboard:', path);
 
         this.img = source;
         this.ready = true;
@@ -802,7 +790,7 @@
       context.fillStyle = '#ffffff';
       context.font = '9px "Courier New", monospace';
       context.fillText(
-        'Try /static/maprang-assets-fixed.png or /static/maprang-assets.png',
+        'Try /static/maprang-assets.png',
         width / 2,
         height / 2 + 10
       );

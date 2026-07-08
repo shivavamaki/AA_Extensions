@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.8.6 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.11.0 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -42,11 +42,14 @@ Unified MV3 Chrome extension merging two predecessor extensions (`rx_menu` + `AA
 
 | Feature | What it does | README |
 |---|---|---|
-| Home Med Sheet | Printable A4 discharge medication sheet (Thai, photos, editable) | [home-med/README.md](BKNPharmacyPortal/src/features/home-med/README.md) |
+| Home Med Sheet | Printable A4 discharge medication sheet (Thai, photos, editable, Checklist card, Medication Reconciliation/POM panel) | [home-med/README.md](BKNPharmacyPortal/src/features/home-med/README.md) |
 | Med Sticker | Medication label stickers from dispense workbench / POM list | [med-sticker/README.md](BKNPharmacyPortal/src/features/med-sticker/README.md) |
 | Patient Sticker | Patient ID / address / med-reconcile / allergy / unreceivable labels | [patient-sticker/README.md](BKNPharmacyPortal/src/features/patient-sticker/README.md) |
 | ADR Drug Timeline | Drug Gantt chart with ADR events, multi-range editing, print-to-one-page | [adrtimeline/README.md](BKNPharmacyPortal/src/features/adrtimeline/README.md) |
 | Medication Journey | Per-drug continuity grid across care phases | [med-journey/README.md](BKNPharmacyPortal/src/features/med-journey/README.md) |
+| HM Process | Ward-view discharge workflow card — Med Reconcile capture, checks, Allocate/Dispense automation, HM Process Queue integration | [hmr/README.md](BKNPharmacyPortal/src/features/hmr/README.md) |
+| HM Process Queue | Cross-workstation floating popup tracking New Case → On Process → Completed | [hmq/README.md](BKNPharmacyPortal/src/features/hmq/README.md) |
+| Pattern Editor | Admin page for curated EN→TH phrase overrides (Home Med translation) | [pattern-editor/README.md](BKNPharmacyPortal/src/features/pattern-editor/README.md) |
 
 Shared infrastructure: [src/shared/README.md](BKNPharmacyPortal/src/shared/README.md)
 
@@ -89,9 +92,12 @@ Single-file Python (stdlib only, 3.6+) `ThreadingHTTPServer`. All cross-workstat
 |---|---|
 | `data/kpi/` | Daily KPI records, OPD/IPD summaries, medication-error log |
 | `data/ks/` | Knowledge system: FAQs, items, videos, attachments |
-| `data/rx/` | Medication DB, IV drugs, premix drugs, frequency master, note glossary |
+| `data/rx/` | Medication DB, IV drugs, premix drugs, pattern overrides, chemo drugs |
 | `data/schedule/` | Shift schedule state, bookings, booking rules |
 | `data/patients/` | Per-patient context, ADR timeline, medication cache |
+| `data/hmr/` | HM Process records (one per visit; nightly-merged daily archives) |
+| `data/hmq/` | HM Process Queue entries (one per case; nightly-merged daily archives) |
+| `data/auth/`, `data/med-images/`, `data/logs/`, `data/temp-reports/` | Users, medication photos, request/fetch logs, downloaded Jasper XLS |
 
 **Start the server:**
 ```bash
@@ -121,8 +127,10 @@ BKNPharmacyPortal Chrome extension
   │     ArcusAir + drug-delivery page integration (legacy handlers, IPD queue)
   │
   ├── src/features/
-  │     home-med, med-sticker, patient-sticker, adrtimeline, med-journey
-  │     (each injects buttons + opens print/tool pages via background.js)
+  │     home-med, med-sticker, patient-sticker, adrtimeline, med-journey,
+  │     hmr (HM Process), hmq (HM Process Queue), pattern-editor
+  │     (each injects buttons + opens print/tool pages via background.js;
+  │      hmr and hmq talk to each other directly via window.BKN_HMQ)
   │
   ├── iv_sticker, aux_sticker, welcome, pdf, report_print
   │     (extension pages — web accessible resources)
@@ -136,10 +144,12 @@ Pharmacy Server  http://10.134.110.81:8765
   ├── /api/kpi/{date}
   ├── /api/faqs, /api/items, /api/vdos, /api/ks-files
   ├── /api/medication-db, /med-image/{code}
-  ├── /api/iv-drugs, /api/premix-drugs, /api/mixing-protocols
+  ├── /api/iv-drugs, /api/premix-drugs, /api/mixing-protocols, /api/pattern-overrides, /api/chemo-drugs
   ├── /api/schedule/state, /api/schedule/bookings
   ├── /api/patients/{puid}/context, /adr-timeline, /medication-cache/{vuid}
-  └── /api/report/home-med-api, /api/report/med-journey
+  ├── /api/hmr, /api/hmr/{visitid}         — HM Process
+  ├── /api/hmq, /api/hmq/{id}              — HM Process Queue
+  └── /api/report/home-med-api, /api/report/med-journey, /api/report/reconcile-api
 
 ArcusAir  https://arcusair.bdms.co.th
   (Angular 1.x SPA — read via API calls proxied through pharmacy server)
@@ -182,6 +192,20 @@ Flow:
 ---
 
 ## Version History
+
+### v3.11.0 — 2026-07-08
+- **HM Process — Step 5 "Med Reconcile" automation**: drives ArcusAir's EMR → Med Reconcile menu, then stops and injects a "▶ Continue" button next to the page's eConsent icon so the pharmacist can review the list first. ArcusAir's own Med Reconcile page loads its medication list via `emr/medicationhistory/getdetails`, fired automatically on page load with no reusable ID in the request — `arcus-xhr-tap.js` now passively caches that response (`window.__arcus_medhistory__`) instead of trying to trigger/await it, and the step persists it server-side as `medreconcileSnapshot` on the HM Process record
+- Fixed `resolvePatientVisitUid()` returning `null` even on Ward View with the card fully populated — it was missing the third fallback tier (`ctx.data.patientCtx`) that `fetchDischargeInfo()` already used successfully on the same card; also now resolves up front while still on Ward View instead of re-deriving it after navigating to the EMR pages, where the DOM it depends on no longer exists
+- **Home Med Sheet — Medication Reconciliation panel**: new right-sidebar panel (mirrors the left print-control sidebar) listing the patient's pre-admission/home meds by status (continue/stop/change/new, only `stopped` non-addable); selected items are added to the medicine table tagged **POM** (Patient's Own Medication) via the sheet's existing `_addMed()` primitive, `source: "pom"` preserved through the save/reload cache path; server prefers the client-captured snapshot over a live ArcusAir re-fetch (`_resolve_reconcile_meds`)
+- HM Process Queue: added ↺ revert buttons (On Process → New Case, Completed → On Process, both logged), remembers popup position across reloads, resizable width, and a "จัดการยาเสพติดค้างจ่าย" single "✓ Completed" button replacing the old YES/NO pair (no meaningful "NO" state)
+- Every automated ArcusAir click that changes the DOM/URL now fires Escape 3× afterward (`dismissAlerts()`) to close any native/AngularMaterial dialog it pops — deliberately not applied to the auto-dispense flow, which already distinguishes alert vs. override dialogs and needs the override dialog to stay open for a manual reason + save
+- `pharmacy_server`: `_role()` (dead code, never called) removed; `main()`'s inlined data-directory setup now calls the existing `_init_data_dirs()` instead of duplicating it; `data/hmr/` and `data/hmq/` are now eagerly created at startup like every other data directory
+
+### v3.10.0 — 2026-07-07
+- **New: HM Process Queue** (`src/features/hmq/`) — a floating, draggable, minimizable popup (no close button by design) shared across Ward View and the Pharmacy Return workbench, tracking patients through New Case → On Process → Completed. Cross-workstation via the pharmacy server (`/api/hmq`, `/api/hmq/{id}`), with a duplicate guard keyed on HN, a daily-reset queue number, per-patient audit log, and a nightly 23:00 merge into per-day archives (same pattern as HM Process below). Exposes `window.BKN_HMQ` so other content scripts can add/complete cases without reimplementing the server calls
+- **New: HM Process** (`src/features/hmr/`, server-side `/api/hmr`) — formalized the ward-view discharge workflow card into its own documented feature: auto-detected Discharge Status/Home Med/Meds Returned, a semi-automated Step 7 (Allocate/Dispense, ported from the `Automate` extension's auto-dispense loop) with a draggable floating overlay, and HM Process Queue integration buttons in the card header
+- **Home Med Sheet**: added a read-only Checklist card to the footer (mirrors the HM Process card's checks, fetched by HN), moved Physician to an inline line above Diagnosis, and renamed the Physician/Pharmacist footer box to "ลงชื่อเภสัชกร" — ผู้ตรวจสอบรายการยา (name) + ผู้จ่ายยา (blank signature line); appointment card restyled with the same blue-header treatment used by the new cards
+- Fixed the by-meal page counter under-counting pages when the Daily Pill Journey Card is forced onto its own printed page — it now rounds the meal card's height up to whole pages independently instead of summing heights before dividing, since a forced page break always wastes whatever room was left on the previous page
 
 ### v3.8.6 — 2026-06-28
 - **Medication Journey redesign** — the `ช่วงการใช้ยา` column now shows an in-table phase timeline (admission → ward → home) with the shared axis in the column header; the `สถานะ` column moved last and is screen-only (colour + legend carry status on paper); the standalone Drug Timeline page was removed

@@ -39,6 +39,28 @@ API:
   GET    /api/patients/{puid}/medication-cache/{visituid}    — cached meds for visit
   PUT    /api/patients/{puid}/medication-cache/{visituid}    — store cached meds
 
+  GET    /api/hmr                           — all HM Process records (?from=&to=, newest first)
+  GET    /api/hmr/{visitid}                 — one record (I48-xx-xxxxxx), {} if none
+  PUT    /api/hmr/{visitid}                 — read-merge-write; auditLog entries append, never overwrite
+
+  GET    /api/hmq                           — HM Process Queue entries (?from=&to=, newest first)
+  POST   /api/hmq                           — add a case {hn,name,ward,room,addedBy}; 409 if HN already active today
+  PUT    /api/hmq/{id}                      — transition {action: start|complete|revert-process|revert-new, user}
+
+  POST   /api/report/fetch                  — Jasper XLS proxy (aa-report.bdms.co.th only)
+  POST   /api/report/home-med-api           — discharge meds → Home Medication Sheet (+ reconcileMeds)
+  POST   /api/report/med-journey            — all orders → continuity timeline
+  POST   /api/report/reconcile-api          — standalone Medication Reconciliation refresh
+
+  GET    /api/extralabel[/{code}]           — order-item extra-label overrides
+  GET/POST/PUT /api/auth/{login|logout|me}  — session auth; POST /api/users (super_admin only)
+  GET    /api/schedule/state[?month=]       — shift schedule state; /api/schedule/bookings
+  GET/PUT /api/pattern-overrides            — see pattern-editor feature
+  GET/PUT /api/chemo-drugs                  — chemo-sticker drug DB
+
+  Static: everything under www/ is served at the matching path, incl.
+  /dashboard, /hmr-report, /hmq-report.
+
 Data layout:
   data/kpi/YYYY-MM-DD.json    — one file per day
   data/ks/faqs.json
@@ -52,7 +74,15 @@ Data layout:
   data/rx/pattern-overrides.json  — pharmacist-curated phrase translations, layered
                                      in front of the hardcoded AUXILIARY_PHRASES in
                                      medical-glossary.js (see pattern-editor feature)
+  data/rx/chemo-drugs.json
   data/patients/{patientuid}.json   — one file per patient (context, ADR, med cache)
+  data/hmr/{visitid}.json           — live HM Process record; HM_YYYY-MM-DD.json daily archives
+                                       (nightly merge at 23:00, see _hmr_nightly_merge)
+  data/hmq/{id}.json                — live HM Process Queue entry; DAY_YYYY-MM-DD.json daily
+                                       archives (nightly merge at 23:00, see _hmq_nightly_merge)
+  data/schedule/, data/auth/, data/med-images/, data/ks/files/, data/temp-reports/, data/logs/
+                                     — shift schedule, users, med images, KS attachments,
+                                       downloaded Jasper XLS, home-med fetch logs
 """
 
 import hashlib
@@ -522,6 +552,51 @@ def build_reconcile_meds_for_home_med(data):
         status = _RECON_STATUS_MAP.get((m.get('status') or '').upper(), 'new')
         out.append({**m, 'status': status, 'statusRaw': m.get('status') or '', 'addable': status != 'stopped'})
     return out
+
+def _resolve_reconcile_meds(ctx):
+    """Prefer the client-captured medicationhistory/getdetails snapshot (the
+    live ArcusAir call needs a medreconcileuid this session rarely has —
+    see fetch_arcus_medreconcile's docstring); fall back to a live fetch in
+    case a medreconcileuid IS available some other way."""
+    snapshot = ctx.get('medreconcileSnapshot')
+    if snapshot:
+        meds = build_reconcile_meds_from_snapshot(snapshot)
+        if meds:
+            return meds
+    try:
+        recon_raw = fetch_arcus_medreconcile(ctx)
+        return build_reconcile_meds_for_home_med(recon_raw) if recon_raw else []
+    except Exception:
+        return []
+
+def build_reconcile_meds_from_snapshot(snapshot):
+    """Parse a client-captured emr/medicationhistory/getdetails response
+    (see src/main-world/arcus-xhr-tap.js — that call fires automatically when
+    the Med Reconcile page loads, so the extension caches the raw response
+    instead of replaying the query server-side) into the same shape
+    build_reconcile_meds_for_home_med() produces.
+
+    The exact response shape hasn't been confirmed against a live capture, so
+    this tries several plausible container keys and reuses the existing
+    orderitemname/frequencyuid/routeuid/comments/reconcilestatus field
+    mapping. Returns [] rather than raising if nothing recognizable is
+    found — treat an empty result as "shape not recognized yet", not
+    "no reconciliation data exists". Log the raw snapshot (see callers) to
+    refine this if it comes back empty on a visit known to have data."""
+    if not isinstance(snapshot, dict):
+        return []
+    items = None
+    medrecon = snapshot.get('medreconcile')
+    if isinstance(medrecon, dict):
+        items = medrecon.get('medicationitems')
+    for key in ('medicationitems', 'items', 'orders', 'data'):
+        if items is None:
+            candidate = snapshot.get(key)
+            if isinstance(candidate, list):
+                items = candidate
+    if not isinstance(items, list):
+        return []
+    return build_reconcile_meds_for_home_med({'medreconcile': {'medicationitems': items}})
 
 
 def fetch_arcus_allergies(ctx):
@@ -1975,10 +2050,6 @@ class Handler(BaseHTTPRequestHandler):
             return _sessions.get(h[7:])
         return None
 
-    def _role(self):
-        s = self._session()
-        return s['role'] if s else None
-
     def _require(self, *allowed_roles):
         """Send 401/403 and return False if caller lacks permission."""
         s = self._session()
@@ -2762,14 +2833,9 @@ class Handler(BaseHTTPRequestHandler):
                     'แต่ถ้าพบอาการผิดปรกติหรืออาการแย่ลง '
                     'แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม'
                 )
-            # Medication Reconciliation panel — best-effort, only available if the
-            # pharmacist opened ArcusAir's Med Reconcile screen this session (same
-            # medreconcileuid capture Medication Journey relies on).
-            try:
-                recon_raw = fetch_arcus_medreconcile(ctx)
-                result['reconcileMeds'] = build_reconcile_meds_for_home_med(recon_raw) if recon_raw else []
-            except Exception:
-                result['reconcileMeds'] = []
+            # Medication Reconciliation panel — best-effort; prefers the
+            # client-captured snapshot, see _resolve_reconcile_meds().
+            result['reconcileMeds'] = _resolve_reconcile_meds(ctx)
             result['hasReconcile'] = bool(result['reconcileMeds'])
             result['ok'] = True
             result['source'] = 'arcus-api'
@@ -2779,13 +2845,9 @@ class Handler(BaseHTTPRequestHandler):
         # ── Standalone reconciliation refresh (Home Med Sheet's ↻ button) ──
         if rtype == 'report-reconcile-api':
             ctx = body.get('context') or {}
-            if not ctx.get('incusToken'):
+            if not ctx.get('medreconcileSnapshot') and not ctx.get('incusToken'):
                 self.send_json(400, {'error': 'incusToken missing — open the patient on ArcusAir first'}); return
-            try:
-                recon_raw = fetch_arcus_medreconcile(ctx)
-                recon_meds = build_reconcile_meds_for_home_med(recon_raw) if recon_raw else []
-            except Exception as e:
-                self.send_json(500, {'error': f'ArcusAir fetch error: {e}'}); return
+            recon_meds = _resolve_reconcile_meds(ctx)
             self.send_json(200, {'ok': True, 'reconcileMeds': recon_meds, 'hasReconcile': bool(recon_meds)})
             return
 
@@ -2983,6 +3045,8 @@ def _init_data_dirs():
     TEMP_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     PATIENTS_DIR.mkdir(parents=True, exist_ok=True)
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
+    HMR_DIR.mkdir(parents=True, exist_ok=True)
+    HMQ_DIR.mkdir(parents=True, exist_ok=True)
     WWW_DIR.mkdir(parents=True, exist_ok=True)
     for col in KS_COLS:
         p = ks_file(col)
@@ -3030,27 +3094,7 @@ def main():
             sys.exit(1)
 
     # Init sub-folders (KPI files created on demand per day)
-    KPI_DIR.mkdir(parents=True, exist_ok=True)
-    KS_DIR.mkdir(parents=True, exist_ok=True)
-    RX_DIR.mkdir(parents=True, exist_ok=True)
-    AUTH_DIR.mkdir(parents=True, exist_ok=True)
-    MED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-    KS_FILES_DIR.mkdir(parents=True, exist_ok=True)
-    SCHEDULE_DIR.mkdir(parents=True, exist_ok=True)
-    TEMP_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    PATIENTS_DIR.mkdir(parents=True, exist_ok=True)
-    LOGS_DIR.mkdir(parents=True, exist_ok=True)
-    WWW_DIR.mkdir(parents=True, exist_ok=True)
-    for col in KS_COLS:
-        p = ks_file(col)
-        if not p.exists():
-            p.write_text('[]', encoding='utf-8')
-    for col in RX_COLS:
-        p = rx_file(col)
-        if not p.exists():
-            empty = '{}' if col in RX_DICT_COLS else '[]'
-            p.write_text(empty, encoding='utf-8')
-    _ensure_default_users()
+    _init_data_dirs()
 
     global _SERVER_START
     ip = get_local_ip()
