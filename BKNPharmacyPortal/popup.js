@@ -79,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initKnowledgeTab();
   initKpiApp();
   initShiftSchedule();
+  initHmqDashboard();
   initWorkspaceSections();
   initApiTest();
 
@@ -2990,6 +2991,13 @@ function kpiUrl() {
 
 function initKpiApp() {
   document.getElementById('btnKpiApp')?.addEventListener('click', () => chrome.tabs.create({ url: kpiUrl() }));
+}
+
+// ── HM Process Queue Dashboard ────────────────────────────────────────────────
+function initHmqDashboard() {
+  document.getElementById('btnHmqDashboard')?.addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('src/features/hmq/page-hmq-dashboard.html') });
+  });
 }
 
 // ── Shift Schedule auth ───────────────────────────────────────────────────────

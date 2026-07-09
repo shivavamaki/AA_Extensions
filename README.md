@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.11.0 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.12.0 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -48,7 +48,7 @@ Unified MV3 Chrome extension merging two predecessor extensions (`rx_menu` + `AA
 | ADR Drug Timeline | Drug Gantt chart with ADR events, multi-range editing, print-to-one-page | [adrtimeline/README.md](BKNPharmacyPortal/src/features/adrtimeline/README.md) |
 | Medication Journey | Per-drug continuity grid across care phases | [med-journey/README.md](BKNPharmacyPortal/src/features/med-journey/README.md) |
 | HM Process | Ward-view discharge workflow card — Med Reconcile capture, checks, Allocate/Dispense automation, HM Process Queue integration | [hmr/README.md](BKNPharmacyPortal/src/features/hmr/README.md) |
-| HM Process Queue | Cross-workstation floating popup tracking New Case → On Process → Completed | [hmq/README.md](BKNPharmacyPortal/src/features/hmq/README.md) |
+| HM Process Queue | Cross-workstation floating popup tracking New Case → On Process → Completed, plus a read-only history Dashboard in the extension popup | [hmq/README.md](BKNPharmacyPortal/src/features/hmq/README.md) |
 | Pattern Editor | Admin page for curated EN→TH phrase overrides (Home Med translation) | [pattern-editor/README.md](BKNPharmacyPortal/src/features/pattern-editor/README.md) |
 
 Shared infrastructure: [src/shared/README.md](BKNPharmacyPortal/src/shared/README.md)
@@ -192,6 +192,16 @@ Flow:
 ---
 
 ## Version History
+
+### v3.12.0 — 2026-07-09
+- **New: HM Queue Dashboard** — a read-only history view of the HM Process
+  Queue, opened from the extension popup's **Ward & OPD** section (`src/features/hmq/page-hmq-dashboard.html`).
+  Same visual language as the Ward View floating popup, laid out as a
+  3-column board (New Case / On Process / Completed) with a date-range
+  filter (Today/7d/30d + custom From–To), HN/name search, and the same
+  per-case audit-log modal — but no Start/Complete/Revert actions, since it's
+  meant for browsing history across workstations/days rather than working
+  the live queue
 
 ### v3.11.0 — 2026-07-08
 - **HM Process — Step 5 "Med Reconcile" automation**: drives ArcusAir's EMR → Med Reconcile menu, then stops and injects a "▶ Continue" button next to the page's eConsent icon so the pharmacist can review the list first. ArcusAir's own Med Reconcile page loads its medication list via `emr/medicationhistory/getdetails`, fired automatically on page load with no reusable ID in the request — `arcus-xhr-tap.js` now passively caches that response (`window.__arcus_medhistory__`) instead of trying to trigger/await it, and the step persists it server-side as `medreconcileSnapshot` on the HM Process record

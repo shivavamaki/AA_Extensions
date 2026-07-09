@@ -137,9 +137,14 @@ Floating popup on Ward View + the Pharmacy Return workbench — see
 
 Storage: one live file per entry (`data/hmq/HMQ-YYYYMMDD-NNNN.json`). Unlike
 HM Process's nightly merge, HMQ's 23:00 job only archives entries that are
-already `done` into `data/hmq/DAY_YYYY-MM-DD.json` and deletes just those
-live files — a `new`/`process` entry stays live and untouched overnight, so a
-case still being worked isn't swept into the archive mid-flight.
+already `done` into one `data/hmq/ddmmyyyy_HM_queue.json` per day (e.g.
+`09072026_HM_queue.json`) and deletes just those live files — a `new`/`process`
+entry stays live and untouched overnight, so a case still being worked isn't
+swept into the archive mid-flight. Archive files are never deleted or
+rotated by the server — they're kept indefinitely (still readable by the HMQ
+Dashboard) until an admin manually cleans them up. Older `DAY_YYYY-MM-DD.json`
+files written before this naming change are still read transparently, just
+never written again.
 
 ### Reports (ArcusAir-backed)
 
@@ -195,7 +200,8 @@ pharmacy_server/
 │   ├── hmr/{visitid}.json          — live HM Process records
 │   ├── hmr/HM_YYYY-MM-DD.json      — daily archive (23:00 nightly merge)
 │   ├── hmq/HMQ-YYYYMMDD-NNNN.json  — live HM Process Queue entries
-│   ├── hmq/DAY_YYYY-MM-DD.json     — daily archive (23:00 nightly merge, 'done' entries only)
+│   ├── hmq/ddmmyyyy_HM_queue.json  — daily archive (23:00 nightly merge, 'done' entries only;
+│   │                                  kept forever until an admin cleans it up)
 │   ├── med-images/                 — medication photo uploads
 │   ├── temp-reports/               — downloaded Jasper XLS files
 │   └── logs/                       — home-med fetch logs, request logs

@@ -28,8 +28,11 @@ so every workstation's popup shows the same queue.
   (`bkn:hmqPopupPos`) and restored on next load (`applySavedPos`).
 - **Resizable width** via native CSS `resize: horizontal` (260–640px) — a
   `ResizeObserver` persists whatever width the user lands on, same storage key.
-- **Minimizable** (collapses the body, header stays) — **no close button**,
-  by design; the queue needs to stay reachable.
+- **Minimizable** — collapses the *entire* card (header + body) down to a
+  small floating button (with a live count badge); a plain click re-expands
+  it, a real drag repositions it. State (`minimized`) persists across
+  navigation the same way position/width do. **No close button**, by design;
+  the queue needs to stay reachable.
 - Three sections, top-down: 🔵 **On Process** → 🆕 **New Case** → ✅
   **Completed**, each independently collapsible (`hmq-sec-caret`).
 - Each row: queue number (`Q{n}`, auto-incrementing, resets daily), name + HN,
@@ -69,11 +72,16 @@ window.BKN_HMQ = {
   today; allowed if its only entries today are `done`.
 - **Storage**: one live JSON file per entry (`data/hmq/HMQ-YYYYMMDD-NNNN.json`).
   A nightly job at 23:00 (`_hmq_nightly_merge`) archives only `done` entries
-  into `data/hmq/DAY_YYYY-MM-DD.json` and deletes just those live files —
-  `new`/`process` entries are left as live files, untouched, so a patient
-  still mid-case stays on the active queue overnight instead of being
-  archived away before they're actually complete. `load_all_hmq()`
-  transparently merges live + archived when answering `GET` either way.
+  into one `data/hmq/ddmmyyyy_HM_queue.json` per day (e.g. `09072026_HM_queue.json`,
+  via `_hmq_archive_path`) and deletes just those live files — `new`/`process`
+  entries are left as live files, untouched, so a patient still mid-case stays
+  on the active queue overnight instead of being archived away before they're
+  actually complete. Archive files are **never deleted or rotated** by the
+  server — data stays available to the HMQ Dashboard indefinitely, until an
+  admin manually cleans it up. (Older `DAY_YYYY-MM-DD.json` archives written
+  before this naming convention are still read transparently, just never
+  written again.) `load_all_hmq()` transparently merges live + all archived
+  formats when answering `GET`.
 - **Revert transitions** clear the timestamp of the stage being undone
   (`completedAt`/`startedAt` → `null`) and append an audit-log entry, same as
   forward transitions.
@@ -85,12 +93,36 @@ ward/room, status, added/started/completed timestamps, added-by, per-case log
 modal, CSV export). Linked from the server dashboard's **HMQ REPORT** button
 (`www/dashboard.html`, `www/static/dashboard.js`).
 
+## Dashboard (extension popup)
+
+`page-hmq-dashboard.html`/`.js`/`.css` — a **read-only** full-page history
+view, opened via a "HM Queue Dashboard" button in the extension popup's
+**Ward & OPD** section (`popup.html`/`popup.js`'s `initHmqDashboard`, `chrome.tabs.create`
+to `chrome.runtime.getURL('src/features/hmq/page-hmq-dashboard.html')`). Same
+visual language as the floating popup (same colors/section styling) but laid
+out as a 3-column board (New Case / On Process / Completed) so older entries
+across a date range are still meaningful — a `new`/`process` case surfacing
+here from days ago is a real signal (a case that never got finished), not
+noise, since the nightly merge (above) only ever archives `done` entries.
+
+- **Date range**: From/To date inputs + Today/Last 7 days/Last 30 days quick
+  buttons, all reading `GET /api/hmq?from=&to=` directly via
+  `window.BKNData.serverFetch` (`src/shared/shared-data-client.js`).
+- **Search** by HN or name, filtered client-side against the already-fetched
+  range.
+- Same per-case 🕒 log modal as the floating popup, but log timestamps show
+  date + time (not just time) since entries can span many days.
+- Deliberately **no Start/Complete/Revert buttons** — this page is for
+  browsing history across workstations/days, not for working the queue; a
+  note at the bottom of the page points back to the live popup for that.
+
 ## Files
 
 | File | Role |
 |---|---|
 | `content-hmq.js` | Popup UI, drag/resize/minimize, Add Case + queue-transition logic, `window.BKN_HMQ` |
 | `hmq.css` | Popup card, section/row styles, log modal, Return-workbench toolbar button |
+| `page-hmq-dashboard.html`/`.js`/`.css` | Extension-popup dashboard — read-only date-range history board |
 
 ## Gotchas
 

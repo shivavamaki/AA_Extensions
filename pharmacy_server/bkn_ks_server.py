@@ -1564,15 +1564,22 @@ def _start_hmr_scheduler():
 #   { id, queueNum, hn, name, ward, room, status ('new'|'process'|'done'),
 #     createdAt, startedAt, completedAt, addedBy, auditLog: [{ts,user,action}] }
 # Live entries: one file per entry (HMQ_DIR/HMQ-YYYYMMDD-NNNN.json). The nightly
-# merge (23:00) folds only 'done' entries into HMQ_DIR/DAY_YYYY-MM-DD.json and
-# deletes just those live files — 'new'/'process' entries are left live so a
-# patient still mid-case isn't archived away before they're actually done.
+# merge (23:00) folds only 'done' entries into one HMQ_DIR/ddmmyyyy_HM_queue.json
+# per day and deletes just those live files — 'new'/'process' entries are left
+# live so a patient still mid-case isn't archived away before they're actually
+# done. Archive files are never deleted/rotated by this server — they're kept
+# indefinitely until an admin manually cleans them up.
 
 def hmq_file(entry_id):
     return HMQ_DIR / f'{entry_id}.json'
 
 def _hmq_today():
     return datetime.now().strftime('%Y-%m-%d')
+
+def _hmq_archive_path(date_str):
+    """'YYYY-MM-DD' -> HMQ_DIR/ddmmyyyy_HM_queue.json (one file per day)."""
+    y, m, d = date_str.split('-')
+    return HMQ_DIR / f'{d}{m}{y}_HM_queue.json'
 
 def load_hmq_entry(entry_id):
     p = hmq_file(entry_id)
@@ -1581,17 +1588,11 @@ def load_hmq_entry(entry_id):
             return json.loads(p.read_text(encoding='utf-8'))
         except Exception:
             pass
-    # Fall back to today's archive (in case the nightly merge already ran).
-    daily_path = HMQ_DIR / f'DAY_{_hmq_today()}.json'
-    if daily_path.exists():
-        try:
-            records = json.loads(daily_path.read_text(encoding='utf-8'))
-            if isinstance(records, list):
-                for rec in records:
-                    if rec.get('id') == entry_id:
-                        return rec
-        except Exception:
-            pass
+    # Fall back to any archive — new ddmmyyyy_HM_queue.json files, or legacy
+    # DAY_YYYY-MM-DD.json ones written before that naming change.
+    for rec in load_all_hmq():
+        if rec.get('id') == entry_id:
+            return rec
     return None
 
 def save_hmq_entry(doc):
@@ -1601,7 +1602,10 @@ def save_hmq_entry(doc):
 
 def load_all_hmq(from_date=None, to_date=None):
     """Return all HMQ entries (live + daily archives), newest first, optionally
-    filtered by createdAt date (YYYY-MM-DD, inclusive)."""
+    filtered by createdAt date (YYYY-MM-DD, inclusive). Reads both the current
+    ddmmyyyy_HM_queue.json archive naming and the legacy DAY_YYYY-MM-DD.json
+    files from before that naming change — both are kept forever, never
+    deleted by this server."""
     if not HMQ_DIR.exists():
         return []
     seen = {}
@@ -1613,7 +1617,8 @@ def load_all_hmq(from_date=None, to_date=None):
                 seen[eid] = doc
         except Exception:
             pass
-    for mp in sorted(HMQ_DIR.glob('DAY_*.json')):
+    archive_paths = sorted(HMQ_DIR.glob('*_HM_queue.json')) + sorted(HMQ_DIR.glob('DAY_*.json'))
+    for mp in archive_paths:
         try:
             records = json.loads(mp.read_text(encoding='utf-8'))
             if isinstance(records, list):
@@ -1697,20 +1702,24 @@ def transition_hmq_entry(entry_id, action, user):
     save_hmq_entry(doc)
     return doc
 
-# ── HMQ nightly merge — one DAY_YYYY-MM-DD.json per day, kept forever ──
+# ── HMQ nightly merge — one ddmmyyyy_HM_queue.json per day, kept forever
+#    until an admin manually cleans them up (this server never deletes or
+#    rotates archive files on its own) ──
 def _hmq_nightly_merge():
     """Archive only completed ('done') live HMQ-*.json entries into today's
-    DAY_YYYY-MM-DD.json, then delete just those live files. 'new' and
+    ddmmyyyy_HM_queue.json, then delete just those live files. 'new' and
     'process' entries are left as live files, untouched — patients still
     being worked overnight stay on the active queue instead of being swept
-    into the archive mid-case."""
+    into the archive mid-case. The archive file itself is written once per
+    day and kept forever — still readable via load_all_hmq()/the HMQ
+    Dashboard regardless of how much time has passed."""
     if not HMQ_DIR.exists():
         return
     today = datetime.now().strftime('%Y-%m-%d')
     live_files = list(HMQ_DIR.glob('HMQ-*.json'))
     if not live_files:
         return
-    daily_path = HMQ_DIR / f'DAY_{today}.json'
+    daily_path = _hmq_archive_path(today)
     merged = {}
     if daily_path.exists():
         try:

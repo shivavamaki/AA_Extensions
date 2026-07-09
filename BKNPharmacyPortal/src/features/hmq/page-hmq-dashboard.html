@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>HM Process Queue — Dashboard</title>
+<link rel="stylesheet" href="page-hmq-dashboard.css">
+</head>
+<body>
+
+<div class="hmqd-header">
+  <span class="hmqd-header-icon">📋</span>
+  <div class="hmqd-header-text">
+    <div class="hmqd-title">HM Process Queue — Dashboard</div>
+    <div class="hmqd-subtitle">Cross-workstation queue history · read-only</div>
+  </div>
+  <span class="hmqd-total-badge" id="hmqd-total-badge">0 cases</span>
+</div>
+
+<div class="hmqd-toolbar">
+  <div class="hmqd-field">
+    <label>From</label>
+    <input type="date" id="hmqd-from">
+  </div>
+  <div class="hmqd-field">
+    <label>To</label>
+    <input type="date" id="hmqd-to">
+  </div>
+  <div class="hmqd-quick-ranges">
+    <button class="hmqd-btn" data-range="today">Today</button>
+    <button class="hmqd-btn" data-range="7">Last 7 days</button>
+    <button class="hmqd-btn" data-range="30">Last 30 days</button>
+  </div>
+  <div class="hmqd-field">
+    <label>Search HN / Name</label>
+    <input type="search" id="hmqd-search" placeholder="e.g. 48-25-011535">
+  </div>
+  <button class="hmqd-btn hmqd-btn-primary" id="hmqd-refresh">↻ Refresh</button>
+  <div class="hmqd-spacer"></div>
+  <span class="hmqd-updated" id="hmqd-updated"></span>
+</div>
+
+<div id="hmqd-body">
+  <div class="hmqd-loading">Loading queue…</div>
+</div>
+
+<div class="hmqd-note">
+  This dashboard shows queue history from the pharmacy server across the
+  selected date range. It's read-only — to start, complete, or revert a
+  case, use the HM Process Queue popup on Ward View or the Return workbench.
+</div>
+
+<div class="hmqd-modal-overlay" id="hmqd-modal-overlay">
+  <div class="hmqd-modal">
+    <div class="hmqd-modal-hdr">
+      <div>
+        <div class="hmqd-modal-title" id="hmqd-modal-title">Log</div>
+        <div class="hmqd-modal-sub" id="hmqd-modal-sub"></div>
+      </div>
+      <button class="hmqd-modal-close" id="hmqd-modal-close" title="Close">✕</button>
+    </div>
+    <div class="hmqd-modal-body" id="hmqd-modal-body"></div>
+  </div>
+</div>
+
+<script src="../../core/dom.js"></script>
+<script src="../../shared/shared-data-client.js"></script>
+<script src="page-hmq-dashboard.js"></script>
+</body>
+</html>
