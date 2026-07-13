@@ -214,7 +214,15 @@
       "Bash(python3 /tmp/claude-1000/-workspaces-AA-Extensions/fa1418fc-b97d-43b9-84c6-57a752c53bd2/scratchpad/shot.py)",
       "Bash(pkill -f \"http.server 8901\")",
       "Bash(kill 97630)",
-      "Bash(xxd)"
+      "Bash(xxd)",
+      "Bash(mkdir -p /tmp/claude-1000/-workspaces-AA-Extensions/fa1418fc-b97d-43b9-84c6-57a752c53bd2/scratchpad/preview)",
+      "Bash(pgrep -fa \"bkn_ks_server.py|http.server 8901\")",
+      "Bash(echo \"no test servers running\")",
+      "Bash(cp /workspaces/AA_Extensions/BKNPharmacyPortal/pending-code/index.html /workspaces/AA_Extensions/BKNPharmacyPortal/pending-code/app.js /workspaces/AA_Extensions/BKNPharmacyPortal/pending-code/styles.css /tmp/claude-1000/-workspaces-AA-Extensions/fa1418fc-b97d-43b9-84c6-57a752c53bd2/scratchpad/preview/)",
+      "Bash(python3 -c \"import playwright; print\\('playwright module OK'\\)\")",
+      "Bash(python3 /tmp/claude-1000/-workspaces-AA-Extensions/fa1418fc-b97d-43b9-84c6-57a752c53bd2/scratchpad/shot2.py)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('count:', len\\(d\\)\\); print\\('archived:', sum\\(1 for x in d if x.get\\('archived'\\)\\)\\)\")",
+      "Bash(kill 13445)"
     ],
     "additionalDirectories": [
       "/workspaces/AA_Extensions/BKNPharmacyPortal/src/features/home-med",

@@ -667,6 +667,25 @@
     </div>
   </div>
 
+  <!-- ── Pending Drug Code auth modal ── -->
+  <div id="pendingCodeAuthModal" class="auth-modal" hidden>
+    <div class="auth-modal-box">
+      <div class="auth-modal-title">🏷️ Pending Drug Code</div>
+      <div class="auth-modal-sub">กรุณาเข้าสู่ระบบเพื่อใช้งาน (Editor / Admin)</div>
+      <div class="auth-modal-error" id="pcAuthError" hidden></div>
+      <label class="auth-label">Username
+        <input type="text" id="pcAuthUser" class="auth-input" autocomplete="username" spellcheck="false" />
+      </label>
+      <label class="auth-label">Password
+        <input type="password" id="pcAuthPass" class="auth-input" autocomplete="current-password" />
+      </label>
+      <div class="auth-modal-btns">
+        <button type="button" id="pcAuthSubmit" class="auth-btn-primary">Login</button>
+        <button type="button" id="pcAuthCancel" class="auth-btn-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script src="popup.js"></script>
 </body>
 </html>

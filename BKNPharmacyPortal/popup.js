@@ -3068,12 +3068,100 @@ function initKpiApp() {
   document.getElementById('btnKpiApp')?.addEventListener('click', () => chrome.tabs.create({ url: kpiUrl() }));
 }
 
+// ── Pending Drug Code auth (same login/session logic as Shift Schedule) ────────
+const PENDING_CODE_ALLOWED_ROLES = ['editor', 'admin', 'super_admin'];
+const PENDING_CODE_TOKEN_KEY     = 'pendingCodeAuthToken';
+
 function pendingCodeUrl() {
   return chrome.runtime.getURL('pending-code/index.html');
 }
 
+function _pcShowModal() {
+  document.getElementById('pcAuthUser').value = '';
+  document.getElementById('pcAuthPass').value = '';
+  const err = document.getElementById('pcAuthError');
+  err.hidden = true;
+  err.textContent = '';
+  document.getElementById('pendingCodeAuthModal').hidden = false;
+  setTimeout(() => document.getElementById('pcAuthUser').focus(), 50);
+}
+
+function _pcHideModal() {
+  document.getElementById('pendingCodeAuthModal').hidden = true;
+}
+
 function initPendingCodeApp() {
-  document.getElementById('btnPendingCode')?.addEventListener('click', () => chrome.tabs.create({ url: pendingCodeUrl() }));
+  document.getElementById('btnPendingCode')?.addEventListener('click', async () => {
+    const stored = await chrome.storage.local.get(PENDING_CODE_TOKEN_KEY);
+    const token  = stored[PENDING_CODE_TOKEN_KEY];
+    if (token) {
+      const session = await _schedCheckToken(token);
+      if (session && PENDING_CODE_ALLOWED_ROLES.includes(session.role)) {
+        chrome.tabs.create({ url: pendingCodeUrl() });
+        return;
+      }
+      await chrome.storage.local.remove(PENDING_CODE_TOKEN_KEY);
+    }
+    _pcShowModal();
+  });
+
+  document.getElementById('pcAuthCancel')
+    ?.addEventListener('click', _pcHideModal);
+
+  document.getElementById('pendingCodeAuthModal')
+    ?.addEventListener('click', e => { if (e.target === e.currentTarget) _pcHideModal(); });
+
+  ['pcAuthUser', 'pcAuthPass'].forEach(id => {
+    document.getElementById(id)
+      ?.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('pcAuthSubmit')?.click(); });
+  });
+
+  document.getElementById('pcAuthSubmit')?.addEventListener('click', async () => {
+    const username = document.getElementById('pcAuthUser').value.trim();
+    const password = document.getElementById('pcAuthPass').value;
+    const errEl    = document.getElementById('pcAuthError');
+    const btn      = document.getElementById('pcAuthSubmit');
+
+    if (!username || !password) {
+      errEl.textContent = 'กรุณากรอก Username และ Password';
+      errEl.hidden = false;
+      return;
+    }
+
+    btn.disabled    = true;
+    btn.textContent = 'Logging in…';
+    errEl.hidden    = true;
+
+    try {
+      const r    = await fetch(`${SCHEDULE_SERVER}/api/auth/login`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ username, password })
+      });
+      const data = await r.json();
+
+      if (!r.ok) {
+        errEl.textContent = data.error || 'Login failed';
+        errEl.hidden = false;
+        return;
+      }
+      if (!PENDING_CODE_ALLOWED_ROLES.includes(data.role)) {
+        errEl.textContent = `Access denied — role "${data.role}" ไม่มีสิทธิ์เข้าถึง Pending Drug Code`;
+        errEl.hidden = false;
+        return;
+      }
+
+      await chrome.storage.local.set({ [PENDING_CODE_TOKEN_KEY]: data.token });
+      _pcHideModal();
+      chrome.tabs.create({ url: pendingCodeUrl() });
+    } catch {
+      errEl.textContent = 'ไม่สามารถเชื่อมต่อ Server ได้ — ตรวจสอบว่าเปิด pharmacy_server แล้ว';
+      errEl.hidden = false;
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = 'Login';
+    }
+  });
 }
 
 // ── HM Process Queue Dashboard ────────────────────────────────────────────────

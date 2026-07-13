@@ -24,13 +24,40 @@
 <main class="main">
   <div class="toolbar">
     <input id="search" type="text" placeholder="Search material code or description…" class="search-input">
-    <div class="seg" id="filterSeg">
-      <button class="seg-btn active" data-filter="all">All</button>
-      <button class="seg-btn" data-filter="pending">Pending</button>
-      <button class="seg-btn" data-filter="done">Done</button>
+    <div class="seg" id="viewSeg">
+      <button class="seg-btn active" data-view="active">Active</button>
+      <button class="seg-btn" data-view="archived">Archived</button>
     </div>
     <div class="spacer"></div>
     <button id="btnAdd" class="btn btn-primary">+ Add item</button>
+  </div>
+
+  <div class="filter-row" id="filterRow">
+    <label class="filter-field">Order Item
+      <select data-filter-key="orderItem"><option value="">All</option><option value="done">✓ Done</option><option value="pending">✗ Pending</option></select>
+    </label>
+    <label class="filter-field">Tariff
+      <select data-filter-key="tariff"><option value="">All</option><option value="done">✓ Done</option><option value="pending">✗ Pending</option></select>
+    </label>
+    <label class="filter-field">Drug Master
+      <select data-filter-key="drugMaster"><option value="">All</option><option value="done">✓ Done</option><option value="pending">✗ Pending</option></select>
+    </label>
+    <label class="filter-field">Code
+      <select data-filter-key="code"><option value="">All</option><option value="done">✓ Done</option><option value="pending">✗ Pending</option></select>
+    </label>
+    <label class="filter-field">Store Bin
+      <select data-filter-key="storeBin"><option value="">All</option><option value="done">✓ Done</option><option value="pending">✗ Pending</option></select>
+    </label>
+    <label class="filter-field">OPD
+      <select data-filter-key="opdQty"><option value="">All</option><option value="has">Has qty</option><option value="none">No qty</option></select>
+    </label>
+    <label class="filter-field">IPD
+      <select data-filter-key="ipdQty"><option value="">All</option><option value="has">Has qty</option><option value="none">No qty</option></select>
+    </label>
+    <label class="filter-field">Status
+      <select data-filter-key="status"><option value="">All</option><option value="pending">Pending</option><option value="done">Done</option></select>
+    </label>
+    <button id="btnClearFilters" class="btn btn-ghost">Clear filters</button>
   </div>
 
   <div class="progress-bar-wrap">
@@ -54,7 +81,7 @@
           <th class="col-qty">IPD</th>
           <th class="col-note">Note</th>
           <th class="col-status">Status</th>
-          <th class="col-del"></th>
+          <th class="col-action"></th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
