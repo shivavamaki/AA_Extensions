@@ -39,6 +39,7 @@ Extension pages:
 | formulary | [formulary/README.md](BKNPharmacyPortal/formulary/README.md) |
 | knowledge | [knowledge/README.md](BKNPharmacyPortal/knowledge/README.md) |
 | kpi | [kpi/README.md](BKNPharmacyPortal/kpi/README.md) |
+| pending-code | [pending-code/README.md](BKNPharmacyPortal/pending-code/README.md) |
 | schedule | [schedule/README.md](BKNPharmacyPortal/schedule/README.md) |
 | vaccine | [vaccine/README.md](BKNPharmacyPortal/vaccine/README.md) |
 | iv-aux-sticker | [src/features/iv-aux-sticker/README.md](BKNPharmacyPortal/src/features/iv-aux-sticker/README.md) |

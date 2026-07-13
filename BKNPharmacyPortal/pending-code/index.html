@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pending Drug Code — BKN Pharmacy</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <span class="logo">BKN</span>
+    <div>
+      <div class="header-title">Pending Drug Code Tracker</div>
+      <div class="header-sub">Shift-handover checklist for drug code setup (Order Item / Tariff / Drug Master / Code / Store Bin)</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="conn"><span id="connDot" class="conn-dot"></span><span id="connLabel">Connecting…</span></span>
+  </div>
+</header>
+
+<main class="main">
+  <div class="toolbar">
+    <input id="search" type="text" placeholder="Search material code or description…" class="search-input">
+    <div class="seg" id="filterSeg">
+      <button class="seg-btn active" data-filter="all">All</button>
+      <button class="seg-btn" data-filter="pending">Pending</button>
+      <button class="seg-btn" data-filter="done">Done</button>
+    </div>
+    <div class="spacer"></div>
+    <button id="btnAdd" class="btn btn-primary">+ Add item</button>
+  </div>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+    <div id="progressLabel" class="progress-label">—</div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th class="col-no">No.</th>
+          <th class="col-code">Material Code</th>
+          <th class="col-desc">Description</th>
+          <th class="col-task">Order<br>Item</th>
+          <th class="col-task">Tariff</th>
+          <th class="col-task">Drug<br>Master</th>
+          <th class="col-task">Code</th>
+          <th class="col-task">Store<br>Bin</th>
+          <th class="col-qty">OPD</th>
+          <th class="col-qty">IPD</th>
+          <th class="col-note">Note</th>
+          <th class="col-status">Status</th>
+          <th class="col-del"></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div id="emptyState" class="empty-state" hidden>No items match this filter.</div>
+  </div>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

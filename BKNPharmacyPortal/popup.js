@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initFormularyTab();
   initKnowledgeTab();
   initKpiApp();
+  initPendingCodeApp();
   initShiftSchedule();
   initHmqDashboard();
   initWorkspaceSections();
@@ -2991,6 +2992,14 @@ function kpiUrl() {
 
 function initKpiApp() {
   document.getElementById('btnKpiApp')?.addEventListener('click', () => chrome.tabs.create({ url: kpiUrl() }));
+}
+
+function pendingCodeUrl() {
+  return chrome.runtime.getURL('pending-code/index.html');
+}
+
+function initPendingCodeApp() {
+  document.getElementById('btnPendingCode')?.addEventListener('click', () => chrome.tabs.create({ url: pendingCodeUrl() }));
 }
 
 // ── HM Process Queue Dashboard ────────────────────────────────────────────────

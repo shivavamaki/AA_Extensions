@@ -40,6 +40,7 @@ Shared infrastructure (translation engine, data bus): [src/shared/README.md](src
 | Formulary | Drug formulary browser | [formulary/README.md](formulary/README.md) |
 | Knowledge Hub | Pharmacy FAQs, items, videos, shared references | [knowledge/README.md](knowledge/README.md) |
 | KPI | Daily OPD/IPD/med-error KPI records | [kpi/README.md](kpi/README.md) |
+| Pending Drug Code | Shift-handover checklist tracking drug code setup tasks | [pending-code/README.md](pending-code/README.md) |
 | Schedule | Staff shift schedule with booking rules | [schedule/README.md](schedule/README.md) |
 | Vaccine | Vaccine schedule viewer | [vaccine/README.md](vaccine/README.md) |
 

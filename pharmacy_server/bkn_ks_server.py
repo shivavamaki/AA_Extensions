@@ -139,7 +139,7 @@ LOGS_DIR          = DATA_DIR / 'logs'
 WWW_DIR           = Path(__file__).parent / 'www'
 KS_COLS       = {'faqs', 'items', 'vdos'}
 # All rx collections — GET is public; PUT requires editor/admin auth
-RX_COLS       = {'premix-drugs', 'mixing-protocols', 'medication-db', 'iv-drugs', 'iv-staff', 'pattern-overrides', 'chemo-drugs'}
+RX_COLS       = {'premix-drugs', 'mixing-protocols', 'medication-db', 'iv-drugs', 'iv-staff', 'pattern-overrides', 'chemo-drugs', 'pending-code'}
 # Requests from these Chrome extensions may read/write data without login.
 # Multiple IDs supported during the rx_menu → BKN Pharmacy Portal migration.
 TRUSTED_EXTENSION_ORIGINS = {

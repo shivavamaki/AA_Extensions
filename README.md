@@ -63,6 +63,7 @@ Shared infrastructure: [src/shared/README.md](BKNPharmacyPortal/src/shared/READM
 | Formulary | Drug formulary browser | [formulary/README.md](BKNPharmacyPortal/formulary/README.md) |
 | Knowledge Hub | Pharmacy FAQs, items, videos, shared references | [knowledge/README.md](BKNPharmacyPortal/knowledge/README.md) |
 | KPI | Daily OPD/IPD/med-error KPI records | [kpi/README.md](BKNPharmacyPortal/kpi/README.md) |
+| Pending Drug Code | Shift-handover checklist tracking drug code setup tasks | [pending-code/README.md](BKNPharmacyPortal/pending-code/README.md) |
 | Schedule | Staff shift schedule with booking rules and auth gate | [schedule/README.md](BKNPharmacyPortal/schedule/README.md) |
 | Vaccine | Vaccine schedule viewer | [vaccine/README.md](BKNPharmacyPortal/vaccine/README.md) |
 
