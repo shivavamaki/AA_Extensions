@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bknBg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#eaf2ff"/>
+      <stop offset="1" stop-color="#fff1e6"/>
+    </linearGradient>
+    <filter id="crayonGrain" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="crayonRough" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="2" seed="4" result="warp"/>
+      <feDisplacementMap in="SourceGraphic" in2="warp" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+
+  <!-- badge background: soft rounded square, hand-drawn wobble -->
+  <rect x="3" y="3" width="58" height="58" rx="18" fill="url(#bknBg)"
+        stroke="#c9d8f4" stroke-width="1.5" filter="url(#crayonRough)"/>
+
+  <!-- mortar (bowl) — orange crayon -->
+  <g filter="url(#crayonGrain)">
+    <path d="M17 33 Q17 49 32 50 Q47 49 47 33"
+          fill="none" stroke="#f4a15c" stroke-width="5.5" stroke-linecap="round" opacity="0.9"/>
+    <path d="M17 33 Q17 49 32 50 Q47 49 47 33"
+          fill="none" stroke="#f4813a" stroke-width="2.4" stroke-linecap="round" opacity="0.75"/>
+    <ellipse cx="32" cy="33" rx="15.5" ry="4.6" fill="#fff8f2" stroke="#f4a15c" stroke-width="3" opacity="0.9"/>
+  </g>
+
+  <!-- pestle — blue crayon, resting diagonally over the bowl -->
+  <g filter="url(#crayonGrain)">
+    <path d="M23 17 L41 29" fill="none" stroke="#7fa8ea" stroke-width="7.5" stroke-linecap="round" opacity="0.9"/>
+    <path d="M23 17 L41 29" fill="none" stroke="#5b8de8" stroke-width="3.2" stroke-linecap="round" opacity="0.8"/>
+    <circle cx="21.5" cy="15.5" r="5.4" fill="#a8c5f4" stroke="#5b8de8" stroke-width="2" opacity="0.9"/>
+  </g>
+
+  <!-- tiny sparkle accents for a hand-drawn crayon feel -->
+  <g opacity="0.55" filter="url(#crayonGrain)">
+    <path d="M49 15 l1.6 3.4 3.4 1.6 -3.4 1.6 -1.6 3.4 -1.6 -3.4 -3.4 -1.6 3.4 -1.6 z" fill="#f4c27c"/>
+  </g>
+</svg>

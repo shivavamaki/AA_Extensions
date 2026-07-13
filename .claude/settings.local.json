@@ -226,7 +226,9 @@
       "Bash(grep -n \"bagVol\\\\|dilV\\\\|Total \\\\${bagVol}\\\\|f-bagvol\\\\|Total Bag\" BKNPharmacyPortal/chemo-sticker/app.js BKNPharmacyPortal/chemo-sticker/index.html)",
       "Bash(grep -n \"bagVol\\\\|dilV\\\\|Total Bag\\\\|Total \\\\${bagVol}\" chemo_sticker/chemo_bkn_bud.html)",
       "Bash(python3 /tmp/claude-1000/-workspaces-AA-Extensions/fa1418fc-b97d-43b9-84c6-57a752c53bd2/scratchpad/shot_chemo.py)",
-      "Bash(node --check BKNPharmacyPortal/chemo-sticker/app.js)"
+      "Bash(node --check BKNPharmacyPortal/chemo-sticker/app.js)",
+      "Bash(python3 -c \"import xml.dom.minidom as m; m.parse\\('BKNPharmacyPortal/images/bkn-logo-crayon.svg'\\); print\\('SVG valid XML'\\)\")",
+      "Bash(python3 -c \"import json; json.load\\(open\\('BKNPharmacyPortal/manifest.json', encoding='utf-8'\\)\\); print\\('manifest.json OK'\\)\")"
     ],
     "additionalDirectories": [
       "/workspaces/AA_Extensions/BKNPharmacyPortal/src/features/home-med",
