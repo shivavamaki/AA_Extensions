@@ -9,7 +9,7 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.12.0 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.13.0 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
@@ -193,6 +193,17 @@ Flow:
 ---
 
 ## Version History
+
+### v3.13.0 — 2026-07-09
+- **IPD Queue — discharge-stage highlight**: a new "🏷 Check Discharge Status"
+  button fetches `RT_COMMON_896` (Discharge Process Summary — a 12-step
+  discharge pipeline, one timestamp column per step) and cross-references it
+  against the already-loaded IPD Queue list by EN. Any patient whose furthest
+  reached step is greater than 2 (past "Doctor Order Completion") gets an
+  orange "Discharge" badge and a highlighted row — flagging patients who are
+  actively mid-discharge, not just administratively flagged for it. The
+  fetched map persists in `chrome.storage.local` so the highlight survives
+  popup reopens without needing to re-fetch
 
 ### v3.12.0 — 2026-07-09
 - **New: HM Queue Dashboard** — a read-only history view of the HM Process

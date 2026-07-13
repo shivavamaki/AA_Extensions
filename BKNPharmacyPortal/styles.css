@@ -483,14 +483,33 @@ body {
 .queue-table tbody tr:last-child { border-bottom: none; }
 .queue-table tbody tr:hover td   { background: var(--blue-pastel); }
 .queue-table tbody tr.row-sent td { background: var(--green-pale); }
+.queue-table tbody tr.row-discharge td { background: var(--orange-pastel); }
 .queue-table td { padding: 5px 10px; vertical-align: middle; }
 
 .cell-name {
   max-width: 180px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  font-weight: 500;
+}
+.cell-name-text {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 500;
+}
+.discharge-badge {
+  flex: 0 0 auto;
+  background: var(--orange);
+  color: var(--white);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 2px 7px;
 }
 
 .cell-visit {

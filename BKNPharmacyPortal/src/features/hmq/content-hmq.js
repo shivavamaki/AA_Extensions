@@ -365,12 +365,18 @@
   // Return workbench shows a small details table (Ward / Location / Nurse /
   // Date) for the currently selected dispense — first two cells are ward + room.
   function extractWardRoom() {
+    // The Return workbench has two different "Ward ..." rows: the dispense
+    // details header (2nd cell = the dispensing/pharmacy location, e.g.
+    // "Inpatient Pharmacy (Floor G)" — NOT a room) and the "Bed Details" row
+    // further down (2nd cell = the patient's actual bed/room number, always
+    // observed as plain digits, e.g. "510"). Skip any row whose 2nd cell
+    // isn't numeric so the wrong one never gets picked.
     const rows = Array.from(document.querySelectorAll('tr.md-row'));
     for (const row of rows) {
       const cells = row.querySelectorAll('td.md-cell');
-      if (cells.length >= 2 && /^ward\b/i.test(norm(cells[0].textContent))) {
-        return { ward: norm(cells[0].textContent), room: norm(cells[1].textContent) };
-      }
+      if (cells.length < 2 || !/^ward\b/i.test(norm(cells[0].textContent))) continue;
+      const room = norm(cells[1].textContent);
+      if (/^\d+$/.test(room)) return { ward: norm(cells[0].textContent), room };
     }
     return { ward: '', room: '' };
   }

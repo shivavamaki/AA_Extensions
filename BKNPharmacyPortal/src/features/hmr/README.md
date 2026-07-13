@@ -136,9 +136,11 @@ Two buttons call the shared API `window.BKN_HMQ` exposed by
 [`../hmq/README.md`](../hmq/README.md):
 
 - **➕** (header, before the "💊 HM Process" title) → `BKN_HMQ.addCase({hn, name,
-  ward: '', room: ''})`. Patient name comes from `h4.patientbannername` if
-  present on Ward View; ward/room are **not** reliably detectable on this page
-  (unlike the Return workbench) and are left blank.
+  ward, room})`. Patient name comes from `h4.patientbannername`; ward/room
+  come from `detectWardBed()`, which reads the "Ward / Bed :  Ward 8 / 805"
+  line in the same "Visit Details" panel `detectVisitId`/`detectHN` already
+  walk up from (`WARD_BED_RE`, room anchored to digits since observed bed
+  numbers are always numeric).
 - **✓ Complete** (next to Reset) → `BKN_HMQ.completeActiveByHn(hn)`, completing
   this patient's active ("On Process") queue entry from wherever it currently
   is, without needing the floating popup open.

@@ -17,3 +17,8 @@ pharmacy_server/data/
 pharmacy_server/data/kpi/
 # Temporary Jasper report downloads
 pharmacy_server/data/temp-reports/
+
+# Sample report exports dropped at repo root for local testing — contain real
+# patient data (name/HN/ward), never commit.
+/*.xls
+/*.xlsx

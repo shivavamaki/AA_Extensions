@@ -12,6 +12,8 @@
  * 4. Display errors reported back from drugdelivery page
  * 5. RT_COMMON_257 Report — URL builder, XLS parser, PDF Summary + Detail
  * 6. RT_COMMON_917 Report — URL builder, XLS parser, grouped sticker PDF
+ * 7. RT_COMMON_896 (Discharge Process Summary) — cross-referenced against the
+ *    IPD Queue by EN to flag/highlight patients past discharge stage 2
  */
 
 'use strict';
@@ -119,6 +121,8 @@ function initTabs() {
 
 // ──────────────────────────────────────────────────────────────────────────────
 // IPD Queue — RT_COMMON_288 (Current Patient in Ward)
+//   + RT_COMMON_896 (Discharge Process Summary) cross-reference for the
+//     "Discharge" highlight — see fetchDischargeStatus() below.
 // ──────────────────────────────────────────────────────────────────────────────
 const IPD_QUEUE_URL = 'https://aa-report.bdms.co.th/jasperserver/flow.html?_flowId=viewReportFlow&output=xls&reportUnit=%2FBDMS%2FOther%2FRT_COMMON_288&userTimezone=Asia/bangkok&decorate=no&selectedorganisationuid=5b20f438d1202e29ce16f710&loginuid=5bb325cb3e4efabebd8ea549&logindepartmentuid=5b857e32136d276403482bca&organisationuid=5b20f438d1202e29ce16f710&userLocale=th&fromamount=null&toamount=null&isduplicate=false&pp=u=5bb325cb3e4efabebd8ea549&r=5b83f09c3238d86bf0d583c7&o=569794170946a3d0d588efe6';
 
@@ -147,10 +151,11 @@ function initIpdQueue() {
   // File input
   async function processQueueSheets(sheets, source) {
     const rows = parseIPDQueueXls(sheets);
-    const sentData = await chrome.storage.local.get(STORAGE_KEY_SENT);
-    const sent = new Set(sentData[STORAGE_KEY_SENT] || []);
+    const stored = await chrome.storage.local.get([STORAGE_KEY_SENT, STORAGE_KEY_DISCHARGE]);
+    const sent = new Set(stored[STORAGE_KEY_SENT] || []);
+    const dischargeMap = stored[STORAGE_KEY_DISCHARGE] || {};
     await chrome.storage.local.set({ [STORAGE_KEY_ROWS]: rows });
-    renderQueueTable(rows, document.getElementById('queueTableBody'), document.getElementById('queueCount'), sent);
+    renderQueueTable(rows, document.getElementById('queueTableBody'), document.getElementById('queueCount'), sent, dischargeMap);
     setStatus(document.getElementById('queueStatus'), `✓ ${rows.length} คน${source ? ` จาก ${source}` : ''}`, 'ok');
   }
 
@@ -178,18 +183,21 @@ function initIpdQueue() {
     }
   });
 
+  document.getElementById('btnQueueDischarge')?.addEventListener('click', fetchDischargeStatus);
+
   restoreQueueState();
 }
 
 async function restoreQueueState() {
-  const data = await chrome.storage.local.get([STORAGE_KEY_ROWS, STORAGE_KEY_SENT]);
+  const data = await chrome.storage.local.get([STORAGE_KEY_ROWS, STORAGE_KEY_SENT, STORAGE_KEY_DISCHARGE]);
   const rows = data[STORAGE_KEY_ROWS];
   const sent = new Set(data[STORAGE_KEY_SENT] || []);
+  const dischargeMap = data[STORAGE_KEY_DISCHARGE] || {};
   if (rows && rows.length > 0) {
     const tbody   = document.getElementById('queueTableBody');
     const countEl = document.getElementById('queueCount');
     const statusEl = document.getElementById('queueStatus');
-    renderQueueTable(rows, tbody, countEl, sent);
+    renderQueueTable(rows, tbody, countEl, sent, dischargeMap);
     setStatus(statusEl, `✓ ${rows.length} คน (restored — load new XLS to update)`, 'ok');
   }
 }
@@ -241,6 +249,67 @@ function wardGroup(wardBed) {
   return slashIdx !== -1 ? wardBed.slice(0, slashIdx).trim() : wardBed.trim();
 }
 
+// ── Discharge Process Summary — RT_COMMON_896 ──────────────────────────────────
+// A 12-step discharge process (1 Discharge Advise ... 12 Final Discharge), one
+// timestamp column per step (cols 22-33; col 21+N = step N). "Current stage"
+// for a patient is the highest-numbered step with a non-empty timestamp —
+// scanned from 12 down to 1 since a later step can be logged even when an
+// earlier one (e.g. "Check In") was skipped/not applicable.
+const STORAGE_KEY_DISCHARGE = 'ipdQueue_discharge';
+const DISCHARGE_HIGHLIGHT_MIN_STAGE = 2; // stage > this gets flagged
+
+function dischargeSummaryUrl() {
+  // Report is date-scoped (fromdate/todate as UTC instants covering one
+  // Bangkok calendar day, 00:00:00.000-23:59:59.999 ICT) — always "today".
+  const todayBkk = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());
+  const [y, m, d] = todayBkk.split('-').map(Number);
+  const fromdate = new Date(Date.UTC(y, m - 1, d - 1, 17, 0, 0, 0)).toISOString();
+  const todate   = new Date(Date.UTC(y, m - 1, d, 16, 59, 59, 999)).toISOString();
+  return 'https://aa-report.bdms.co.th/jasperserver/flow.html?_flowId=viewReportFlow&output=xls'
+    + '&reportUnit=%2FBDMS%2FOther%2FRT_COMMON_896&userTimezone=Asia/bangkok&decorate=no'
+    + '&selectedorganisationuid=5b20f438d1202e29ce16f710'
+    + `&fromdate=${fromdate}&todate=${todate}`
+    + '&loginuid=5bb325cb3e4efabebd8ea549&logindepartmentuid=5ee83dd361de5822deed220d'
+    + '&organisationuid=5b20f438d1202e29ce16f710&userLocale=en&isduplicate=false'
+    + '&pp=u=5bb325cb3e4efabebd8ea549&r=5b83f09c3238d86bf0d583c7&o=569794170946a3d0d588efe6';
+}
+
+function parseDischargeSummaryXls(sheets) {
+  const map = {}; // EN (visitId) -> current stage reached (1-12)
+  if (!sheets || !sheets.length) return map;
+  for (const r of sheets[0].rows) {
+    const en = String(r[2] ?? '').trim();
+    if (!en.startsWith('I')) continue; // skips header/title/summary rows
+    let stage = 0;
+    for (let s = 12; s >= 1; s--) {
+      if (String(r[21 + s] ?? '').trim()) { stage = s; break; }
+    }
+    if (stage > 0) map[en] = stage;
+  }
+  return map;
+}
+
+async function fetchDischargeStatus() {
+  const statusEl = document.getElementById('queueStatus');
+  setStatus(statusEl, '⏳ Fetching discharge status…', 'loading');
+  try {
+    const buf = await fetchReportBytes(dischargeSummaryUrl(), 'RT_COMMON_896');
+    const sheets = parseXlsBuffer(buf);
+    const dischargeMap = parseDischargeSummaryXls(sheets);
+    await chrome.storage.local.set({ [STORAGE_KEY_DISCHARGE]: dischargeMap });
+
+    const stored = await chrome.storage.local.get([STORAGE_KEY_ROWS, STORAGE_KEY_SENT]);
+    const rows = stored[STORAGE_KEY_ROWS] || [];
+    const sent = new Set(stored[STORAGE_KEY_SENT] || []);
+    renderQueueTable(rows, document.getElementById('queueTableBody'), document.getElementById('queueCount'), sent, dischargeMap);
+
+    const flagged = Object.values(dischargeMap).filter((s) => s > DISCHARGE_HIGHLIGHT_MIN_STAGE).length;
+    setStatus(statusEl, `✓ Discharge status updated — ${flagged} patient${flagged === 1 ? '' : 's'} flagged`, 'ok');
+  } catch (e) {
+    setStatus(statusEl, `✗ ${e.message}`, 'err');
+  }
+}
+
 const GROUP_PALETTE = [
   { bg: '#e8f4fd', border: '#90caf9', text: '#1565c0' },
   { bg: '#e8f8f2', border: '#80cbc4', text: '#00695c' },
@@ -261,7 +330,7 @@ function groupColor(key) {
   return groupColorMap.get(key);
 }
 
-function renderQueueTable(rows, tbody, countEl, sentSet = new Set()) {
+function renderQueueTable(rows, tbody, countEl, sentSet = new Set(), dischargeMap = {}) {
   countEl.textContent = rows.length || '0';
   tbody.innerHTML = '';
   groupColorMap.clear();
@@ -303,9 +372,14 @@ function renderQueueTable(rows, tbody, countEl, sentSet = new Set()) {
       const isSent = sentSet.has(visitId);
       if (isSent) tr.classList.add('row-sent');
 
+      const stage = dischargeMap[visitId];
+      const isDischarge = stage != null && stage > DISCHARGE_HIGHLIGHT_MIN_STAGE;
+      if (isDischarge) tr.classList.add('row-discharge');
+
       const tdName = document.createElement('td');
       tdName.className = 'cell-name';
-      tdName.textContent = name || '—';
+      tdName.innerHTML = `<span class="cell-name-text">${escHtml(name || '—')}</span>`
+        + (isDischarge ? `<span class="discharge-badge" title="Discharge stage ${stage}/12">Discharge</span>` : '');
       tdName.title = name || '';
 
       const tdVisit = document.createElement('td');

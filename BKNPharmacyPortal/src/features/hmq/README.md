@@ -16,8 +16,13 @@ so every workstation's popup shows the same queue.
   `#printprescription` in the Return workbench toolbar — same icon-button
   class as ArcusAir's own native button, clicking it extracts the patient
   name/HN from `h4.patientbannername` (`extractPatientFromBanner`) and
-  ward/room from the first two `td.md-cell`s of the selected `tr.md-row`
-  (`extractWardRoom`).
+  ward/room from a `tr.md-row` whose first `td.md-cell` starts with "Ward"
+  (`extractWardRoom`). The Return workbench actually has **two** such rows —
+  the dispense-details header (2nd cell is the dispensing/pharmacy location,
+  e.g. "Inpatient Pharmacy (Floor G)") and the "Bed Details" row further down
+  (2nd cell is the patient's real bed/room number, always plain digits) —
+  `extractWardRoom` skips any row whose 2nd cell isn't numeric so it can't
+  pick the wrong one.
 - [`../hmr/content-hmr.js`](../hmr/README.md) adds equivalent buttons directly
   on the Ward View HM Process card (➕ Add, ✓ Complete) via the shared
   `window.BKN_HMQ` API below — no floating popup needed to use them there.
@@ -126,9 +131,11 @@ noise, since the nightly merge (above) only ever archives `done` entries.
 
 ## Gotchas
 
-- Ward/room extraction (`extractWardRoom`) only works on the Return
-  workbench's own details table — when adding a case from Ward View via
-  `content-hmr.js`, ward/room are left blank (no equivalent table there).
+- Ward/room extraction is page-specific: `extractWardRoom` (this file) reads
+  the Return workbench's own "Bed Details" table; `detectWardBed` (in
+  `content-hmr.js`, used by the Ward View ➕ button and auto-add) reads the
+  "Ward / Bed :" line in the Visit Details panel instead — different pages,
+  different DOM, so they don't share a helper.
 - `_id` fields inside queue entries are day-scoped display numbers
   (`queueNum`), not database keys — the actual key is the file-name-derived
   `id` (`HMQ-YYYYMMDD-NNNN`), stable across the nightly merge.

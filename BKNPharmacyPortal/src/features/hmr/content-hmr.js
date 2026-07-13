@@ -67,14 +67,34 @@
 
   // Best-effort patient name for the HM Process Queue "Add" button — same
   // banner class ArcusAir uses on the Return workbench (content-hmq.js reads
-  // it there too). Ward/room aren't reliably detectable here, so they're
-  // left blank when adding from this button.
+  // it there too).
   function detectPatientNameForQueue() {
     const h4 = document.querySelector('h4.patientbannername');
     if (!h4) return null;
     const full = norm(h4.textContent);
     const m = /\(48-\d{2}-\d{6,7}\)/.exec(full);
     return norm(m ? full.slice(0, m.index) : full);
+  }
+
+  // Ward View's "Visit Details" panel shows a "Ward / Bed :  Ward 8 / 805"
+  // line right under the admission date — same panel detectVisitId/detectHN
+  // already walk up from. Room/bed numbers observed so far are always
+  // numeric (805, 510, 717…), so the second capture group is anchored to
+  // digits to stay clear of any other "X / Y" text nearby.
+  const WARD_BED_RE = /Ward\s*\/\s*Bed\s*:?\s*(.+?)\s*\/\s*(\d+)/i;
+
+  function detectWardBed() {
+    const h4 = findVisitDetailsH4();
+    if (h4) {
+      let el = h4.parentElement;
+      for (let i = 0; i < 14 && el; i++) {
+        const m = WARD_BED_RE.exec(el.textContent);
+        if (m) return { ward: norm(m[1]), room: norm(m[2]) };
+        el = el.parentElement;
+      }
+    }
+    const m = WARD_BED_RE.exec(document.body.textContent);
+    return m ? { ward: norm(m[1]), room: norm(m[2]) } : { ward: '', room: '' };
   }
 
   // ── ArcusAir discharge process API ──────────────────────────────────
@@ -202,7 +222,8 @@
       const hn = await resolveHN(visitid, state);
       if (!hn) return;
       const name = detectPatientNameForQueue() || hn;
-      const result = await window.BKN_HMQ.addCase({ hn, name, ward: '', room: '' });
+      const { ward, room } = detectWardBed();
+      const result = await window.BKN_HMQ.addCase({ hn, name, ward, room });
       if (result.ok) {
         await serverSave(visitid, {}, makeLog(`Auto-added to HM Process Queue (Q${result.entry.queueNum}) — ${di.status}`));
       } else {
@@ -1431,8 +1452,9 @@
       const hn = await resolveHN(visitid, state);
       if (!hn) { alert('[HM Process Queue] HN not detected.'); return; }
       const name = detectPatientNameForQueue() || hn;
+      const { ward, room } = detectWardBed();
       if (btn) btn.disabled = true;
-      const result = await window.BKN_HMQ.addCase({ hn, name, ward: '', room: '' });
+      const result = await window.BKN_HMQ.addCase({ hn, name, ward, room });
       if (btn) btn.disabled = false;
       if (!result.ok) { alert(`[HM Process Queue] ${result.reason}`); return; }
       await serverSave(visitid, {}, makeLog(`Added to HM Process Queue (Q${result.entry.queueNum})`));

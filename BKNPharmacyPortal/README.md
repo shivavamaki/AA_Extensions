@@ -35,7 +35,7 @@ Shared infrastructure (translation engine, data bus): [src/shared/README.md](src
 | Page | Description | README |
 |---|---|---|
 | IV / Aux Sticker | IV bag, HAD, PFS, ATB, Cytotoxic, EYE labels and premix mixing labels | [src/features/iv-aux-sticker/README.md](src/features/iv-aux-sticker/README.md) |
-| IPD Queue | Active inpatient list from ArcusAir MRD → push to Drug Delivery | — |
+| IPD Queue | Active inpatient list from ArcusAir MRD → push to Drug Delivery; "🏷 Check Discharge Status" cross-references RT_COMMON_896 to flag/highlight patients past discharge stage 2 | — |
 | Reports | RT_COMMON_257 dispensing report, RT_COMMON_917 stock picking, Beedee report export | [src/features/report-print/README.md](src/features/report-print/README.md), [src/features/beedee-pdf/README.md](src/features/beedee-pdf/README.md) |
 | Formulary | Drug formulary browser | [formulary/README.md](formulary/README.md) |
 | Knowledge Hub | Pharmacy FAQs, items, videos, shared references | [knowledge/README.md](knowledge/README.md) |
