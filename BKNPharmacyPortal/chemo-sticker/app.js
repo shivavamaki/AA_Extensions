@@ -355,8 +355,7 @@ function buildSticker(d) {
 
     if (drug.route === 'IV') {
       if (bagVol > 0 && drugVol !== null) {
-        const dilV = Math.max(0, bagVol - drugVol);
-        volLine = `+ ${fmtVol(dilV)} mL ${esc(drug.dil)}&nbsp;&nbsp;=&nbsp;&nbsp;<b>Total ${bagVol} mL</b>`;
+        volLine = `+ ${fmtVol(bagVol)} mL ${esc(drug.dil)}`;
       } else if (drug.dil) {
         volLine = `Diluent: ${esc(drug.dil)}`;
       }
@@ -423,7 +422,7 @@ function buildRateCard(d) {
   const rateText = document.getElementById('f-ratetext').value.trim()
     || (drug ? drug.rate : '');
   const bagDisp  = bagVol > 0 && drug && drug.dil
-    ? ` + ${drug.dil} = Total ${bagVol} mL` : '';
+    ? ` + ${fmtVol(bagVol)} mL ${drug.dil}` : '';
   const drugLabel = drug ? `${drug.name}  ${dose ? dose+' '+unit : ''}${bagDisp}` : '';
 
   return `

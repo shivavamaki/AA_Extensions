@@ -222,7 +222,11 @@
       "Bash(python3 -c \"import playwright; print\\('playwright module OK'\\)\")",
       "Bash(python3 /tmp/claude-1000/-workspaces-AA-Extensions/fa1418fc-b97d-43b9-84c6-57a752c53bd2/scratchpad/shot2.py)",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('count:', len\\(d\\)\\); print\\('archived:', sum\\(1 for x in d if x.get\\('archived'\\)\\)\\)\")",
-      "Bash(kill 13445)"
+      "Bash(kill 13445)",
+      "Bash(grep -n \"bagVol\\\\|dilV\\\\|Total \\\\${bagVol}\\\\|f-bagvol\\\\|Total Bag\" BKNPharmacyPortal/chemo-sticker/app.js BKNPharmacyPortal/chemo-sticker/index.html)",
+      "Bash(grep -n \"bagVol\\\\|dilV\\\\|Total Bag\\\\|Total \\\\${bagVol}\" chemo_sticker/chemo_bkn_bud.html)",
+      "Bash(python3 /tmp/claude-1000/-workspaces-AA-Extensions/fa1418fc-b97d-43b9-84c6-57a752c53bd2/scratchpad/shot_chemo.py)",
+      "Bash(node --check BKNPharmacyPortal/chemo-sticker/app.js)"
     ],
     "additionalDirectories": [
       "/workspaces/AA_Extensions/BKNPharmacyPortal/src/features/home-med",
