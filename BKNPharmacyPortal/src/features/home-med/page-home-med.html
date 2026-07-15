@@ -548,6 +548,37 @@
       color: #6b7280;
     }
 
+    .take-continue {
+      margin-top: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #065f46;
+    }
+    .med-row.med-continue .med-name::before {
+      content: "🔁 ";
+      display: inline;
+    }
+    .row-cont {
+      width: 24px;
+      height: 24px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #0f172a;
+      font-size: 14px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-bottom: 4px;
+    }
+    .row-cont.active {
+      background: #d1fae5;
+      border-color: #10b981;
+      color: #047857;
+    }
+
     .instruction-card {
       display: grid;
       grid-template-columns: 8mm 1fr;
@@ -904,6 +935,7 @@
     .mealcard-section h2 { margin: 0; font-size: 18px; line-height: 1.1; }
     .mealcard-section .sub { font-size: 11px; color: #4b5563; margin-top: 1px; }
     .mc-info { background: #eff6ff; color: #1e3a8a; border: 1px solid #dbeafe; border-radius: 8px; padding: 6px 12px; font-size: 12px; margin-bottom: 9px; }
+    .mc-info-detail { margin-top: 6px; font-size: 12px; color: #1f2937; }
     /* Masonry columns: cards size to content and pack tightly; empty slots dropped. */
     .mc-grid { column-count: 2; column-gap: 8px; }
     .mc-slot { border: 1.5px solid #cbd5e1; border-radius: 10px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; margin: 0 0 8px; }
@@ -1223,7 +1255,7 @@
         </div>
         <div></div>
       </div>
-      <div class="mc-info">ℹ️ มียาหลายตัวในมื้อเดียวกัน โปรดสังเกตว่าตัวใดกินก่อนอาหาร และตัวใดกินหลังอาหาร</div>
+      <div class="mc-info" id="mealCardInfo">ℹ️ มียาหลายตัวในมื้อเดียวกัน โปรดสังเกตว่าตัวใดกินก่อนอาหาร และตัวใดกินหลังอาหาร</div>
       <div class="mc-grid" id="mealcardGrid"><!-- slots injected by JS --></div>
     </section>
   </main>

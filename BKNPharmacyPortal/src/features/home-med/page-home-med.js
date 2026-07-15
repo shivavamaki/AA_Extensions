@@ -411,6 +411,22 @@ function _noteForLang(med) {
   return (_currentLang === "en") ? (en || th) : (th || en);
 }
 
+function _takeContinueLabel() {
+  return (_currentLang === "en") ? "Take continue" : "ทานต่อเนื่อง";
+}
+
+function _takeContinueMealNote() {
+  return (_currentLang === "en")
+    ? "🔁 Continued medications are shown with this icon."
+    : "🔁 ยาที่ทานต่อเนื่องจนหมดจะแสดงด้วยไอคอนนี้";
+}
+
+function _mealCardInfoDefault() {
+  return (_currentLang === "en")
+    ? "ℹ️ Multiple medications in the same meal slot. Note which medicines are before or after meals."
+    : "ℹ️ มียาหลายตัวในมื้อเดียวกัน โปรดสังเกตว่าตัวใดกินก่อนอาหาร และตัวใดกินหลังอาหาร";
+}
+
 /** Swap each note-line to the current language without re-rendering the table.
  * Only swaps cells the user hasn't manually edited (current text still matches
  * one of the stored TH/EN variants). */
@@ -451,6 +467,7 @@ function _medFromReport(m) {
     // Authoritative Thai frequency phrase (BKN frequency master); when present
     // it overrides the engine's frequency translation on the instruction line.
     frequencyTh: norm(m.frequencyTh || ""),
+    takeUntilFinished: false,
   };
 }
 
@@ -468,8 +485,10 @@ function _buildMedRow(med, index) {
   const tr = document.createElement("tr");
   tr.className = "med-row";
   tr.dataset.index = String(index);
+  if (med.takeUntilFinished) tr.classList.add("med-continue");
   tr.innerHTML = `
     <td class="col-act no-print">
+      <button type="button" class="row-cont${med.takeUntilFinished ? " active" : ""}" title="${med.takeUntilFinished ? "Unmark take until finished" : "Mark take until finished"}">🔁</button>
       <button type="button" class="row-del" title="Remove this medicine">−</button>
     </td>
     <td class="col-no">${index + 1}</td>
@@ -479,6 +498,7 @@ ${photo}
         <div class="med-text">
           <div class="med-name" contenteditable="true" data-field="drug" data-ph="ชื่อยา" data-no-translate translate="no">${escapeHtml(med.drug || "")}</div>${med.source === "pom" ? `<span class="pom-badge no-translate" data-no-translate translate="no" title="Patient's Own Medication — added from Medication Reconciliation">POM</span>` : ""}
           ${med.code ? `<div class="med-code">Code: ${escapeHtml(med.code)}</div>` : ""}
+          ${med.takeUntilFinished ? `<div class="take-continue">${escapeHtml(_takeContinueLabel())}</div>` : ""}
         </div>
       </div>
     </td>
@@ -528,10 +548,12 @@ async function renderMeds() {
 // is toggled by the "แนบหน้า จัดตามมื้อ" control (body.hm-with-mealcard).
 function renderMealCard() {
   const host = document.getElementById("mealcardGrid");
+  const info = document.getElementById("mealCardInfo");
   if (!host) return;
   const MS = window.BKNMealSlots;
   if (!_meds.length || !MS) {
     host.innerHTML = `<div class="mc-emptyall">ไม่มียากลับบ้าน (no home medications)</div>`;
+    if (info) info.innerHTML = "";
     return;
   }
   // Match on the instruction plus the authoritative Thai frequency phrase, so a
@@ -545,9 +567,16 @@ function renderMealCard() {
     const text = norm(instrTh + " " + (m.frequencyTh || ""));
     let dose = MS.doseSnippet(instrTh);
     if (!dose && _isExternalMed(m, instrTh)) dose = "ทา";
-    return { drug: m.drug, text, dose };
+    const drugName = m.takeUntilFinished ? `🔁 ${m.drug}` : m.drug;
+    return { drug: drugName, text, dose };
   });
   host.innerHTML = MS.gridHTML(items, escapeHtml);
+  if (info) {
+    const continuedCount = _meds.filter((m) => m.takeUntilFinished).length;
+    info.innerHTML = continuedCount
+      ? `<div class="mc-info-detail">${escapeHtml(_takeContinueMealNote())}</div>`
+      : `<div class="mc-info-detail">${escapeHtml(_mealCardInfoDefault())}</div>`;
+  }
 }
 
 /** External / topical meds (creams, ointments) have no swallow-dose — they get a
@@ -644,6 +673,19 @@ function _bindRowEditing(tbody) {
     // Enter commits (except keep newlines out of single-line fields).
     el.addEventListener("keydown", (e) => {
       if (e.key === "Enter") { e.preventDefault(); el.blur(); }
+    });
+  });
+
+  // Toggle take-until-finished buttons.
+  tbody.querySelectorAll(".row-cont").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tr = btn.closest(".med-row");
+      if (!tr) return;
+      const idx = Number(tr.dataset.index);
+      if (idx < 0 || idx >= _meds.length) return;
+      _meds[idx].takeUntilFinished = !_meds[idx].takeUntilFinished;
+      _persist();
+      renderMeds();
     });
   });
 
@@ -818,6 +860,7 @@ async function fetchAndRender() {
       code: norm(m.code || ""), provider: norm(m.provider || ""),
       frequencyTh: norm(m.frequencyTh || ""),
       source: norm(m.source || ""),
+      takeUntilFinished: !!m.takeUntilFinished,
     }));
     // Detect new discharge meds added after the cache was saved and inject them.
     const savedCodes = new Set(_meds.map((m) => m.code).filter(Boolean));
