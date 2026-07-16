@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Allergy Card</title>
+  <style>
+    @font-face {
+      font-family: 'Sarabun';
+      src: url('../../assets/fonts/Sarabun-Regular.ttf') format('truetype');
+      font-weight: normal;
+    }
+    @font-face {
+      font-family: 'Sarabun';
+      src: url('../../assets/fonts/THSarabunNew-Bold.ttf') format('truetype');
+      font-weight: bold;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: #e5e7eb; }
+
+    .toolbar {
+      position: sticky; top: 0; z-index: 100;
+      background: #1f2937; color: #fff;
+      padding: 8px 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .toolbar .title { font-weight: 700; font-size: 14px; }
+    .toolbar button {
+      padding: 5px 12px; font-size: 12px; cursor: pointer;
+      border: none; border-radius: 4px; font-family: inherit;
+      background: #374151; color: #fff;
+    }
+
+    #preview { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    #empty-msg { padding: 40px; text-align: center; color: #6b7280; font-size: 14px; }
+
+    .card,
+    .card-cont {
+      width: 8cm;
+      height: 3.5cm;
+      background: #fff;
+      border: 1px solid #000;
+      padding: 1mm 1.5mm;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-family: 'Sarabun', sans-serif;
+    }
+
+    .c-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: baseline;
+      border-bottom: 1px solid #000;
+      padding-bottom: 0.5mm;
+      margin-bottom: 0.6mm;
+      flex-shrink: 0;
+      column-gap: 1.2mm;
+    }
+    .c-name {
+      font-size: 13.5px;
+      font-weight: bold;
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+    .c-hn {
+      font-size: 13.5px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    .c-page-suffix {
+      font-size: 10px;
+      font-weight: bold;
+      margin-left: 1mm;
+    }
+
+    .c-allergies {
+      flex: 1;
+      overflow: hidden;
+    }
+    .c-allergy-row {
+      padding: 0.3mm 0 0.4mm;
+      border-bottom: 1px dotted #777;
+    }
+    .c-allergy-row:last-child { border-bottom: none; }
+    .c-drug-line {
+      display: flex;
+      align-items: baseline;
+      gap: 0.8mm;
+      line-height: 1.05;
+      min-width: 0;
+    }
+    .c-warn {
+      font-size: 12px;
+      flex: 0 0 auto;
+    }
+    .c-drug {
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+      max-width: 46mm;
+    }
+    .c-type {
+      font-size: 12.5px;
+      font-weight: bold;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .c-detail {
+      font-size: 12px;
+      line-height: 1.15;
+      margin-left: 3.5mm;
+      margin-top: 0.2mm;
+      word-break: break-word;
+    }
+    .c-nkda {
+      font-style: italic;
+      font-size: 13px;
+    }
+
+    @media print {
+      @page { size: 8cm 3.5cm; margin: 0; }
+      html, body { margin: 0 !important; padding: 0 !important; background: #fff; width: 8cm; }
+      .toolbar { display: none !important; }
+      #preview { padding: 0 !important; margin: 0 !important; gap: 0 !important; display: block; }
+      .card, .card-cont {
+        width: 8cm !important;
+        height: 3.5cm !important;
+        margin: 0 !important;
+        page-break-after: always;
+        break-after: page;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="title">Allergy Card</span>
+  <button id="btnPrint">🖨 Print</button>
+</div>
+
+<div id="preview">
+  <div id="empty-msg">No allergy data — click the ⚠️ button from the patient page.</div>
+</div>
+
+<script src="../../core/messages.js"></script>
+<script src="../../core/utils.js"></script>
+<script src="../../core/dom.js"></script>
+<script src="page-allergy-card.js"></script>
+</body>
+</html>

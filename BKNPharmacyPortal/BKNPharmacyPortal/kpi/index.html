@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pharmacy KPI Data System</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">PHARM·KPI</div>
+    <div>
+      <div class="header-title">Pharmacy Data System</div>
+      <div class="header-sub">BKN Pharmacy · KPI Data Collection</div>
+    </div>
+  </div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <button id="btn-update-app" class="btn btn-primary btn-sm">🔄 Update App</button>
+    <button id="btn-export-all" class="btn btn-ghost btn-sm">⬇ Export All JSON</button>
+  </div>
+</div>
+
+<div class="folder-bar">
+  <div class="folder-status">
+    <div class="folder-dot" id="folderDot"></div>
+    <div class="folder-info">
+      <div class="folder-label">KPI Server</div>
+      <div class="folder-path" id="folderPath">กำลังค้นหา Server ...</div>
+    </div>
+  </div>
+  <button id="btn-pick-folder" class="btn btn-primary btn-sm">🔄 ค้นหา Server</button>
+  <button id="btn-show-records" class="btn btn-ghost btn-sm">🗂 ดูบันทึกทั้งหมด</button>
+</div>
+
+<div class="tabs">
+  <div class="ptab tab active" id="ptab-opd">🏥 OPD</div>
+  <div class="ptab tab"        id="ptab-ipd">🛏 IPD</div>
+  <div class="ptab tab"        id="ptab-med-error">💊 Med Error</div>
+  <div class="ptab tab"        id="ptab-records">📋 บันทึก <span class="tab-badge" id="badge-records">0</span></div>
+  <div class="ptab tab"        id="ptab-report">📊 รายงาน <span class="tab-badge" id="badge-report">0</span></div>
+  <div class="ptab tab"        id="ptab-dashboard">📈 Dashboard <span class="tab-badge" id="badge-dashboard">0</span></div>
+</div>
+<div class="sub-tabs svc-opd" id="service-subtabs">
+  <div class="stab active" id="stab-brief">📋 Morning Brief</div>
+  <div class="stab"        id="stab-stat">⏱ Stat <span class="tab-badge" id="badge-stat">0</span></div>
+</div>
+
+<div class="main">
+
+  <!-- OPD MORNING BRIEF -->
+  <div class="section active" id="section-opd-brief">
+    <div class="card">
+      <div class="card-title">
+        <div class="card-title-left">
+          <div class="card-icon icon-blue">🏥</div>
+          <div>OPD Morning Brief<div style="font-size:12px;font-weight:400;color:var(--text3)">ตรวจสอบความเรียบร้อยประจำวัน</div></div>
+        </div>
+      </div>
+      <div class="form-grid" style="margin-bottom:20px;">
+        <div class="form-group"><label>วันที่</label><input type="date" id="opd-brief-date"></div>
+        <div class="form-group"><label>ลงชื่อผู้ตรวจสอบ</label><input type="text" id="opd-brief-sign" placeholder="ชื่อ-สกุล"></div>
+      </div>
+      <div class="section-label">รายการตรวจสอบ</div>
+      <div class="checklist" id="opd-brief-checks"></div>
+      <hr class="divider">
+      <div class="form-group"><label>ปัญหาที่พบ / หมายเหตุ</label><textarea id="opd-brief-issues" placeholder="ระบุปัญหาที่พบ หรือ — ถ้าไม่มี"></textarea></div>
+      <div class="actions-row">
+        <button id="btn-save-opd-brief" class="btn btn-success">💾 บันทึก & Save JSON</button>
+        <button id="btn-clear-opd-brief" class="btn btn-ghost">🔄 ล้างฟอร์ม</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- IPD MORNING BRIEF -->
+  <div class="section" id="section-ipd-brief">
+    <div class="card">
+      <div class="card-title">
+        <div class="card-title-left">
+          <div class="card-icon icon-teal">🛏</div>
+          <div>IPD Morning Brief<div style="font-size:12px;font-weight:400;color:var(--text3)">ตรวจสอบความเรียบร้อยประจำวัน</div></div>
+        </div>
+      </div>
+      <div class="form-grid" style="margin-bottom:20px;">
+        <div class="form-group"><label>วันที่</label><input type="date" id="ipd-brief-date"></div>
+        <div class="form-group"><label>ลงชื่อผู้ตรวจสอบ</label><input type="text" id="ipd-brief-sign" placeholder="ชื่อ-สกุล"></div>
+      </div>
+      <div class="section-label">รายการตรวจสอบ</div>
+      <div class="checklist" id="ipd-brief-checks"></div>
+      <hr class="divider">
+      <div class="form-group"><label>ปัญหาที่พบ / หมายเหตุ</label><textarea id="ipd-brief-issues" placeholder="ระบุปัญหาที่พบ หรือ — ถ้าไม่มี"></textarea></div>
+      <div class="actions-row">
+        <button id="btn-save-ipd-brief" class="btn btn-success">💾 บันทึก & Save JSON</button>
+        <button id="btn-clear-ipd-brief" class="btn btn-ghost">🔄 ล้างฟอร์ม</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPD STAT -->
+  <div class="section" id="section-opd-stat">
+    <div class="card">
+      <div class="card-title">
+        <div class="card-title-left">
+          <div class="card-icon icon-yellow">⏱</div>
+          <div>OPD Stat<div style="font-size:12px;font-weight:400;color:var(--text3)">เวลาจ่ายยา — เป้าหมาย ≤ 5 นาที</div></div>
+        </div>
+        <button id="btn-save-opd-stat" class="btn btn-success btn-sm">💾 บันทึก Session</button>
+      </div>
+      <div class="form-grid" style="margin-bottom:16px;">
+        <div class="form-group"><label>วันที่</label><input type="date" id="opd-stat-date"></div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-box"><div class="stat-val" id="opd-cnt">0</div><div class="stat-lbl">รายการ</div></div>
+        <div class="stat-box"><div class="stat-val" id="opd-avg">—</div><div class="stat-lbl">เฉลี่ย (นาที)</div></div>
+        <div class="stat-box"><div class="stat-val" id="opd-pass" style="color:var(--green-txt)">0</div><div class="stat-lbl">≤5 min ✓</div></div>
+        <div class="stat-box"><div class="stat-val" id="opd-pct">—</div><div class="stat-lbl">% ผ่านเกณฑ์</div></div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="entries-table">
+          <thead><tr><th>#</th><th>เลขที่ไฟล์</th><th>เวลาใบยา</th><th>เวลาเช็คเสร็จ</th><th>เวลาที่ใช้</th><th>≤5 min</th><th></th></tr></thead>
+          <tbody id="opd-stat-body"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- IPD STAT -->
+  <div class="section" id="section-ipd-stat">
+    <div class="card">
+      <div class="card-title">
+        <div class="card-title-left">
+          <div class="card-icon icon-green">⏱</div>
+          <div>IPD Stat<div style="font-size:12px;font-weight:400;color:var(--text3)">เวลาจ่ายยา — เป้าหมาย ≤ 15 นาที</div></div>
+        </div>
+        <button id="btn-save-ipd-stat" class="btn btn-success btn-sm">💾 บันทึก Session</button>
+      </div>
+      <div class="form-grid" style="margin-bottom:16px;">
+        <div class="form-group"><label>วันที่</label><input type="date" id="ipd-stat-date"></div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-box"><div class="stat-val" id="ipd-cnt">0</div><div class="stat-lbl">รายการ</div></div>
+        <div class="stat-box"><div class="stat-val" id="ipd-avg">—</div><div class="stat-lbl">เฉลี่ย (นาที)</div></div>
+        <div class="stat-box"><div class="stat-val" id="ipd-pass" style="color:var(--green-txt)">0</div><div class="stat-lbl">≤15 min ✓</div></div>
+        <div class="stat-box"><div class="stat-val" id="ipd-pct">—</div><div class="stat-lbl">% ผ่านเกณฑ์</div></div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="entries-table">
+          <thead><tr><th>#</th><th>เลขที่ไฟล์</th><th>เวลาใบยา</th><th>เวลาเช็คเสร็จ</th><th>เวลาที่ใช้</th><th>≤15 min</th><th></th></tr></thead>
+          <tbody id="ipd-stat-body"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MEDICATION ERROR -->
+  <div class="section" id="section-med-error">
+    <div class="card">
+      <div class="card-title">
+        <div class="card-title-left">
+          <div class="card-icon" style="background: var(--red-bg);">💊</div>
+          <div>Medication Error Record<div style="font-size:12px;font-weight:400;color:var(--text3)">บันทึก Med Error จากคลัง / Replenish</div></div>
+        </div>
+      </div>
+      <div class="form-grid" style="margin-bottom:16px;">
+        <div class="form-group"><label>วันที่</label><input type="date" id="med-error-date"></div>
+        <div class="form-group"><label>ลงชื่อ</label><input type="text" id="med-error-signature" list="med-error-staff-list" placeholder="ชื่อผู้บันทึก"></div>
+        <div class="form-group full"><label>รายการยาในใบ replenish</label><input type="text" id="med-error-item" placeholder="ชื่อยา / barcode / รายการในใบ replenish"></div>
+        <div class="form-group"><label>Error</label>
+          <select id="med-error-type">
+            <option value="">— เลือกประเภท —</option>
+            <option value="ผิดชนิด">ผิดชนิด</option>
+            <option value="ผิดขนาด">ผิดขนาด</option>
+            <option value="ผิดจำนวน">ผิดจำนวน</option>
+            <option value="ไม่ได้รับยาตามรายการในใบ replenish">ไม่ได้รับยาตามรายการในใบ replenish</option>
+            <option value="อื่นๆ">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Location</label><input type="text" id="med-error-location" list="med-error-location-list" placeholder="เช่น Floor 1"></div>
+        <div class="form-group full"><label>รายละเอียด</label><textarea id="med-error-detail" placeholder="เช่น ในใบรายการขึ้น 120 เม็ด แต่ได้รับของมา 60 เม็ด"></textarea></div>
+        <div class="form-group full"><label>หมายเหตุ / การดำเนินการแก้ไข</label><textarea id="med-error-note" placeholder="เช่น แจ้งคลังยา+ส่งยามาให้เรียบร้อย"></textarea></div>
+      </div>
+      <datalist id="med-error-staff-list">
+        <option value="Narudee"></option><option value="Rattiyakorn"></option><option value="patcharee"></option><option value="wannaporn"></option><option value="ชยาภรณ์"></option><option value="ดุษฎี"></option><option value="นฤดี"></option><option value="พัชรี"></option><option value="พิษณุ"></option><option value="รัติยากร"></option><option value="วรรณพร"></option><option value="วรรรณพร"></option><option value="อรอมล"></option><option value="อลิศรา"></option><option value="เยาวพร"></option>
+      </datalist>
+      <datalist id="med-error-location-list">
+        <option value="Floor 1"></option><option value="Floor 2"></option><option value="Floor G"></option><option value="Floor2"></option>
+      </datalist>
+      <div class="actions-row">
+        <button id="btn-save-med-error" class="btn btn-success">💾 บันทึก & Save JSON</button>
+        <button id="btn-clear-med-error" class="btn btn-ghost">🔄 ล้างฟอร์ม</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- RECORDS -->
+  <div class="section" id="section-records">
+    <div class="card">
+      <div class="card-title">
+        <div class="card-title-left">
+          <div class="card-icon icon-purple">📋</div>
+          <span>บันทึกทั้งหมด (session นี้)</span>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button id="btn-trigger-import" class="btn btn-ghost btn-sm">📥 Import JSON</button>
+          <button id="btn-clear-records" class="btn btn-danger btn-sm">🗑 ล้างทั้งหมด</button>
+        </div>
+      </div>
+      <input type="file" id="import-json-input" accept=".json,application/json" multiple style="display:none">
+      <div id="drop-zone" style="margin-bottom:14px; border:1.5px dashed var(--border2); border-radius:10px; padding:16px; text-align:center; color:var(--text2); background:var(--surface2); transition:all .15s;">
+        ลากไฟล์ JSON มาวางที่นี่เพื่อ import หรือกดปุ่ม Import JSON
+      </div>
+      <div id="records-container"><div class="empty-state"><div class="icon">📭</div>ยังไม่มีบันทึก</div></div>
+    </div>
+  </div>
+
+  <!-- REPORT -->
+  <div class="section" id="section-report">
+    <div class="card">
+      <div class="card-title">
+        <div class="card-title-left">
+          <div class="card-icon icon-purple">📊</div>
+          <span>รายงานจาก JSON ใน Shared Folder</span>
+        </div>
+        <button id="btn-load-report" class="btn btn-success btn-sm">🔄 โหลดรายงาน</button>
+      </div>
+      <div class="report-toolbar">
+        <div class="stat-box"><div class="stat-val" id="report-files">0</div><div class="stat-lbl">ไฟล์ JSON</div></div>
+        <div class="stat-box"><div class="stat-val" id="report-records">0</div><div class="stat-lbl">รายการบันทึก</div></div>
+        <div class="stat-box"><div class="stat-val" id="report-dates">0</div><div class="stat-lbl">จำนวนวัน</div></div>
+      </div>
+      <div class="mini-note" style="margin-bottom:8px;">อ่านข้อมูลจาก Shared Folder ที่เชื่อมต่ออยู่ แล้วแสดงเป็นตารางแยกตามวันที่</div>
+      <div class="report-filter-bar">
+        <div class="form-group">
+          <label>ประเภท</label>
+          <select id="report-filter-type">
+            <option value="all">ทั้งหมด</option>
+            <option value="opd-brief">OPD Brief</option>
+            <option value="ipd-brief">IPD Brief</option>
+            <option value="opd-stat">OPD Stat</option>
+            <option value="ipd-stat">IPD Stat</option>
+            <option value="med-error">Med Error</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>จากวันที่</label>
+          <input type="date" id="report-filter-date-from">
+        </div>
+        <div class="form-group">
+          <label>ถึงวันที่</label>
+          <input type="date" id="report-filter-date-to">
+        </div>
+        <div class="form-group">
+          <button id="btn-clear-report-filters" class="btn btn-ghost btn-sm">ล้างตัวกรอง</button>
+        </div>
+      </div>
+      <div id="report-container"><div class="empty-state"><div class="icon">📊</div>ยังไม่ได้โหลดรายงาน</div></div>
+    </div>
+  </div>
+
+  <!-- KPI DASHBOARD -->
+  <div class="section" id="section-dashboard">
+    <div class="card">
+      <div class="card-title">
+        <div class="card-title-left">
+          <div class="card-icon icon-green">📈</div>
+          <span>KPI Dashboard</span>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button id="btn-load-dashboard" class="btn btn-success btn-sm">🔄 โหลด Dashboard</button>
+          <button id="btn-export-excel" class="btn btn-ghost btn-sm">📊 Export Excel</button>
+          <button id="btn-export-datastudio" class="btn btn-ghost btn-sm">🧩 Export Data Studio JSON</button>
+          <button id="btn-export-pdf" class="btn btn-ghost btn-sm">🖨 Export PDF</button>
+        </div>
+      </div>
+
+      <div class="report-filter-bar">
+        <div class="form-group">
+          <label>จากวันที่</label>
+          <input type="date" id="dash-filter-date-from">
+        </div>
+        <div class="form-group">
+          <label>ถึงวันที่</label>
+          <input type="date" id="dash-filter-date-to">
+        </div>
+        <div class="form-group">
+          <button id="btn-clear-dash-filters" class="btn btn-ghost btn-sm">ล้างตัวกรอง</button>
+        </div>
+      </div>
+
+      <div id="dashboard-container">
+        <div class="empty-state"><div class="icon">📈</div>กดโหลด Dashboard เพื่ออ่านข้อมูล KPI จาก Shared Folder</div>
+      </div>
+      <div class="dashboard-note">
+        Dashboard อ่านจากไฟล์ JSON ใน Shared Folder เดียวกับหน้ารายงาน และรองรับข้อมูลเก่าที่ยังไม่มี schemaVersion
+      </div>
+    </div>
+  </div>
+  </div>
+
+</div>
+
+
+<div class="app-lock" id="app-lock">
+  <div class="app-lock-card">
+    <div class="app-lock-title">ไม่พบ KPI Server</div>
+    <div class="app-lock-text">ระบบค้นหา Server อัตโนมัติแล้วแต่ไม่พบ — กรุณาเปิด start_server.bat บนเครื่อง Server แล้วกดปุ่มด้านล่างเพื่อค้นหาใหม่</div>
+    <div class="app-lock-path" id="app-lock-path">http://10.134.110.81:8765</div>
+    <div class="actions-row" style="margin-top:0">
+      <button id="btn-pick-folder-lock" class="btn btn-primary">🔄 ค้นหา Server</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✓</span>
+  <span id="toast-msg">บันทึกเรียบร้อย</span>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

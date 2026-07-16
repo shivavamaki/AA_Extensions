@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All IV Sticker — Pharmacy</title>
+  <link rel="stylesheet" href="iv_sticker.css">
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ══════════════════════ SIDEBAR ══════════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+          <rect x="9" y="3" width="6" height="4" rx="1"/>
+          <path d="M9 12h6M9 16h4"/>
+        </svg>
+      </div>
+      <div class="sidebar-logo-text">
+        <div class="sidebar-logo-title">IV Label</div>
+        <div class="sidebar-logo-sub">Pharmacy System</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">Label Forms</div>
+
+    <div class="nav-item" data-page="ipd">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="7" width="20" height="14" rx="2"/>
+        <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+      </svg>IPD Label
+    </div>
+    <div class="nav-item" data-page="pfs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10 2h4l1 3H9l1-3z"/>
+        <path d="M9 5v14a2 2 0 002 2h2a2 2 0 002-2V5"/>
+        <circle cx="12" cy="13" r="2"/>
+      </svg>PFS Small Label
+    </div>
+    <div class="sidebar-footer">💊 Pharmacy IV System<br>v2.1 · BKN</div>
+  </aside>
+
+  <!-- ══════════════════════ MAIN ══════════════════════════ -->
+  <div class="main">
+
+    <div class="topbar">
+      <span class="topbar-title" id="topbar-title">IPD Label</span>
+      <span class="topbar-sub" id="topbar-sub">8×3.5 cm sticker — A4 landscape</span>
+      <div class="topbar-spacer"></div>
+      <button class="ivs-btn ivs-btn-outline ivs-btn-sm no-print">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+        </svg>ล้างฟอร์ม
+      </button>
+    </div>
+
+    <!-- PAGE: IPD (A4 Label) -->
+    <div class="ivs-page" id="page-ipd">
+      <div class="page-header">
+        <h2>IPD Label — IV Bag / HAD</h2>
+        <p>สำหรับยา IV และ HAD ผู้ป่วยใน — สติ๊กเกอร์ขนาด 8×3.5 cm, พิมพ์ A4 landscape</p>
+      </div>
+      <div class="ivs-grid2">
+        <div class="ivs-col">
+
+          <!-- Patient -->
+          <div class="ivs-card">
+            <div class="ivs-card-title">ข้อมูลผู้ป่วย</div>
+            <div class="ivs-row">
+              <div class="ivs-field" style="flex:2"><label>ชื่อผู้ป่วย</label><input id="ipd-name" type="text" placeholder="กรอกชื่อ-นามสกุลผู้ป่วย"></div>
+              <div class="ivs-field"><label>HN</label><input id="ipd-hn" type="text" placeholder="กรอกเลข HN ผู้ป่วย"></div>
+            </div>
+            <div class="ivs-field"><label>ห้อง / Ward</label><input id="ipd-room" type="text" placeholder="กรอกห้องหรือ Ward"></div>
+          </div>
+
+          <!-- Drug -->
+          <div class="ivs-card">
+            <div class="ivs-card-title">ข้อมูลยา</div>
+            <!-- Type first — controls drug list -->
+            <div class="ivs-row">
+              <div class="ivs-field">
+                <label>ประเภทยา</label>
+                <select id="ipd-type">
+                  <option value="">— ทุกประเภท —</option>
+                  <option value="HAD">HAD (High Alert Drug)</option>
+                  <option value="ATB">ATB (Antibiotic)</option>
+                  <option value="PFS">PFS (Prefilled)</option>
+                  <option value="Cytotoxic">Cytotoxic</option>
+                  <option value="EYE">EYE</option>
+                </select>
+              </div>
+              <div class="ivs-field" style="flex:2">
+                <label>ชื่อยา (Drug)</label>
+                <select id="ipd-drug"><option value="">— เลือกยา —</option></select>
+              </div>
+            </div>
+            <div class="ivs-row">
+              <div class="ivs-field"><label>Dose</label><input id="ipd-dose" type="text" placeholder="กรอกขนาดยา"></div>
+              <div class="ivs-field"><label>Unit</label><input id="ipd-unit" type="text" placeholder="กรอกหน่วยยา"></div>
+              <div class="ivs-field"><label>สารละลาย</label><input id="ipd-solvent" type="text" placeholder="กรอกสารละลาย"></div>
+              <div class="ivs-field"><label>ปริมาณ (mL)</label><input id="ipd-vol" type="text" placeholder="กรอกปริมาตรเป็น mL"></div>
+            </div>
+            <div class="ivs-field"><label>วิธีบริหาร / Rate</label><input id="ipd-rate" type="text" placeholder="กรอกวิธีบริหารหรืออัตราการให้ยา"></div>
+            <div class="ivs-row">
+              <div class="ivs-field"><label>Lot No.</label><input id="ipd-lot" type="text" placeholder="กรอกเลข Lot ถ้ามี"></div>
+              <div class="ivs-field"><label>อายุยา (วัน)</label><input id="ipd-exp-days" type="number" value="7" placeholder="กรอกจำนวนวันหมดอายุ"></div>
+              <div class="ivs-field"><label>EXP (ระบุเอง)</label><input id="ipd-exp-manual" type="text" placeholder="เว้นว่าง = คำนวณอัตโนมัติ"></div>
+            </div>
+            <div class="ivs-field"><label>Note (ถ้ามี)</label><input id="ipd-note" type="text" placeholder="หมายเหตุเพิ่มเติม"></div>
+          </div>
+
+          <!-- Staff -->
+          <div class="ivs-card">
+            <div class="ivs-card-title">ผู้เตรียมยา</div>
+            <div class="ivs-row">
+              <div class="ivs-field"><label>Prep by</label><select id="ipd-prep"><option value="">— เลือก —</option></select></div>
+              <div class="ivs-field"><label>Label by</label><select id="ipd-label"><option value="">— เลือก —</option></select></div>
+              <div class="ivs-field"><label>Check by</label><select id="ipd-check"><option value="">— เลือก —</option></select></div>
+            </div>
+          </div>
+
+          <div class="ivs-btn-group">
+            <button class="ivs-btn ivs-btn-primary">สร้าง Preview</button>
+            <button class="ivs-btn ivs-btn-secondary">🖨 พิมพ์ Label</button>
+          </div>
+        </div>
+
+        <div class="ivs-col">
+          <div class="ivs-card">
+            <div class="ivs-card-title">Preview</div>
+            <div class="ivs-preview-box" id="preview-ipd"><div class="ivs-empty-state">กรอกข้อมูลแล้วกด "สร้าง Preview"</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: PFS -->
+    <div class="ivs-page" id="page-pfs">
+      <div class="page-header">
+        <h2>PFS Small Label</h2>
+        <p>Prefilled Syringe sticker — A4 portrait, 2-section layout</p>
+      </div>
+      <div class="ivs-grid2">
+        <div class="ivs-col">
+          <div class="ivs-card">
+            <div class="ivs-card-title">ข้อมูลยา PFS</div>
+            <div class="ivs-field"><label>ชื่อยา PFS</label><select id="pfs-drug"><option value="">— เลือกยา PFS —</option></select></div>
+            <div class="ivs-row">
+              <div class="ivs-field"><label>Concentration</label><input id="pfs-conc" type="text" placeholder="1 mg/mL"></div>
+              <div class="ivs-field"><label>Lot No.</label><input id="pfs-lot" type="text" placeholder="AZJ024"></div>
+            </div>
+            <div class="ivs-field"><label>อายุยา (วัน)</label><input id="pfs-exp-days" type="number" value="60"></div>
+            <div class="ivs-field"><label>Prep by</label><select id="pfs-prep"><option value="">— เลือก —</option></select></div>
+          </div>
+
+          <!-- Page layout info card -->
+          <div class="ivs-card pfs-layout-card">
+            <div class="ivs-card-title">Page Setup (A4 Portrait)</div>
+            <div class="pfs-layout-grid">
+              <div class="pfs-layout-section pfs-layout-top">
+                <div class="pfs-layout-label">ส่วนบนสุด — Reference Sticker</div>
+                <div class="pfs-layout-spec">4 × 2 cm &nbsp;·&nbsp; 1 ดวง สำหรับติดสมุด prepare log</div>
+              </div>
+              <div class="pfs-layout-section pfs-layout-top">
+                <div class="pfs-layout-label">ส่วนบน — Syringe Label</div>
+                <div class="pfs-layout-spec">4 × 2 cm &nbsp;·&nbsp; 4 คอลัมน์ × 5 แถว = 20 ดวง</div>
+                <div class="pfs-layout-demo pfs-demo-top">
+                  <div class="pfs-demo-grid pfs-demo-grid-top">
+                    <span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span>
+                  </div>
+                </div>
+              </div>
+              <div class="pfs-layout-divider">✂︎ ตัดแยก</div>
+              <div class="pfs-layout-section pfs-layout-btn">
+                <div class="pfs-layout-label">ส่วนล่าง — Button/Cap Label</div>
+                <div class="pfs-layout-spec">3 × 1 cm &nbsp;·&nbsp; 4 คอลัมน์ × 5 แถว = 20 ดวง</div>
+                <div class="pfs-layout-demo pfs-demo-btn">
+                  <div class="pfs-demo-grid pfs-demo-grid-btn">
+                    <span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ivs-btn-group">
+            <button class="ivs-btn ivs-btn-primary">สร้าง Preview</button>
+            <button class="ivs-btn ivs-btn-secondary">🖨 พิมพ์ Label</button>
+          </div>
+        </div>
+        <div class="ivs-col">
+          <div class="ivs-card">
+            <div class="ivs-card-title">Preview</div>
+            <div class="ivs-preview-box pfs-preview-2section" id="preview-pfs"><div class="ivs-empty-state">กรอกข้อมูลแล้วกด "สร้าง Preview"</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: SUCC -->
+    <div class="ivs-page" id="page-succ">
+      <div class="page-header">
+        <h2>PFS in A4</h2>
+        <p>Prefilled Syringe sticker multiple rows — A4 portrait</p>
+      </div>
+      <div class="ivs-grid2">
+        <div class="ivs-col">
+          <div class="ivs-card">
+            <div class="ivs-card-title">ข้อมูลยา</div>
+            <div class="ivs-field"><label>ชื่อยา PFS</label><select id="succ-drug"><option value="">— เลือกยา PFS —</option></select></div>
+            <div class="ivs-row">
+              <div class="ivs-field"><label>Concentration</label><input id="succ-conc" type="text" placeholder="50 mg/mL"></div>
+              <div class="ivs-field"><label>อายุยา (วัน)</label><input id="succ-exp-days" type="number" value="7"></div>
+              <div class="ivs-field"><label>จำนวนแถว (rows)</label><input id="succ-count" type="number" value="3" min="1" max="20"></div>
+            </div>
+            <div class="ivs-field"><label>Prep by</label><select id="succ-prep"><option value="">— เลือก —</option></select></div>
+          </div>
+          <div class="ivs-btn-group">
+            <button class="ivs-btn ivs-btn-primary">สร้าง Preview</button>
+            <button class="ivs-btn ivs-btn-secondary">🖨 พิมพ์ Label</button>
+          </div>
+        </div>
+        <div class="ivs-col">
+          <div class="ivs-card">
+            <div class="ivs-card-title">Preview (1 แถว)</div>
+            <div class="ivs-preview-box" id="preview-succ"><div class="ivs-empty-state">กรอกข้อมูลแล้วกด "สร้าง Preview"</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- Print area -->
+<div class="print-area" id="print-area"></div>
+<!-- Toasts -->
+<div class="toast-container" id="toasts"></div>
+
+<script src="iv_sticker.js"></script>
+</body>
+</html>

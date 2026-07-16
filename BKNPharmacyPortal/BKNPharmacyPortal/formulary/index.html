@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BKN Pharmacy Formulary</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Extension branding override */
+    .brand h1 { font-size: 17px; }
+    .brand p  { font-size: 12px; color: #94a3b8; }
+    .logo-placeholder {
+      width: 52px; height: 42px; border-radius: 10px;
+      background: linear-gradient(135deg,#2a4a7f,#3a5f9f);
+      border: none; display: grid; place-items: center;
+      font-size: 20px; color: white;
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar no-print">
+    <div class="brand">
+      <div class="logo-placeholder">⚕</div>
+      <div>
+        <h1>BKN Pharmacy</h1>
+        <p>Formulary App</p>
+      </div>
+    </div>
+    <nav class="nav-tabs" aria-label="Main navigation">
+      <button class="nav-tab active" data-page="reportPage">📄 Create Report</button>
+      <button class="nav-tab" data-page="editorPage">🧪 Edit / JSON Database</button>
+    </nav>
+  </aside>
+
+  <main class="app-shell">
+    <section id="reportPage" class="page active">
+      <section class="panel no-print">
+        <h2>Create Formulary Report</h2>
+        <div class="grid">
+          <label>Medicine Name<select id="formulaSelect"></select></label>
+          <label>Quantity<input id="quantity" type="number" min="0" step="0.01"></label>
+          <label>UOM<span id="uom" class="uom">mL</span></label>
+        </div>
+        <div class="actions">
+          <button id="createBtn">Create Formulary Report</button>
+          <button id="printBtn" class="secondary">Print / Save PDF</button>
+          <button id="resetBtn" class="ghost">Reset</button>
+        </div>
+      </section>
+      <section id="report" class="report"></section>
+    </section>
+
+    <section id="editorPage" class="page">
+      <section class="panel no-print">
+        <h2>Edit Formulary / JSON Database</h2>
+
+        <div class="editor-toolbar">
+          <label>Choose formulary<select id="editFormulaSelect"></select></label>
+          <button id="deleteFormulaBtn" class="danger">Delete local copy</button>
+        </div>
+
+        <div class="form-card">
+          <h3>Basic information</h3>
+          <div class="editor-grid">
+            <label>ID / Sheet name<input id="editId" placeholder="example: prednisolone.syrup" readonly></label>
+            <label>Display name<input id="editName" placeholder="Medicine name"></label>
+            <label>Report title<input id="editTitle" placeholder="Report title"></label>
+            <label>Default quantity<input id="editDefaultQty" type="number" min="0" step="0.01"></label>
+            <label>UOM<input id="editUom" placeholder="mL"></label>
+            <label>Shelf life days<input id="editShelfLifeDays" type="number" min="0" step="1"></label>
+            <label class="wide">Expiry note<input id="editShelfLifeText" placeholder="หลังผสมแล้วมีอายุ ... วัน"></label>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <div class="section-title-row">
+            <h3>Ingredients</h3>
+            <button id="addIngredientBtn" class="secondary small">+ Add ingredient</button>
+          </div>
+          <div class="table-scroll">
+            <table class="editor-table">
+              <thead>
+                <tr>
+                  <th>No.</th><th>Code</th><th>Ingredient</th><th>Base amount</th><th>Base total</th><th>UOM</th><th>Calc</th><th>Prefix</th><th>Subtract indexes</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="ingredientBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <div class="section-title-row">
+            <h3>Instruction</h3>
+            <button id="addMethodBtn" class="secondary small">+ Add instruction</button>
+          </div>
+          <div class="hint">Use tokens such as {totalText}, {ing0.amountText}, {ing1.amountText}.</div>
+          <div id="methodBody" class="method-list"></div>
+        </div>
+
+        <div class="actions sticky-actions">
+          <button id="saveFormulaBtn">Save Local Edit</button>
+          <button id="previewEditedBtn" class="secondary">Preview in Report</button>
+          <button id="exportJsonBtn" class="ghost">Export JSON</button>
+          <label class="import-btn ghost">Import JSON<input id="importJsonInput" type="file" accept="application/json" hidden></label>
+          <button id="restoreDefaultBtn" class="danger-outline">Restore Default Data</button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="data/default_formulas.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

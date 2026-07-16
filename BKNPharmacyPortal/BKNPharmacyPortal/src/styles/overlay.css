@@ -1,0 +1,219 @@
+/* =========================================
+   Shared overlay base
+========================================= */
+#checklist-overlay,
+#acusair-overlay {
+  position: fixed;
+  right: 20px;
+  max-width: calc(100vw - 40px);
+  background: #fff;
+  font-family: Arial, sans-serif;
+  z-index: 2147483647;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  word-break: break-word;
+}
+
+.copy-btn {
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  background: #43a047;
+  color: white;
+  border: none;
+  border-radius: 4px;
+}
+
+/* =========================================
+   Checklist overlay
+========================================= */
+#checklist-overlay {
+  top: 50px;
+  width: 280px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+#checklist-overlay .checklist-header {
+  font-weight: bold;
+  margin-bottom: 6px;
+  padding-right: 26px;
+}
+
+#checklist-overlay .patient-info {
+  font-size: 13px;
+  margin-bottom: 10px;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+#checklist-overlay .checklist-items {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px 0;
+}
+
+#checklist-overlay .checklist-items li {
+  margin-bottom: 6px;
+}
+
+#save-checklist-btn {
+  background-color: #4CAF50;
+  color: #fff;
+  border: none;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#save-checklist-btn:hover {
+  background-color: #45a049;
+}
+
+/* =========================================
+   Collapse / toggle
+========================================= */
+.overlay-toggle {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+  cursor: pointer;
+  opacity: 0.75;
+  width: auto;
+  margin: 0;
+  color: inherit;
+  box-shadow: none;
+}
+
+.overlay-toggle:hover {
+  opacity: 1;
+}
+
+#checklist-overlay.collapsed .overlay-body,
+#acusair-overlay.collapsed .overlay-body {
+  display: none;
+}
+
+/* =========================================
+   Refresh button
+========================================= */
+.refresh-btn {
+  appearance: none;
+  background: #0ea5e9;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-weight: 600;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  width: auto;
+  margin-top: 0;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease, opacity .12s ease;
+}
+
+.refresh-btn .icon {
+  display: inline-block;
+  line-height: 1;
+}
+
+.refresh-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(2, 132, 199, .35);
+  background: #0284c7;
+}
+
+.refresh-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(2, 132, 199, .3);
+}
+
+.refresh-btn:disabled {
+  opacity: .7;
+  cursor: not-allowed;
+}
+
+@keyframes spin {
+  from { transform: rotate(0); }
+  to { transform: rotate(360deg); }
+}
+
+.refresh-btn.loading .icon {
+  animation: spin .9s linear infinite;
+}
+
+.refresh-btn.success {
+  background: #10b981;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, .35);
+}
+
+.refresh-btn.error {
+  background: #ef4444;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, .35);
+}
+
+.overlay-action {
+  font-size: 12px;
+}
+
+/* =========================================
+   AcusAir custom overlay
+========================================= */
+#acusair-overlay {
+  top: 80px;
+  width: 320px;
+  border: 2px solid #1976d2;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+#acusair-overlay .overlay-header {
+  background: #1976d2;
+  color: white;
+  padding: 10px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#acusair-overlay .overlay-body {
+  padding: 10px;
+}
+
+#acusair-overlay .patient-box {
+  background: #f5f5f5;
+  padding: 8px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+}
+
+#acusair-overlay .checklist label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+#acusair-overlay .primary-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px;
+  border: none;
+  background: #1976d2;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#acusair-overlay .primary-btn:hover {
+  background: #1565c0;
+}

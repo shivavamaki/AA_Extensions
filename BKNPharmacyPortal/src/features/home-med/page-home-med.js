@@ -412,19 +412,28 @@ function _noteForLang(med) {
 }
 
 function _takeContinueLabel() {
-  return (_currentLang === "en") ? "Take continue" : "ทานต่อเนื่อง";
+  return (_currentLang === "en") ? "Take until finished" : "ทานต่อเนื่องจนหมด";
 }
 
 function _takeContinueMealNote() {
   return (_currentLang === "en")
-    ? "🔁 Continued medications are shown with this icon."
-    : "🔁 ยาที่ทานต่อเนื่องจนหมดจะแสดงด้วยไอคอนนี้";
+    ? "🚨 Continued medications are shown in the top section for the patient to follow until the course is finished."
+    : "🚨 ยาที่ทานต่อเนื่องจนหมดจะแสดงในส่วนบนสุด เพื่อให้ผู้ป่วยทราบว่าจะต้องทานจนหมดคอร์ส";
 }
 
 function _mealCardInfoDefault() {
   return (_currentLang === "en")
     ? "ℹ️ Multiple medications in the same meal slot. Note which medicines are before or after meals."
     : "ℹ️ มียาหลายตัวในมื้อเดียวกัน โปรดสังเกตว่าตัวใดกินก่อนอาหาร และตัวใดกินหลังอาหาร";
+}
+
+function _mealSlotLabels(text) {
+  const MS = window.BKNMealSlots;
+  if (!MS || !text) return [];
+  const bucketed = MS.bucket([{ drug: "", text }]);
+  return MS.MEAL_SLOTS.filter((s) => bucketed.buckets[s.key]?.length)
+    .map((s) => (_currentLang === "en" ? s.en : s.th))
+    .filter(Boolean);
 }
 
 /** Swap each note-line to the current language without re-rendering the table.
@@ -468,6 +477,8 @@ function _medFromReport(m) {
     // it overrides the engine's frequency translation on the instruction line.
     frequencyTh: norm(m.frequencyTh || ""),
     takeUntilFinished: false,
+    continueStartDate: "",
+    continueEndDate: "",
   };
 }
 
@@ -478,8 +489,10 @@ function _appendNoData(tbody, text) {
   tbody.appendChild(tr);
 }
 
-/** Build one editable medicine row. */
-function _buildMedRow(med, index) {
+/** Build one editable medicine row. `index` is the stable position in _meds
+ * (used by edit/remove/meal-card lookups); `displayNo` is the visual "#" shown
+ * in the number column, which follows display order, not _meds order. */
+function _buildMedRow(med, index, displayNo = index + 1) {
   const candidates = _medicineImageCandidates(med);
   const photo = _buildMedicinePhotoSlot(med, candidates);
   const tr = document.createElement("tr");
@@ -488,10 +501,10 @@ function _buildMedRow(med, index) {
   if (med.takeUntilFinished) tr.classList.add("med-continue");
   tr.innerHTML = `
     <td class="col-act no-print">
-      <button type="button" class="row-cont${med.takeUntilFinished ? " active" : ""}" title="${med.takeUntilFinished ? "Unmark take until finished" : "Mark take until finished"}">🔁</button>
+      <button type="button" class="row-cont${med.takeUntilFinished ? " active" : ""}" title="${med.takeUntilFinished ? "Unmark take until finished" : "Mark take until finished"}">🚨</button>
       <button type="button" class="row-del" title="Remove this medicine">−</button>
     </td>
-    <td class="col-no">${index + 1}</td>
+    <td class="col-no">${displayNo}</td>
     <td class="col-med">
       <div class="med-cell">
 ${photo}
@@ -523,7 +536,13 @@ async function renderMeds() {
 
   tbody.innerHTML = "";
 
-  _meds.forEach((med, i) => tbody.appendChild(_buildMedRow(med, i)));
+  // Render "take until finished" meds first, then the rest — but keep each
+  // row's dataset.index pointing at its original position in _meds so edits,
+  // removes, and the meal-card lookup stay correct regardless of display order.
+  const order = _meds
+    .map((med, i) => ({ med, i }))
+    .sort((a, b) => (b.med.takeUntilFinished ? 1 : 0) - (a.med.takeUntilFinished ? 1 : 0));
+  order.forEach(({ med, i }, pos) => tbody.appendChild(_buildMedRow(med, i, pos + 1)));
 
   // Always append the "add medicine" row at the bottom (hidden when printing).
   tbody.appendChild(_buildAddRow());
@@ -556,27 +575,82 @@ function renderMealCard() {
     if (info) info.innerHTML = "";
     return;
   }
-  // Match on the instruction plus the authoritative Thai frequency phrase, so a
-  // meal time supplied only by frequencyTh (not the English comment) still buckets.
-  // The per-dose amount ("1 แพ็ค", "5 มล.", "1 เม็ด") is read from the rendered
-  // Thai instruction the table shows; external/topical meds get a "ทา" label.
-  const domRows = document.querySelectorAll("#medTable tbody tr.med-row");
-  const items = _meds.map((m, i) => {
-    const domInstr = domRows[i] ? norm((domRows[i].querySelector(".instruction-text") || {}).textContent || "") : "";
+  // Rows are rendered continued-first, so index by their stable data-index
+  // rather than DOM position to pick up any live (edited) instruction text.
+  const domRowByIndex = new Map();
+  document.querySelectorAll("#medTable tbody tr.med-row").forEach((row) => {
+    domRowByIndex.set(Number(row.dataset.index), row);
+  });
+  const continuedItems = [];
+  const otherItems = [];
+  _meds.forEach((m, i) => {
+    const domRow = domRowByIndex.get(i);
+    const domInstr = domRow ? norm((domRow.querySelector(".instruction-text") || {}).textContent || "") : "";
     const instrTh = domInstr || norm(m.instruction || "");
     const text = norm(instrTh + " " + (m.frequencyTh || ""));
     let dose = MS.doseSnippet(instrTh);
     if (!dose && _isExternalMed(m, instrTh)) dose = "ทา";
-    const drugName = m.takeUntilFinished ? `🔁 ${m.drug}` : m.drug;
-    return { drug: drugName, text, dose };
+    const drugName = m.takeUntilFinished ? `🚨 ${m.drug}` : m.drug;
+    const item = {
+      ...m,
+      _idx: i,
+      drug: drugName,
+      text,
+      dose,
+      slotLabels: _mealSlotLabels(instrTh),
+    };
+    if (m.takeUntilFinished) continuedItems.push(item);
+    else otherItems.push(item);
   });
-  host.innerHTML = MS.gridHTML(items, escapeHtml);
+
+  const continuedHtml = continuedItems.length ? `
+    <div class="mc-continue-section">
+      <div class="mc-slot-head continue-head">
+        <span class="mc-ico">🚨</span>
+        <span>${_currentLang === "en" ? "Continue until finished" : "ยาต่อเนื่องจนหมด"}</span>
+        <span class="mc-en">${_currentLang === "en" ? "Continue until finished" : "Continue until finished"}</span>
+      </div>
+      <div class="mc-continue-list">
+        ${continuedItems.map((it) => {
+          const slots = it.slotLabels.length
+            ? `<div class="mc-continue-slot">${escapeHtml(it.slotLabels.join(" · "))}</div>`
+            : "";
+          const startDate = escapeHtml(it.continueStartDate || "");
+          const endDate = escapeHtml(it.continueEndDate || "");
+          return `<div class="mc-continue-item" data-index="${it._idx}">
+            <div class="mc-continue-drug">${escapeHtml(it.drug)}${it.dose ? ` <span class="mc-dose">${escapeHtml(it.dose)}</span>` : ""}</div>
+            ${slots}
+            <div class="mc-continue-dates">
+              <label>${_currentLang === "en" ? "Start" : "เริ่ม"} <input type="date" class="mc-continue-date" data-idx="${it._idx}" data-field="continueStartDate" value="${startDate}" /></label>
+              <label>${_currentLang === "en" ? "End" : "จนถึง"} <input type="date" class="mc-continue-date" data-idx="${it._idx}" data-field="continueEndDate" value="${endDate}" /></label>
+            </div>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>
+  ` : "";
+
+  host.innerHTML = continuedHtml + MS.gridHTML(otherItems, escapeHtml);
   if (info) {
-    const continuedCount = _meds.filter((m) => m.takeUntilFinished).length;
-    info.innerHTML = continuedCount
-      ? `<div class="mc-info-detail">${escapeHtml(_takeContinueMealNote())}</div>`
-      : `<div class="mc-info-detail">${escapeHtml(_mealCardInfoDefault())}</div>`;
+    const continuedCount = continuedItems.length;
+    info.innerHTML = `<div class="mc-info-detail">${escapeHtml(continuedCount ? _takeContinueMealNote() : _mealCardInfoDefault())}</div>`;
   }
+  _bindMealCardControls(host);
+}
+
+function _bindMealCardControls(host) {
+  if (!host) return;
+  host.querySelectorAll(".mc-continue-date").forEach((input) => {
+    input.addEventListener("change", () => {
+      const idx = Number(input.dataset.idx);
+      const field = input.dataset.field;
+      if (Number.isNaN(idx) || !field) return;
+      const med = _meds[idx];
+      if (!med) return;
+      med[field] = input.value || "";
+      _persist();
+    });
+  });
 }
 
 /** External / topical meds (creams, ointments) have no swallow-dose — they get a
@@ -649,6 +723,9 @@ function _addMed(med) {
     drug: norm(med.drug || ""), instruction: norm(med.instruction || ""),
     note: "", quantity: norm(med.quantity || ""), code: norm(med.code || ""),
     provider: "", source: norm(med.source || ""),
+    takeUntilFinished: false,
+    continueStartDate: "",
+    continueEndDate: "",
   });
   _persist();
   renderMeds();
@@ -861,6 +938,8 @@ async function fetchAndRender() {
       frequencyTh: norm(m.frequencyTh || ""),
       source: norm(m.source || ""),
       takeUntilFinished: !!m.takeUntilFinished,
+      continueStartDate: norm(m.continueStartDate || ""),
+      continueEndDate: norm(m.continueEndDate || ""),
     }));
     // Detect new discharge meds added after the cache was saved and inject them.
     const savedCodes = new Set(_meds.map((m) => m.code).filter(Boolean));

@@ -1,0 +1,182 @@
+{
+  "manifest_version": 3,
+  "name": "BKN Pharmacy Portal",
+  "version": "3.8.5",
+  "version_name": "2026.06.25 — HMR: fix auth headers for getdischargeprocess — incus-token now live from window",
+  "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://arcusair.bdms.co.th/*",
+    "https://aa-report.bdms.co.th/*",
+    "https://translate.googleapis.com/*",
+    "https://script.google.com/*",
+    "https://bdmsgroup-my.sharepoint.com/*",
+    "https://www.googleapis.com/*",
+    "http://10.134.10.70/*",
+    "http://10.134.10.91/*",
+    "http://10.134.110.81/*",
+    "http://localhost/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://arcusair.bdms.co.th/*"
+      ],
+      "js": [
+        "src/main-world/arcus-xhr-tap.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://arcusair.bdms.co.th/*"
+      ],
+      "js": [
+        "src/main-world/early-sec-relay.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://arcusair.bdms.co.th/*"
+      ],
+      "js": [
+        "src/core/messages.js",
+        "src/core/utils.js",
+        "src/core/dom.js",
+        "src/core/storage.js",
+        "src/shared/shared-data-client.js",
+        "src/features/med-sticker/parser-order-table.js",
+        "src/features/med-sticker/content-med-sticker.js",
+        "src/features/med-sticker/content-pomlist.js",
+        "src/features/patient-sticker/parser-patient.js",
+        "src/features/patient-sticker/content-patient-sticker.js",
+        "src/features/adrtimeline/adrtimeline-core.js",
+        "src/features/adrtimeline/adrtimeline-parser-html.js",
+        "src/features/adrtimeline/adrtimeline-jasper.js",
+        "src/features/adrtimeline/content-adrtimeline.js",
+        "src/features/home-med/content-home-med.js",
+        "src/features/hmr/content-hmr.js",
+        "content_script.js"
+      ],
+      "css": [
+        "src/styles/overlay.css",
+        "src/features/hmr/hmr.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://10.134.10.91/*"
+      ],
+      "js": [
+        "content_script.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "cdnjs/jspdf.umd.min.js",
+        "cdnjs/jspdf.min.js",
+        "cdnjs/jspdf.plugin.autotable.min.js",
+        "images/*",
+        "welcome.html",
+        "welcome.js",
+        "src/features/iv-aux-sticker/iv_sticker.html",
+        "src/features/iv-aux-sticker/iv_sticker.js",
+        "src/features/iv-aux-sticker/iv_sticker.css",
+        "src/features/iv-aux-sticker/aux_sticker.html",
+        "src/features/iv-aux-sticker/aux_sticker.js",
+        "src/features/iv-aux-sticker/aux_sticker.css",
+        "src/features/beedee-pdf/pdf.html",
+        "src/features/beedee-pdf/pdf.js",
+        "src/features/beedee-pdf/beedee_report.json",
+        "src/features/report-print/report_print.html",
+        "src/features/report-print/report_print.js",
+        "src/features/report-print/report_print.css",
+        "chemo-sticker/index.html",
+        "formulary/index.html",
+        "formulary/app.js",
+        "formulary/styles.css",
+        "formulary/data/formulas.json",
+        "formulary/data/default_formulas.js",
+        "knowledge/index.html",
+        "knowledge/app.js",
+        "knowledge/styles.css",
+        "kpi/index.html",
+        "kpi/app.js",
+        "kpi/styles.css",
+        "vaccine/index.html",
+        "vaccine/app.js",
+        "schedule/index.html",
+        "schedule/app.js",
+        "schedule/styles.css",
+        "schedule/booking.html",
+        "schedule/booking.js",
+        "schedule/booking.css",
+        "src/core/messages.js",
+        "src/core/utils.js",
+        "src/core/dom.js",
+        "src/core/storage.js",
+        "src/shared/shared-data-client.js",
+        "src/shared/translate-core.js",
+        "src/shared/medical-glossary.js",
+        "src/vendor/jsbarcode.min.js",
+        "src/features/home-med/page-home-med.html",
+        "src/features/home-med/page-home-med.js",
+        "src/features/med-journey/page-med-journey.html",
+        "src/features/med-journey/page-med-journey.js",
+        "src/features/med-sticker/page-med-sticker.html",
+        "src/features/med-sticker/page-med-sticker.js",
+        "src/features/patient-sticker/page-patient-sticker.html",
+        "src/features/patient-sticker/page-patient-sticker.js",
+        "src/features/patient-sticker/page-patient-address.html",
+        "src/features/patient-sticker/page-patient-address.js",
+        "src/features/patient-sticker/page-med-reconcile.html",
+        "src/features/patient-sticker/page-med-reconcile.js",
+        "src/features/patient-sticker/page-allergy-card.html",
+        "src/features/patient-sticker/page-allergy-card.js",
+        "src/features/patient-sticker/page-unreceivable.html",
+        "src/features/patient-sticker/page-unreceivable.js",
+        "src/features/patient-sticker/bkh-logo.png",
+        "src/assets/fonts/THSarabunNew.ttf",
+        "src/assets/fonts/THSarabunNew-Bold.ttf",
+        "src/assets/fonts/THSarabunNew-BoldItalic.ttf",
+        "src/assets/fonts/THSarabunNew-Italic.ttf",
+        "src/assets/fonts/Sarabun-Regular.ttf",
+        "src/features/adrtimeline/page-adrtimeline.html",
+        "src/features/adrtimeline/page-adrtimeline.js",
+        "src/features/adrtimeline/adrtimeline.css",
+        "src/features/pattern-editor/page-pattern-editor.html",
+        "src/features/pattern-editor/page-pattern-editor.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}
