@@ -642,6 +642,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  /* Manual trigger for the daily auto-report (testing / on-demand refresh). */
+  if (msg && msg.type === 'BKN_TRIGGER_AUTO_REPORT') {
+    _runAutoStockPicking()
+      .then(() => sendResponse({ ok: true }))
+      .catch(e => sendResponse({ ok: false, error: String(e) }));
+    return true;
+  }
+
   /* ════════════════════════════════════════════════════════════════════
      5. AAOverlay — feature page tab router
   ════════════════════════════════════════════════════════════════════ */
@@ -692,6 +700,109 @@ chrome.runtime.onInstalled.addListener(details => {
     chrome.tabs.create({ url: 'welcome.html' });
   }
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Daily auto-report — Stock Picking (RT_COMMON_917) at 15:00 Asia/Bangkok
+   ──────────────────────────────────────────────────────────────────────────
+   The XLS parser (BIFF8/HTML) is DOM/JS and can't run in the service worker, so
+   the actual fetch+parse+save runs in a headless OFFSCREEN document (which loads
+   popup.js's functions). A chrome.alarms trigger fires daily at 15:00 BKK; on
+   fire we open the offscreen doc, ask it to run the report, and close it. The
+   rendered rows are saved to the pharmacy server's report cache (source:'auto'),
+   so every workstation opening the Report tab that day sees them without
+   re-fetching.
+════════════════════════════════════════════════════════════════════════════ */
+const AUTO_REPORT_ALARM = 'bkn-auto-stock-picking';
+
+/* ms until the next 15:00 Asia/Bangkok from now. Bangkok = UTC+7, no DST, so we
+   compute against a UTC clock shifted +7h and target 15:00 in that frame. */
+function _msUntilNextBkk1500() {
+  const nowBkk = new Date(Date.now() + 7 * 3600 * 1000);      // "wall clock" in BKK
+  const targetBkk = new Date(nowBkk);
+  targetBkk.setUTCHours(15, 0, 0, 0);                          // 15:00 BKK wall time
+  if (targetBkk <= nowBkk) targetBkk.setUTCDate(targetBkk.getUTCDate() + 1);
+  return targetBkk.getTime() - nowBkk.getTime();
+}
+
+function _scheduleAutoReportAlarm() {
+  // periodInMinutes as a safety net; when the alarm fires we also re-arm the
+  // precise next-15:00 delay so drift can't accumulate.
+  chrome.alarms.create(AUTO_REPORT_ALARM, {
+    when: Date.now() + _msUntilNextBkk1500(),
+    periodInMinutes: 24 * 60,
+  });
+}
+
+/* Stock Picking default range mirrors the popup's init: from = yesterday, to =
+   today (in Bangkok local date). */
+function _stk917AutoRange() {
+  const bkk = new Date(Date.now() + 7 * 3600 * 1000);
+  const pad = n => String(n).padStart(2, '0');
+  const fmt = d => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+  const to = new Date(bkk);
+  const from = new Date(bkk); from.setUTCDate(from.getUTCDate() - 1);
+  return { from: fmt(from), to: fmt(to) };
+}
+
+let _offscreenCreating = null;   // de-dupe concurrent createDocument calls
+async function _ensureOffscreen() {
+  const url = chrome.runtime.getURL('offscreen-report.html');
+  // Already open?
+  if (chrome.runtime.getContexts) {
+    const ctxs = await chrome.runtime.getContexts({
+      contextTypes: ['OFFSCREEN_DOCUMENT'], documentUrls: [url],
+    });
+    if (ctxs && ctxs.length) return;
+  }
+  if (_offscreenCreating) { await _offscreenCreating; return; }
+  _offscreenCreating = chrome.offscreen.createDocument({
+    url,
+    reasons: ['DOM_PARSER'],
+    justification: 'Parse the daily Jasper XLS report (BIFF8/HTML) which requires DOM APIs.',
+  });
+  try { await _offscreenCreating; } finally { _offscreenCreating = null; }
+}
+
+// Send with a few retries — the offscreen document may still be loading
+// popup.js when we first message it (no listener yet → "connection" error).
+async function _sendToOffscreen(payload, tries = 6) {
+  for (let i = 0; i < tries; i++) {
+    try {
+      const resp = await chrome.runtime.sendMessage(payload);
+      if (resp !== undefined) return resp;
+    } catch (_) { /* listener not ready yet */ }
+    await new Promise(r => setTimeout(r, 500));
+  }
+  return { ok: false, error: 'offscreen document did not respond' };
+}
+
+async function _runAutoStockPicking() {
+  const { from, to } = _stk917AutoRange();
+  try {
+    await _ensureOffscreen();
+    const resp = await _sendToOffscreen({
+      type: 'BKN_RUN_AUTO_REPORT', report: 'stk917', from, to,
+    });
+    if (resp && resp.ok) {
+      console.log(`[auto-report] stock-picking saved: ${resp.rows} rows (${from}→${to})`);
+    } else {
+      console.warn('[auto-report] stock-picking failed:', resp && resp.error);
+    }
+  } catch (e) {
+    console.warn('[auto-report] stock-picking error:', e && e.message || e);
+  } finally {
+    try { await chrome.offscreen.closeDocument(); } catch (_) { /* not open */ }
+    _scheduleAutoReportAlarm();   // re-arm the precise next-15:00 delay
+  }
+}
+
+chrome.alarms.onAlarm.addListener(alarm => {
+  if (alarm.name === AUTO_REPORT_ALARM) _runAutoStockPicking();
+});
+
+// Arm the alarm on worker startup / install (idempotent — create replaces).
+_scheduleAutoReportAlarm();
+chrome.runtime.onStartup.addListener(_scheduleAutoReportAlarm);
 
 /* ── Drug Delivery helper (rx_menu) ─────────────────────────────────────── */
 async function handleSendToDrugDelivery(visitId) {

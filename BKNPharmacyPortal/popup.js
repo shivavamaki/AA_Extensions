@@ -62,10 +62,76 @@ async function fetchReportBytes(jasperUrl, reportId) {
   return resp.arrayBuffer();
 }
 
+// ── Report cache (parsed rows + meta, 1-day retention, server-shared) ──────────
+// So a report fetched once per day is reused by everyone that day: on card open
+// we render today's cached rows instead of re-fetching from Jasper. Keyed by a
+// short reportKey (e.g. 'stk917') + the Bangkok date.
+function todayBKK() {
+  // Bangkok is UTC+7 with no DST.
+  const d = new Date(Date.now() + 7 * 3600 * 1000);
+  return d.toISOString().slice(0, 10);
+}
+
+async function loadReportCache(reportKey, date) {
+  const d = date || todayBKK();
+  try {
+    const r = await fetch(`${REPORT_SERVER}/api/report-cache/${encodeURIComponent(reportKey)}/${d}`);
+    if (!r.ok) return null;
+    const j = await r.json();
+    return (j && Array.isArray(j.rows)) ? j : null;   // {} when no cache → null
+  } catch (_) { return null; }
+}
+
+async function saveReportCache(reportKey, rows, meta, source) {
+  const d = todayBKK();
+  try {
+    const r = await fetch(`${REPORT_SERVER}/api/report-cache/${encodeURIComponent(reportKey)}/${d}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rows: rows || [], meta: meta || {}, source: source || 'manual' }),
+    });
+    return r.ok;
+  } catch (_) { return false; }
+}
+
+// Short "Cached HH:MM · Refresh" note appended below a report's status line.
+// `onRefresh` re-runs the live fetch. Idempotent per statusElId.
+function showCacheNote(statusElId, savedAtIso, source, onRefresh) {
+  const statusEl = document.getElementById(statusElId);
+  if (!statusEl) return;
+  let note = statusEl.parentNode.querySelector(`.rpt-cache-note[data-for="${statusElId}"]`);
+  if (!note) {
+    note = document.createElement('div');
+    note.className = 'rpt-cache-note';
+    note.dataset.for = statusElId;
+    note.style.cssText = 'font-size:11px;opacity:.75;margin-top:4px;display:flex;gap:8px;align-items:center;';
+    statusEl.parentNode.insertBefore(note, statusEl.nextSibling);
+  }
+  let hhmm = '';
+  try { hhmm = new Date(savedAtIso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }); } catch (_) {}
+  const src = source === 'auto' ? 'auto 15:00' : 'cached';
+  note.innerHTML = `<span>🗄 ${src}${hhmm ? ' · ' + hhmm : ''}</span>`;
+  const btn = document.createElement('button');
+  btn.className = 'rpt-btn rpt-btn-teal';
+  btn.style.cssText = 'padding:2px 8px;font-size:11px;';
+  btn.textContent = '↻ Refresh';
+  btn.addEventListener('click', () => { note.remove(); onRefresh(); });
+  note.appendChild(btn);
+}
+
+function clearCacheNote(statusElId) {
+  const note = document.querySelector(`.rpt-cache-note[data-for="${statusElId}"]`);
+  if (note) note.remove();
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Init
 // ──────────────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  // When popup.js is loaded inside the headless offscreen document (for the
+  // 15:00 auto-report job), skip all UI init — we only want the parser/fetch
+  // functions it defines. The offscreen page sets this flag on <html>.
+  if (document.documentElement.dataset.bknOffscreen === '1') return;
   initTabs();
   initIpdQueue();
   initIvSticker();
@@ -1182,16 +1248,47 @@ function initReport() {
     catch (err) { console.error('[RT257 parse]', err); rptStatus('❌ Parse error: ' + err.message, 'err'); }
   });
 
-  document.getElementById('rpt-btn-fetch')?.addEventListener('click', async () => {
-    const from = document.getElementById('rpt-from').value;
-    const to = document.getElementById('rpt-to').value;
+  async function fetchRpt257(from, to) {
     if (!from || !to) { rptStatus('⚠ Please select both From and To dates.', 'warn'); return; }
     if (from > to) { rptStatus('⚠ From date must be before To date.', 'warn'); return; }
+    clearCacheNote('rpt-status');
     rptStatus('⏳ Fetching report from server…', 'loading');
+    processRpt257Sheets(parseXlsBuffer(await fetchReportBytes(buildRt257Url(from, to), 'RT_COMMON_257')));
+    await saveReportCache('rpt257', rptDetailRows,
+      { from: rptFromLabel, to: rptToLabel, reqFrom: from, reqTo: to }, 'manual');
+  }
+
+  // Re-render Pending IP Fill from cached detail rows (summary is derived).
+  function renderRpt257FromCache(entry) {
+    rptDetailRows = Array.isArray(entry.rows) ? entry.rows : [];
+    rptFromLabel = (entry.meta && entry.meta.from) || '';
+    rptToLabel   = (entry.meta && entry.meta.to)   || '';
+    rptSummaryRows = buildSummaryFromDetail(rptDetailRows);
+    renderRptPreview();
+    const pdfBtns = document.getElementById('rpt-pdf-btns');
+    if (pdfBtns && rptDetailRows.length) pdfBtns.style.display = 'flex';
+    rptStatus(`✅ ${rptDetailRows.length} detail rows · ${rptSummaryRows.length} summary (from today's saved report).`, 'ok');
+  }
+
+  document.getElementById('rpt-btn-fetch')?.addEventListener('click', async () => {
     try {
-      processRpt257Sheets(parseXlsBuffer(await fetchReportBytes(buildRt257Url(from, to), 'RT_COMMON_257')));
+      await fetchRpt257(document.getElementById('rpt-from').value,
+                        document.getElementById('rpt-to').value);
     } catch (e) { rptStatus('❌ ' + e.message, 'err'); }
   });
+
+  // On open: render today's cached report if present (first fetch/day only).
+  (async () => {
+    const entry = await loadReportCache('rpt257');
+    if (entry && Array.isArray(entry.rows) && entry.rows.length) {
+      renderRpt257FromCache(entry);
+      showCacheNote('rpt-status', entry.savedAt, entry.source, () => {
+        fetchRpt257(document.getElementById('rpt-from').value,
+                    document.getElementById('rpt-to').value)
+          .catch(e => rptStatus('❌ ' + e.message, 'err'));
+      });
+    }
+  })();
 
   document.getElementById('rpt-btn-pdf2')?.addEventListener('click', async () => {
     if (!rptDetailRows.length) {
@@ -1598,6 +1695,27 @@ function initStockPickingReport() {
     rpt917Status(`✅ Parsed ${stk917Rows.length} rows (filtered target codes, qty > 0).`, 'ok');
   }
 
+  // Render Stock Picking from a server-cached entry (parsed rows + meta) without
+  // re-fetching — used on card open when today's cache exists.
+  function renderStk917FromCache(entry) {
+    stk917Rows = Array.isArray(entry.rows) ? entry.rows : [];
+    stk917Meta = Object.assign({ from: '', to: '', title: 'Stock Picking List' }, entry.meta || {});
+    renderStockPickingPreview();
+    const btns = document.getElementById('stk917-pdf-btns');
+    if (btns && stk917Rows.length) btns.style.display = 'flex';
+    rpt917Status(`✅ ${stk917Rows.length} rows (from today's saved report).`, 'ok');
+  }
+
+  // Fetch fresh from Jasper, render, and persist to the server cache for reuse.
+  async function fetchStk917(from, to, source) {
+    if (!from || !to) { rpt917Status('⚠ Please select both From and To dates.', 'warn'); return; }
+    if (from > to) { rpt917Status('⚠ From date must be before To date.', 'warn'); return; }
+    clearCacheNote('stk917-status');
+    rpt917Status('⏳ Fetching report from server…', 'loading');
+    processStk917Sheets(parseXlsBuffer(await fetchReportBytes(buildStk917Url(from, to), 'RT_COMMON_917')));
+    await saveReportCache('stk917', stk917Rows, stk917Meta, source || 'manual');
+  }
+
   document.getElementById('stk917-file-input')?.addEventListener('change', async function (ev) {
     const file = (ev?.target?.files && ev.target.files[0]) || (this?.files && this.files[0]);
     if (!file) return;
@@ -1610,15 +1728,26 @@ function initStockPickingReport() {
   });
 
   document.getElementById('stk917-btn-fetch')?.addEventListener('click', async () => {
-    const from = document.getElementById('stk917-from').value;
-    const to = document.getElementById('stk917-to').value;
-    if (!from || !to) { rpt917Status('⚠ Please select both From and To dates.', 'warn'); return; }
-    if (from > to) { rpt917Status('⚠ From date must be before To date.', 'warn'); return; }
-    rpt917Status('⏳ Fetching report from server…', 'loading');
     try {
-      processStk917Sheets(parseXlsBuffer(await fetchReportBytes(buildStk917Url(from, to), 'RT_COMMON_917')));
+      await fetchStk917(document.getElementById('stk917-from').value,
+                        document.getElementById('stk917-to').value, 'manual');
     } catch (e) { rpt917Status('❌ ' + e.message, 'err'); }
   });
+
+  // On open: if today's report was already fetched (manually or by the 15:00
+  // auto job), render it from the server cache — no re-fetch. A "🗄 … · Refresh"
+  // note lets the user force a fresh pull.
+  (async () => {
+    const entry = await loadReportCache('stk917');
+    if (entry && Array.isArray(entry.rows) && entry.rows.length) {
+      renderStk917FromCache(entry);
+      showCacheNote('stk917-status', entry.savedAt, entry.source, () => {
+        const from = document.getElementById('stk917-from').value;
+        const to = document.getElementById('stk917-to').value;
+        fetchStk917(from, to, 'manual').catch(e => rpt917Status('❌ ' + e.message, 'err'));
+      });
+    }
+  })();
 
   document.getElementById('stk917-btn-pdf')?.addEventListener('click', async () => {
     if (!stk917Rows.length) {
@@ -2073,16 +2202,41 @@ function initAdrReport() {
     catch (e) { console.error('[RT256 parse]', e); adr256Status('❌ Parse error: ' + e.message, 'err'); }
   });
 
-  document.getElementById('adr256-btn-fetch')?.addEventListener('click', async () => {
-    const from = fromEl?.value || '';
-    const to = toEl?.value || '';
+  async function fetchAdr256(from, to) {
     if (!from || !to) { adr256Status('⚠ Please select both dates.', 'warn'); return; }
     if (from > to) { adr256Status('⚠ Start date must be before End date.', 'warn'); return; }
+    clearCacheNote('adr256-status');
     adr256Status('⏳ Fetching report from server…', 'loading');
+    processAdr256Sheets(parseXlsBuffer(await fetchReportBytes(buildAdr256Url(from, to), 'RT_COMMON_256')));
+    await saveReportCache('adr256', adr256Rows, adr256Meta, 'manual');
+  }
+
+  function renderAdr256FromCache(entry) {
+    adr256Rows = Array.isArray(entry.rows) ? entry.rows : [];
+    adr256Meta = Object.assign({ from: '', to: '', title: 'ADR report' }, entry.meta || {});
+    renderAdr256Preview();
+    const btns = document.getElementById('adr256-pdf-btns');
+    if (btns) btns.style.display = adr256Rows.length ? 'flex' : 'none';
+    adr256Status(`✅ ${adr256Rows.length} ADR rows (from today's saved report).`, adr256Rows.length ? 'ok' : 'warn');
+  }
+
+  document.getElementById('adr256-btn-fetch')?.addEventListener('click', async () => {
     try {
-      processAdr256Sheets(parseXlsBuffer(await fetchReportBytes(buildAdr256Url(from, to), 'RT_COMMON_256')));
+      await fetchAdr256(fromEl?.value || '', toEl?.value || '');
     } catch (e) { adr256Status('❌ ' + e.message, 'err'); }
   });
+
+  // On open: render today's cached ADR report if present.
+  (async () => {
+    const entry = await loadReportCache('adr256');
+    if (entry && Array.isArray(entry.rows) && entry.rows.length) {
+      renderAdr256FromCache(entry);
+      showCacheNote('adr256-status', entry.savedAt, entry.source, () => {
+        fetchAdr256(fromEl?.value || '', toEl?.value || '')
+          .catch(e => adr256Status('❌ ' + e.message, 'err'));
+      });
+    }
+  })();
 
   document.getElementById('adr256-btn-pdf')?.addEventListener('click', () => {
     if (!adr256Rows.length) {
@@ -2532,15 +2686,51 @@ function initExpReport() {
     catch (e) { console.error('[RT174 parse]', e); exp174Status('❌ Parse error: ' + e.message, 'err'); }
   });
 
-  document.getElementById('exp174-btn-fetch')?.addEventListener('click', async () => {
-    const date = dateEl?.value || '';
-    const floorKey = floorEl?.value || 'floor1';
+  // Cache key is floor-scoped so different floors don't overwrite each other.
+  const exp174CacheKey = () => `exp174-${floorEl?.value || 'floor1'}`;
+
+  async function fetchExp174(date, floorKey) {
     if (!date) { exp174Status('⚠ Please select report date.', 'warn'); return; }
+    clearCacheNote('exp174-status');
     exp174Status('⏳ Fetching report from server…', 'loading');
+    processExp174Sheets(parseXlsBuffer(await fetchReportBytes(buildExp174Url(date, floorKey), 'RT_COMMON_174')));
+    await saveReportCache(exp174CacheKey(), exp174AllRows, exp174Meta, 'manual');
+  }
+
+  // Re-render EXP from cached full rows (filter/renumber re-derived).
+  function renderExp174FromCache(entry) {
+    exp174AllRows = Array.isArray(entry.rows) ? entry.rows : [];
+    exp174Meta = Object.assign({ floorKey: floorEl?.value || 'floor1' }, entry.meta || {});
+    exp174Rows = filterExp174Rows(exp174AllRows);
+    renumberExp174Rows(exp174Rows);
+    renderExp174Preview();
+    const btns = document.getElementById('exp174-pdf-btns');
+    if (btns) btns.style.display = exp174Rows.length ? 'flex' : 'none';
+    exp174Status(`✅ ${exp174Rows.length} EXP rows (from today's saved report).`, exp174Rows.length ? 'ok' : 'warn');
+  }
+
+  document.getElementById('exp174-btn-fetch')?.addEventListener('click', async () => {
     try {
-      processExp174Sheets(parseXlsBuffer(await fetchReportBytes(buildExp174Url(date, floorKey), 'RT_COMMON_174')));
+      await fetchExp174(dateEl?.value || '', floorEl?.value || 'floor1');
     } catch (e) { exp174Status('❌ ' + e.message, 'err'); }
   });
+
+  // On open: render today's cached EXP (for the currently-selected floor) if any.
+  async function restoreExp174Cache() {
+    const entry = await loadReportCache(exp174CacheKey());
+    if (entry && Array.isArray(entry.rows) && entry.rows.length) {
+      renderExp174FromCache(entry);
+      showCacheNote('exp174-status', entry.savedAt, entry.source, () => {
+        fetchExp174(dateEl?.value || '', floorEl?.value || 'floor1')
+          .catch(e => exp174Status('❌ ' + e.message, 'err'));
+      });
+    } else {
+      clearCacheNote('exp174-status');
+    }
+  }
+  restoreExp174Cache();
+  // Re-check the cache when the floor changes (each floor caches separately).
+  floorEl?.addEventListener('change', restoreExp174Cache);
 
   document.getElementById('exp174-btn-pdf')?.addEventListener('click', () => {
     if (!exp174Rows.length) {

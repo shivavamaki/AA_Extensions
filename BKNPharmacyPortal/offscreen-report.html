@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<!-- Headless offscreen document for the 15:00 auto-report job. Loads popup.js
+     purely for its Jasper fetch + XLS parser functions (UI init is skipped via
+     the data-bkn-offscreen flag), then runs offscreen-report.js which the
+     background service worker drives with a message. No visible UI. -->
+<html data-bkn-offscreen="1">
+<head>
+  <meta charset="UTF-8">
+  <title>BKN offscreen report</title>
+</head>
+<body>
+  <script src="popup.js"></script>
+  <script src="offscreen-report.js"></script>
+</body>
+</html>

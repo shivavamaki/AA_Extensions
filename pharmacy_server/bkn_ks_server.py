@@ -41,6 +41,9 @@ API:
   GET    /api/patients/{puid}/captures/{visituid}            — client capture bag (record 7d; token 24h)
   PUT    /api/patients/{puid}/captures/{visituid}            — merge into capture bag
 
+  GET    /api/report-cache/{key}[/{date}]    — parsed report rows+meta for the day ({} if none); 1-day retention
+  PUT    /api/report-cache/{key}/{date}      — store parsed report rows+meta (trusted extension)
+
   GET    /api/hmr                           — all HM Process records (?from=&to=, newest first)
   GET    /api/hmr/{visitid}                 — one record (I48-xx-xxxxxx), {} if none
   PUT    /api/hmr/{visitid}                 — read-merge-write; auditLog entries append, never overwrite
@@ -134,6 +137,7 @@ _IMAGE_MIME = {
 KS_FILES_DIR  = DATA_DIR / 'ks' / 'files'
 SCHEDULE_DIR      = DATA_DIR / 'schedule'
 TEMP_REPORTS_DIR  = DATA_DIR / 'temp-reports'
+REPORT_CACHE_DIR  = DATA_DIR / 'report-cache'   # parsed report rows, 1-day retention
 PATIENTS_DIR      = DATA_DIR / 'patients'
 HMR_DIR           = DATA_DIR / 'hmr'
 HMQ_DIR           = DATA_DIR / 'hmq'
@@ -1498,6 +1502,55 @@ def _safe_puid(puid):
         return None
     return puid
 
+# ── Report cache helpers ───────────────────────────────────────
+# Parsed report rows + metadata, keyed by (reportKey, YYYY-MM-DD), so a report
+# fetched once per day is reused by everyone that day without re-fetching from
+# Jasper. Retained 1 day: on every read/write we prune any cache file whose date
+# isn't today (Asia/Bangkok — the pharmacy's local day). One file per
+# report+date: report-cache/{reportKey}_{date}.json.
+_REPORT_KEY_RE = re.compile(r'^[a-z0-9_-]{1,40}$', re.I)
+
+def _bangkok_today():
+    # Server may run in any tz; the pharmacy day is Asia/Bangkok (UTC+7).
+    return (datetime.now(timezone.utc) + timedelta(hours=7)).strftime('%Y-%m-%d')
+
+def _safe_report_key(k):
+    return k if (k and _REPORT_KEY_RE.match(k)) else None
+
+def _report_cache_file(report_key, date_key):
+    return REPORT_CACHE_DIR / f'{report_key}_{date_key}.json'
+
+def _prune_report_cache():
+    """Delete any cache file not dated today (1-day retention)."""
+    try:
+        if not REPORT_CACHE_DIR.exists():
+            return
+        today = _bangkok_today()
+        for p in REPORT_CACHE_DIR.glob('*.json'):
+            # filename: {reportKey}_{YYYY-MM-DD}.json → date is the last 10 chars
+            stem = p.stem
+            if len(stem) < 11 or stem[-10:] != today:
+                try: p.unlink()
+                except Exception: pass
+    except Exception:
+        pass
+
+def load_report_cache(report_key, date_key):
+    _prune_report_cache()
+    p = _report_cache_file(report_key, date_key)
+    if not p.exists():
+        return None
+    try:
+        with p.open(encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+def save_report_cache(report_key, date_key, data):
+    REPORT_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    _prune_report_cache()
+    _atomic_write_json(_report_cache_file(report_key, date_key), data)
+
 # ── HMR helpers ────────────────────────────────────────────────
 _VISITID_RE = re.compile(r'^I48-\d{2}-\d{6}$')
 _HN_RE      = re.compile(r'^48-\d{2}-\d{7}$')
@@ -2280,6 +2333,18 @@ class Handler(BaseHTTPRequestHandler):
         if parts == ['api', 'report', 'reconcile-api']:
             return 'report-reconcile-api', None, None
 
+        # /api/report-cache/{reportKey}/{YYYY-MM-DD} — parsed report rows cache
+        # (GET load, PUT save), 1-day retention. key=report_key, extra=date.
+        if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'report-cache':
+            rk = _safe_report_key(parts[2])
+            return ('report-cache', rk, None) if rk else (None, None, None)
+        if len(parts) == 4 and parts[0] == 'api' and parts[1] == 'report-cache':
+            rk = _safe_report_key(parts[2])
+            date = parts[3]
+            if rk and DATE_RE.match(date):
+                return 'report-cache', rk, date
+            return None, None, None
+
         # /api/patients/{puid}                              -> 'patient', puid, None
         # /api/patients/{puid}/context                      -> 'patient-context', puid, None
         # /api/patients/{puid}/adr-timeline                 -> 'patient-adr', puid, None
@@ -2538,6 +2603,11 @@ class Handler(BaseHTTPRequestHandler):
             from_date = (qs.get('from') or [None])[0]
             to_date   = (qs.get('to')   or [None])[0]
             self.send_json(200, load_all_hmq(from_date, to_date))
+        elif rtype == 'report-cache':
+            # GET /api/report-cache/{key}[/{date}] — default date = today (BKK).
+            date_key = extra or _bangkok_today()
+            entry = load_report_cache(key, date_key)
+            self.send_json(200, entry or {})
         else:
             self.send_json(404, {'error': 'Not found'})
 
@@ -2575,7 +2645,7 @@ class Handler(BaseHTTPRequestHandler):
             'kpi-day', 'kpi-section', 'ks', 'rx', 'rx-note',
             'med-image-upload', 'ks-file-upload', 'schedule',
             'patient', 'patient-context', 'patient-adr', 'patient-medcache',
-            'patient-captures', 'hmr', 'hmq',
+            'patient-captures', 'report-cache', 'hmr', 'hmq',
         )
         if not ext_data_write:
             if not self._require('super_admin', 'admin', 'editor'): return
@@ -2761,6 +2831,25 @@ class Handler(BaseHTTPRequestHandler):
             doc['captures'] = captures
             save_patient(key, doc)
             self.send_json(200, {'ok': True})
+
+        elif rtype == 'report-cache':
+            # PUT /api/report-cache/{key}/{date} — store parsed rows + meta for
+            # the day. Body: {rows:[...], meta:{...}}. 1-day retention (pruned on
+            # write). date is required in the URL for a write.
+            if not extra:
+                self.send_json(400, {'error': 'date required in URL'}); return
+            if not isinstance(body, dict):
+                self.send_json(400, {'error': 'Body must be a JSON object'}); return
+            entry = {
+                'reportKey': key,
+                'date':      extra,
+                'rows':      body.get('rows') if isinstance(body.get('rows'), list) else [],
+                'meta':      body.get('meta') if isinstance(body.get('meta'), dict) else {},
+                'source':    body.get('source') or 'manual',   # 'manual' | 'auto'
+                'savedAt':   _now_iso(),
+            }
+            save_report_cache(key, extra, entry)
+            self.send_json(200, {'ok': True, 'rows': len(entry['rows'])})
 
         elif rtype == 'hmr':
             # Read-merge-write so multiple PCs can edit concurrently.

@@ -8,7 +8,9 @@
     "activeTab",
     "tabs",
     "storage",
-    "scripting"
+    "scripting",
+    "alarms",
+    "offscreen"
   ],
   "host_permissions": [
     "https://arcusair.bdms.co.th/*",
