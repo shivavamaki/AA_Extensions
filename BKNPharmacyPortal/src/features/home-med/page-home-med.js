@@ -14,6 +14,55 @@
 const { norm, escapeHtml, safeSetText } = window.CoreDom;
 const { MSG } = window.CoreMessages;
 
+/** Today's date as an <input type="date"> value (YYYY-MM-DD, local time). */
+function _todayISO() {
+  const d = new Date();
+  const off = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - off).toISOString().slice(0, 10);
+}
+
+/** Format an ISO date (YYYY-MM-DD) as DD-MM-YYYY for the printed text view.
+ * Returns "" for an empty/invalid value. */
+function _fmtDateDMY(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || "").trim());
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
+}
+
+// Max day columns in the continued-med calendar grid. A start→end run longer
+// than this is clamped so the grid never overflows the page width.
+const CONTINUE_MAX_DAYS = 10;
+
+/** Enumerate the day columns of a start→end run as { day, mon } labels.
+ * Falls back to a short blank run when dates are missing/invalid so the header
+ * still renders empty tick columns for the patient to fill in by hand. */
+function _continueDayColumns(startIso, endIso) {
+  const parse = (s) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || "").trim());
+    return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+  };
+  const start = parse(startIso);
+  const end = parse(endIso);
+  const cols = [];
+  const isoOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const pushDay = (d) => cols.push({
+    day: String(d.getDate()).padStart(2, "0"),
+    mon: String(d.getMonth() + 1).padStart(2, "0"),
+    iso: isoOf(d),
+  });
+  if (start && end && end >= start) {
+    // Full labelled run start → end (clamped to the max width).
+    for (let d = new Date(start); d <= end && cols.length < CONTINUE_MAX_DAYS; d.setDate(d.getDate() + 1)) pushDay(d);
+  } else if (start) {
+    // Start only, no end: label a default span forward from the start date.
+    const d = new Date(start);
+    for (let i = 0; i < 5; i++) { pushDay(d); d.setDate(d.getDate() + 1); }
+  } else {
+    // No usable dates: a few unlabelled blank tick columns (keyed by position).
+    for (let i = 0; i < 5; i++) cols.push({ day: "", mon: "", iso: `blank${i}` });
+  }
+  return cols;
+}
+
 let _context = null;
 let _medDbByCode = null;
 let _medDbLoadPromise = null;
@@ -348,6 +397,20 @@ function _medicineIcon(med) {
   return "💊";   // default: oral
 }
 
+// Rank a med's dosage-form icon in the _FORM_ICONS priority order, so grouping
+// by form follows that intentional order (injections → eye/ear → oral → …)
+// rather than emoji codepoint order. Icons not listed (incl. the "💊" default)
+// sort last but stay grouped together.
+const _FORM_ICON_RANK = (() => {
+  const rank = {};
+  _FORM_ICONS.forEach(([, icon], i) => { if (!(icon in rank)) rank[icon] = i; });
+  return rank;
+})();
+function _medicineFormRank(med) {
+  const icon = _medicineIcon(med);
+  return (icon in _FORM_ICON_RANK) ? _FORM_ICON_RANK[icon] : _FORM_ICONS.length;
+}
+
 function _buildMedicinePhotoSlot(med, candidates) {
   const icon = _medicineIcon(med);
   if (candidates && candidates.length) {
@@ -418,7 +481,7 @@ function _takeContinueLabel() {
 function _takeContinueMealNote() {
   return (_currentLang === "en")
     ? "🚨 Continued medications are shown in the top section for the patient to follow until the course is finished."
-    : "🚨 ยาที่ทานต่อเนื่องจนหมดจะแสดงในส่วนบนสุด เพื่อให้ผู้ป่วยทราบว่าจะต้องทานจนหมดคอร์ส";
+    : "🚨 ยาที่ทานต่อเนื่องจนหมดหรือครบระยะเวลาการรักษา";
 }
 
 function _mealCardInfoDefault() {
@@ -427,13 +490,13 @@ function _mealCardInfoDefault() {
     : "ℹ️ มียาหลายตัวในมื้อเดียวกัน โปรดสังเกตว่าตัวใดกินก่อนอาหาร และตัวใดกินหลังอาหาร";
 }
 
-function _mealSlotLabels(text) {
+/** The meal-slot objects (key/icon/label) a med's instruction matches — drives
+ * the per-meal checkboxes in the continued block. */
+function _mealSlots(text) {
   const MS = window.BKNMealSlots;
   if (!MS || !text) return [];
   const bucketed = MS.bucket([{ drug: "", text }]);
-  return MS.MEAL_SLOTS.filter((s) => bucketed.buckets[s.key]?.length)
-    .map((s) => (_currentLang === "en" ? s.en : s.th))
-    .filter(Boolean);
+  return MS.MEAL_SLOTS.filter((s) => bucketed.buckets[s.key]?.length);
 }
 
 /** Swap each note-line to the current language without re-rendering the table.
@@ -479,6 +542,8 @@ function _medFromReport(m) {
     takeUntilFinished: false,
     continueStartDate: "",
     continueEndDate: "",
+    continueNote: "",
+    continueTicks: {},
   };
 }
 
@@ -536,12 +601,25 @@ async function renderMeds() {
 
   tbody.innerHTML = "";
 
-  // Render "take until finished" meds first, then the rest — but keep each
-  // row's dataset.index pointing at its original position in _meds so edits,
-  // removes, and the meal-card lookup stay correct regardless of display order.
+  // Display order (keys, in priority):
+  //   1) "take until finished" meds first
+  //   2) then grouped by dosage form (the 💊/🧪/💉… icon)
+  //   3) then by drug code — so identical-code items (e.g. the same drug added
+  //      twice) always sit next to each other.
+  // dataset.index still points at each med's ORIGINAL position in _meds so
+  // edits/removes/meal-card lookups stay correct regardless of display order.
   const order = _meds
     .map((med, i) => ({ med, i }))
-    .sort((a, b) => (b.med.takeUntilFinished ? 1 : 0) - (a.med.takeUntilFinished ? 1 : 0));
+    .sort((a, b) => {
+      const ac = a.med.takeUntilFinished ? 0 : 1;
+      const bc = b.med.takeUntilFinished ? 0 : 1;
+      if (ac !== bc) return ac - bc;
+      const af = _medicineFormRank(a.med), bf = _medicineFormRank(b.med);
+      if (af !== bf) return af - bf;
+      const ak = norm(a.med.code || ""), bk = norm(b.med.code || "");
+      if (ak !== bk) return ak < bk ? -1 : 1;
+      return a.i - b.i;   // stable within the same code
+    });
   order.forEach(({ med, i }, pos) => tbody.appendChild(_buildMedRow(med, i, pos + 1)));
 
   // Always append the "add medicine" row at the bottom (hidden when printing).
@@ -567,11 +645,13 @@ async function renderMeds() {
 // is toggled by the "แนบหน้า จัดตามมื้อ" control (body.hm-with-mealcard).
 function renderMealCard() {
   const host = document.getElementById("mealcardGrid");
+  const contHost = document.getElementById("mealcardContinue");
   const info = document.getElementById("mealCardInfo");
   if (!host) return;
   const MS = window.BKNMealSlots;
   if (!_meds.length || !MS) {
     host.innerHTML = `<div class="mc-emptyall">ไม่มียากลับบ้าน (no home medications)</div>`;
+    if (contHost) contHost.innerHTML = "";
     if (info) info.innerHTML = "";
     return;
   }
@@ -583,7 +663,14 @@ function renderMealCard() {
   });
   const continuedItems = [];
   const otherItems = [];
+  let _startDefaulted = false;
   _meds.forEach((m, i) => {
+    // A continued med with no start date defaults to today — persist it so the
+    // saved sheet keeps the concrete date rather than re-defaulting on reload.
+    if (m.takeUntilFinished && !m.continueStartDate) {
+      m.continueStartDate = _todayISO();
+      _startDefaulted = true;
+    }
     const domRow = domRowByIndex.get(i);
     const domInstr = domRow ? norm((domRow.querySelector(".instruction-text") || {}).textContent || "") : "";
     const instrTh = domInstr || norm(m.instruction || "");
@@ -597,7 +684,7 @@ function renderMealCard() {
       drug: drugName,
       text,
       dose,
-      slotLabels: _mealSlotLabels(instrTh),
+      slots: _mealSlots(instrTh),   // matched meal-slot objects for checkboxes
     };
     if (m.takeUntilFinished) continuedItems.push(item);
     else otherItems.push(item);
@@ -607,39 +694,83 @@ function renderMealCard() {
     <div class="mc-continue-section">
       <div class="mc-slot-head continue-head">
         <span class="mc-ico">🚨</span>
-        <span>${_currentLang === "en" ? "Continue until finished" : "ยาต่อเนื่องจนหมด"}</span>
+        <span>${_currentLang === "en" ? "Continue until finished" : "ยาที่ทานต่อเนื่องจนหมดหรือครบระยะเวลาการรักษา"}</span>
         <span class="mc-en">${_currentLang === "en" ? "Continue until finished" : "Continue until finished"}</span>
       </div>
       <div class="mc-continue-list">
         ${continuedItems.map((it) => {
-          const slots = it.slotLabels.length
-            ? `<div class="mc-continue-slot">${escapeHtml(it.slotLabels.join(" · "))}</div>`
-            : "";
-          const startDate = escapeHtml(it.continueStartDate || "");
-          const endDate = escapeHtml(it.continueEndDate || "");
+          // Default the start date to today so the patient has a concrete
+          // "start" without the pharmacist having to set it every time.
+          const startIso = it.continueStartDate || _todayISO();
+          const endIso = it.continueEndDate || "";
+          const startDate = escapeHtml(startIso);
+          const endDate = escapeHtml(endIso);
+          const startTxt = escapeHtml(_fmtDateDMY(startIso));
+          const endTxt = escapeHtml(_fmtDateDMY(endIso) || "…");
+          const noteVal = escapeHtml(it.continueNote || "");
+          const notePh = _currentLang === "en" ? "note (e.g. start tonight)" : "หมายเหตุ เช่น เริ่มเย็นนี้ / วันนี้ทานทันที";
+          const startLbl = _currentLang === "en" ? "Start" : "เริ่ม";
+          const endLbl = _currentLang === "en" ? "End" : "จนถึง";
+
+          // Calendar columns: one per day of the start→end run.
+          const dayCols = _continueDayColumns(startIso, endIso);
+          const nCols = dayCols.length;
+          // Header row: empty meal cell + one date label per day (no tick — the
+          // checkboxes live in the meal rows below).
+          const headRow = `<tr class="mcc-headrow">
+            <th class="mcc-mealhead"></th>
+            ${dayCols.map((c) => `<th class="mcc-dayhead">
+              <span class="mcc-daylbl">${c.day ? `${escapeHtml(c.day)}/${escapeHtml(c.mon)}` : ""}</span>
+            </th>`).join("")}
+          </tr>`;
+          // Meal rows: meal label + one tick per day column. A ticked box (dose
+          // taken) is remembered per (meal, day) and hidden in print.
+          const ticks = it.continueTicks || {};
+          const mealRows = it.slots.length
+            ? it.slots.map((s) => `<tr>
+                <td class="mcc-meal"><span class="mcc-ico">${s.ico}</span> ${escapeHtml(_currentLang === "en" ? s.en : s.th)}</td>
+                ${dayCols.map((c) => {
+                  const key = `${s.key}|${c.iso}`;
+                  return `<td class="mcc-tick"><input type="checkbox" class="mcc-tickbox" data-idx="${it._idx}" data-tickkey="${escapeHtml(key)}"${ticks[key] ? " checked" : ""} /></td>`;
+                }).join("")}
+              </tr>`).join("")
+            : `<tr><td class="mcc-meal mcc-nomeal" colspan="${nCols + 1}">${escapeHtml(_currentLang === "en" ? "As directed" : "ตามแพทย์สั่ง")}</td></tr>`;
           return `<div class="mc-continue-item" data-index="${it._idx}">
-            <div class="mc-continue-drug">${escapeHtml(it.drug)}${it.dose ? ` <span class="mc-dose">${escapeHtml(it.dose)}</span>` : ""}</div>
-            ${slots}
-            <div class="mc-continue-dates">
-              <label>${_currentLang === "en" ? "Start" : "เริ่ม"} <input type="date" class="mc-continue-date" data-idx="${it._idx}" data-field="continueStartDate" value="${startDate}" /></label>
-              <label>${_currentLang === "en" ? "End" : "จนถึง"} <input type="date" class="mc-continue-date" data-idx="${it._idx}" data-field="continueEndDate" value="${endDate}" /></label>
+            <div class="mc-continue-drug">
+              <span class="mcc-name">${escapeHtml(it.drug)}${it.dose ? ` <span class="mc-dose">${escapeHtml(it.dose)}</span>` : ""}</span>
+              <span class="mcc-date-edit">
+                <label>${startLbl} <input type="date" class="mc-continue-date" data-idx="${it._idx}" data-field="continueStartDate" value="${startDate}" /></label>
+                <label>${endLbl} <input type="date" class="mc-continue-date" data-idx="${it._idx}" data-field="continueEndDate" value="${endDate}" /></label>
+                <input type="text" class="mc-continue-note" data-idx="${it._idx}" data-field="continueNote" value="${noteVal}" placeholder="${notePh}" />
+              </span>
+              <span class="mcc-date-print">${startLbl} ${startTxt}&nbsp;&nbsp;${endLbl} ${endTxt}<span class="mcc-note-print">${noteVal ? ` · ${noteVal}` : ""}</span></span>
             </div>
+            <table class="mcc-table">
+              <tbody>
+                ${headRow}
+                ${mealRows}
+              </tbody>
+            </table>
           </div>`;
         }).join("")}
       </div>
     </div>
   ` : "";
 
-  host.innerHTML = continuedHtml + MS.gridHTML(otherItems, escapeHtml);
+  if (contHost) contHost.innerHTML = continuedHtml;
+  host.innerHTML = MS.gridHTML(otherItems, escapeHtml);
   if (info) {
     const continuedCount = continuedItems.length;
     info.innerHTML = `<div class="mc-info-detail">${escapeHtml(continuedCount ? _takeContinueMealNote() : _mealCardInfoDefault())}</div>`;
   }
-  _bindMealCardControls(host);
+  _bindMealCardControls(contHost);
+  if (_startDefaulted) _persist();
 }
 
 function _bindMealCardControls(host) {
   if (!host) return;
+  // Date pickers commit on "change"; the free-text note commits on "input" so
+  // the manually-typed note (e.g. "เริ่มเย็นนี้") persists as the user types.
   host.querySelectorAll(".mc-continue-date").forEach((input) => {
     input.addEventListener("change", () => {
       const idx = Number(input.dataset.idx);
@@ -648,6 +779,41 @@ function _bindMealCardControls(host) {
       const med = _meds[idx];
       if (!med) return;
       med[field] = input.value || "";
+      _persist();
+      // The calendar day-columns depend on the start/end run — re-render so the
+      // grid reflects the new range live.
+      renderMealCard();
+    });
+  });
+  host.querySelectorAll(".mc-continue-note").forEach((input) => {
+    input.addEventListener("input", () => {
+      const idx = Number(input.dataset.idx);
+      const field = input.dataset.field;
+      if (Number.isNaN(idx) || !field) return;
+      const med = _meds[idx];
+      if (!med) return;
+      med[field] = input.value || "";
+      // Keep the print-only text form in sync so a typed note actually appears
+      // on paper (the print span is built once at render, not re-rendered here).
+      const item = input.closest(".mc-continue-item");
+      const notePrint = item && item.querySelector(".mcc-note-print");
+      if (notePrint) notePrint.textContent = input.value ? ` · ${input.value}` : "";
+      _persist();
+    });
+  });
+  // Meal tick-boxes: remember which (meal, day) doses are done. On screen a
+  // ticked box shows an ✗; in print a ticked box is hidden (the cell is blank),
+  // while unticked boxes print as empty squares. All via CSS — no re-render.
+  host.querySelectorAll(".mcc-tickbox").forEach((box) => {
+    box.addEventListener("change", () => {
+      const idx = Number(box.dataset.idx);
+      const key = box.dataset.tickkey;
+      if (Number.isNaN(idx) || !key) return;
+      const med = _meds[idx];
+      if (!med) return;
+      if (!med.continueTicks || typeof med.continueTicks !== "object") med.continueTicks = {};
+      if (box.checked) med.continueTicks[key] = true;
+      else delete med.continueTicks[key];
       _persist();
     });
   });
@@ -723,9 +889,15 @@ function _addMed(med) {
     drug: norm(med.drug || ""), instruction: norm(med.instruction || ""),
     note: "", quantity: norm(med.quantity || ""), code: norm(med.code || ""),
     provider: "", source: norm(med.source || ""),
+    // Authoritative Thai frequency phrase (used by the translation engine on the
+    // instruction line, same as report-sourced rows) — POM items from Med
+    // Reconcile carry it so their instruction reads natural Thai.
+    frequencyTh: norm(med.frequencyTh || ""),
     takeUntilFinished: false,
     continueStartDate: "",
     continueEndDate: "",
+    continueNote: "",
+    continueTicks: {},
   });
   _persist();
   renderMeds();
@@ -940,6 +1112,8 @@ async function fetchAndRender() {
       takeUntilFinished: !!m.takeUntilFinished,
       continueStartDate: norm(m.continueStartDate || ""),
       continueEndDate: norm(m.continueEndDate || ""),
+      continueNote: norm(m.continueNote || ""),
+      continueTicks: (m.continueTicks && typeof m.continueTicks === "object") ? m.continueTicks : {},
     }));
     // Detect new discharge meds added after the cache was saved and inject them.
     const savedCodes = new Set(_meds.map((m) => m.code).filter(Boolean));
@@ -1040,15 +1214,18 @@ function renderReconPanel() {
   const footer  = document.getElementById("reconFooter");
   if (!sub || !filters || !list || !addBtn) return;
 
+  const selectAllRow = document.getElementById("reconSelectAllRow");
+
   if (!_reconMeds.length) {
     sub.textContent = "";
     filters.innerHTML = "";
     footer.style.display = "none";
+    if (selectAllRow) selectAllRow.style.display = "none";
     list.innerHTML = `<div class="recon-empty">
       <span class="recon-empty-icon">🔍</span>
       Reconciliation data not loaded for this visit.<br><br>
-      Open <b>Med Reconcile</b> in ArcusAir for this patient once this session,
-      then click ↻ to fetch the list here.
+      Open <b>Med Reconcile</b> in ArcusAir for this patient once, then click ↻.
+      <br><br><span style="font-size:9px;color:#b0bec5">Once captured it's saved on the pharmacy server for 24 hours, so any workstation can load it — no need to reopen Med Reconcile.</span>
     </div>`;
     return;
   }
@@ -1069,7 +1246,54 @@ function renderReconPanel() {
     ? filtered.map(_reconItemHtml).join("")
     : `<div class="recon-list-empty">No items in this filter</div>`;
 
+  _syncSelectAll(filtered);
   _updateReconAddButton();
+}
+
+/** The addable, not-yet-added items in the current filter — what "Select all"
+ * targets and reflects. */
+function _reconSelectableItems(filtered) {
+  return (filtered || _reconMeds).filter((m) => m.addable && !m._added);
+}
+
+/** Show/hide the Select-all row and reflect its checked / indeterminate state
+ * against the selectable items in the current filter. */
+function _syncSelectAll(filtered) {
+  const row = document.getElementById("reconSelectAllRow");
+  const box = document.getElementById("reconSelectAll");
+  if (!row || !box) return;
+  const selectable = _reconSelectableItems(filtered);
+  if (!selectable.length) { row.style.display = "none"; return; }
+  row.style.display = "";
+  const selectedCount = selectable.filter((m) => _reconSelected.has(m._id)).length;
+  box.checked = selectedCount === selectable.length;
+  box.indeterminate = selectedCount > 0 && selectedCount < selectable.length;
+}
+
+/** Compose a clean instruction line for a POM item added from Med Reconcile.
+ * The reconcile data gives a Thai frequency (locallangdesc), an English route
+ * ("Orally"), and free-text comments — joining them raw produced a mixed-language
+ * mess ("วันละ 1 ครั้ง หลังอาหารเช้า Orally"). The sheet defaults to Thai, so we
+ * render the instruction natively in Thai instead of relying on the English
+ * pattern engine (which needs a "Take 1 Tablet …" shape that reconcile items,
+ * lacking an explicit dose, don't reliably provide):
+ *   • Verb "รับประทาน" (ทา for external/topical), then the Thai frequency.
+ *   • Route "Orally" is dropped (it localises to "" in Thai for report rows too).
+ *   • Any free-text comment (Thai PRN/dose detail) is appended once.
+ * frequencyTh is still carried so a later language switch keeps the frequency
+ * authoritative, matching report-sourced rows. */
+function _reconInstruction(m) {
+  const freqTh = norm(m.frequencyTh || m.frequency || "");
+  const comments = norm(m.instruction || m.note || "");
+  const external = _isExternalMed({ drug: m.drug, note: comments }, comments);
+  const verb = external ? "ทา" : "รับประทาน";
+
+  let instruction = [verb, freqTh].filter(Boolean).join(" ");
+  // Append a meaningful comment that isn't just a repeat of the frequency.
+  if (comments && comments !== freqTh && !instruction.includes(comments)) {
+    instruction = `${instruction} ${comments}`.trim();
+  }
+  return { instruction, frequencyTh: freqTh };
 }
 
 function _reconItemHtml(m) {
@@ -1109,14 +1333,29 @@ function _bindReconPanel() {
     if (!cb) return;
     const id = Number(cb.dataset.id);
     if (cb.checked) _reconSelected.add(id); else _reconSelected.delete(id);
+    // Re-sync the header select-all checkbox (checked/indeterminate) with the
+    // current per-row selection in this filter.
+    const filtered = _reconFilter === "all" ? _reconMeds : _reconMeds.filter((m) => m.status === _reconFilter);
+    _syncSelectAll(filtered);
     _updateReconAddButton();
+  });
+
+  const selectAll = document.getElementById("reconSelectAll");
+  if (selectAll) selectAll.addEventListener("change", () => {
+    const filtered = _reconFilter === "all" ? _reconMeds : _reconMeds.filter((m) => m.status === _reconFilter);
+    const selectable = _reconSelectableItems(filtered);
+    selectable.forEach((m) => { if (selectAll.checked) _reconSelected.add(m._id); else _reconSelected.delete(m._id); });
+    renderReconPanel();  // re-render so each row checkbox reflects the change
   });
 
   document.getElementById("reconAddBtn").addEventListener("click", () => {
     const toAdd = _reconMeds.filter((m) => m.addable && !m._added && _reconSelected.has(m._id));
     toAdd.forEach((m) => {
-      const instruction = [m.frequency, m.route, m.instruction].filter(Boolean).join(" ");
-      _addMed({ drug: m.drug, code: m.code, instruction, quantity: "", source: "pom" });
+      const built = _reconInstruction(m);
+      _addMed({
+        drug: m.drug, code: m.code, quantity: "", source: "pom",
+        instruction: built.instruction, frequencyTh: built.frequencyTh,
+      });
       m._added = true;
       _reconSelected.delete(m._id);
     });
@@ -1131,11 +1370,59 @@ function _bindReconPanel() {
   });
 }
 
+/** Enrich _context with the medreconcileuid / snapshot / incus-token for this
+ * visit. Two sources, in order:
+ *   1) The pharmacy server's per-visit capture bag (shared cross-workstation,
+ *      24h TTL, written by capture-persist.js on ANY PC that opened Med
+ *      Reconcile). This is the durable source — works with no ArcusAir tab open.
+ *   2) A live, currently-open ArcusAir tab (best-effort), which may carry a
+ *      fresher incus-token than the stored one — layered on top.
+ * Best-effort; leaves _context unchanged if neither source has anything. */
+async function _refreshReconContextFromArcus() {
+  if (!_context || !_context.patientvisituid) return;
+  const vid  = _context.patientvisituid;
+  const puid = _context.patientuid;
+
+  // 1) Server capture bag (durable, cross-PC).
+  try {
+    if (puid && window.BKNData && window.BKNData.loadCapture) {
+      const cap = await window.BKNData.loadCapture(puid, vid);
+      if (cap) {
+        if (cap.medreconcileuid)      _context.medreconcileuid     = cap.medreconcileuid;
+        if (cap.medreconcileSnapshot && !_context.medreconcileuid)
+          _context.medreconcileSnapshot = cap.medreconcileSnapshot;
+        if (cap.incusToken)           _context.incusToken          = cap.incusToken;
+      }
+    }
+  } catch (_e) { /* server unavailable — fall through to live tab */ }
+
+  // 2) Live ArcusAir tab (best-effort) — a fresher token / just-captured id.
+  let resp = null;
+  try {
+    resp = await chrome.runtime.sendMessage({ type: "HM_REFRESH_RECON_CTX", patientvisituid: vid });
+  } catch (_e) { return; }
+  if (!resp || !resp.ok) return;
+
+  const uid = (resp.medreconMap || {})[vid];
+  if (uid) _context.medreconcileuid = uid;
+
+  const snap = (resp.medhistoryMap || {})[vid];
+  if (snap && !_context.medreconcileuid) _context.medreconcileSnapshot = snap;
+
+  // A fresh incus-token lets the server make the live medreconcile/getdetail
+  // call (tokens expire, so a live tab's token beats the stored one).
+  const token = (resp.arcusHdrs || {})["incus-token"];
+  if (token) _context.incusToken = token;
+}
+
 async function fetchAndRenderReconcile() {
   if (!_context || !window.BKNData || !window.BKNData.serverFetch) {
     _setReconMeds([]);
     return;
   }
+  // Pull the latest reconcile id / snapshot / token from the ArcusAir tab first,
+  // so a reload picks up a medreconcileuid captured after the sheet was opened.
+  await _refreshReconContextFromArcus();
   try {
     const r = await window.BKNData.serverFetch("/api/report/reconcile-api", {
       method: "POST",
@@ -1143,6 +1430,7 @@ async function fetchAndRenderReconcile() {
       body: JSON.stringify({ context: _context }),
     });
     _setReconMeds((r && r.ok && r.json && Array.isArray(r.json.reconcileMeds)) ? r.json.reconcileMeds : []);
+    if (r && r.ok && r.json) window.__HM_RECON_RESP__ = r.json;  // console-inspectable
   } catch (_e) {
     _setReconMeds([]);
   }
@@ -1152,7 +1440,7 @@ async function fetchAndRenderReconcile() {
 const PRINT_CONTROL_DEFAULTS = {
   marginMm: "8", previewScale: "1", fontSizeMode: "normal",
   pictureSizeMode: "normal", compactMode: false, fitWidth: false,
-  includeMealCard: false, mealCardBreak: true,
+  includeMealCard: false,
 };
 
 function _getPrintControls() {
@@ -1164,7 +1452,6 @@ function _getPrintControls() {
     compactMode: document.getElementById("compactMode"),
     fitWidth: document.getElementById("fitWidth"),
     includeMealCard: document.getElementById("includeMealCard"),
-    mealCardBreak: document.getElementById("mealCardBreak"),
     printStatus: document.getElementById("printStatus"),
   };
 }
@@ -1199,13 +1486,12 @@ function applyPrintSettings(settings) {
   body.classList.toggle("compact-mode", !!cfg.compactMode);
   body.classList.toggle("fit-width", !!cfg.fitWidth);
   body.classList.toggle("hm-with-mealcard", !!cfg.includeMealCard);
-  body.classList.toggle("hm-mealcard-break", !!cfg.mealCardBreak);
   const margin = Number(cfg.marginMm) || 8;
   _ensurePrintStyleTag().textContent = `@page { size: A4 portrait; margin: ${margin}mm; }`;
   const c = _getPrintControls();
   if (c.printStatus) {
     const compact = cfg.compactMode ? " · compact" : "";
-    const meal = cfg.includeMealCard ? (cfg.mealCardBreak ? " · จัดตามมื้อ (หน้าใหม่)" : " · จัดตามมื้อ (ต่อท้าย)") : "";
+    const meal = cfg.includeMealCard ? " · จัดตามมื้อ" : "";
     c.printStatus.textContent = `A4 portrait · margin ${margin} mm · ${Math.round(Number(cfg.previewScale) * 100)}% preview${compact}${meal}`;
   }
   return cfg;
@@ -1221,7 +1507,6 @@ function currentPrintSettingsFromControls() {
     compactMode: !!c.compactMode?.checked,
     fitWidth: !!c.fitWidth?.checked,
     includeMealCard: !!c.includeMealCard?.checked,
-    mealCardBreak: !!c.mealCardBreak?.checked,
   };
 }
 
@@ -1235,9 +1520,8 @@ function bindPrintControls() {
   if (c.compactMode) c.compactMode.checked = !!saved.compactMode;
   if (c.fitWidth) c.fitWidth.checked = !!saved.fitWidth;
   if (c.includeMealCard) c.includeMealCard.checked = !!saved.includeMealCard;
-  if (c.mealCardBreak) c.mealCardBreak.checked = !!saved.mealCardBreak;
   applyPrintSettings(saved);
-  [c.printMargin, c.previewScale, c.fontSizeMode, c.pictureSizeMode, c.compactMode, c.fitWidth, c.includeMealCard, c.mealCardBreak]
+  [c.printMargin, c.previewScale, c.fontSizeMode, c.pictureSizeMode, c.compactMode, c.fitWidth, c.includeMealCard]
     .filter(Boolean)
     .forEach((el) => el.addEventListener("change", () => {
       _savePrintSettings(applyPrintSettings(currentPrintSettingsFromControls()));
@@ -1282,18 +1566,16 @@ function updatePageCounterTotal() {
   const MM_TO_PX = 96 / 25.4;
   const pageContentPx = (297 - marginMm * 2) * MM_TO_PX;
 
-  // The Daily Pill Journey Card (meal card) forces itself onto a fresh page
-  // when both toggles are on (break-before: page in CSS). That wastes
-  // whatever room was left on the last main-content page, so it must be
-  // counted as its own page group rather than summed into one continuous
-  // height — otherwise a short med list + short meal card can understate
-  // by rounding e.g. 20% + 20% = 1 page instead of the real 1 + 1 = 2 pages.
+  // The Daily Pill Journey Card (meal card) auto-breaks onto a fresh page when
+  // it doesn't fit in the room left on the current page (its header + intro +
+  // continued block avoid splitting). We can't know the exact remaining space
+  // here, so conservatively count it as its own page group when shown — matching
+  // the common case where it lands on a new page rather than understating.
   const mealEl = document.getElementById("mealcardSection");
-  const mealCardShown  = document.body.classList.contains("hm-with-mealcard");
-  const mealCardBroken = document.body.classList.contains("hm-mealcard-break");
+  const mealCardShown = document.body.classList.contains("hm-with-mealcard");
 
   let totalPages;
-  if (mealCardShown && mealCardBroken && mealEl) {
+  if (mealCardShown && mealEl) {
     const mealPx = mealEl.scrollHeight;
     const mainPx = sheetEl.scrollHeight - mealPx;
     const mainPages = Math.max(1, Math.ceil(mainPx / pageContentPx));

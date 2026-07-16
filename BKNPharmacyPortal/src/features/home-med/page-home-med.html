@@ -178,6 +178,20 @@
       border-bottom: 1px solid #eef2f8;
       flex: 0 0 auto;
     }
+    .recon-selectall {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 10px;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #37474f;
+      background: #f5f9ff;
+      border-bottom: 1px solid #e3eefa;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+    .recon-selectall input[type="checkbox"] { width: 14px; height: 14px; accent-color: #1565c0; }
     .recon-chip {
       font-size: 9.5px;
       font-weight: 700;
@@ -936,15 +950,56 @@
     .mealcard-section .sub { font-size: 11px; color: #4b5563; margin-top: 1px; }
     .mc-info { background: #eff6ff; color: #1e3a8a; border: 1px solid #dbeafe; border-radius: 8px; padding: 6px 12px; font-size: 12px; margin-bottom: 9px; }
     .mc-info-detail { margin-top: 6px; font-size: 12px; color: #1f2937; }
-    .mc-continue-section { border: 1.5px solid #fecaca; border-radius: 10px; background: #fff1f2; padding: 10px 10px 8px; margin-bottom: 10px; }
-    .mc-continue-section .continue-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: #dc2626; color: #fff; font-weight: 700; }
-    .mc-continue-list { margin-top: 10px; display: grid; gap: 10px; }
-    .mc-continue-item { border: 1px solid #fecaca; border-radius: 10px; background: #fff; padding: 10px; }
-    .mc-continue-drug { font-weight: 700; font-size: 13px; line-height: 1.3; }
-    .mc-continue-slot { margin-top: 4px; color: #b91c1c; font-size: 12px; }
-    .mc-continue-dates { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; align-items: center; }
-    .mc-continue-dates label { font-size: 12px; color: #334155; display: flex; align-items: center; gap: 6px; }
-    .mc-continue-dates input { border: 1px solid #cbd5e1; border-radius: 8px; padding: 4px 6px; font-size: 12px; }
+    /* Continued ("take until finished") block — full width, always above the
+       by-meal grid. Orange palette (was red). */
+    .mc-continue-host { break-inside: avoid; page-break-inside: avoid; }
+    .mc-continue-section { border: 1.5px solid #fed7aa; border-radius: 10px; background: #fff7ed; padding: 10px 10px 8px; margin-bottom: 10px; break-inside: avoid; page-break-inside: avoid; }
+    .mc-continue-section .continue-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: #ea580c; color: #fff; font-weight: 700; }
+    .mc-continue-list { margin-top: 10px; display: grid; gap: 8px; }
+    .mc-continue-item { border: 1px solid #fed7aa; border-radius: 10px; background: #fff; padding: 8px 10px; break-inside: avoid; page-break-inside: avoid; text-align: left; }
+    /* Name line: drug name + date range (edit inputs on screen / plain text in
+       print) + note, all on ONE line, left-aligned. */
+    .mc-continue-drug { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-weight: 700; font-size: 13px; line-height: 1.3; }
+    .mcc-name { flex: 0 0 auto; }
+    /* Date range: editable inputs on screen, plain text in print. */
+    .mcc-date-edit { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; font-weight: 400; }
+    .mcc-date-edit label { font-size: 12px; color: #334155; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .mcc-date-edit input[type="date"] { border: 1px solid #cbd5e1; border-radius: 8px; padding: 4px 6px; font-size: 12px; }
+    .mc-continue-note { min-width: 130px; border: 1px solid #fdba74; border-radius: 8px; padding: 4px 8px; font-size: 12px; font-family: inherit; color: #7c2d12; background: #fffbeb; }
+    .mc-continue-note::placeholder { color: #d6a06a; }
+    .mc-continue-note:focus { outline: none; border-color: #ea580c; background: #fff; }
+    /* Print-only text form of the date range (hidden on screen). */
+    .mcc-date-print { display: none; font-size: 12px; color: #7c2d12; font-weight: 600; white-space: nowrap; }
+
+    /* Calendar grid: header row = one date column per day (label + tick),
+       each following row = a meal (label + one tick per day). Borderless. */
+    .mcc-table { width: auto; table-layout: auto; border-collapse: collapse; margin-top: 6px; }
+    .mcc-table th, .mcc-table td { border: none !important; border-radius: 0 !important; padding: 3px 8px 3px 0; vertical-align: middle; font-size: 12px; line-height: 1.3; text-align: left; background: none; color: inherit; }
+    .mcc-mealhead { width: 1%; }
+    .mcc-meal { color: #7c2d12; white-space: nowrap; }
+    .mcc-meal .mcc-ico { font-size: 13px; }
+    .mcc-nomeal { color: #9a6a4a; font-style: italic; }
+    /* Date-column header: small date label above a tick-box, centred. */
+    .mcc-dayhead { text-align: center; width: 1%; white-space: nowrap; padding: 3px 6px; }
+    .mcc-dayhead .mcc-daylbl { display: block; font-size: 9.5px; font-weight: 600; color: #c2410c; }
+    /* On screen: a custom tick-box that shows an ✗ (not a native check) when
+       ticked — matches the "X = dose done" concept. (In print, checked boxes
+       are hidden and unchecked ones draw an empty square — see @media print.) */
+    .mcc-tick input[type="checkbox"] {
+      -webkit-appearance: none; appearance: none;
+      position: relative;
+      width: 15px; height: 15px; margin: 0;
+      border: 1.4px solid #ea580c; border-radius: 3px;
+      background: #fff; cursor: pointer; vertical-align: middle;
+    }
+    .mcc-tick input[type="checkbox"]:checked { background: #fff5ed; }
+    .mcc-tick input[type="checkbox"]:checked::after {
+      content: "✗";
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 13px; line-height: 1; font-weight: 700; color: #c2410c;
+    }
+    .mcc-tick { text-align: center; width: 1%; padding: 3px 6px; }
     /* Masonry columns: cards size to content and pack tightly; empty slots dropped. */
     .mc-grid { column-count: 2; column-gap: 8px; }
     .mc-slot { border: 1.5px solid #cbd5e1; border-radius: 10px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; margin: 0 0 8px; }
@@ -992,10 +1047,40 @@
       tfoot { display: table-footer-group; }
       tr { break-inside: avoid; page-break-inside: avoid; }
       .footer-note { break-inside: avoid; break-before: avoid; }
-      /* By-meal card prints on its own page when included; keep slot colours. */
-      body.hm-with-mealcard.hm-mealcard-break .mealcard-section { break-before: page; page-break-before: always; }
+      /* By-meal card: auto page-break — the card only moves to a new page when
+         it doesn't fit in the room left on the current one (no forced break).
+         Don't split the card's header + intro + continued block across a page
+         boundary — if they can't fit, the whole group moves together (the
+         by-meal grid below still flows/breaks per slot). */
+      body.hm-with-mealcard .mealcard-section .timeline-head,
+      body.hm-with-mealcard .mealcard-section .mc-info,
+      body.hm-with-mealcard .mealcard-section .mc-continue-host {
+        break-inside: avoid; page-break-inside: avoid;
+      }
+      /* Glue the BKH header + intro into one unit with what follows: each block
+         forbids a break AFTER it, so the header never prints alone at the bottom
+         with its content orphaned onto the next page. */
+      body.hm-with-mealcard .mealcard-section .timeline-head,
+      body.hm-with-mealcard .mealcard-section .mc-info {
+        break-after: avoid; page-break-after: avoid;
+      }
       .mc-slot { break-inside: avoid; page-break-inside: avoid; }
-      .mc-slot-head, .mc-info { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .mc-slot-head, .mc-info, .mc-continue-section .continue-head { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      /* Date range prints as plain text, not date-input boxes: hide the
+         editable inputs and reveal the text form ("เริ่ม 16-07-2026 …"). */
+      .mcc-date-edit { display: none !important; }
+      .mcc-date-print { display: inline !important; }
+      /* Unchecked tick-boxes print as visible empty squares the patient can
+         check by hand (native checkboxes print inconsistently across browsers). */
+      .mcc-tick input[type="checkbox"] {
+        -webkit-appearance: none; appearance: none;
+        width: 13px !important; height: 13px !important;
+        border: 1.3px solid #7c2d12 !important; border-radius: 3px !important;
+        background: #fff !important;
+        -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+      }
+      /* A checked tick-box (dose already done) prints NOTHING — the cell is blank. */
+      .mcc-tick input[type="checkbox"]:checked { display: none !important; }
       /* Header sections (.screen-only) now also print once at the top. */
       /* Hide all editing chrome: action column, add-medicine row, suggestions */
       .no-print { display: none !important; }
@@ -1116,7 +1201,6 @@
 
     <div class="toolbar-group" aria-label="By-meal page">
       <label><input id="includeMealCard" type="checkbox" /> แนบหน้า จัดตามมื้อ</label>
-      <label><input id="mealCardBreak" type="checkbox" checked /> ขึ้นหน้าใหม่ (จัดตามมื้อ)</label>
     </div>
 
     <div class="print-status" id="printStatus">A4 portrait · margin 8 mm</div>
@@ -1129,6 +1213,9 @@
     </div>
     <div class="recon-sub" id="reconSub">กำลังโหลด…</div>
     <div class="recon-filters" id="reconFilters"></div>
+    <label class="recon-selectall" id="reconSelectAllRow" style="display:none">
+      <input type="checkbox" id="reconSelectAll" /> Select all addable
+    </label>
     <div class="recon-list" id="reconList"></div>
     <div class="recon-footer" id="reconFooter">
       <button class="recon-add-btn" id="reconAddBtn" disabled>+ Add Selected (0) as POM</button>
@@ -1265,6 +1352,9 @@
         <div></div>
       </div>
       <div class="mc-info" id="mealCardInfo">ℹ️ มียาหลายตัวในมื้อเดียวกัน โปรดสังเกตว่าตัวใดกินก่อนอาหาร และตัวใดกินหลังอาหาร</div>
+      <!-- Continued ("take until finished") meds: full-width block, always at
+           the top, above the by-meal grid. -->
+      <div class="mc-continue-host" id="mealcardContinue"><!-- continued block injected by JS --></div>
       <div class="mc-grid" id="mealcardGrid"><!-- slots injected by JS --></div>
     </section>
   </main>

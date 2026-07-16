@@ -68,6 +68,7 @@
         "src/core/dom.js",
         "src/core/storage.js",
         "src/shared/shared-data-client.js",
+        "src/main-world/capture-persist.js",
         "src/features/med-sticker/parser-order-table.js",
         "src/features/med-sticker/content-med-sticker.js",
         "src/features/med-sticker/content-pomlist.js",

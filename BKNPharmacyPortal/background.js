@@ -29,6 +29,12 @@ function _isAllowedProxyUrl(url) {
   try { return _PROXY_ALLOWED_HOSTS.has(new URL(url).hostname); } catch (_) { return false; }
 }
 
+/* Med-reconcile / capture data is persisted to the PHARMACY SERVER (shared
+   cross-workstation, 24h TTL) by src/main-world/capture-persist.js, and read
+   back by the Home Med Sheet via BKNData.loadCapture(). Background no longer
+   keeps a per-browser store — see HM_REFRESH_RECON_CTX below, which only does
+   best-effort LIVE enrichment from an open ArcusAir tab. */
+
 /* ── AAOverlay feature-tab registry ──────────────────────────────────────── */
 const MSG = Object.freeze({
   LOAD_MED_TABLE:          'LOAD_MED_TABLE',
@@ -448,6 +454,29 @@ function _arcusSetupXhrTap() {
         } catch (_) {}
       }, { once: true, passive: true });
     }
+    // Also capture medreconcileuid + full list from the medreconcile RESPONSE
+    // (the EMR Med Reconcile view loads without a uid in the request body, so
+    // the request-body path misses it — see src/main-world/arcus-xhr-tap.js).
+    if (this.__bkn_medrecon) {
+      var _xhr3 = this;
+      _xhr3.addEventListener('load', function () {
+        if (_xhr3.status !== 200) return;
+        try {
+          var resp = JSON.parse(_xhr3.responseText);
+          var mr = (resp && resp.medreconcile) || null;
+          if (!mr) return;
+          var vid3 = window.__arcus_pctx__.patientvisituid || '';
+          var ruid = mr.medreconcileuid || mr.medReconcileUid || '';
+          if (typeof ruid === 'object' && ruid) ruid = ruid._id || '';
+          if (vid3 && ruid && /^[a-f0-9]{24}$/i.test(String(ruid))) {
+            window.__arcus_medrecon__[vid3] = String(ruid);
+          }
+          if (vid3 && Array.isArray(mr.medicationitems)) {
+            window.__arcus_medhistory__[vid3] = resp;
+          }
+        } catch (_) {}
+      }, { once: true, passive: true });
+    }
     return _origSend.apply(this, arguments);
   };
   var _origFetch = window.fetch;
@@ -543,6 +572,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return false;
   }
 
+
   /* ════════════════════════════════════════════════════════════════════
      4. AAOverlay — extract Angular patient context (MAIN world)
   ════════════════════════════════════════════════════════════════════ */
@@ -567,6 +597,48 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({ ok: true, data });
       });
     });
+    return true;
+  }
+
+  /* Best-effort LIVE med-reconcile enrichment from an open ArcusAir tab. The
+     durable copy lives on the pharmacy server (persisted by capture-persist.js,
+     read via BKNData.loadCapture) — this only adds anything freshly captured in
+     a currently-open ArcusAir tab that may not have reached the server yet
+     (e.g. a newer incus-token). Returns the live medreconMap/medhistoryMap +
+     headers keyed by patientvisituid; the sheet merges the server copy first. */
+  if (msg && msg.type === 'HM_REFRESH_RECON_CTX') {
+    (async () => {
+      try {
+        const tabs = await chrome.tabs.query({});
+        const aaTab = tabs.find(t => t.url && t.url.includes('arcusair.bdms.co.th'));
+
+        const finish = (live) => {
+          const raw = (live && live.raw) || {};
+          sendResponse({
+            ok: true,
+            medreconMap:   Object.assign({}, raw.medreconMap   || {}),
+            medhistoryMap: Object.assign({}, raw.medhistoryMap || {}),
+            arcusHdrs:     Object.assign({}, (live && live.hdrs) || {}),
+          });
+        };
+
+        if (!aaTab || !aaTab.id) { finish(null); return; }
+        chrome.scripting.executeScript({
+          target: { tabId: aaTab.id }, world: 'MAIN', func: _arcusExtractAngularCtx,
+        }, results => {
+          if (chrome.runtime.lastError || !results || !results[0]) { finish(null); return; }
+          const data = results[0].result || {};
+          const raw  = data._raw || {};
+          chrome.storage.session.get(`_bkn_hdrs_${aaTab.id}`, res => {
+            const storHdrs   = (res && res[`_bkn_hdrs_${aaTab.id}`]) || {};
+            const windowHdrs = raw.arcusHdrs || {};
+            finish({ raw, hdrs: Object.assign({}, storHdrs, windowHdrs) });
+          });
+        });
+      } catch (e) {
+        sendResponse({ ok: false, error: String(e) });
+      }
+    })();
     return true;
   }
 

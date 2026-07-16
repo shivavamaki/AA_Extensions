@@ -146,6 +146,30 @@
     return !!(r && r.ok);
   }
 
+  /* ── Per-visit capture bag (24h TTL, server-shared cross-workstation) ──
+     Client-captured ArcusAir parameters that any PC can reuse without
+     re-capturing (medreconcileuid, snapshot, incusToken, …). The server merges
+     non-empty fields and enforces the TTL, so a stale entry reads back empty. */
+  async function loadCapture(patientuid, patientvisituid) {
+    if (!patientuid || !patientvisituid) return null;
+    const r = await serverFetch(
+      `/api/patients/${encodeURIComponent(patientuid)}/captures/${encodeURIComponent(patientvisituid)}`
+    );
+    return (r && r.ok && r.json && Object.keys(r.json).length) ? r.json : null;
+  }
+
+  async function saveCapture(patientuid, patientvisituid, data) {
+    if (!patientuid || !patientvisituid || !data || typeof data !== "object") return false;
+    const r = await serverFetch(
+      `/api/patients/${encodeURIComponent(patientuid)}/captures/${encodeURIComponent(patientvisituid)}`,
+      {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }
+    );
+    return !!(r && r.ok);
+  }
+
   /* ── Generic patient profile read (combined object) ──────────────── */
   async function loadPatientProfile(patientuid) {
     if (!patientuid) return null;
@@ -159,6 +183,7 @@
     getPatientContext, setPatientContext,
     loadAdrTimeline, saveAdrTimeline,
     loadMedCache, saveMedCache,
+    loadCapture, saveCapture,
     loadPatientProfile,
   };
 })();

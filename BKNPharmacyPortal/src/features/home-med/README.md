@@ -29,8 +29,7 @@ The on-screen controls live in a fixed **left sidebar** (`.toolbar`, pastel-gree
 | Margin · Preview scale | `@page` margin · on-screen `--screen-scale` |
 | Font · Picture | `--base-font-size` · `--medicine-image-size` |
 | Compact rows · Fit width | `body.compact-mode` · `body.fit-width` |
-| แนบหน้า จัดตามมื้อ (`includeMealCard`) | Show the by-meal page (`body.hm-with-mealcard`) |
-| ขึ้นหน้าใหม่ (จัดตามมื้อ) (`mealCardBreak`, default on) | Whether the by-meal page starts on a **new** print page (`body.hm-mealcard-break`); off = flows after the table |
+| แนบหน้า จัดตามมื้อ (`includeMealCard`) | Show the by-meal page (`body.hm-with-mealcard`). The by-meal card **auto page-breaks**: its header + intro + continued block avoid splitting, so the whole card moves to a new page only when it doesn't fit — no manual break toggle. |
 
 > Removed: the dead **Paper** select (only A4, never wired) and the **Hide logo** toggle. When editing the config, keep all five spots in sync — `PRINT_CONTROL_DEFAULTS`, `_getPrintControls`, `applyPrintSettings`, `currentPrintSettingsFromControls`, and the `bindPrintControls` set + listener array.
 
@@ -96,9 +95,43 @@ the patient's pre-admission/home medications into the sheet, tagged **POM**
 - **Data source**: `data.reconcileMeds` from the same `POST
   /api/report/home-med-api` response (also independently refreshable via
   `POST /api/report/reconcile-api`, the ↻ button — `fetchAndRenderReconcile()`).
-  Server-side, `_resolve_reconcile_meds()` prefers a client-captured
-  `medreconcileSnapshot` (see [`../hmr/README.md`](../hmr/README.md#step-5--med-reconcile-semi-automated))
-  over a live ArcusAir re-fetch.
+  Server-side, `_resolve_reconcile_meds()` prefers a live ArcusAir re-fetch
+  using the client-captured `medreconcileuid`, falling back to the
+  `medreconcileSnapshot` (see [`../hmr/README.md`](../hmr/README.md#step-5--med-reconcile-semi-automated)).
+- **The ↻ reload re-pulls context from the live ArcusAir tab.** The sheet runs
+  in its own extension tab and can't see ArcusAir's in-page capture, so opening
+  Med Reconcile *after* the sheet was opened wouldn't otherwise register. On ↻,
+  `_refreshReconContextFromArcus()` first reads the **server capture bag**
+  (`BKNData.loadCapture(puid, vid)`), then sends `HM_REFRESH_RECON_CTX` to
+  background for best-effort **live** enrichment from an open ArcusAir tab
+  (a fresher `incus-token` / just-captured id), merging both into `_context`
+  before the refresh POST. The XHR tap captures the `medreconcileuid` + full
+  item list from the medreconcile getdetail **response** (not just the request
+  body), so the EMR Med Reconcile view — which loads without a uid in the
+  request body — registers.
+- **Server-shared capture bag (cross-workstation), two-tier TTL.** The
+  `medreconcileuid` / snapshot / `incus-token` are captured in the ArcusAir page
+  context (volatile). The MAIN-world tap posts each capture (`__bkn_medrecon__`
+  postMessage), and **`src/main-world/capture-persist.js`** (ISOLATED world, has
+  `BKNData`) writes it to the **pharmacy server** via
+  `PUT /api/patients/{puid}/captures/{visituid}` — a per-visit bag the server
+  merges (non-empty fields only). Retention is split by sensitivity:
+  - the **record** (`medreconcileuid` + snapshot) is kept **7 days**
+    (`CAPTURE_TTL_MS`) — an opaque id + PHI that already lives on this server,
+    so the panel works cross-workstation for a week;
+  - the **`incus-token`** is a live ArcusAir session credential, so only a
+    **24h** copy is kept (`CAPTURE_TOKEN_TTL_MS`, stamped via its own `tokenTs`
+    so a later snapshot-only update can't revive it). Past 24h the GET strips
+    the token (`_capture_view`); a missing token just means the server falls
+    back to the stored snapshot — the panel still works.
+
+  So opening Med Reconcile **once on any PC** lets **every** workstation load the
+  panel for a week — no per-browser storage, no re-snapshotting.
+  `_resolve_reconcile_meds` prefers a live `getdetail` (needs a non-expired
+  token — a currently-open ArcusAir tab supplies a fresh one) and falls back to
+  the stored snapshot otherwise. The bag is generic
+  (`BKNData.loadCapture`/`saveCapture`), so other features can persist their own
+  captured ArcusAir parameters the same way.
 - **Status → action**: items are normalized to `continued`/`stopped`/
   `changed`/`new` (`_RECON_STATUS_LABEL`). Only `stopped` items are
   non-addable — a discontinued medication shouldn't become a home med.
@@ -127,19 +160,17 @@ The logo/title row, patient-info card, and diagnosis/allergy banner live inside 
 
 `#pageCounter` (`.page-counter`) is a `position: fixed` element, print-only, bottom-right of the sheet. The **current** page number comes from the CSS `counter(page)` trick (Chrome increments a `position: fixed` element's counter once per printed page) — no JS involved. The **total** page count has no native CSS equivalent in Chrome, so `updatePageCounterTotal()` (`page-home-med.js`, on `window.beforeprint`) estimates it from `.sheet.scrollHeight` vs. the A4 content height (297mm minus the current print margin), written to `data-total` and read via `attr(data-total)` in the `::before` content. It's an estimate, not exact pagination — close enough for "Page X / Y" on a discharge sheet.
 
-When the by-meal page is enabled **and** forced onto its own page
-(`hm-with-mealcard` + `hm-mealcard-break`, see below), the meal card's height
+When the by-meal page is enabled (`hm-with-mealcard`), the meal card's height
 is measured **separately** from the rest of the sheet and each rounded up to
 whole pages independently before summing — not summed first, then divided.
-`break-before: page` always wastes whatever room was left on the previous
-page, so a short med list (e.g. 20% of a page) plus a short meal card (20%)
-is 2 physical pages, not `ceil(0.4) = 1`. Falls back to the simple
-sum-then-divide estimate when the meal card is off or not forced onto its own
-page (content flows continuously there, so summing first is correct).
+The card auto-breaks onto its own page when it doesn't fit, which wastes
+whatever room was left on the previous page, so a short med list (e.g. 20% of a
+page) plus a short meal card (20%) is 2 physical pages, not `ceil(0.4) = 1`.
+Falls back to the simple sum-then-divide estimate when the meal card is off.
 
 ## Daily Pill Journey Card (optional by-meal page)
 
-An optional second page (`.mealcard-section` / `#mealcardGrid`) groups the discharge meds **by meal slot** (before/after × breakfast/lunch/dinner, then bedtime and PRN). It's gated behind the toolbar toggle **"แนบหน้า จัดตามมื้อ"** (`#includeMealCard` → `body.hm-with-mealcard`). A second toggle **"ขึ้นหน้าใหม่ (จัดตามมื้อ)"** (`#mealCardBreak` → `body.hm-mealcard-break`, default on) controls whether it starts on its own print page: the `break-before: page` rule requires **both** classes, so unchecking flows the card directly after the table. Both persist with the other print settings.
+An optional second page (`.mealcard-section` / `#mealcardGrid`) groups the discharge meds **by meal slot** (before/after × breakfast/lunch/dinner, then bedtime and PRN). It's gated behind the toolbar toggle **"แนบหน้า จัดตามมื้อ"** (`#includeMealCard` → `body.hm-with-mealcard`), which persists with the other print settings. The card **auto page-breaks**: its header + intro + continued block carry `break-inside/after: avoid`, so the whole card moves to a fresh page only when it doesn't fit in the room left on the current page — there's no manual "new page" toggle.
 
 `renderMealCard()` runs at the end of `renderMeds()` (so it tracks add/remove/edit) and delegates bucketing + markup to the shared **`window.BKNMealSlots`** engine (`../../shared/meal-slots.js`) — the same one the Medication Journey card uses. Matching runs on `instruction + frequencyTh`, so a meal time supplied only by the authoritative Thai frequency phrase still buckets. The `.mc-*` CSS lives in this page's `<style>` (2-column masonry for portrait); empty slots are dropped so the card stays compact.
 

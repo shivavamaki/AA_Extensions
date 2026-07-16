@@ -12,4 +12,7 @@ window.addEventListener("message", (e) => {
   try {
     chrome.runtime.sendMessage({ type: "BKN_SEC_HDR_RELAY", k: d.k, v: d.v });
   } catch (_) { /* extension context invalidated — ignore */ }
+  // NOTE: med-reconcile captures are persisted to the pharmacy server by
+  // src/main-world/capture-persist.js (which has window.BKNData), not relayed
+  // to background storage — see that file.
 });

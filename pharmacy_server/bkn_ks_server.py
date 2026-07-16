@@ -38,6 +38,8 @@ API:
   PUT    /api/patients/{puid}/adr-timeline                   — replace ADR timeline
   GET    /api/patients/{puid}/medication-cache/{visituid}    — cached meds for visit
   PUT    /api/patients/{puid}/medication-cache/{visituid}    — store cached meds
+  GET    /api/patients/{puid}/captures/{visituid}            — client capture bag (record 7d; token 24h)
+  PUT    /api/patients/{puid}/captures/{visituid}            — merge into capture bag
 
   GET    /api/hmr                           — all HM Process records (?from=&to=, newest first)
   GET    /api/hmr/{visitid}                 — one record (I48-xx-xxxxxx), {} if none
@@ -527,15 +529,18 @@ def build_reconcile_meds(data):
             continue
         oi = it.get('orderitemuid') or {}
         code = _hm_norm(oi.get('code') or '')
-        freq = _hm_norm((it.get('frequencyuid') or {}).get('locallangdesc')
-                        or (it.get('frequencyuid') or {}).get('name') or '')
+        fuid = it.get('frequencyuid') or {}
+        freq_th = _hm_norm(fuid.get('locallangdesc') or '')
+        freq_en = _hm_norm(fuid.get('name') or '')
+        freq = freq_th or freq_en
         route = _hm_norm((it.get('routeuid') or {}).get('valuedescription') or '')
         comments = _hm_norm(it.get('comments') or '')
         recon = _hm_norm(it.get('reconcilestatus') or '')
         out.append({
             'drug': name, 'code': code,
             'status': recon, 'instruction': comments,
-            'frequency': freq, 'route': route, 'note': comments,
+            'frequency': freq, 'frequencyTh': freq_th, 'frequencyEn': freq_en,
+            'route': route, 'note': comments,
         })
     return out
 
@@ -572,20 +577,34 @@ def _resolve_reconcile_meds(ctx):
     so it's tried first. Falls back to the medicationhistory/getdetails
     snapshot (auto-captured, no id required, but its response shape is only
     guessed at) if no uid is available or the live call fails."""
+    have_uid  = bool(ctx.get('medreconcileuid'))
+    have_snap = bool(ctx.get('medreconcileSnapshot'))
+    have_tok  = bool(ctx.get('incusToken'))
     if ctx.get('medreconcileuid'):
         try:
             recon_raw = fetch_arcus_medreconcile(ctx)
+            n_items = len(((recon_raw or {}).get('medreconcile') or {}).get('medicationitems') or [])
             if recon_raw:
                 meds = build_reconcile_meds_for_home_med(recon_raw)
+                print(f'[recon] uid live-fetch ok: items={n_items} meds={len(meds)} '
+                      f'(uid={ctx.get("medreconcileuid")})', file=sys.stderr)
                 if meds:
                     return meds
-        except Exception:
-            pass
+            else:
+                print(f'[recon] uid present but live-fetch returned nothing '
+                      f'(token={have_tok})', file=sys.stderr)
+        except Exception as e:
+            print(f'[recon] uid live-fetch failed: {e} (token={have_tok})', file=sys.stderr)
     snapshot = ctx.get('medreconcileSnapshot')
     if snapshot:
         meds = build_reconcile_meds_from_snapshot(snapshot)
+        print(f'[recon] snapshot fallback: meds={len(meds)} '
+              f'(snapshot keys={list(snapshot.keys()) if isinstance(snapshot, dict) else type(snapshot).__name__})',
+              file=sys.stderr)
         if meds:
             return meds
+    print(f'[recon] no meds resolved (uid={have_uid} snapshot={have_snap} token={have_tok})',
+          file=sys.stderr)
     return []
 
 def build_reconcile_meds_from_snapshot(snapshot):
@@ -1239,6 +1258,55 @@ def kpi_file(date_key):
 
 def _now_iso():
     return datetime.now(timezone.utc).isoformat()
+
+# Per-visit client capture bag (ArcusAir params: medreconcileuid, snapshot,
+# incusToken, …). Shared cross-workstation via the patient doc so one capture
+# on any PC serves every PC. Entries carry a `ts` (epoch ms).
+#
+# Two-tier expiry, split by sensitivity:
+#   • The RECORD (medreconcileuid + snapshot) — an opaque id + PHI that already
+#     lives on this server — is kept CAPTURE_TTL_MS so the reconciliation panel
+#     works cross-workstation for a week.
+#   • The incus-token is a live ArcusAir SESSION CREDENTIAL. We keep a copy only
+#     briefly (CAPTURE_TOKEN_TTL_MS) to shrink the window in which a usable
+#     bearer token sits at rest. A stale token just means the server falls back
+#     to the stored snapshot — the panel still works.
+CAPTURE_TTL_MS       = 7 * 24 * 60 * 60 * 1000   # 7 days  (uid + snapshot)
+CAPTURE_TOKEN_TTL_MS = 24 * 60 * 60 * 1000       # 24 hours (incus-token copy)
+
+def _capture_is_fresh(entry):
+    """True while the record (uid/snapshot) is within its window."""
+    try:
+        ts = entry.get('ts')
+        if not isinstance(ts, (int, float)):
+            return False
+        return (time.time() * 1000 - ts) < CAPTURE_TTL_MS
+    except Exception:
+        return False
+
+def _capture_token_is_fresh(entry):
+    """True while the stored incus-token copy is within its (shorter) window.
+    Uses the token's own timestamp (`tokenTs`) so a snapshot-only update that
+    refreshes the record `ts` can't revive a stale token; falls back to `ts` for
+    entries written before tokenTs existed."""
+    try:
+        ts = entry.get('tokenTs', entry.get('ts'))
+        if not isinstance(ts, (int, float)):
+            return False
+        return (time.time() * 1000 - ts) < CAPTURE_TOKEN_TTL_MS
+    except Exception:
+        return False
+
+def _capture_view(entry):
+    """A read-safe copy of a capture entry: drops the incus-token once its
+    shorter TTL has passed, so an at-rest credential is never handed back after
+    24h even though the record itself is retained for 7 days."""
+    if not isinstance(entry, dict):
+        return {}
+    view = dict(entry)
+    if not _capture_token_is_fresh(entry):
+        view.pop('incusToken', None)
+    return view
 
 # Per-path write locks serialize concurrent writers to the same file within
 # this process (ThreadingHTTPServer runs each request in its own thread, so two
@@ -2232,6 +2300,14 @@ class Handler(BaseHTTPRequestHandler):
                 if not _safe_puid(visituid):
                     return None, None, None
                 return 'patient-medcache', puid, visituid
+            # /api/patients/{puid}/captures/{visituid} -> per-visit capture bag
+            # (client-captured ArcusAir params: medreconcileuid, snapshot, token,
+            # …). Shared cross-workstation so one capture serves every PC.
+            if sub == 'captures' and len(parts) == 5:
+                visituid = urllib.parse.unquote(parts[4])
+                if not _safe_puid(visituid):
+                    return None, None, None
+                return 'patient-captures', puid, visituid
 
         # /api/hmr               → ('hmr-list', None, None)
         # /api/hmr/{visitid}     → ('hmr', visitid, None)
@@ -2436,6 +2512,16 @@ class Handler(BaseHTTPRequestHandler):
             doc = load_or_create_patient(key)
             entry = (doc.get('medicationCache') or {}).get(extra)
             self.send_json(200, entry)
+        elif rtype == 'patient-captures':
+            doc = load_or_create_patient(key)
+            entry = (doc.get('captures') or {}).get(extra)
+            # Enforce the capture TTL at read time — an expired record reads as
+            # empty; a still-valid record has its incus-token stripped once the
+            # shorter token TTL has passed (see _capture_view).
+            if entry and _capture_is_fresh(entry):
+                self.send_json(200, _capture_view(entry))
+            else:
+                self.send_json(200, {})
         elif rtype == 'hmr':
             doc = load_hmr(key)
             self.send_json(200, doc or {})
@@ -2489,7 +2575,7 @@ class Handler(BaseHTTPRequestHandler):
             'kpi-day', 'kpi-section', 'ks', 'rx', 'rx-note',
             'med-image-upload', 'ks-file-upload', 'schedule',
             'patient', 'patient-context', 'patient-adr', 'patient-medcache',
-            'hmr', 'hmq',
+            'patient-captures', 'hmr', 'hmq',
         )
         if not ext_data_write:
             if not self._require('super_admin', 'admin', 'editor'): return
@@ -2641,6 +2727,38 @@ class Handler(BaseHTTPRequestHandler):
             body.setdefault('fetchedAt', _now_iso())
             cache[extra] = body
             doc['medicationCache'] = cache
+            save_patient(key, doc)
+            self.send_json(200, {'ok': True})
+
+        elif rtype == 'patient-captures':
+            # Per-visit capture bag, shared cross-workstation. Merge non-empty
+            # fields into the existing entry (so a snapshot from one PC + a fresh
+            # token from another coexist), stamp timestamps, prune expired visits.
+            if not isinstance(body, dict):
+                self.send_json(400, {'error': 'Body must be a JSON object'}); return
+            doc = load_or_create_patient(key)
+            captures = doc.get('captures') or {}
+            # Drop expired entries so the bag can't grow unbounded over time.
+            captures = {v: e for v, e in captures.items()
+                        if isinstance(e, dict) and _capture_is_fresh(e)}
+            prev = captures.get(extra) or {}
+            merged = dict(prev)
+            now_ms = int(time.time() * 1000)
+            token_supplied = False
+            for k, v in body.items():
+                if k in ('ts', 'tokenTs'):
+                    continue
+                if v is not None and v != '':
+                    merged[k] = v
+                    if k == 'incusToken':
+                        token_supplied = True
+            merged['ts'] = now_ms   # record TTL window (7 days)
+            # Stamp the token's own time only when a token was actually supplied,
+            # so a later snapshot-only update can't revive an old token's TTL.
+            if token_supplied:
+                merged['tokenTs'] = now_ms
+            captures[extra] = merged
+            doc['captures'] = captures
             save_patient(key, doc)
             self.send_json(200, {'ok': True})
 
@@ -2938,8 +3056,14 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, result)
             return
 
-        # ── KPI med errors (editor/admin/super_admin) ─────────
-        if not self._require('super_admin', 'admin', 'editor'): return
+        # ── KPI med errors ────────────────────────────────────
+        # Same trust model as the KPI PUT routes (kpi-day/kpi-section): the KPI
+        # app writes as a chrome-extension origin without logging in, so allow
+        # the trusted extension to append a med-error record without a session.
+        # Anyone else must be editor/admin/super_admin.
+        ext_data_write = self._is_trusted_extension() and rtype == 'kpi-med-errors'
+        if not ext_data_write:
+            if not self._require('super_admin', 'admin', 'editor'): return
         if rtype == 'kpi-med-errors':
             if not isinstance(body, dict):
                 self.send_json(400, {'error': 'Body must be a JSON object'}); return
@@ -2972,7 +3096,12 @@ class Handler(BaseHTTPRequestHandler):
                 del _sessions[t]
             self.send_json(200, {'ok': True}); return
 
-        if not self._require('super_admin', 'admin', 'editor'): return
+        # Same trust model as the KPI writes: the extension (chrome-extension
+        # origin) may remove a med-error record without logging in; anyone else
+        # needs editor/admin/super_admin.
+        ext_data_write = self._is_trusted_extension() and rtype == 'kpi-med-error-item'
+        if not ext_data_write:
+            if not self._require('super_admin', 'admin', 'editor'): return
         if rtype != 'kpi-med-error-item':
             self.send_json(404, {'error': 'Not found'}); return
 

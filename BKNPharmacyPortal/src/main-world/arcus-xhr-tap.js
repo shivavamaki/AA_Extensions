@@ -230,6 +230,29 @@
   window.__arcus_medhistory__ = window.__arcus_medhistory__ || {};
   var ID24 = /([a-f0-9]{24})/i;
 
+  /* Relay a captured medreconcile entry to the ISOLATED-world listener, which
+     persists it to the PHARMACY SERVER (per-visit capture bag, 24h TTL) so every
+     workstation can reuse it — no per-PC storage, no re-capturing the same data.
+     The tap runs in the page's MAIN world with no chrome.* access, so it posts a
+     message the same way the incus-token relay does. Includes patientuid (needed
+     to key the patient doc) + patientvisituid. Snapshots can be large — post the
+     uid/token always, and the snapshot only when present. */
+  function _relayMedrecon(vid, uid, snapshot) {
+    try {
+      if (!vid) return;
+      var tok  = (window.__arcus_hdrs__ || {})['incus-token'] || '';
+      var puid = window.__arcus_pctx__.patientuid || '';
+      window.postMessage({
+        __bkn_medrecon__: 1,
+        vid: String(vid),
+        puid: puid ? String(puid) : null,
+        uid: uid ? String(uid) : null,
+        snapshot: snapshot || null,
+        token: tok ? String(tok) : null,
+      }, '*');
+    } catch (_) {}
+  }
+
   var _origOpen = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function (method, url) {
     try {
@@ -265,9 +288,46 @@
         // object of its own — otherwise this wrongly grabs patientuid._id.
         if (!mu && !(jb && jb.patientuid)) { var mm = ID24.exec(body); if (mm) mu = mm[1]; }
         var vid = window.__arcus_pctx__.patientvisituid || '';
+        // Update the in-page map only. Server persistence is owned by the
+        // RESPONSE handler below, which carries the same uid PLUS the snapshot —
+        // relaying here too would double-write the server for one call.
         if (mu && vid) window.__arcus_medrecon__[vid] = String(mu);
       }
     } catch (_) {}
+    // Capture from the medreconcile RESPONSE and persist to the server. The EMR
+    // Med Reconcile view
+    // (emr/emrview/emr/medreconcile) loads its list without a medreconcileuid in
+    // the request body, so the request-body path above misses it — but the
+    // getdetail response echoes medreconcile.medreconcileuid AND carries the
+    // full medicationitems list. Grab the uid (for a later live re-fetch) and
+    // cache the whole response as a snapshot the server can parse directly.
+    if (this.__bkn_medrecon) {
+      var _xhr3 = this;
+      _xhr3.addEventListener('load', function () {
+        if (_xhr3.status !== 200) return;
+        try {
+          var resp = JSON.parse(_xhr3.responseText);
+          var mr = (resp && resp.medreconcile) || null;
+          if (!mr) return;
+          var vid3 = window.__arcus_pctx__.patientvisituid || '';
+          var ruid = mr.medreconcileuid || mr.medReconcileUid ||
+                     (mr.medreconcileuid && mr.medreconcileuid._id) || '';
+          if (typeof ruid === 'object' && ruid) ruid = ruid._id || '';
+          var haveUid  = vid3 && ruid && HEX24.test(String(ruid));
+          var haveSnap = vid3 && Array.isArray(mr.medicationitems);
+          if (haveUid)  window.__arcus_medrecon__[vid3]   = String(ruid);
+          // Cache the full response as a snapshot too (server parses
+          // medreconcile.medicationitems from it — same shape as getdetail).
+          if (haveSnap) window.__arcus_medhistory__[vid3] = resp;
+          // Persist to the pharmacy server (shared cross-PC, 24h TTL) so the
+          // Home Med Sheet's ↻ works from any workstation, even after this
+          // ArcusAir tab is closed/reloaded.
+          if (haveUid || haveSnap) {
+            _relayMedrecon(vid3, haveUid ? String(ruid) : null, haveSnap ? resp : null);
+          }
+        } catch (_) {}
+      }, { once: true, passive: true });
+    }
     // Cache the medicationhistory/getdetails RESPONSE verbatim (see comment
     // above) — this fires on page load, not on a button click, so it must be
     // captured passively here rather than awaited after the fact.
