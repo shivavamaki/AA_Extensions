@@ -93,9 +93,16 @@ never loses the queue. (Only the popup's *position/width* is per-browser
 - **Duplicate guard** (`hmq_find_active_by_hn`): keyed on HN. A new `POST`
   is rejected (`409`) if that HN already has a `new` or `process` entry
   today; allowed if its only entries today are `done`. On a 409 the client
-  backfills a blank ward/room on the existing entry (`update_hmq_location`,
-  fills blanks only, logs it) — so a case queued before its bed could be read
-  gets its room filled on the next auto-add pass.
+  backfills the existing entry's location (`update-loc` → `update_hmq_location`):
+  fills a **blank** ward/room, and **corrects a dirty** stored room (one that
+  differs from its own `_clean_room()` form, e.g. an old `CCU06Start`), leaving
+  already-clean values untouched — so a case queued before its bed could be
+  read, or with a bad value from an earlier build, gets fixed on the next
+  auto-add pass.
+- **Room sanitizing**: `_clean_room()` runs on every write (`create_hmq_entry`,
+  `update_hmq_location`) and the popup's `cleanRoom()` runs on display — both
+  strip a trailing "Start" and keep the leading `[A-Za-z0-9-]+` token, so a bed
+  id can't carry adjacent UI text.
 - **Storage**: one live JSON file per entry (`data/hmq/HMQ-YYYYMMDD-NNNN.json`).
   A nightly job at 23:00 (`_hmq_nightly_merge`) archives only `done` entries
   into one `data/hmq/ddmmyyyy_HM_queue.json` per day (e.g. `09072026_HM_queue.json`,

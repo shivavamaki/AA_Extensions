@@ -85,21 +85,27 @@
   const WARD_BED_RE = /Ward\s*\/\s*Bed\s*:?\s*(.+?)\s*\/\s*([A-Za-z0-9-]+)(?=\s|$)/i;
 
   // ArcusAir renders the current bed as an ng-repeat over the patient's
-  // bedoccupancy, filtered to the row with no end date (the active bed):
+  // bedoccupancy, filtered to the row with no end date (the active bed). Each
+  // row is TWO spans — ward and room — separated by "/":
   //   <div ng-repeat="occupancy in vm.patientvisit.bedoccupancy | filter:{enddate:'!'}">
   //     <span>Cardiac Care Unit</span>&nbsp;/&nbsp;<span>CCU06</span>
   //   </div>
-  // This has NO "Ward / Bed :" label, so the regex above never matched it —
-  // read the two spans directly instead. Returns null when not present.
+  // Read the two spans directly (ward = 1st span, room = 2nd span). Using the
+  // *2nd* span — not "last" — matters: a stray/nested span (or reading the
+  // whole panel) previously let button text ("Start") bleed into the room.
+  // Returns null when the element isn't present or the room looks invalid.
   function readBedOccupancy() {
     const nodes = document.querySelectorAll('[ng-repeat*="bedoccupancy"]');
     for (const node of nodes) {
-      const spans = node.querySelectorAll('span');
-      // The current-bed row has exactly the ward span + the room span.
+      // Only spans that are direct children of this row — never descend into
+      // sibling UI (queue buttons etc.).
+      const spans = Array.from(node.children).filter(c => c.tagName === 'SPAN');
       if (spans.length >= 2) {
         const ward = norm(spans[0].textContent);
-        const room = norm(spans[spans.length - 1].textContent);
-        if (ward && room && /^[A-Za-z0-9-]+$/.test(room)) return { ward, room };
+        const room = norm(spans[1].textContent);
+        // A bed id is a single alphanumeric token — reject anything with spaces
+        // or unexpected trailing text.
+        if (ward && /^[A-Za-z0-9-]+$/.test(room)) return { ward, room };
       }
     }
     return null;
@@ -110,6 +116,9 @@
     const occ = readBedOccupancy();
     if (occ) return occ;
     // 2) Fallback: the "Ward / Bed :" text line in the Visit Details panel.
+    //    Scoped to the panel around the Visit Details heading — NEVER the whole
+    //    document.body, whose concatenated text runs the bed id into adjacent
+    //    UI ("CCU06" + "Start" → "CCU06Start").
     const h4 = findVisitDetailsH4();
     if (h4) {
       let el = h4.parentElement;
@@ -119,8 +128,7 @@
         el = el.parentElement;
       }
     }
-    const m = WARD_BED_RE.exec(document.body.textContent);
-    return m ? { ward: norm(m[1]), room: norm(m[2]) } : { ward: '', room: '' };
+    return { ward: '', room: '' };
   }
 
   // ── ArcusAir discharge process API ──────────────────────────────────

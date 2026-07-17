@@ -1782,6 +1782,20 @@ def load_all_hmq(from_date=None, to_date=None):
     result.sort(key=lambda d: d.get('createdAt') or '', reverse=True)
     return result
 
+_HMQ_ROOM_TOKEN_RE = re.compile(r'^[A-Za-z0-9-]+')
+
+def _clean_room(raw):
+    """A bed id is a single alphanumeric token. Detection on the client could
+    concatenate it with adjacent UI text (e.g. 'CCU06Start' from a '▶ Start'
+    button); strip a trailing 'Start' and keep the leading token so stored
+    values stay clean. Defence-in-depth alongside the client's cleanRoom()."""
+    r = str(raw or '').strip()
+    if not r:
+        return ''
+    r = re.sub(r'Start$', '', r, flags=re.I)
+    m = _HMQ_ROOM_TOKEN_RE.match(r)
+    return m.group(0) if m else r
+
 def _hmq_next_seq(today):
     """Next display queue number for today (Q1, Q2, …) — resets daily."""
     return len(load_all_hmq(today, today)) + 1
@@ -1804,8 +1818,8 @@ def create_hmq_entry(hn, name, ward, room, added_by):
         'queueNum':    seq,
         'hn':          hn,
         'name':        name,
-        'ward':        ward,
-        'room':        room,
+        'ward':        (ward or '').strip(),
+        'room':        _clean_room(room),
         'status':      'new',
         'createdAt':   now,
         'startedAt':   None,
@@ -1847,18 +1861,24 @@ def transition_hmq_entry(entry_id, action, user):
     return doc
 
 def update_hmq_location(entry_id, ward, room, user):
-    """Backfill ward/room on an existing entry — fills only BLANK fields so a
-    later, better detection can complete a case that was queued before the
-    ward/bed could be read (e.g. special-care beds like CCU06). Never overwrites
-    a value that's already set. Returns the (possibly unchanged) doc, or None."""
+    """Backfill ward/room on an existing entry so a case queued before the bed
+    could be read (e.g. special-care beds like CCU06) gets its location filled.
+    Fills BLANK fields, and also CORRECTS a stored room that's dirty (doesn't
+    match its own cleaned single-token form, e.g. an old 'CCU06Start'); a room
+    that's already clean is left untouched. Returns the doc, or None."""
     doc = load_hmq_entry(entry_id)
     if not doc:
         return None
+    ward = (ward or '').strip()
+    room = _clean_room(room)
     changed = False
     if ward and not (doc.get('ward') or '').strip():
         doc['ward'] = ward; changed = True
-    if room and not (doc.get('room') or '').strip():
-        doc['room'] = room; changed = True
+    if room:
+        cur = (doc.get('room') or '').strip()
+        # Fill when blank, or replace a dirty stored value (differs from clean).
+        if not cur or cur != _clean_room(cur):
+            doc['room'] = room; changed = True
     if changed:
         now = _now_iso()
         doc.setdefault('auditLog', []).append(

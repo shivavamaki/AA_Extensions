@@ -150,15 +150,25 @@ Two buttons call the shared API `window.BKN_HMQ` exposed by
     renders the current bed as `<div ng-repeat="occupancy in
     vm.patientvisit.bedoccupancy | filter:{enddate:'!'}"><span>ward</span> /
     <span>room</span></div>`. This has **no** "Ward / Bed :" label, so the text
-    regex never matched it — we read the two `<span>`s directly (last span =
-    room). This is why special-care rooms like `CCU06` were showing blank.
-  - **Fallback — `WARD_BED_RE`** on the "Ward / Bed :  Ward 8 / 805" text line
-    (separators are `&nbsp;`, matched by `\s`). Bed token accepts alphanumeric
-    ids (`[A-Za-z0-9-]+`): `CCU06` / `ICU-3` / `NICU2`.
-  - If a patient was queued **before** the bed could be read (blank room), the
-    next auto-add call backfills it: `addCase` gets a 409 duplicate and, when the
-    existing entry's ward/room is blank, PUTs `{action:'update-loc', ward, room}`
-    which fills blanks only (never overwrites) — see `../hmq/README.md`.
+    regex never matched it. We read the two direct-child `<span>`s (ward = 1st,
+    room = **2nd** — not "last", and only element children, so nested/sibling UI
+    like the "▶ Start" button can't bleed in). This is why special-care rooms
+    like `CCU06` were showing blank.
+  - **Fallback — `WARD_BED_RE`** on the "Ward / Bed :  Ward 8 / 805" text line,
+    scoped to the Visit Details panel (walked up from the `<h4>`) — **never
+    `document.body`**, whose concatenated text ran the bed id into adjacent UI
+    ("CCU06" + "Start" → "CCU06Start"). Bed token accepts alphanumeric ids
+    (`[A-Za-z0-9-]+`): `CCU06` / `ICU-3` / `NICU2`.
+  - **Room sanitizing (defence-in-depth)** against any residual contamination:
+    the server `_clean_room()` cleans on write (`create_hmq_entry`,
+    `update_hmq_location`) and the popup `cleanRoom()` cleans on display — both
+    strip a trailing "Start" and keep the leading token.
+  - If a patient was queued **before** the bed could be read (blank room) — or
+    with a dirty stored room from an earlier build — the next auto-add call
+    fixes it: `addCase` gets a 409 duplicate and, when the existing entry's
+    ward/room is blank **or dirty**, PUTs `{action:'update-loc', ward, room}`
+    which fills blanks and corrects dirty values (leaves clean ones untouched)
+    — see `../hmq/README.md`.
 - **✓ Complete** (next to Reset) → `BKN_HMQ.completeActiveByHn(hn)`, completing
   this patient's active ("On Process") queue entry from wherever it currently
   is, without needing the floating popup open.

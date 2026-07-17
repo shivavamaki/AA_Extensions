@@ -174,10 +174,22 @@
     { status: 'done',    key: 'done', label: '✅ เสร็จสิ้น · Completed' },
   ];
 
+  // Defensive room cleanup: earlier detection could concatenate the bed id with
+  // adjacent UI text (e.g. "CCU06Start" from the "▶ Start" button). A real bed
+  // id is a single token; strip a trailing "Start" and keep the leading
+  // alphanumeric token so stored bad values still render clean.
+  function cleanRoom(raw) {
+    let r = String(raw || '').trim();
+    if (!r) return '';
+    r = r.replace(/Start$/i, '');                       // drop trailing button text
+    const m = r.match(/^[A-Za-z0-9-]+/);                // leading bed-id token
+    return m ? m[0] : r;
+  }
+
   function rowHtml(entry) {
     const hn   = escapeHtml(entry.hn || '');
     const name = escapeHtml(entry.name || '');
-    const room = escapeHtml(entry.room || '');
+    const room = escapeHtml(cleanRoom(entry.room));
     const ward = escapeHtml(entry.ward || '');
     // Room is shown as a standout badge next to the queue number so it's easy to
     // spot at a glance; the ward stays in the info line. A missing room shows a
@@ -412,15 +424,19 @@
     const r = await postAddCase({ hn, name, ward: ward || '', room: room || '', addedBy: detectUsername() });
     if (r && r.status === 409) {
       const existing = r.json && r.json.existing;
-      // The patient is already queued. If that entry is missing ward/room but we
-      // now have them (e.g. detection improved, or the bed loaded after the case
-      // was queued), backfill the existing entry so the queue shows the room.
-      if (existing && existing.id && (ward || room) &&
-          (!(existing.ward || '').trim() || !(existing.room || '').trim())) {
-        try {
-          await putTransition(existing.id, 'update-loc', { ward, room });
-          await refreshQueue();
-        } catch (_) { /* best-effort */ }
+      // The patient is already queued. Backfill the existing entry's location
+      // when we now have ward/room and the stored one is missing OR dirty
+      // (e.g. an old "CCU06Start" — cleanRoom differs from the raw value).
+      if (existing && existing.id && (ward || room)) {
+        const exRoom = (existing.room || '').trim();
+        const exWard = (existing.ward || '').trim();
+        const roomDirty = exRoom && exRoom !== cleanRoom(exRoom);
+        if (!exWard || !exRoom || roomDirty) {
+          try {
+            await putTransition(existing.id, 'update-loc', { ward, room });
+            await refreshQueue();
+          } catch (_) { /* best-effort */ }
+        }
       }
       const where = existing && existing.status === 'process' ? 'On Process' : 'New Case';
       return {
