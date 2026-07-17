@@ -1695,7 +1695,26 @@ def hmq_file(entry_id):
     return HMQ_DIR / f'{entry_id}.json'
 
 def _hmq_today():
-    return datetime.now().strftime('%Y-%m-%d')
+    # Bangkok day (UTC+7) — independent of the server's local timezone. Must
+    # match the Bangkok date the client queries and the Bangkok date derived
+    # from each entry's (UTC) createdAt in load_all_hmq's filter.
+    return _bangkok_today()
+
+def _bangkok_date_of(iso_ts):
+    """The Asia/Bangkok calendar date (YYYY-MM-DD) of a UTC ISO timestamp.
+    createdAt is stored as UTC (_now_iso); this converts it to the Bangkok day
+    so date filtering matches the client and the entry_id/queueNum day."""
+    try:
+        s = str(iso_ts or '')
+        if s.endswith('Z'):
+            s = s[:-1] + '+00:00'
+        dt = datetime.fromisoformat(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return (dt.astimezone(timezone.utc) + timedelta(hours=7)).strftime('%Y-%m-%d')
+    except Exception:
+        # Fallback: the raw date slice (best-effort for malformed timestamps).
+        return str(iso_ts or '')[:10]
 
 def _hmq_archive_path(date_str):
     """'YYYY-MM-DD' -> HMQ_DIR/ddmmyyyy_HM_queue.json (one file per day)."""
@@ -1751,8 +1770,12 @@ def load_all_hmq(from_date=None, to_date=None):
             pass
     result = list(seen.values())
     if from_date or to_date:
+        # Filter by each entry's BANGKOK calendar day (createdAt is UTC), so the
+        # window matches the client's Bangkok-day query and the entry's own
+        # queueNum day. Comparing the raw UTC slice dropped entries created in
+        # the 00:00–07:00 Bangkok window (UTC still on the previous day).
         def _date_key(d):
-            return (d.get('createdAt') or '')[:10]
+            return _bangkok_date_of(d.get('createdAt'))
         result = [d for d in result
                   if (not from_date or _date_key(d) >= from_date)
                   and (not to_date   or _date_key(d) <= to_date)]
@@ -1836,7 +1859,7 @@ def _hmq_nightly_merge():
     Dashboard regardless of how much time has passed."""
     if not HMQ_DIR.exists():
         return
-    today = datetime.now().strftime('%Y-%m-%d')
+    today = _bangkok_today()   # Bangkok day, matching entry ids / queue day
     live_files = list(HMQ_DIR.glob('HMQ-*.json'))
     if not live_files:
         return

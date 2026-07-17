@@ -193,8 +193,16 @@
   gap: 8px;
   padding: 7px 10px;
   border-bottom: 1px solid #eef2f8;
+  border-radius: 6px;
+  transition: background 0.12s;
 }
 .hmr-check-row:last-child { border-bottom: none; }
+/* Row highlight mirrors the Process Steps (.hmr-step-done): a completed check
+   turns green, an answered-NO check turns a muted grey — so resolved rows are
+   obvious at a glance, same as the steps below. */
+.hmr-check-done     { background: #e8f5e9; border-bottom-color: #c8e6c9; }
+.hmr-check-done .hmr-ck-th { color: #2e7d32; }
+.hmr-check-answered { background: #f5f5f5; border-bottom-color: #e0e0e0; }
 .hmr-check-text { flex: 1; min-width: 0; }
 .hmr-ck-th { font-size: 11.5px; color: #263238; font-weight: 500; }
 .hmr-ck-en { font-size: 9.5px;  color: #90a4ae; margin-top: 1px; }

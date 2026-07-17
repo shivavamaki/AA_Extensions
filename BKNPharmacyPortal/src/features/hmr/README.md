@@ -51,6 +51,11 @@ persists server-side per visit so any workstation sees the same progress.
   **จัดการยาเสพติดค้างจ่าย** is a single "✓ Completed" button (not YES/NO) — a
   distinct check-row style (`c.singleComplete`), since there's no meaningful
   "NO" state for it.
+- **Resolved manual-check rows highlight like the Process Steps.** Each
+  `hmr-check-row` gets a state class: `hmr-check-done` (green, when the check is
+  completed — YES / ✓ Completed, mirroring `.hmr-step-done`), `hmr-check-answered`
+  (muted grey, when answered NO), or `hmr-check-pend` (unanswered). So the
+  pharmacist sees at a glance which checks are resolved, matching the steps below.
 
 ## Step 5 — Med Reconcile (semi-automated)
 

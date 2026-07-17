@@ -68,13 +68,27 @@ window.BKN_HMQ = {
 
 ## Data flow / server
 
+**All queue data lives on the pharmacy server** (`data/hmq/`), never in
+`chrome.storage`/`localStorage` — the popup re-fetches from the server on open
+and polls every 8s (`fetchQueue`/`refreshQueue`), so reloading the extension
+never loses the queue. (Only the popup's *position/width* is per-browser
+`localStorage`, `bkn:hmqPopupPos`.)
+
 `pharmacy_server/bkn_ks_server.py`:
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/api/hmq?from=&to=` | List entries (date range on `createdAt`) |
+| `GET` | `/api/hmq?from=&to=` | List entries (date range on the **Bangkok** day of `createdAt`) |
 | `POST` | `/api/hmq` | Add a case — `{hn, name, ward, room, addedBy}` |
 | `PUT` | `/api/hmq/{id}` | Transition — `{action: 'start'\|'complete'\|'revert-process'\|'revert-new', user}` |
+
+- **Timezone.** Days are keyed to **Asia/Bangkok** everywhere: the client queries
+  the Bangkok date (`todayStr` = `now + 7h`), `_hmq_today()`/`_hmq_next_seq`/
+  archival use `_bangkok_today()`, and `load_all_hmq`'s date filter compares each
+  entry's Bangkok day (`_bangkok_date_of(createdAt)`, since `createdAt` is UTC).
+  Previously the filter used the raw UTC date slice, so entries added in the
+  00:00–07:00 Bangkok window (UTC still on the previous day) vanished from the
+  "today" query on reload — that's fixed.
 
 - **Duplicate guard** (`hmq_find_active_by_hn`): keyed on HN. A new `POST`
   is rejected (`409`) if that HN already has a `new` or `process` entry

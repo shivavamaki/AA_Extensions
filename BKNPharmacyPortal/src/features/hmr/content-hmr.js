@@ -1301,11 +1301,18 @@
 
     const checkHtml = CHECKS.map(c => {
       const v = checklist[c.key];
+      // Row highlight mirrors the Process Steps: an answered/completed check
+      // gets the same green "done" treatment so the pharmacist can see at a
+      // glance which rows are resolved. A YES/NO check counts as done when
+      // affirmatively YES; answering NO marks it resolved but not "done-green".
+      const rowCls = v === true
+        ? 'hmr-check-done'
+        : (v === false ? 'hmr-check-answered' : 'hmr-check-pend');
       const actionHtml = c.singleComplete
         ? `<button class="hmr-yn hmr-yn-yes ${v === true ? 'hmr-yn-on' : ''}" data-ck="${c.key}" data-v="true">${v === true ? '✓ Completed' : 'Completed'}</button>`
         : `<button class="hmr-yn hmr-yn-yes ${v === true  ? 'hmr-yn-on' : ''}" data-ck="${c.key}" data-v="true">YES</button>
            <button class="hmr-yn hmr-yn-no  ${v === false ? 'hmr-yn-on' : ''}" data-ck="${c.key}" data-v="false">NO</button>`;
-      return `<div class="hmr-check-row">
+      return `<div class="hmr-check-row ${rowCls}">
         <div class="hmr-check-text">
           <div class="hmr-ck-th">${c.th}</div>
           <div class="hmr-ck-en">${c.en}</div>

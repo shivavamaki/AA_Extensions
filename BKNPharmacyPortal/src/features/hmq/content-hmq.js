@@ -13,7 +13,13 @@
 
   const POLL_MS = 8000;
 
-  function todayStr() { return new Date().toISOString().slice(0, 10); }
+  // Bangkok-local date (UTC+7, no DST). The server keys the queue by Bangkok
+  // day, so the client must query the same day — using the UTC date instead
+  // caused the queue to appear empty during the 00:00–07:00 Bangkok window
+  // (where UTC is still the previous day).
+  function todayStr() {
+    return new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+  }
 
   function isWardView()     { return location.href.includes('inpatient/wardview'); }
   function isReturnPage()   { return location.href.includes('dispenseworkbench/pharmacy/return'); }
