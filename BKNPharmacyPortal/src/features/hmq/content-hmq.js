@@ -169,7 +169,14 @@
   function rowHtml(entry) {
     const hn   = escapeHtml(entry.hn || '');
     const name = escapeHtml(entry.name || '');
-    const loc  = [entry.ward, entry.room].filter(Boolean).map(escapeHtml).join(' · ');
+    const room = escapeHtml(entry.room || '');
+    const ward = escapeHtml(entry.ward || '');
+    // Room is shown as a standout badge next to the queue number so it's easy to
+    // spot at a glance; the ward stays in the info line. A missing room shows a
+    // muted placeholder badge rather than nothing.
+    const roomBadge = room
+      ? `<span class="hmq-room" title="Room / Bed">${room}</span>`
+      : `<span class="hmq-room hmq-room-none" title="Room not detected">—</span>`;
     let actionHtml;
     if (entry.status === 'new') {
       actionHtml = `<button class="hmq-action-btn hmq-action-start" data-id="${entry.id}">▶ Start</button>`;
@@ -183,9 +190,10 @@
     }
     return `<div class="hmq-row" data-id="${entry.id}">
       <span class="hmq-qnum">Q${entry.queueNum != null ? entry.queueNum : '?'}</span>
+      ${roomBadge}
       <div class="hmq-row-info">
         <div class="hmq-row-name">${name}<span class="hmq-hn">HN ${hn}</span></div>
-        <div class="hmq-row-loc">${loc || '&mdash;'}</div>
+        <div class="hmq-row-loc">${ward || '&mdash;'}</div>
       </div>
       <button class="hmq-log-btn" data-id="${entry.id}" title="View log">🕒</button>
       ${actionHtml}
@@ -376,7 +384,11 @@
       const cells = row.querySelectorAll('td.md-cell');
       if (cells.length < 2 || !/^ward\b/i.test(norm(cells[0].textContent))) continue;
       const room = norm(cells[1].textContent);
-      if (/^\d+$/.test(room)) return { ward: norm(cells[0].textContent), room };
+      // A real bed id is a SINGLE token — plain digits (510) or alphanumeric for
+      // special-care units (CCU06, ICU-3, NICU2). The wrong row (dispensing
+      // location, e.g. "Inpatient Pharmacy (Floor G)") has spaces/parens, so the
+      // single-token test both validates the room and skips the wrong row.
+      if (/^[A-Za-z0-9-]+$/.test(room)) return { ward: norm(cells[0].textContent), room };
     }
     return { ward: '', room: '' };
   }

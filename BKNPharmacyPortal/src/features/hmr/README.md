@@ -13,9 +13,12 @@ persists server-side per visit so any workstation sees the same progress.
 ## Where it runs
 
 - **`content-hmr.js`** injects `#hmr-trig-btn` next to the "Visit Details" `<h4>`
-  on `#!/inpatient/wardview` (`findVisitDetailsH4`, `injectTriggerBtn`). Clicking
-  it opens the workstation card (`onTriggerClick` → `showWorkstation`) inline
-  before the "Patient Tracking" row.
+  on `#!/inpatient/wardview` (`findVisitDetailsH4`, `injectTriggerBtn`). The
+  workstation card (`showWorkstation`) is **open by default** — `syncUI` calls
+  `autoOpenWorkstation()` once the trigger + visit id are in place, and again
+  when a different room/visit is selected. `onTriggerClick` still toggles it; a
+  **manual** close sets `_userClosed` so it stays closed until the visit changes
+  (open logic shared via `openWorkstation()`).
 - Visit ID (`I48-xx-xxxxxx`) and HN are read from the DOM around that panel
   (`detectVisitId`/`detectHN` — regex scan of ancestor text, not a stable
   selector, since ArcusAir doesn't expose one).
@@ -139,8 +142,10 @@ Two buttons call the shared API `window.BKN_HMQ` exposed by
   ward, room})`. Patient name comes from `h4.patientbannername`; ward/room
   come from `detectWardBed()`, which reads the "Ward / Bed :  Ward 8 / 805"
   line in the same "Visit Details" panel `detectVisitId`/`detectHN` already
-  walk up from (`WARD_BED_RE`, room anchored to digits since observed bed
-  numbers are always numeric).
+  walk up from (`WARD_BED_RE`). The bed token accepts **alphanumeric** ids
+  (`[A-Za-z0-9-]+`), not only digits — special-care units use beds like `CCU06`
+  / `ICU-3` / `NICU2`, which the old digits-only pattern silently dropped
+  (leaving ward/room blank in the queue).
 - **✓ Complete** (next to Reset) → `BKN_HMQ.completeActiveByHn(hn)`, completing
   this patient's active ("On Process") queue entry from wherever it currently
   is, without needing the floating popup open.
@@ -167,6 +172,19 @@ already distinguishes alert vs. override dialogs
 (`_hmrIsAlertDialog`/`_hmrIsOverrideDialog`) and blindly pressing Escape there
 would dismiss the override dialog before the pharmacist can pick a reason and
 save.
+
+**Passive auto-dismiss.** Separately, ArcusAir pops its own **"Alerts"** modal
+(billing/general alerts) on many DOM changes and page navigations — not just
+during our automation. `_hmrAutoDismissAlertsOnce()` (called at the top of
+`syncUI`, so it fires on every debounced mutation and on hashchange) closes
+**only** that Alerts modal: it clicks the modal's own close control
+(`#closeBtn` / toolbar ✕) and falls back to Escape. It's gated by
+`_hmrIsAlertModal()` — which requires the alert modal's own controls
+(`#closeBtn`/`#hideAllAlerts`) and excludes override/reason dialogs — and stands
+down while `_hmrAutoRunning` (the automation handles alerts itself). It never
+clicks `#hideAllAlerts`, so it dismisses the current popup without permanently
+suppressing future alerts, and never touches our own `#hmr-workstation` /
+`#hmr-step7-overlay` (plain divs, not `md-dialog`/`[role=dialog]`).
 
 ## Files
 

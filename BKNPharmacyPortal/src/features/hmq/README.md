@@ -20,9 +20,10 @@ so every workstation's popup shows the same queue.
   (`extractWardRoom`). The Return workbench actually has **two** such rows —
   the dispense-details header (2nd cell is the dispensing/pharmacy location,
   e.g. "Inpatient Pharmacy (Floor G)") and the "Bed Details" row further down
-  (2nd cell is the patient's real bed/room number, always plain digits) —
-  `extractWardRoom` skips any row whose 2nd cell isn't numeric so it can't
-  pick the wrong one.
+  (2nd cell is the patient's real bed/room, e.g. `510` or `CCU06`) —
+  `extractWardRoom` takes the row whose 2nd cell is a **single alphanumeric
+  token** (`[A-Za-z0-9-]+`), which both accepts special-care bed ids and skips
+  the location row (that string has spaces/parens).
 - [`../hmr/content-hmr.js`](../hmr/README.md) adds equivalent buttons directly
   on the Ward View HM Process card (➕ Add, ✓ Complete) via the shared
   `window.BKN_HMQ` API below — no floating popup needed to use them there.
@@ -40,9 +41,12 @@ so every workstation's popup shows the same queue.
   the queue needs to stay reachable.
 - Three sections, top-down: 🔵 **On Process** → 🆕 **New Case** → ✅
   **Completed**, each independently collapsible (`hmq-sec-caret`).
-- Each row: queue number (`Q{n}`, auto-incrementing, resets daily), name + HN,
-  ward/room, a 🕒 **log** button (`showLog` — full audit trail modal per
-  patient), and a status-appropriate action:
+- Each row: queue number (`Q{n}`, auto-incrementing, resets daily), then a
+  **room/bed badge** (`.hmq-room` — bold blue, right next to `Q{n}` for
+  at-a-glance reading; muted "—" placeholder when the room wasn't detected),
+  then name + HN with the **ward** on the sub-line, a 🕒 **log** button
+  (`showLog` — full audit trail modal per patient), and a status-appropriate
+  action:
   - New Case → **▶ Start**
   - On Process → **↺** (revert to New Case) + **✓ Complete**
   - Completed → **↺** (revert to On Process) + checkmark/time

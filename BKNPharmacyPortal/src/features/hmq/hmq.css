@@ -161,6 +161,28 @@
   align-items: center;
   justify-content: center;
 }
+/* Room / bed — standout badge next to the queue number for at-a-glance reading. */
+.hmq-room {
+  flex: 0 0 auto;
+  min-width: 34px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: #1565c0;
+  color: #fff;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: .02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.hmq-room-none {
+  background: #eceff1;
+  color: #b0bec5;
+  font-weight: 700;
+}
 .hmq-row-info { flex: 1; min-width: 0; }
 .hmq-row-name {
   font-weight: 600;

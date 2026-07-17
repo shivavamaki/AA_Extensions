@@ -127,9 +127,10 @@ Key methods: `getServerUrl / setServerUrl / serverFetch / getPatientContext / se
 ```text
 BKNPharmacyPortal/
 ├── manifest.json
-├── background.js
+├── background.js       (message hub; daily 15:00 auto-report alarm → offscreen doc)
 ├── content_script.js   (legacy: MRD table, drug delivery, dispense-workbench scrape)
 ├── popup.html / popup.js / styles.css
+├── offscreen-report.html / offscreen-report.js   (headless: parse daily Jasper XLS for the auto-report)
 ├── welcome.html/.js
 ├── formulary/
 ├── knowledge/
@@ -142,7 +143,7 @@ BKNPharmacyPortal/
 └── src/
     ├── core/           (messages, utils, dom, storage)
     ├── shared/         (shared-data-client, translate-core, medical-glossary)
-    ├── main-world/     (arcus-xhr-tap.js, early-sec-relay.js — incus-token capture)
+    ├── main-world/     (arcus-xhr-tap.js, early-sec-relay.js — incus-token capture; capture-persist.js — medreconcile capture → pharmacy server)
     ├── features/
     │   ├── home-med/
     │   ├── med-sticker/

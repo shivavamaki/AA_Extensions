@@ -76,12 +76,13 @@
     return norm(m ? full.slice(0, m.index) : full);
   }
 
-  // Ward View's "Visit Details" panel shows a "Ward / Bed :  Ward 8 / 805"
-  // line right under the admission date — same panel detectVisitId/detectHN
-  // already walk up from. Room/bed numbers observed so far are always
-  // numeric (805, 510, 717…), so the second capture group is anchored to
-  // digits to stay clear of any other "X / Y" text nearby.
-  const WARD_BED_RE = /Ward\s*\/\s*Bed\s*:?\s*(.+?)\s*\/\s*(\d+)/i;
+  // Ward View's "Visit Details" panel shows a "Ward / Bed :  Ward 8 / 805" line
+  // right under the admission date — same panel detectVisitId/detectHN already
+  // walk up from. The bed token is usually numeric (805, 510…) but special-care
+  // units use alphanumeric bed ids (CCU06, ICU-3, NICU2), so the room group
+  // accepts letters/digits/hyphen — a contiguous non-space token after the "/",
+  // ending at whitespace or end-of-text so it never swallows following text.
+  const WARD_BED_RE = /Ward\s*\/\s*Bed\s*:?\s*(.+?)\s*\/\s*([A-Za-z0-9-]+)(?=\s|$)/i;
 
   function detectWardBed() {
     const h4 = findVisitDetailsH4();
@@ -930,6 +931,46 @@
     await _hmrClick(icon); await sleep(900);
     return true;
   }
+
+  // ── Passive Alerts auto-dismiss ──────────────────────────────────────────
+  // ArcusAir pops its "Alerts" dialog (billing/general alerts) on many DOM
+  // changes and page navigations, blocking the pharmacist. This closes ONLY the
+  // Alerts dialog the moment it appears — the safe way: click its own close
+  // button (#closeBtn / toolbar ✕), then fall back to Escape. It deliberately
+  // does NOT touch the Override / reason dialogs (those are intentional), and
+  // stands down while the HM Process automation is running (that sequence closes
+  // alerts itself). It never clicks "#hideAllAlerts" — we only dismiss the
+  // current popup, we don't permanently suppress future alerts.
+  let _hmrAlertDismissing = false;
+  // Stricter than _hmrIsAlertDialog: require the alert-modal's own controls so a
+  // passive auto-close never touches an unrelated md-dialog that merely contains
+  // the word "alerts".
+  function _hmrIsAlertModal(d) {
+    if (!d || _hmrIsOverrideDialog(d)) return false;
+    return !!(d.querySelector('#closeBtn') || d.querySelector('#hideAllAlerts'));
+  }
+  async function _hmrAutoDismissAlertsOnce() {
+    if (_hmrAlertDismissing || _hmrAutoRunning) return;
+    const d = _hmrFindDialog();
+    if (!_hmrIsAlertModal(d)) return;
+    _hmrAlertDismissing = true;
+    try {
+      // 1) The dialog's own close control (what a user would click).
+      const close = _hmrQueryFirst(
+        ['#closeBtn', "button[aria-label='Close']",
+         'md-dialog md-toolbar button', 'md-dialog .md-icon-button'], d);
+      if (close) { await _hmrClick(close); await sleep(300); }
+      // 2) If it's still up, Escape (AngularMaterial closes on Escape).
+      if (_hmrIsAlertModal(_hmrFindDialog())) {
+        for (let i = 0; i < 2; i++) {
+          document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));
+          document.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));
+          await sleep(200);
+        }
+      }
+    } catch (_) { /* best-effort */ }
+    finally { _hmrAlertDismissing = false; }
+  }
   async function _hmrWaitOverrideCompletion() {
     const end = Date.now() + 180000;
     while (Date.now() < end) {
@@ -1359,13 +1400,28 @@
     h4.after(btn);
   }
 
+  // The card is open-by-default (see syncUI's auto-open). This flag records a
+  // MANUAL close so auto-open doesn't immediately reopen it; it's reset when the
+  // pharmacist switches to a different room/visit.
+  let _userClosed = false;
+  let _autoOpening = false;
+
   async function onTriggerClick() {
     if (document.getElementById('hmr-workstation')) {
       document.getElementById('hmr-workstation').remove();
       setTriggerOpen(false);
+      _userClosed = true;   // respect the manual close until the visit changes
       if (_currentVisitId) await serverSave(_currentVisitId, {}, makeLog('closed workstation'));
       return;
     }
+    _userClosed = false;
+    await openWorkstation();
+  }
+
+  // Open (or re-open) the workstation for the current visit. Shared by the
+  // trigger click and the auto-open path.
+  async function openWorkstation() {
+    if (document.getElementById('hmr-workstation')) return;
     const visitid = detectVisitId();
     if (!visitid) {
       const ws = document.createElement('div');
@@ -1396,6 +1452,18 @@
     showWorkstation(visitid, state);
     await serverSave(visitid, { ...state, auditLog: [] }, makeLog('opened workstation'));
     await maybeAutoAddToQueue(visitid, state, di);
+  }
+
+  // Auto-open the workstation once the trigger is in place (open-by-default),
+  // unless the pharmacist manually closed it for this visit. Guarded so the
+  // MutationObserver can't fire concurrent opens.
+  async function autoOpenWorkstation() {
+    if (_userClosed || _autoOpening) return;
+    if (document.getElementById('hmr-workstation')) return;
+    if (!detectVisitId()) return;   // wait until the visit is resolvable
+    _autoOpening = true;
+    try { await openWorkstation(); }
+    finally { _autoOpening = false; }
   }
 
   function _showSkeleton() {
@@ -1628,6 +1696,9 @@
   }
 
   function syncUI() {
+    // ── Passive: close ArcusAir's Alerts popup whenever it shows ──────
+    _hmrAutoDismissAlertsOnce();
+
     // ── Med Reconcile page: inject the pending "Continue" button ──────
     if (isMedReconcilePage()) {
       if (!document.getElementById('hmr-medrecon-continue-btn')) {
@@ -1659,13 +1730,18 @@
         injectTriggerBtn(h4);
         if (document.getElementById('hmr-workstation')) setTriggerOpen(true);
       }
+      // Open-by-default: bring the card up automatically unless manually closed.
+      autoOpenWorkstation();
       return;
     }
-    // Different room selected
+    // Different room/visit selected — reset per-visit state (incl. the manual
+    // close flag) so the card auto-opens for the newly-selected patient.
     _lastH4 = h4; _currentVisitId = null; _currentHN = null; _state = null;
+    _userClosed = false;
     document.getElementById('hmr-trig-btn')?.remove();
     document.getElementById('hmr-workstation')?.remove();
     injectTriggerBtn(h4);
+    autoOpenWorkstation();
   }
 
   function cleanup() {
@@ -1675,7 +1751,15 @@
   }
 
   // ── Init ─────────────────────────────────────────────────────────────
-  const obs = new MutationObserver(() => syncUI());
+  // Debounce to one syncUI per animation frame: ArcusAir (AngularJS) mutates the
+  // DOM in tight bursts, and syncUI now also runs the passive Alerts dismisser,
+  // so coalescing keeps it cheap without delaying alert close by more than a frame.
+  let _syncScheduled = false;
+  const obs = new MutationObserver(() => {
+    if (_syncScheduled) return;
+    _syncScheduled = true;
+    requestAnimationFrame(() => { _syncScheduled = false; syncUI(); });
+  });
   obs.observe(document.documentElement, { childList: true, subtree: true });
   window.addEventListener('hashchange', () => { _step7ObsScheduled = false; setTimeout(syncUI, 700); });
   syncUI();
