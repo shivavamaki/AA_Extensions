@@ -186,7 +186,35 @@ An optional second page (`.mealcard-section` / `#mealcardGrid`) groups the disch
 
 - Instructions render in **Thai on first load** using the offline engine only (`HMTranslate` + `medical-glossary.js`) — no Google Translate call at load time.
 - The server supplies the authoritative **`frequencyTh`** (from `frequencymaster.json`). It is passed to the pattern engine as `freqOverride` via `data-freq-th`. When the English freq/timing tail can't be parsed, the engine salvages the dose verb and appends `frequencyTh`, **dropping the unparsed English tail** so the line stays fully Thai.
-- **Note line** (`.note-line`) uses curated Thai from `medication-db.json` (`Patient Instruction`, else `Dispensing Instruction`). When a code has no curated Thai, the server offline-translates via `note-glossary.json` and **self-heals** by persisting the result back to `medication-db.json`.
+- **Note line** (`.note-line`) is built server-side (`_map_orderitem`) as **two
+  parts joined by a newline**:
+  1. **`administrationinstruction`** — the doctor's per-order administration note
+     from ArcusAir `getallorderitem` (`patientorderitems.administrationinstruction`,
+     Thai; optional/null on most orders).
+  2. **Patient Instruction** — the curated per-code note from `medication-db.json`
+     (`Patient Instruction`, else `Dispensing Instruction`); TH `localLanguage` /
+     EN `text`, swapped by the language dropdown.
+
+  If `administrationinstruction` is null → only the Patient Instruction shows.
+  The parts are de-duplicated (skip the Patient Instruction if the admin note
+  already equals/contains it). The `.comment` box uses `white-space: pre-line`
+  so the `\n` renders as a line break, and the client keeps note newlines via
+  `normMultiline()` (a newline-preserving `norm`) everywhere the note is
+  processed (render, lang-swap, edit-commit, saved-meds reload).
+
+  > This **replaced** the older behaviour that merged the live order
+  > `instructions[].instructiontext` (INSTYP1) into the note and offline-
+  > translated/self-healed it via `note-glossary.json`. `_translate_note` /
+  > `_clean_instruction_note` remain defined but are no longer used by the
+  > note line. Applies to **both** reports (shared `_normalize_orderitems`).
+  >
+  > `administrationinstruction` is read from the existing `getallorderitem`
+  > response (no extra API call). `_log_home_med_fetch()` also records the first
+  > raw order-item's **keys + id fields** (`sampleOrderItemKeys`, `samplePoiKeys`,
+  > `sampleOrderIds`, incl. `poi.administrationinstruction`) into
+  > `home-med-fetch-*.jsonl` — a retained diagnostic (keys/ids only, no PHI) for
+  > verifying the field is present and, if it ever isn't, wiring the
+  > `/pharmacy/dispense/search` fallback keyed by the order id.
 - A persistent translation cache (`chrome.storage.local`) avoids re-translating on every add/remove re-render.
 
 See [`../../shared/README.md`](../../shared/README.md) for the translation engine and `BKNData`.

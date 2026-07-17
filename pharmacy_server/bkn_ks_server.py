@@ -836,58 +836,36 @@ def _arcus_item_to_med(it):
     qty_unit = _hm_norm((_arc_first(poi.get('quantityUOM')) or {}).get('valuedescription') or '')
     quantity = (str(qty_n) + (' ' + qty_unit if qty_unit else '')) if qty_n is not None else ''
 
-    # Free-text patient instructions from the order — keep the first usable one.
-    # ArcusAir can emit multiple entries for one order; only the patient-facing
-    # ones carry valuecode INSTYP1 (others, e.g. INDIC, are clinician indications
-    # like the eGFR dosing note and must not reach the patient sheet). Cryptic
-    # one-letter codes ("D", "X") are dropped too.
-    live_note_parts = [
-        _clean_instruction_note(ins.get('instructiontext'))
-        for ins in (poi.get('instructions') or [])
-        if (ins.get('valuecode') or 'INSTYP1') == 'INSTYP1'
-    ]
-    live_note = next((p for p in live_note_parts if p), '')
+    # ── Note-line structure ───────────────────────────────────────────────
+    # Two parts, joined by a newline:
+    #   1. administrationinstruction — the doctor's free-text administration note
+    #      on THIS order (getallorderitem's patientorderitems.administrationinstruction,
+    #      Thai, e.g. "ยาขับลม แก้ปวดท้อง"). Optional — null/blank on most orders.
+    #   2. Patient Instruction — the curated per-code note from medication-db.json
+    #      (Thai localLanguage / English text), swapped by the language dropdown.
+    # If administrationinstruction is null → show only the Patient Instruction.
+    admin_instr = _hm_norm(poi.get('administrationinstruction') or '')
 
-    # Note-line: the curated "Patient Instruction" extra label by item code.
-    # localLanguage = Thai (default), text = English; build both so the client
-    # can swap with the language dropdown. The live order free-text is appended
-    # to each (de-duplicated) so doctor notes aren't lost.
     extra = _load_extralabel_index().get(code) if code else None
     extra = extra or {}
-    extra_th = extra.get('localLanguage') or ''
-    extra_en = extra.get('text') or ''
+    extra_th = extra.get('localLanguage') or ''   # curated Patient Instruction (TH)
+    extra_en = extra.get('text') or ''            # curated Patient Instruction (EN)
 
-    # For the Thai note, translate the live English instruction offline so the
-    # note-line isn't a mix of curated Thai + raw English.
-    live_note_th = _translate_note(live_note)
-    # Self-heal: if this code had no curated Thai and we just translated its live
-    # note to real Thai, persist it into medication-db.json so future fetches
-    # serve it as curated (and other patients benefit).
-    if code and live_note and live_note_th and not extra_th \
-            and not re.search(r'[A-Za-z]', live_note_th):
-        try:
-            save_rx_note(code, live_note_th, live_note)
-        except Exception as e:
-            print(f'[note-persist] {code}: {e}', file=sys.stderr)
-    live_note_th = live_note_th or live_note
+    def _join_note(patient_instr):
+        # admin-instruction first, then the curated Patient Instruction, on
+        # separate lines. Drop either part if empty; avoid duplicating when the
+        # admin note already equals/contains the patient instruction.
+        parts = []
+        if admin_instr:
+            parts.append(admin_instr)
+        if patient_instr and patient_instr != admin_instr and patient_instr not in admin_instr:
+            parts.append(patient_instr)
+        return '\n'.join(parts)
 
-    def _with_live(base, live):
-        _n = lambda s: ' '.join((s or '').split())
-        # Strip punctuation/spaces for semantic Thai comparison so a single
-        # comma-space difference doesn't cause the same note to appear twice
-        # (e.g. medication-db has ",ห้าม" while note-glossary has ", ห้าม").
-        _core = lambda s: re.sub(r'[^฀-๿\d]', '', s)
-        if not live or _n(live) == _n(base) or _n(live) in _n(base):
-            return base
-        lc, bc = _core(live), _core(base)
-        if lc and bc and (lc == bc or lc in bc or bc in lc):
-            return base  # same Thai content, curated base wins
-        return (base + ' ' + live).strip() if base else live
-
-    note   = _with_live(extra_th, live_note_th)   # Thai note (default)
-    note_en = _with_live(extra_en, live_note)     # English note
-    # If a language has no label at all, fall back to the other so the line
-    # isn't blank.
+    note    = _join_note(extra_th)   # Thai note (default)
+    note_en = _join_note(extra_en)   # English note (admin-instruction is Thai as-is)
+    # If a language has no curated label at all, fall back to the other so the
+    # line isn't blank (admin-instruction alone is language-neutral Thai).
     if not note:
         note = note_en
     if not note_en:
@@ -952,6 +930,22 @@ def _log_home_med_fetch(ctx, raw, result):
             'builtMedCount': len(meds),
             'patient': (result or {}).get('patient'),
             'meds': meds,
+            # Diagnostic: keys of the first raw order-item + its patientorderitems,
+            # so we can see whether getallorderitem carries administrationinstruction
+            # and what the order-id field is (needed to design the dispense/search
+            # call). Only the KEYS + a couple of id-ish fields — not full PHI.
+            'sampleOrderItemKeys': (sorted(order_items[0].keys())
+                                    if order_items and isinstance(order_items[0], dict) else None),
+            'samplePoiKeys': (sorted((order_items[0].get('patientorderitems') or {}).keys())
+                              if order_items and isinstance(order_items[0].get('patientorderitems'), dict) else None),
+            'sampleOrderIds': ({
+                'it._id': order_items[0].get('_id'),
+                'it.orderuid': order_items[0].get('orderuid'),
+                'it.orderid': order_items[0].get('orderid'),
+                'it.patientorderuid': order_items[0].get('patientorderuid'),
+                'poi._id': (order_items[0].get('patientorderitems') or {}).get('_id'),
+                'poi.administrationinstruction': (order_items[0].get('patientorderitems') or {}).get('administrationinstruction'),
+            } if order_items and isinstance(order_items[0], dict) else None),
         }
         # One file per day, JSON Lines (one record per line) for easy tailing.
         log_path = LOGS_DIR / f'home-med-fetch-{ts:%Y-%m-%d}.jsonl'

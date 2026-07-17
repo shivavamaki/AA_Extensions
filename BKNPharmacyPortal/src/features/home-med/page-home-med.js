@@ -14,6 +14,19 @@
 const { norm, escapeHtml, safeSetText } = window.CoreDom;
 const { MSG } = window.CoreMessages;
 
+/** Like norm() but PRESERVES newlines — the note-line is multi-line
+ * (administrationinstruction + Patient Instruction). Collapses runs of spaces/
+ * tabs, trims each line, and drops blank lines, but keeps the "\n" separators. */
+function normMultiline(s) {
+  return String(s || "")
+    .replace(/ /g, " ")
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
 /** Today's date as an <input type="date"> value (YYYY-MM-DD, local time). */
 function _todayISO() {
   const d = new Date();
@@ -469,8 +482,8 @@ function _instructionText(med) {
 /** The note-line text for the current language: Thai (default) or English.
  * Falls back to whichever is present so the line is never blank. */
 function _noteForLang(med) {
-  const th = norm(med.note || "");
-  const en = norm(med.noteEn || "");
+  const th = normMultiline(med.note || "");
+  const en = normMultiline(med.noteEn || "");
   return (_currentLang === "en") ? (en || th) : (th || en);
 }
 
@@ -506,9 +519,9 @@ function _applyNoteLang() {
   document.querySelectorAll(".note-line[data-field='note']").forEach((el) => {
     const th = el.dataset.noteTh || "";
     const en = el.dataset.noteEn || "";
-    const cur = norm(el.textContent || "");
+    const cur = normMultiline(el.textContent || "");
     // Respect a user edit: leave it alone if it isn't one of the variants.
-    if (cur && cur !== norm(th) && cur !== norm(en)) return;
+    if (cur && cur !== normMultiline(th) && cur !== normMultiline(en)) return;
     el.textContent = (_currentLang === "en") ? (en || th) : (th || en);
   });
 }
@@ -531,8 +544,8 @@ function _medFromReport(m) {
   return {
     drug:        norm(m.drug || ""),
     instruction: _instructionText(m),
-    note:        norm(m.note || ""),     // Patient Instruction note — Thai (default)
-    noteEn:      norm(m.noteEn || ""),   // same note in English (for lang switch)
+    note:        normMultiline(m.note || ""),     // note (admin-instr + Patient Instruction) — Thai (default)
+    noteEn:      normMultiline(m.noteEn || ""),   // same note in English (for lang switch)
     quantity:    _cleanValue(m.quantity || ""),
     code:        norm(m.code || ""),
     provider:    norm(m.provider || ""),
@@ -871,9 +884,12 @@ function _buildAddRow() {
 /* ───────────────────── Editing / add / remove / persist ───────────────── */
 function _commitField(index, field, value) {
   if (index < 0 || index >= _meds.length) return;
-  _meds[index][field] = norm(value);
+  // The note is multi-line (admin-instruction + Patient Instruction); keep its
+  // newlines. Other fields stay single-line.
+  const clean = field === "note" ? normMultiline(value) : norm(value);
+  _meds[index][field] = clean;
   // A manual note edit overrides both languages so switching lang keeps it.
-  if (field === "note") _meds[index].noteEn = norm(value);
+  if (field === "note") _meds[index].noteEn = clean;
   _persist();
 }
 
@@ -1104,7 +1120,7 @@ async function fetchAndRender() {
   if (saved && saved.length) {
     _meds = saved.map((m) => ({
       drug: norm(m.drug || ""), instruction: norm(m.instruction || ""),
-      note: norm(m.note || ""), noteEn: norm(m.noteEn || ""),
+      note: normMultiline(m.note || ""), noteEn: normMultiline(m.noteEn || ""),
       quantity: norm(m.quantity || ""),
       code: norm(m.code || ""), provider: norm(m.provider || ""),
       frequencyTh: norm(m.frequencyTh || ""),
