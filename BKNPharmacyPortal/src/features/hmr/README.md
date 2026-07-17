@@ -198,16 +198,27 @@ save.
 
 **Passive auto-dismiss.** Separately, ArcusAir pops its own **"Alerts"** modal
 (billing/general alerts) on many DOM changes and page navigations — not just
-during our automation. `_hmrAutoDismissAlertsOnce()` (called at the top of
-`syncUI`, so it fires on every debounced mutation and on hashchange) closes
-**only** that Alerts modal: it clicks the modal's own close control
-(`#closeBtn` / toolbar ✕) and falls back to Escape. It's gated by
-`_hmrIsAlertModal()` — which requires the alert modal's own controls
-(`#closeBtn`/`#hideAllAlerts`) and excludes override/reason dialogs — and stands
-down while `_hmrAutoRunning` (the automation handles alerts itself). It never
-clicks `#hideAllAlerts`, so it dismisses the current popup without permanently
-suppressing future alerts, and never touches our own `#hmr-workstation` /
-`#hmr-step7-overlay` (plain divs, not `md-dialog`/`[role=dialog]`).
+during our automation. `_hmrAutoDismissAlertsOnce()` closes **only** that Alerts
+modal: it fires the modal's own close control (`#closeBtn` / toolbar ✕) plus
+Escape. It's gated by `_hmrIsAlertModal()` — which requires the alert modal's
+own controls (`#closeBtn`/`#hideAllAlerts`) and excludes override/reason
+dialogs — and stands down while `_hmrAutoRunning` (the automation handles alerts
+itself). It never clicks `#hideAllAlerts`, so it dismisses the current popup
+without permanently suppressing future alerts, and never touches our own
+`#hmr-workstation` / `#hmr-step7-overlay` (plain divs, not `md-dialog`).
+
+- **Instant, no lag.** It's **synchronous** — closing in the same tick the modal
+  is detected — and uses `_hmrFireClose()` (a plain synthetic click, **no**
+  `scrollIntoView`/smooth-scroll and **no** pre-click `sleep`). The old path went
+  through `_hmrClick()`, whose `scrollIntoView({behavior:'smooth'}) + sleep(250)`
+  added a ~250ms+ delay every time.
+- **Two triggers.** Driven by both the debounced `MutationObserver` (via
+  `syncUI`) **and** a light **150ms `setInterval`** poll. The poll covers the
+  cases where the observer tick lags: the alert renders in stages (container
+  first, `#closeBtn` a moment later) or appears mid-mutation-burst. `_hmrFindDialog`
+  is a handful of `querySelector`s returning `null` instantly when no dialog is
+  up, so the poll is cheap. Repeated Escape while a modal lingers is idempotent
+  and stops the moment `_hmrIsAlertModal` goes false.
 
 ## Files
 

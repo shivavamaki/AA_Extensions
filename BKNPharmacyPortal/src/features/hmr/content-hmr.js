@@ -974,7 +974,11 @@
   // stands down while the HM Process automation is running (that sequence closes
   // alerts itself). It never clicks "#hideAllAlerts" — we only dismiss the
   // current popup, we don't permanently suppress future alerts.
-  let _hmrAlertDismissing = false;
+  //
+  // Fires synchronously the instant the modal is detected (in the same tick),
+  // driven by BOTH the debounced MutationObserver and a light 150ms poll, so it
+  // closes immediately even when the alert renders in stages or appears during
+  // a mutation burst.
   // Stricter than _hmrIsAlertDialog: require the alert-modal's own controls so a
   // passive auto-close never touches an unrelated md-dialog that merely contains
   // the word "alerts".
@@ -982,28 +986,44 @@
     if (!d || _hmrIsOverrideDialog(d)) return false;
     return !!(d.querySelector('#closeBtn') || d.querySelector('#hideAllAlerts'));
   }
-  async function _hmrAutoDismissAlertsOnce() {
-    if (_hmrAlertDismissing || _hmrAutoRunning) return;
+  // Fire the alert modal's close button IMMEDIATELY — no scrollIntoView/smooth
+  // animation and no pre-click sleep (that's what made _hmrClick lag ~250ms+).
+  // The modal is already on-screen; a plain synthetic click closes it at once.
+  function _hmrFireClose(el) {
+    if (!el) return;
+    for (const t of ['mousedown', 'mouseup', 'click']) {
+      el.dispatchEvent(new MouseEvent(t, { bubbles: true, cancelable: true, view: window }));
+    }
+    if (typeof el.click === 'function') el.click();
+  }
+  function _hmrDispatchEscape() {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));
+  }
+  function _hmrAutoDismissAlertsOnce() {
+    // Never touch dialogs while HM Process automation runs (it handles alerts).
+    if (_hmrAutoRunning) return;
     const d = _hmrFindDialog();
     if (!_hmrIsAlertModal(d)) return;
-    _hmrAlertDismissing = true;
-    try {
-      // 1) The dialog's own close control (what a user would click).
-      const close = _hmrQueryFirst(
-        ['#closeBtn', "button[aria-label='Close']",
-         'md-dialog md-toolbar button', 'md-dialog .md-icon-button'], d);
-      if (close) { await _hmrClick(close); await sleep(300); }
-      // 2) If it's still up, Escape (AngularMaterial closes on Escape).
-      if (_hmrIsAlertModal(_hmrFindDialog())) {
-        for (let i = 0; i < 2; i++) {
-          document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));
-          document.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));
-          await sleep(200);
-        }
-      }
-    } catch (_) { /* best-effort */ }
-    finally { _hmrAlertDismissing = false; }
+    // Close synchronously so the modal is gone in the same tick it's detected —
+    // no async gap where a mutation burst could delay a follow-up attempt.
+    const close = _hmrQueryFirst(
+      ['#closeBtn', "button[aria-label='Close']",
+       'md-dialog md-toolbar button', 'md-dialog .md-icon-button'], d);
+    if (close) _hmrFireClose(close);
+    // Belt-and-suspenders: Escape also closes AngularMaterial dialogs.
+    _hmrDispatchEscape();
   }
+
+  // Short polling fallback (in addition to the MutationObserver): the alert can
+  // render in stages (container first, #closeBtn a moment later) or appear
+  // mid-mutation-burst, where the debounced observer tick lags. A light 150ms
+  // poll guarantees the modal is caught promptly regardless of mutation timing.
+  // Cheap: _hmrFindDialog is a few querySelectors and returns null instantly
+  // when no dialog is present.
+  setInterval(() => {
+    try { _hmrAutoDismissAlertsOnce(); } catch (_) { /* best-effort */ }
+  }, 150);
   async function _hmrWaitOverrideCompletion() {
     const end = Date.now() + 180000;
     while (Date.now() < end) {
