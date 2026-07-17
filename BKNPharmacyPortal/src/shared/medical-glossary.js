@@ -726,8 +726,11 @@ function matchPattern(text, lang, opts = {}) {
       }
       // Topical "Apply ..." instructions carry no qty+unit, so TAKE_QTY_RE
       // misses them. Salvage the application verb (ทา ...) so it isn't reduced
-      // to a bare frequency. The "(Topical)" route marker is dropped.
-      const ap = _applyVerb(t, lang);
+      // to a bare frequency. Match against the ORIGINAL text, not the transformed
+      // `t`: the route-strip regex above (its (?=\d) lookahead) wrongly eats the
+      // verb's own words when the frequency starts with a digit ("Apply on Dry
+      // Skin 2 times…" → "Apply 2 times…"), which would drop the verb.
+      const ap = _applyVerb(text, lang);
       if (ap) return [ap, freqOverrideRaw].filter(Boolean).join(" ");
       // Same for fluid/ORS instructions ("Drink Instead of Water ...") — no
       // qty+unit to match, but the verb still needs to survive into Thai.
@@ -743,7 +746,7 @@ function matchPattern(text, lang, opts = {}) {
     // (We intentionally do NOT apply the generic hardcoded "affected area"
     // fallback here — that would change behaviour for every uncurated topical;
     // those still fall through to the qty/glossary layers as before.)
-    const apNoFreq = _matchApplyVerbOverride(t, lang);
+    const apNoFreq = _matchApplyVerbOverride(text, lang);   // original text (see above)
     if (apNoFreq) return apNoFreq;
     return null;
   }

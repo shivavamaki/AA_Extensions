@@ -42,6 +42,14 @@ parsing for every instruction on every sheet. Editable overrides work two ways:
    shorter `apply to`); the prefix path only fires for topical verbs, never oral
    `take …` instructions.
 
+   > The verb match runs against the **original** instruction text, not the
+   > route-stripped copy. `matchPattern`'s route-strip regex has a `(?=\d)`
+   > lookahead that wrongly eats the verb's own words when the frequency starts
+   > with a digit (`Apply on Dry Skin 2 times…` → `Apply 2 times…`), which used
+   > to drop the verb entirely (both curated overrides **and** the hardcoded
+   > `apply on dry skin` / `apply to affected area` branches). Matching the
+   > original text fixes both.
+
 ## Files
 
 | File | Role |
