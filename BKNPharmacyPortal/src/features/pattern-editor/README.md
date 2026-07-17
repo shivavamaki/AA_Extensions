@@ -22,10 +22,25 @@ sheet's offline translation engine, without a code deploy.
 
 ## Scope, by design
 
-Only **verbatim full-phrase** matches are editable here — the regex-based
-qty/frequency/timing engine (`MASTER_RE` in `medical-glossary.js`) stays
-code-only, since a malformed regex edit could break parsing for every
-instruction on every sheet.
+The regex-based qty/frequency/timing engine (`MASTER_RE` in
+`medical-glossary.js`) stays **code-only** — a malformed regex edit could break
+parsing for every instruction on every sheet. Editable overrides work two ways:
+
+1. **Whole-line phrase** — `matchAuxiliaryPhrase()` looks up the entire
+   normalized instruction, so an override wins when it equals the whole line
+   (e.g. a fixed counselling sentence).
+2. **Topical verb prefix** — for `apply`/`ทา`-type instructions, `_applyVerb()`
+   → `_matchApplyVerbOverride()` matches a curated key as a **prefix** of the
+   instruction and lets the engine append the Thai frequency tail itself. So you
+   can add just the **verb phrase**:
+   - `apply to the ulcer in mouth` → `ทาแผลในปาก`
+
+   and `apply to the ulcer in mouth 3 times daily morning noon evening` renders
+   as `ทาแผลในปาก วันละ 3 ครั้ง เช้า กลางวัน เย็น` — the frequency comes from the
+   BKN frequency master automatically, so **don't** add a separate frequency
+   entry. Longest matching key wins (`apply to the ulcer in mouth` beats a
+   shorter `apply to`); the prefix path only fires for topical verbs, never oral
+   `take …` instructions.
 
 ## Files
 

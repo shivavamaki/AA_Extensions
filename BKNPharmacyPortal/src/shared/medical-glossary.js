@@ -584,6 +584,16 @@ const TAKE_QTY_RE = new RegExp(
 // "Apply to the Affected Area (Topical) ..." / "Apply on Dry Skin ...". Returns
 // the localised verb phrase, or "" if `t` isn't a topical-apply instruction.
 function _applyVerb(t, lang) {
+  // Pharmacist-curated topical verb phrases (pattern-editor → PATTERN_OVERRIDES)
+  // take priority — so a phrase like "apply to the ulcer in mouth" → "ทาแผลในปาก"
+  // can be added WITHOUT a code deploy. Because a topical instruction is
+  // "<verb phrase> <frequency tail>", we match a curated key as a PREFIX of the
+  // instruction (longest key first, so a more specific phrase wins), then let the
+  // caller append the Thai frequency. Keys are the normalized lowercased English
+  // verb phrase (same normalization matchAuxiliaryPhrase uses).
+  const curated = _matchApplyVerbOverride(t, lang);
+  if (curated) return curated;
+
   if (/^apply\s+on\s+dry\s+skin/i.test(t)) {
     const M = { th:"ทาบริเวณผิวที่แห้ง", lo:"ທາບໍລິເວນຜິວທີ່ແຫ້ງ", en:"Apply on dry skin",
                 "zh-CN":"涂抹于干燥皮肤", my:"ခြောက်သွေ့သောအသားအရေတွင် လိမ်းပါ", km:"លាបលើស្បែកស្ងួត" };
@@ -595,6 +605,29 @@ function _applyVerb(t, lang) {
     return (g && g[lang]) || "Apply to the affected area";
   }
   return "";
+}
+
+// Find a curated topical verb phrase that is a PREFIX of the (lowercased,
+// space-normalized) instruction `t`, in the requested language. Longest matching
+// key wins so "apply to the ulcer in mouth" beats a shorter "apply to". Only
+// applies to apply/ทา-type verbs so it never hijacks a normal oral instruction.
+function _matchApplyVerbOverride(t, lang) {
+  const overrides = (typeof window !== "undefined" && window.PATTERN_OVERRIDES) || null;
+  if (!overrides) return null;
+  const norm = String(t || "").toLowerCase().replace(/\s+/g, " ").trim();
+  if (!/^(apply|ทา)\b/i.test(norm)) return null;   // topical verbs only
+  let best = null, bestLen = 0;
+  for (const key of Object.keys(overrides)) {
+    const k = String(key || "").toLowerCase().replace(/\s+/g, " ").trim();
+    if (!k || k.length <= bestLen) continue;
+    // Prefix match: the instruction starts with the whole curated key, at a word
+    // boundary (so "apply to the ulcer" doesn't match "apply to the ulcere...").
+    if (norm === k || norm.startsWith(k + " ")) {
+      const val = overrides[key] && overrides[key][lang];
+      if (val) { best = val; bestLen = k.length; }
+    }
+  }
+  return best;
 }
 
 // Oral-rehydration / fluid instructions with no quantity+unit, e.g.
@@ -704,6 +737,14 @@ function matchPattern(text, lang, opts = {}) {
       // the Thai frequency alone is the whole instruction.
       return freqOverrideRaw;
     }
+    // No authoritative Thai frequency, and MASTER_RE didn't match. Salvage only a
+    // pharmacist-CURATED topical verb (pattern-editor override) so a phrase like
+    // "apply to the ulcer in mouth ..." localises even without a freq-master value.
+    // (We intentionally do NOT apply the generic hardcoded "affected area"
+    // fallback here — that would change behaviour for every uncurated topical;
+    // those still fall through to the qty/glossary layers as before.)
+    const apNoFreq = _matchApplyVerbOverride(t, lang);
+    if (apNoFreq) return apNoFreq;
     return null;
   }
 
