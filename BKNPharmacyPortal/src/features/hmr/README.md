@@ -144,13 +144,21 @@ Two buttons call the shared API `window.BKN_HMQ` exposed by
 [`../hmq/README.md`](../hmq/README.md):
 
 - **➕** (header, before the "💊 HM Process" title) → `BKN_HMQ.addCase({hn, name,
-  ward, room})`. Patient name comes from `h4.patientbannername`; ward/room
-  come from `detectWardBed()`, which reads the "Ward / Bed :  Ward 8 / 805"
-  line in the same "Visit Details" panel `detectVisitId`/`detectHN` already
-  walk up from (`WARD_BED_RE`). The bed token accepts **alphanumeric** ids
-  (`[A-Za-z0-9-]+`), not only digits — special-care units use beds like `CCU06`
-  / `ICU-3` / `NICU2`, which the old digits-only pattern silently dropped
-  (leaving ward/room blank in the queue).
+  ward, room})`. Patient name comes from `h4.patientbannername`; ward/room come
+  from `detectWardBed()`:
+  - **Primary — the bedoccupancy DOM element** (`readBedOccupancy`): ArcusAir
+    renders the current bed as `<div ng-repeat="occupancy in
+    vm.patientvisit.bedoccupancy | filter:{enddate:'!'}"><span>ward</span> /
+    <span>room</span></div>`. This has **no** "Ward / Bed :" label, so the text
+    regex never matched it — we read the two `<span>`s directly (last span =
+    room). This is why special-care rooms like `CCU06` were showing blank.
+  - **Fallback — `WARD_BED_RE`** on the "Ward / Bed :  Ward 8 / 805" text line
+    (separators are `&nbsp;`, matched by `\s`). Bed token accepts alphanumeric
+    ids (`[A-Za-z0-9-]+`): `CCU06` / `ICU-3` / `NICU2`.
+  - If a patient was queued **before** the bed could be read (blank room), the
+    next auto-add call backfills it: `addCase` gets a 409 duplicate and, when the
+    existing entry's ward/room is blank, PUTs `{action:'update-loc', ward, room}`
+    which fills blanks only (never overwrites) — see `../hmq/README.md`.
 - **✓ Complete** (next to Reset) → `BKN_HMQ.completeActiveByHn(hn)`, completing
   this patient's active ("On Process") queue entry from wherever it currently
   is, without needing the floating popup open.

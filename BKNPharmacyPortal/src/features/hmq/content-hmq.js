@@ -58,12 +58,14 @@
     } catch (_) { return null; }
   }
 
-  async function putTransition(id, action) {
+  // `extra` carries additional fields for non-status actions (e.g. update-loc
+  // passes { ward, room }); status transitions pass no extra.
+  async function putTransition(id, action, extra) {
     try {
       return await window.BKNData.serverFetch(`/api/hmq/${encodeURIComponent(id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, user: detectUsername() }),
+        body: JSON.stringify({ action, user: detectUsername(), ...(extra || {}) }),
       });
     } catch (_) { return null; }
   }
@@ -410,6 +412,16 @@
     const r = await postAddCase({ hn, name, ward: ward || '', room: room || '', addedBy: detectUsername() });
     if (r && r.status === 409) {
       const existing = r.json && r.json.existing;
+      // The patient is already queued. If that entry is missing ward/room but we
+      // now have them (e.g. detection improved, or the bed loaded after the case
+      // was queued), backfill the existing entry so the queue shows the room.
+      if (existing && existing.id && (ward || room) &&
+          (!(existing.ward || '').trim() || !(existing.room || '').trim())) {
+        try {
+          await putTransition(existing.id, 'update-loc', { ward, room });
+          await refreshQueue();
+        } catch (_) { /* best-effort */ }
+      }
       const where = existing && existing.status === 'process' ? 'On Process' : 'New Case';
       return {
         ok: false, duplicate: true, existing,

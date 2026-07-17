@@ -80,7 +80,7 @@ never loses the queue. (Only the popup's *position/width* is per-browser
 |---|---|---|
 | `GET` | `/api/hmq?from=&to=` | List entries (date range on the **Bangkok** day of `createdAt`) |
 | `POST` | `/api/hmq` | Add a case — `{hn, name, ward, room, addedBy}` |
-| `PUT` | `/api/hmq/{id}` | Transition — `{action: 'start'\|'complete'\|'revert-process'\|'revert-new', user}` |
+| `PUT` | `/api/hmq/{id}` | Transition — `{action: 'start'\|'complete'\|'revert-process'\|'revert-new', user}`, or **backfill location** — `{action: 'update-loc', ward, room, user}` |
 
 - **Timezone.** Days are keyed to **Asia/Bangkok** everywhere: the client queries
   the Bangkok date (`todayStr` = `now + 7h`), `_hmq_today()`/`_hmq_next_seq`/
@@ -92,7 +92,10 @@ never loses the queue. (Only the popup's *position/width* is per-browser
 
 - **Duplicate guard** (`hmq_find_active_by_hn`): keyed on HN. A new `POST`
   is rejected (`409`) if that HN already has a `new` or `process` entry
-  today; allowed if its only entries today are `done`.
+  today; allowed if its only entries today are `done`. On a 409 the client
+  backfills a blank ward/room on the existing entry (`update_hmq_location`,
+  fills blanks only, logs it) — so a case queued before its bed could be read
+  gets its room filled on the next auto-add pass.
 - **Storage**: one live JSON file per entry (`data/hmq/HMQ-YYYYMMDD-NNNN.json`).
   A nightly job at 23:00 (`_hmq_nightly_merge`) archives only `done` entries
   into one `data/hmq/ddmmyyyy_HM_queue.json` per day (e.g. `09072026_HM_queue.json`,

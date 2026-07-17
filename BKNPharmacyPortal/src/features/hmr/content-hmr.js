@@ -76,15 +76,40 @@
     return norm(m ? full.slice(0, m.index) : full);
   }
 
-  // Ward View's "Visit Details" panel shows a "Ward / Bed :  Ward 8 / 805" line
-  // right under the admission date — same panel detectVisitId/detectHN already
-  // walk up from. The bed token is usually numeric (805, 510…) but special-care
-  // units use alphanumeric bed ids (CCU06, ICU-3, NICU2), so the room group
-  // accepts letters/digits/hyphen — a contiguous non-space token after the "/",
-  // ending at whitespace or end-of-text so it never swallows following text.
+  // Ward View's "Visit Details" panel shows a "Ward / Bed :  Ward 8 / 805" line.
+  // The bed token is usually numeric (805, 510…) but special-care units use
+  // alphanumeric bed ids (CCU06, ICU-3, NICU2), so the room group accepts
+  // letters/digits/hyphen. Separators in the panel are non-breaking spaces
+  // ( ), which \s matches. This label-regex is the FALLBACK — the primary
+  // source is the bedoccupancy DOM element below.
   const WARD_BED_RE = /Ward\s*\/\s*Bed\s*:?\s*(.+?)\s*\/\s*([A-Za-z0-9-]+)(?=\s|$)/i;
 
+  // ArcusAir renders the current bed as an ng-repeat over the patient's
+  // bedoccupancy, filtered to the row with no end date (the active bed):
+  //   <div ng-repeat="occupancy in vm.patientvisit.bedoccupancy | filter:{enddate:'!'}">
+  //     <span>Cardiac Care Unit</span>&nbsp;/&nbsp;<span>CCU06</span>
+  //   </div>
+  // This has NO "Ward / Bed :" label, so the regex above never matched it —
+  // read the two spans directly instead. Returns null when not present.
+  function readBedOccupancy() {
+    const nodes = document.querySelectorAll('[ng-repeat*="bedoccupancy"]');
+    for (const node of nodes) {
+      const spans = node.querySelectorAll('span');
+      // The current-bed row has exactly the ward span + the room span.
+      if (spans.length >= 2) {
+        const ward = norm(spans[0].textContent);
+        const room = norm(spans[spans.length - 1].textContent);
+        if (ward && room && /^[A-Za-z0-9-]+$/.test(room)) return { ward, room };
+      }
+    }
+    return null;
+  }
+
   function detectWardBed() {
+    // 1) Authoritative: the current bedoccupancy DOM element.
+    const occ = readBedOccupancy();
+    if (occ) return occ;
+    // 2) Fallback: the "Ward / Bed :" text line in the Visit Details panel.
     const h4 = findVisitDetailsH4();
     if (h4) {
       let el = h4.parentElement;

@@ -1846,6 +1846,26 @@ def transition_hmq_entry(entry_id, action, user):
     save_hmq_entry(doc)
     return doc
 
+def update_hmq_location(entry_id, ward, room, user):
+    """Backfill ward/room on an existing entry — fills only BLANK fields so a
+    later, better detection can complete a case that was queued before the
+    ward/bed could be read (e.g. special-care beds like CCU06). Never overwrites
+    a value that's already set. Returns the (possibly unchanged) doc, or None."""
+    doc = load_hmq_entry(entry_id)
+    if not doc:
+        return None
+    changed = False
+    if ward and not (doc.get('ward') or '').strip():
+        doc['ward'] = ward; changed = True
+    if room and not (doc.get('room') or '').strip():
+        doc['room'] = room; changed = True
+    if changed:
+        now = _now_iso()
+        doc.setdefault('auditLog', []).append(
+            {'ts': now, 'user': user, 'action': f'Location filled: {doc.get("ward","")} / {doc.get("room","")}'})
+        save_hmq_entry(doc)
+    return doc
+
 # ── HMQ nightly merge — one ddmmyyyy_HM_queue.json per day, kept forever
 #    until an admin manually cleans them up (this server never deletes or
 #    rotates archive files on its own) ──
@@ -2899,14 +2919,21 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, {'ok': True})
 
         elif rtype == 'hmq':
-            # Advance/revert a queue entry:
-            # {'action': 'start'|'complete'|'revert-process'|'revert-new', 'user': name}
+            # Advance/revert a queue entry, or backfill its ward/room:
+            #   {'action': 'start'|'complete'|'revert-process'|'revert-new', 'user'}
+            #   {'action': 'update-loc', 'ward', 'room', 'user'}  (fills blanks only)
             if not isinstance(body, dict):
                 self.send_json(400, {'error': 'Body must be a JSON object'}); return
             action = body.get('action')
             user   = body.get('user') or 'Unknown'
+            if action == 'update-loc':
+                doc = update_hmq_location(key, (body.get('ward') or '').strip(),
+                                          (body.get('room') or '').strip(), user)
+                if doc is None:
+                    self.send_json(404, {'error': 'Queue entry not found'}); return
+                self.send_json(200, doc); return
             if action not in ('start', 'complete', 'revert-process', 'revert-new'):
-                self.send_json(400, {'error': "action must be 'start', 'complete', 'revert-process', or 'revert-new'"}); return
+                self.send_json(400, {'error': "action must be 'start', 'complete', 'revert-process', 'revert-new', or 'update-loc'"}); return
             doc = transition_hmq_entry(key, action, user)
             if doc is None:
                 self.send_json(404, {'error': 'Queue entry not found'}); return
