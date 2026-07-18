@@ -1106,12 +1106,44 @@ function matchAuxiliaryPhrase(text, lang) {
   // Pharmacist-curated overrides (src/features/pattern-editor, persisted server-side
   // to data/rx/pattern-overrides.json) take priority — they let new phrases be added
   // without a code deploy, and can also correct a built-in AUXILIARY_PHRASES entry.
+  // Entries with mode:"replace" are substring rules (see applyTextReplacements),
+  // NOT whole-line matches, so they're skipped here.
   const overrideMap = (window.PATTERN_OVERRIDES || {})[t];
-  if (overrideMap && overrideMap[lang]) return overrideMap[lang];
+  if (overrideMap && overrideMap.mode !== "replace" && overrideMap[lang]) return overrideMap[lang];
   const map = AUXILIARY_PHRASES[t];
   if (!map) return null;
   return map[lang] || null;
 }
+
+/* Substring text-replacement pass (offline, curated). Entries in
+ * PATTERN_OVERRIDES with mode:"replace" are applied as find→replace ANYWHERE in
+ * the instruction/note text (case-insensitive, word-boundary where the key is
+ * word-like), longest key first so a more specific phrase wins over its
+ * sub-phrases. This lets pharmacists pre-translate arbitrary fragments (e.g.
+ * "before breakfast" → "ก่อนอาหารเช้า") without a code deploy and with no
+ * external API. Returns the text with all applicable replacements applied. */
+function applyTextReplacements(text, lang) {
+  const overrides = (typeof window !== "undefined" && window.PATTERN_OVERRIDES) || null;
+  if (!overrides || !text) return text;
+  const rules = Object.keys(overrides)
+    .filter((k) => overrides[k] && overrides[k].mode === "replace" && overrides[k][lang])
+    .sort((a, b) => b.length - a.length);   // longest first
+  let out = text;
+  for (const key of rules) {
+    const to = overrides[key][lang];
+    const k = String(key).trim();
+    if (!k) continue;
+    // Word-boundary match when the key starts/ends with a word char (so "cap"
+    // doesn't match inside "capsule"); literal otherwise.
+    const esc = k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const lead = /\w/.test(k[0]) ? "\\b" : "";
+    const tail = /\w/.test(k[k.length - 1]) ? "\\b" : "";
+    const re = new RegExp(lead + esc + tail, "gi");
+    out = out.replace(re, to);
+  }
+  return out;
+}
+if (typeof window !== "undefined") window.applyTextReplacements = applyTextReplacements;
 
 /* ═══════════════════════════════════════════════════════════════
  * INJECTION SUB-PATTERN

@@ -22,18 +22,27 @@ sheet's offline translation engine, without a code deploy.
 
 ## Scope, by design
 
-The regex-based qty/frequency/timing engine (`MASTER_RE` in
-`medical-glossary.js`) stays **code-only** — a malformed regex edit could break
-parsing for every instruction on every sheet. Editable overrides work two ways:
+Since the translation engine is **fully offline** (no Google/external API), the
+editor is the only way to fill translation gaps. The regex-based qty/frequency/
+timing engine (`MASTER_RE` in `medical-glossary.js`) stays **code-only** — a
+malformed regex edit could break parsing for every instruction on every sheet.
 
-1. **Whole-line phrase** — `matchAuxiliaryPhrase()` looks up the entire
-   normalized instruction, so an override wins when it equals the whole line
-   (e.g. a fixed counselling sentence).
-2. **Topical verb prefix** — for `apply`/`ทา`-type instructions, `_applyVerb()`
-   → `_matchApplyVerbOverride()` matches a curated key as a **prefix** of the
-   instruction and lets the engine append the Thai frequency tail itself. So you
-   can add just the **verb phrase**:
+Each override row has a **Mode**:
+
+- **Exact / verb** (default) — matches only when the override equals the whole
+  instruction line, via `matchAuxiliaryPhrase()`; and, for `apply`/`ทา`-type
+  instructions, as a **verb prefix** (`_applyVerb()` → `_matchApplyVerbOverride()`)
+  so you can add just the verb phrase and let the engine append the frequency:
    - `apply to the ulcer in mouth` → `ทาแผลในปาก`
+- **Replace (substring)** — `applyTextReplacements()` (in the engine, run before
+  pattern/glossary) does a find→replace of the English phrase **anywhere** in the
+  text, so you can pre-translate arbitrary fragments:
+   - `before breakfast` → `ก่อนอาหารเช้า`
+   - `as needed` → `เมื่อจำเป็น`
+
+  Longest key wins over its sub-phrases; word-like keys match on word boundaries
+  (so `cap` won't hit inside `capsule`). Stored as `{ th, mode:"replace" }` in the
+  same `pattern-overrides.json` (exact rows omit `mode`).
 
    and `apply to the ulcer in mouth 3 times daily morning noon evening` renders
    as `ทาแผลในปาก วันละ 3 ครั้ง เช้า กลางวัน เย็น` — the frequency comes from the

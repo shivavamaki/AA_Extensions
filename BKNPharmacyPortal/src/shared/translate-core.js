@@ -71,6 +71,14 @@ const HMTranslate = (() => {
         if (qtyResult) { node.nodeValue = qtyResult; done++; continue; }
       }
 
+      // ── Curated substring replacements (offline, pharmacist-editable) ──
+      // Apply PATTERN_OVERRIDES entries flagged mode:"replace" as find→replace
+      // anywhere in the text BEFORE pattern/glossary, so a curated Thai fragment
+      // both shows up and feeds the downstream matchers. No external API.
+      if (typeof window.applyTextReplacements === "function") {
+        text = window.applyTextReplacements(text, lang);
+      }
+
       // ── Layer 1: Pattern match (sentence-level, no API call) ──
       // An instruction cell may carry data-freq-th (authoritative Thai frequency
       // from the BKN frequency master) — pass it so it overrides the engine's

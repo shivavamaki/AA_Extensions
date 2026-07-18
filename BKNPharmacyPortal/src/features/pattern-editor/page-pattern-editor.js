@@ -60,6 +60,23 @@ function render() {
       });
       tdTh.appendChild(inTh);
 
+      // Match mode: "exact" (whole-line / verb-prefix, default) or "replace"
+      // (substring find→replace anywhere in the text).
+      const tdMode = document.createElement("td");
+      const selMode = document.createElement("select");
+      for (const [val, label] of [["exact", "Exact / verb"], ["replace", "Replace (substring)"]]) {
+        const o = document.createElement("option");
+        o.value = val; o.textContent = label;
+        selMode.appendChild(o);
+      }
+      selMode.value = (overrides[key] && overrides[key].mode) || "exact";
+      selMode.addEventListener("change", () => {
+        overrides[key] = overrides[key] || {};
+        if (selMode.value === "replace") overrides[key].mode = "replace";
+        else delete overrides[key].mode;   // exact is the default — keep JSON lean
+      });
+      tdMode.appendChild(selMode);
+
       const tdAct = document.createElement("td");
       tdAct.className = "actions";
       const btnDel = document.createElement("button");
@@ -71,6 +88,7 @@ function render() {
 
       tr.appendChild(tdKey);
       tr.appendChild(tdTh);
+      tr.appendChild(tdMode);
       tr.appendChild(tdAct);
       rowsEl.appendChild(tr);
     });
