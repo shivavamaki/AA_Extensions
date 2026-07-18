@@ -34,10 +34,10 @@ const HMTranslate = (() => {
 
   async function translate(root, lang, opts = {}) {
 
-    // offlineOnly: skip the Google Translate fallback (Layer 3). Used on the
-    // Home Med Sheet's first paint so it localises with zero network calls.
-    const offlineOnly = !!opts.offlineOnly;
-
+    // The engine is fully OFFLINE — patterns + word glossary + curated phrase
+    // overrides only, no external translation API (org-network policy). `opts`
+    // is kept for API compatibility (e.g. a legacy offlineOnly flag) but every
+    // path is offline now.
     if (!root) return;
 
     // Always re-cache from the CURRENT live DOM.
@@ -100,20 +100,11 @@ const HMTranslate = (() => {
         continue;
       }
 
-      // Offline-only mode (e.g. first paint): never hit the network. Keep the
-      // best offline result (glossary-substituted text) and move on.
-      if (offlineOnly) {
-        if (text !== original) { node.nodeValue = text; done++; }
-        continue;
-      }
-
-      // ── Layer 3: Google Translate ─────────────────────────────
-      const translated = await translateText(text, lang, "en");
-      if (translated) {
-        node.nodeValue = postProcessTranslation(translated, lang);
-        done++;
-      }
-
+      // Fully offline by design — no external translation API is ever called
+      // (org-network policy). Keep the best offline result (glossary-substituted
+      // text). Anything still English is a gap to be filled by curating a phrase
+      // in the Pattern / Text-Replacement editor, not by an online call.
+      if (text !== original) { node.nodeValue = text; done++; }
     }
 
     console.log(`HMTranslate finished: ${done}/${nodes.length}`);
@@ -299,136 +290,6 @@ const HMTranslate = (() => {
   function escapeRegex(str) {
 
     return str.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-
-  }
-
-  /* ================= POST-GOOGLE CLEANUP =================
-   * Google Translate emits known-bad tokens for some pharmacy terms.
-   * This safety net normalises them to BKN-approved Lao/Thai wording,
-   * so even when Layers 1+2 miss, the patient never sees garbled output.
-   *
-   * Bad tokens corrected:
-   *   Lao "ແອັນຊູນ" (bogus capsule) → "ແຄັບຊູນ"
-   *   Lao "ທາງປາກ" (literal "via mouth") → removed
-   *   Thai "ทางปาก" → removed
-   *   Other unsafe transliterations as discovered.
-   */
-  const POST_CLEANUP = {
-    lo: [
-      // Bogus "capsule" transliterations seen from Google
-      [/ແອັນຊູນ/g, "ແຄັບຊູນ"],
-      [/ແອັດຊູນ/g, "ແຄັບຊູນ"],
-      [/ແອນຊູນ/g,  "ແຄັບຊູນ"],
-      // Drop the literal "via mouth" — verb already implies it
-      [/\s*ທາງປາກ\s*/g, " "],
-      // Bogus "tablet" transliteration
-      [/ແທັບເລັດ/g, "ເມັດ"],
-      // Bogus "spray" transliterations
-      [/ສະເປຣ/g, "ພົ່ນ"],
-      // Tidy spaces
-      [/\s{2,}/g, " "],
-    ],
-    th: [
-      [/\s*ทางปาก\s*/g, " "],
-      [/แท็บเล็ต/g, "เม็ด"],
-      [/แคปซูล/g, "แคปซูล"], // already correct, no-op kept for symmetry
-      [/\s{2,}/g, " "],
-    ],
-  };
-  function postProcessTranslation(text, lang) {
-    const rules = POST_CLEANUP[lang];
-    if (!rules || !text) return text;
-    let out = text;
-    for (const [re, repl] of rules) out = out.replace(re, repl);
-    return out.trim();
-  }
-
-  /* ================= GOOGLE TRANSLATE ================= */
-
-  /* ===== Persistent translation cache (lang|||sl|||text → translated) =====
-   * Translation is a pure function of (text, lang, sl), so memoizing it is
-   * safe. This avoids re-calling Google Translate when a table/sticker is
-   * re-rendered (e.g. adding/removing a Home Med row re-renders the whole
-   * table) — only genuinely new strings hit the network. */
-  const _CACHE_KEY = "hm:translateCache";
-  let _cache = null;            // Map<string, string>, lazily loaded
-  let _cacheLoad = null;        // in-flight load promise
-  let _cacheDirty = false;
-  let _cacheFlushTimer = null;
-
-  function _hasChromeStorage() {
-    return typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;
-  }
-
-  function _loadCache() {
-    if (_cache) return Promise.resolve(_cache);
-    if (_cacheLoad) return _cacheLoad;
-    _cacheLoad = new Promise((resolve) => {
-      if (!_hasChromeStorage()) { _cache = new Map(); resolve(_cache); return; }
-      try {
-        chrome.storage.local.get(_CACHE_KEY, (res) => {
-          const obj = (res && res[_CACHE_KEY]) || {};
-          _cache = new Map(Object.entries(obj));
-          resolve(_cache);
-        });
-      } catch (_e) { _cache = new Map(); resolve(_cache); }
-    });
-    return _cacheLoad;
-  }
-
-  function _flushCache() {
-    if (!_cacheDirty || !_cache || !_hasChromeStorage()) return;
-    _cacheDirty = false;
-    try {
-      chrome.storage.local.set({ [_CACHE_KEY]: Object.fromEntries(_cache) });
-    } catch (_e) { /* ignore quota/availability errors */ }
-  }
-
-  function _scheduleFlush() {
-    _cacheDirty = true;
-    clearTimeout(_cacheFlushTimer);
-    _cacheFlushTimer = setTimeout(_flushCache, 800);
-  }
-
-  async function translateText(text, lang, sl = "auto") {
-
-    const key = lang + "|||" + sl + "|||" + text;
-    const cache = await _loadCache();
-    const hit = cache.get(key);
-    if (hit !== undefined) return hit;
-
-    try {
-
-      const url =
-        "https://translate.googleapis.com/translate_a/single" +
-        "?client=gtx" +
-        "&sl=" + sl +
-        "&tl=" + lang +
-        "&dt=t" +
-        "&q=" + encodeURIComponent(text);
-
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if (!data || !data[0]) return text;
-
-      const result = data[0].map(t=>t[0]).join("");
-      // Cap the cache so it can't grow unbounded over months of use.
-      if (cache.size >= 5000) {
-        const oldest = cache.keys().next().value;
-        if (oldest !== undefined) cache.delete(oldest);
-      }
-      cache.set(key, result);
-      _scheduleFlush();
-      return result;
-
-    }
-    catch(e){
-
-      console.warn("Translate error:",e);
-      return text;
-
-    }
 
   }
 

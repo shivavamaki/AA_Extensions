@@ -29,15 +29,17 @@ The **only sanctioned cross-feature data API**. All persistent reads/writes go t
 
 ## `translate-core.js` — `HMTranslate` engine
 
-Three-layer prescription translation:
+**Fully offline** prescription translation — **no external translation API** is
+ever called (org-network policy). Two layers:
 
-1. **Pattern match** (`matchMedicalPattern` from `medical-glossary.js`) — full-sentence regex; localises verb/unit/route/frequency in one pass.
+1. **Pattern match** (`matchMedicalPattern` from `medical-glossary.js`) — full-sentence regex; localises verb/unit/route/frequency in one pass. Includes curated phrase/verb overrides (`PATTERN_OVERRIDES`, editable in the Pattern editor without a code deploy).
 2. **Glossary** — word-level substitution from `MEDICAL_GLOSSARY`.
-3. **Google Translate** (`translate.googleapis.com`) — only when not in offline-only mode.
 
-**API:** `init(root, {glossary})` / `translate(root, lang, {offlineOnly})` / `restore()`
+Anything the offline data doesn't cover stays as-is (English) until a pharmacist
+curates it in the Pattern / Text-Replacement editor. (The old Google Translate
+Layer 3 + its `chrome.storage.local` cache have been removed.)
 
-**Persistent translation cache** in `chrome.storage.local` (key `hm:translateCache`, capped 5000 entries, debounced flush) — re-renders don't re-call Google.
+**API:** `init(root, {glossary})` / `translate(root, lang, {opts})` / `restore()` — `opts` is accepted for compatibility (e.g. a legacy `offlineOnly` flag) but every path is offline.
 
 - Nodes marked `data-no-translate` or `translate="no"` are skipped.
 - An instruction cell may carry `data-freq-th` (authoritative Thai frequency) → passed to `matchMedicalPattern` as `freqOverride`.

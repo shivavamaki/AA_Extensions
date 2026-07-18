@@ -18,7 +18,8 @@ const DRUGDELIVERY_URL_PART = '10.134.10.91:8809/drugdelivery/web/ipfill';
 const _PROXY_ALLOWED_HOSTS = new Set([
   'arcusair.bdms.co.th',
   'aa-report.bdms.co.th',
-  'translate.googleapis.com',
+  // translate.googleapis.com removed — the translation engine is fully offline
+  // (patterns + glossary + curated overrides), no external MT calls.
   'localhost',
   '10.134.10.5',
   '10.134.10.91',

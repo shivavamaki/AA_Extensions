@@ -530,14 +530,14 @@ function _applyNoteLang() {
 // _meds is the single source of truth. Each item:
 //   { drug, instruction, note, quantity, code, provider, frequencyTh }
 let _meds = [];
-// "How to take" defaults to Thai. On first load we translate with the OFFLINE
-// engine only (medical-glossary patterns + frequency master), so the sheet reads
-// Thai — verb/unit/route/frequency/qty — without any Google Translate call.
-// Changing the language dropdown re-translates and DOES allow the Google
-// fallback (Layer 3) for residual English / other languages.
+// "How to take" defaults to Thai and is translated by the FULLY-OFFLINE engine
+// (medical-glossary patterns + frequency master + curated overrides) — no
+// external translation API is ever called (org-network policy). Changing the
+// language dropdown just re-runs the same offline engine for that language;
+// anything the offline data doesn't cover stays as-is until curated in the
+// Pattern / Text-Replacement editor.
 let _currentLang = "th";
-// First render localises offline only (no network). User-chosen languages flip
-// this off so the full engine (incl. Google fallback) runs.
+// Retained for API compatibility only — the engine is offline on every path now.
 let _offlineOnly = true;
 
 function _medFromReport(m) {
@@ -641,10 +641,8 @@ async function renderMeds() {
   _bindMedicineImageFallbacks(tbody);
   _bindRowEditing(tbody);
 
-  // Re-init the translation engine on the freshly rendered table and localise.
-  // First load runs offline-only (no Google) — the glossary patterns already
-  // produce full Thai. Later renders (after a language change / edits) allow the
-  // Google fallback so any residual English / other languages still translate.
+  // Re-init the fully-offline translation engine on the freshly rendered table
+  // and localise (patterns + glossary + curated overrides; no external API).
   _initTranslate();
   if (_currentLang) await _applyTranslate(_currentLang, _offlineOnly);
 
@@ -1613,7 +1611,7 @@ function bindLangControl() {
   sel.value = _currentLang;
   sel.addEventListener("change", async (e) => {
     _currentLang = e.target.value || "";
-    _offlineOnly = false;   // a user-chosen language may use the Google fallback
+    _offlineOnly = false;   // no-op now (engine is always offline); kept for compat
     // Note-line uses the curated TH/EN Patient Instruction directly (it is
     // data-no-translate), so swap it explicitly rather than via the engine.
     _applyNoteLang();
