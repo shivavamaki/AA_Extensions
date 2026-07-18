@@ -5,7 +5,7 @@ A family of printable patient-identity labels injected from the ArcusAir patient
 ## Where it runs
 
 - **`content-patient-sticker.js`** runs on patient pages, gated by `patient-emr-banner` presence.
-- This script **owns the shared `.bkn-tool-group` CSS + factory** (exposed via `document[Symbol.for("__BKN_TOOL_GROUP_FACTORY__")]`). All other features call this factory — do not create a second group.
+- This script **owns the shared `.bkn-tool-group` CSS + factory** (exposed via `document[Symbol.for("__BKN_TOOL_GROUP_FACTORY__")]`). All other features call this factory — do not create a second group. The flyout is **vertical (top-down)**: the trigger stays in the toolbar and the buttons reveal in a column that drops down from it (`position:absolute; flex-direction:column`), floating over the page instead of expanding sideways. The group is `position:relative` to anchor it.
 - Injects icon buttons next to `#paprint`.
 - All parsing is **inlined** in the content script because Angular's scope-destroy wipes `window.ParserPatient`. `parser-patient.js` is a mirror copy and must stay in sync.
 

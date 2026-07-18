@@ -253,12 +253,18 @@
     } catch (_) {}
   }
 
+  /* Latest OPD order id, captured from the outpatient dispense workbench's
+     pharmacy/dispense/search request (its body carries {orderid}). The OPD Home
+     Med Sheet fetches by this orderid — see fetch_arcus_opd_meds server-side. */
+  window.__arcus_opd__ = window.__arcus_opd__ || { orderid: '' };
+
   var _origOpen = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function (method, url) {
     try {
       _scan(String(url));
       this.__bkn_medrecon    = /\/medreconcile\//i.test(String(url));
       this.__bkn_medhistory  = /\/medicationhistory\/getdetails/i.test(String(url));
+      this.__bkn_dispsearch  = /\/pharmacy\/dispense\/search\b/i.test(String(url));
       // Flag inpatient API calls — their RESPONSES carry patientvisituid in JSON
       // even though the request URL uses path-params (not query-params).
       this.__bkn_scan_resp = /\/inpatient\//i.test(String(url));
@@ -277,6 +283,15 @@
         if (_xhr.status === 200) { try { _scanResponseText(_xhr.responseText); } catch (_) {} }
       }, { once: true, passive: true });
     }
+    // Capture the OPD orderid from the outpatient dispense workbench's
+    // pharmacy/dispense/search request body ({orderid, includerefillorders,…}).
+    try {
+      if (this.__bkn_dispsearch && typeof body === 'string') {
+        var oid = '';
+        try { oid = (JSON.parse(body) || {}).orderid || ''; } catch (_) {}
+        if (oid) window.__arcus_opd__.orderid = String(oid);
+      }
+    } catch (_) {}
     // Capture medreconcileuid from a medreconcile request body, keyed by the
     // patientvisituid currently in context (set by the screen's own list call).
     try {

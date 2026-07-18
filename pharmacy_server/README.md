@@ -153,7 +153,8 @@ These endpoints fetch live orders from ArcusAir and shape them into printable re
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/api/report/fetch` | Jasper XLS proxy (`aa-report.bdms.co.th` only — legacy path, superseded by the two routes below for Home Med / Journey) |
-| `POST` | `/api/report/home-med-api` | Discharge meds → Home Medication Sheet: `{ patient, meds[], allMeds, allergies, appointmentText, reconcileMeds, hasReconcile }` |
+| `POST` | `/api/report/home-med-api` | **IPD** discharge meds (`getallorderitem`) → Home Medication Sheet: `{ patient, meds[], allMeds, allergies, appointmentText, reconcileMeds, hasReconcile }` |
+| `POST` | `/api/report/home-med-opd` | **OPD** order (`pharmacy/dispense/search` by `orderid`) → Home Medication Sheet, same shape. Adapts `dispense[].patientorderitems` into the IPD `orderitems` shape and reuses `_normalize_orderitems`; no reconcile/appointments. |
 | `POST` | `/api/report/med-journey` | All orders grouped by drug into a continuity timeline: `{ patient, rows[], dates, allergies, hasReconcile, hasVisitHistory }` |
 | `POST` | `/api/report/reconcile-api` | Standalone Medication Reconciliation refresh (Home Med Sheet's ↻ button) — `{ ok, reconcileMeds, hasReconcile }` |
 

@@ -27,9 +27,25 @@
     return false;
   }
 
-  /** Gate by page DOM, not URL; ArcusAir hash routing can change during SPA navigation. */
+  /** True on the OPD (outpatient) dispense workbench. The IPD discharge sheet is
+   *  gated by the "DISCHARGE MEDICATION" cell; OPD has no such cell — it's the
+   *  outpatient pharmacy worklist/dispense. Gate by URL (the dispense workbench)
+   *  so the OPD Home Med Sheet button appears there too. */
+  function isOpdDispenseWorkbench() {
+    return /pharmacy\/dispenseworkbench\/pharmacy\/dispense/i.test(location.href)
+        && !hasDischargeMedicationCell();
+  }
+
+  /** Which sheet mode the current page calls for: "ipd" (discharge) | "opd" | null. */
+  function sheetMode() {
+    if (hasDischargeMedicationCell()) return "ipd";
+    if (isOpdDispenseWorkbench()) return "opd";
+    return null;
+  }
+
+  /** Gate by page DOM/URL, not hash alone; ArcusAir SPA routing changes during nav. */
   function shouldShow() {
-    return hasDischargeMedicationCell();
+    return sheetMode() !== null;
   }
 
   /* ─────────────────────────────────────────────
@@ -169,6 +185,11 @@
         const hdrs = (pageCtx._raw && pageCtx._raw.arcusHdrs) || {};
         if (hdrs["incus-token"]) ctx.incusToken = hdrs["incus-token"];
 
+        // OPD orderid captured from the outpatient dispense workbench's
+        // pharmacy/dispense/search request — the OPD Home Med Sheet fetches by it.
+        const opd = (pageCtx._raw && pageCtx._raw.opd) || {};
+        if (opd.orderid) ctx.orderid = opd.orderid;
+
         // Reconciliation data for THIS visit. The server is the source of
         // truth — the HM Process workstation's "Med Reconcile" step (▶ Run,
         // src/features/hmr/content-hmr.js) persists the captured
@@ -233,16 +254,20 @@
     // to give the workbench a chance to issue a tapped XHR.
     ensureXhrTap();
 
-    // We need patientvisituid AND the session UIDs (loginuid/roleuid/org) for
-    // Jasper to authenticate the report. The tap captures them from requests
-    // fired after install, so retry briefly to let them arrive.
+    const mode = sheetMode() || "ipd";
+
+    // Readiness differs by mode:
+    //   IPD (discharge): needs patientuid + patientvisituid (+ session uids for Jasper).
+    //   OPD: needs the captured orderid (+ incus-token); patientvisituid isn't required.
     const _hasPatient = (c) => c && c.patientuid && c.patientvisituid;
     const _hasAuth    = (c) => c && c.loginuid;
+    const _hasOpd     = (c) => c && c.orderid;
+    const _ready = (c) => (mode === "opd") ? _hasOpd(c) : (_hasPatient(c) && _hasAuth(c));
     let context = null;
     try {
       for (let attempt = 0; attempt < 8; attempt++) {
         context = await extractContext();
-        if (_hasPatient(context) && _hasAuth(context)) break;
+        if (_ready(context)) break;
         await new Promise((r) => setTimeout(r, 400));
       }
     } catch (e) {
@@ -252,7 +277,16 @@
       return;
     }
 
-    if (!_hasPatient(context)) {
+    if (mode === "opd") {
+      context = context || {};
+      context.mode = "opd";
+      if (!_hasOpd(context)) {
+        _sending = false;
+        alert("ไม่พบ orderid ของใบสั่งยา OPD\n\nกรุณาคลิกเลือกใบสั่งยาในรายการ (worklist) ก่อน แล้วกดปุ่มซ้ำ");
+        return;
+      }
+      // Fall through to diagnosis/mirror/route below.
+    } else if (!_hasPatient(context)) {
       _sending = false;
       alert("ไม่พบ patientvisituid ของผู้ป่วย\n\nกรุณาคลิกเลือกผู้ป่วยในรายการ (worklist) หรือสลับแท็บ DISPENSING ใหม่อีกครั้ง แล้วกดปุ่มซ้ำ");
       return;

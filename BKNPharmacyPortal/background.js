@@ -296,6 +296,7 @@ function _arcusExtractAngularCtx() {
       out._raw.arcusHdrs = window.__arcus_hdrs__ ? Object.assign({}, window.__arcus_hdrs__) : {};
       out._raw.medreconMap   = window.__arcus_medrecon__   || {};
       out._raw.medhistoryMap = window.__arcus_medhistory__ || {};
+      out._raw.opd           = window.__arcus_opd__        || {};   // { orderid }
     } catch (_) {}
 
     if (pc && (pc.patientuid || pc.patientvisituid)) out.patientCtx = pc;

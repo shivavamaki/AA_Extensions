@@ -4,15 +4,23 @@ Printable A4 **เอกสารแนะนำการใช้ยากล�
 
 ## Where it runs
 
-- **`content-home-med.js`** injects a 🏠💊 button into the ArcusAir dispense-workbench tool group when the page contains a **"DISCHARGE MEDICATION"** cell (`hasDischargeMedicationCell()`).
-- On click: extracts patient/visit context (reusing the ADR Timeline / `MedicationJourney` extractor), mirrors it to `BKNData`, and opens **`page-home-med.html`** via the `LOAD_MED_TABLE` message (payload stashed in `chrome.storage.session` as `payload_sheet`).
+- **`content-home-med.js`** injects a 🏠💊 button into the ArcusAir dispense-workbench tool group. Two modes (`sheetMode()`):
+  - **IPD (discharge)** — page has a **"DISCHARGE MEDICATION"** cell (`hasDischargeMedicationCell()`).
+  - **OPD (outpatient)** — the outpatient dispense workbench URL (`pharmacy/dispenseworkbench/pharmacy/dispense`), no discharge cell (`isOpdDispenseWorkbench()`).
+- On click: extracts patient/visit context (reusing the ADR Timeline / `MedicationJourney` extractor), mirrors it to `BKNData`, and opens **`page-home-med.html`** via the `LOAD_MED_TABLE` message (payload stashed in `chrome.storage.session` as `payload_sheet`). OPD sets `context.mode="opd"` and carries the captured `orderid`.
 
 ## Data flow
 
-1. Page receives `{ context }` (patientuid, patientvisituid, incusToken, …).
-2. Calls **`POST /api/report/home-med-api`** → server hits ArcusAir `getallorderitem` (DISCHARGE MEDICATION type), returns `{ patient, meds, allMeds, allergies, appointmentText }`.
+1. Page receives `{ context }` (IPD: patientuid + patientvisituid + incusToken; **OPD: `orderid` + incusToken + `mode:"opd"`**).
+2. Endpoint by mode (`fetchAndRender` picks it):
+   - IPD → **`POST /api/report/home-med-api`** → ArcusAir `getallorderitem` (DISCHARGE MEDICATION).
+   - OPD → **`POST /api/report/home-med-opd`** → ArcusAir **`pharmacy/dispense/search`** by `orderid` (`fetch_arcus_opd_meds`). The response's `dispense[].patientorderitems` are adapted into the IPD `orderitems` shape (`_opd_search_to_orderitems`) and fed through the **same** `_normalize_orderitems` / `_map_orderitem` pipeline, so parse / note-line / frequencyTh / images / translation / render are identical. OPD carries no discharge reconciliation or appointments (both returned empty).
+   - Both return `{ patient, meds, allMeds, allergies, appointmentText, reconcileMeds }`.
 3. Drug photos: **`GET /api/medication-db`** (name/code index) + **`GET /med-image/{code}`** (extension-agnostic).
 4. Renders an editable A4 table plus a follow-up appointment line. User edits persist per-visit via `BKNData.saveMedCache`.
+
+### OPD `orderid` capture
+The OPD orderid is captured passively by the MAIN-world XHR tap (`arcus-xhr-tap.js`) from the outpatient workbench's own `pharmacy/dispense/search` request body (`{orderid}`), stored on `window.__arcus_opd__.orderid`, surfaced via `background.js`'s extractor as `_raw.opd.orderid`, and read into `ctx.orderid` in `content-home-med.js`'s `extractContext`.
 
 > The file-header comment mentioning a Jasper XLS flow is **stale** — the sheet now fetches from the ArcusAir API via the server.
 >

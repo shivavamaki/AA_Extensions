@@ -225,6 +225,7 @@
     }
     /* ── Collapsible BKN tool group ──────────────────────────────────── */
     .bkn-tool-group {
+      position: relative !important;   /* anchor for the top-down flyout */
       display: inline-flex !important;
       align-items: center !important;
       vertical-align: middle !important;
@@ -253,29 +254,44 @@
       transition: background .15s, transform .15s !important;
     }
     .bkn-tool-group .bkn-tool-trigger:hover { background: #bbdefb !important; }
+    /* Vertical (top-down) flyout: the trigger stays in the toolbar; the buttons
+       reveal in a column DROPPING DOWN from it, floating over the page rather
+       than pushing siblings sideways. */
     .bkn-tool-group .bkn-tool-flyout {
-      display: inline-flex !important;
+      position: absolute !important;
+      top: 100% !important;
+      left: 50% !important;
+      transform: translateX(-50%) translateY(-6px) !important;
+      display: flex !important;
+      flex-direction: column !important;
       align-items: center !important;
-      max-width: 0 !important;
+      gap: 6px !important;
+      padding: 6px !important;
+      margin-top: 4px !important;
+      background: #ffffff !important;
+      border-radius: 12px !important;
+      box-shadow: 0 6px 18px rgba(15,23,42,.22) !important;
+      max-height: 0 !important;
       overflow: hidden !important;
       opacity: 0 !important;
-      margin-left: 0 !important;
-      transition: max-width .25s ease, opacity .18s ease, margin-left .25s ease !important;
+      pointer-events: none !important;
+      z-index: 2147483000 !important;
+      transition: max-height .22s ease, opacity .16s ease, transform .22s ease !important;
     }
     .bkn-tool-group:hover,
     .bkn-tool-group:focus-within {
       background: #ffffff !important;
       box-shadow: 0 2px 10px rgba(15,23,42,.18) !important;
-      padding: 2px 8px 2px 4px !important;
     }
     .bkn-tool-group:hover .bkn-tool-flyout,
     .bkn-tool-group:focus-within .bkn-tool-flyout {
-      max-width: 320px !important;
+      max-height: 480px !important;
       opacity: 1 !important;
-      margin-left: 4px !important;
+      transform: translateX(-50%) translateY(0) !important;
+      pointer-events: auto !important;
     }
-    .bkn-tool-group .bkn-tool-flyout > * { margin-left: 4px !important; }
-    .bkn-tool-group .bkn-tool-flyout > *:first-child { margin-left: 0 !important; }
+    /* Column layout: vertical spacing via gap, so reset the old horizontal margins. */
+    .bkn-tool-group .bkn-tool-flyout > * { margin-left: 0 !important; display: flex !important; }
   `;
 
   const STICKER_BTN_SEL =

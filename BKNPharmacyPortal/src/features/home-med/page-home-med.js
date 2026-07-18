@@ -1062,8 +1062,11 @@ function _setStatus(text) {
 
 async function fetchAndRender() {
   const tbody = document.querySelector("#medTable tbody");
-  if (!_context || !_context.patientvisituid) {
-    if (tbody) { tbody.innerHTML = ""; _appendNoData(tbody, "No patient context. Open from the Discharge Medication dispense view."); }
+  const _isOpd = _context && _context.mode === "opd";
+  // IPD needs patientvisituid; OPD needs a captured orderid.
+  const _hasCtx = _context && (_isOpd ? _context.orderid : _context.patientvisituid);
+  if (!_hasCtx) {
+    if (tbody) { tbody.innerHTML = ""; _appendNoData(tbody, "No patient context. Open from the Discharge (IPD) or OPD dispense view."); }
     return;
   }
   if (!window.BKNData || !window.BKNData.serverFetch) {
@@ -1079,10 +1082,11 @@ async function fetchAndRender() {
   _setStatus("⏳ กำลังดึงรายการยากลับบ้าน...");
   await Promise.all([_loadMedicationDatabase(), _loadPatternOverrides()]);
 
-  // Fetch discharge meds + allergies from the ArcusAir getallorderitem API.
+  // Fetch meds from ArcusAir: IPD → getallorderitem; OPD → pharmacy/dispense/search.
+  const _endpoint = _isOpd ? "/api/report/home-med-opd" : "/api/report/home-med-api";
   let resp = null;
   try {
-    resp = await window.BKNData.serverFetch("/api/report/home-med-api", {
+    resp = await window.BKNData.serverFetch(_endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ context: _context }),

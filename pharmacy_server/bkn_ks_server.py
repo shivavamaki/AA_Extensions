@@ -56,6 +56,7 @@ API:
 
   POST   /api/report/fetch                  — Jasper XLS proxy (aa-report.bdms.co.th only)
   POST   /api/report/home-med-api           — discharge meds → Home Medication Sheet (+ reconcileMeds)
+  POST   /api/report/home-med-opd           — OPD order (pharmacy/dispense/search by orderid) → Home Medication Sheet
   POST   /api/report/med-journey            — all orders → continuity timeline
   POST   /api/report/reconcile-api          — standalone Medication Reconciliation refresh
 
@@ -469,6 +470,59 @@ def fetch_arcus_discharge_meds(ctx):
         'ordertypeuid': ARCUS_DISCHARGE_ORDERTYPE_UID,
         'filtersearch': True, 'isactive': True, 'sortorder': '-orderdate',
     })
+
+
+# ── OPD (outpatient) Home Med Sheet — pharmacy/dispense/search ──────────────
+# The OPD dispense workbench fetches one order by orderid. Its response is
+# {dispense:[{_id, patientorderitems:[…], patientuid, ordernumber, orderdate, …}]}
+# — each patientorderitems object has the SAME shape as the discharge
+# getallorderitem's, so we adapt it into the IPD wrapper shape and reuse the whole
+# _normalize_orderitems / _map_orderitem pipeline (parse, note-line, frequencyTh,
+# images, translation, render). orderid is client-captured (arcus-xhr-tap.js).
+ARCUS_DISPENSE_SEARCH_URL = ARCUS_BASE + '/pharmacy/dispense/search'
+
+def fetch_arcus_opd_meds(ctx):
+    """POST to ArcusAir pharmacy/dispense/search for one OPD order. Needs
+    ctx.orderid (client-captured). Returns JSON or None if no orderid."""
+    oid = ctx.get('orderid')
+    if not oid:
+        return None
+    return _arcus_post_json(ARCUS_DISPENSE_SEARCH_URL, ctx, {
+        'orderid': oid,
+        'includerefillorders': True,
+        'broughtfromoutside': None,
+        'statusuid': None,
+    })
+
+def _opd_search_to_orderitems(data):
+    """Adapt a dispense/search response into the getallorderitem `orderitems`
+    shape (a flat list of item wrappers), so _normalize_orderitems can consume it
+    unchanged. Each OPD patientorderitems entry becomes one wrapper carrying the
+    dispense-level patientuid / ordernumber / orderdate. OPD has no per-item
+    ordertypeuid (it isn't a discharge-phase order), which is fine — the home-med
+    sheet doesn't use phase; it just filters medicines and drops cancelled."""
+    out = []
+    for disp in (data or {}).get('dispense') or []:
+        patientuid = disp.get('patientuid')
+        ordernumber = disp.get('ordernumber')
+        orderdate = disp.get('orderdate')
+        for poi in disp.get('patientorderitems') or []:
+            out.append({
+                'patientorderitems': poi,
+                'patientuid': patientuid,
+                'ordernumber': ordernumber,
+                'orderdate': orderdate,
+                # OPD take-home meds — tag as the 'home' phase for consistency
+                # with the discharge sheet's expectations.
+                'ordertypeuid': {'valuedescription': 'Outpatient', 'valuecode': 'OPD'},
+                'ordercattype': poi.get('ordercattype') or '',
+            })
+    return {'orderitems': out}
+
+def build_home_med_from_opd(data):
+    """OPD dispense/search JSON → the same {patient, meds, allMeds} the discharge
+    sheet produces, via the shared normaliser."""
+    return build_home_med_from_arcus(_opd_search_to_orderitems(data))
 
 
 ARCUS_MEDRECON_URL = ARCUS_BASE + '/ordermanagement/medreconcile/getdetail'
@@ -2405,6 +2459,10 @@ class Handler(BaseHTTPRequestHandler):
         if parts == ['api', 'report', 'home-med-api']:
             return 'report-home-med-api', None, None
 
+        # /api/report/home-med-opd — OPD version: pharmacy/dispense/search by orderid
+        if parts == ['api', 'report', 'home-med-opd']:
+            return 'report-home-med-opd', None, None
+
         # /api/report/med-journey — all orders grouped into a continuity timeline
         if parts == ['api', 'report', 'med-journey']:
             return 'report-med-journey', None, None
@@ -3173,6 +3231,42 @@ class Handler(BaseHTTPRequestHandler):
             result['hasReconcile'] = bool(result['reconcileMeds'])
             result['ok'] = True
             result['source'] = 'arcus-api'
+            self.send_json(200, result)
+            return
+
+        # ── OPD Home Medication Sheet: one order via pharmacy/dispense/search ──
+        if rtype == 'report-home-med-opd':
+            ctx = body.get('context') or {}
+            if not ctx.get('orderid'):
+                self.send_json(400, {'error': 'orderid required — select the OPD order on ArcusAir first'}); return
+            if not ctx.get('incusToken'):
+                self.send_json(400, {'error': 'incusToken missing — open the patient on ArcusAir first'}); return
+            try:
+                data = fetch_arcus_opd_meds(ctx)
+            except urllib.error.HTTPError as e:
+                self.send_json(502, {'error': f'ArcusAir HTTP {e.code} — token may be expired'}); return
+            except Exception as e:
+                self.send_json(500, {'error': f'ArcusAir fetch error: {e}'}); return
+            try:
+                result = build_home_med_from_opd(data)
+            except Exception as e:
+                self.send_json(500, {'error': f'Parse error: {e}'}); return
+            _log_home_med_fetch(ctx, data, result)
+            # Allergies — best-effort. OPD has no patientvisituid; fetch only when
+            # the client supplied one (some OPD flows do), else skip cleanly.
+            if ctx.get('patientuid') and ctx.get('patientvisituid'):
+                try:
+                    result['allergies'] = build_allergies_from_arcus(fetch_arcus_allergies(ctx))
+                except Exception as e:
+                    result['allergies'] = {'nkda': False, 'items': [], 'hasRecord': False, 'error': str(e)}
+            else:
+                result['allergies'] = {'nkda': False, 'items': [], 'hasRecord': False}
+            # OPD sheets carry no discharge appointments / reconciliation.
+            result['appointmentText'] = ''
+            result['reconcileMeds'] = []
+            result['hasReconcile'] = False
+            result['ok'] = True
+            result['source'] = 'arcus-opd'
             self.send_json(200, result)
             return
 
