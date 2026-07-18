@@ -2,14 +2,25 @@
 
 A standalone admin page (🧩 **Pattern Editor**, opened from the popup via
 `btnPatternEditor` → `chrome.tabs.create` to `page-pattern-editor.html`) for
-curating English→Thai phrase overrides used by the [`home-med`](../home-med/README.md)
-sheet's offline translation engine, without a code deploy.
+curating the offline translation data used by the [`home-med`](../home-med/README.md)
+sheet — **no code deploy, no external API**. Two tabs:
+
+1. **Phrase Overrides** — English→Thai phrase translations (exact / verb-prefix /
+   substring-replace; see *Scope* below).
+2. **Drug Instructions** — CRUD on a drug's **Patient Instruction** in
+   `medication-db.json` (the note-line source): search by name/code, edit the
+   TH/EN instruction, save (curated) or remove.
 
 ## Data flow
 
-- `GET /api/pattern-overrides` loads the current dict (`{ phrase: { th, en, ... } }`,
-  keyed by lowercased/trimmed English phrase); `PUT /api/pattern-overrides`
-  replaces the whole dict.
+- **Phrase overrides:** `GET /api/pattern-overrides` loads the dict
+  (`{ phrase: { th, en?, mode? } }`, keyed by lowercased/trimmed English phrase);
+  `PUT /api/pattern-overrides` replaces the whole dict.
+- **Drug instructions:** `GET /api/medication-db` (whole DB, keyed by item code)
+  to search; `PUT /api/rx-note/{code}` `{th, en?, manual:true}` sets a curated
+  Patient Instruction (reuses `save_rx_note`, `auto=False` so auto-translation
+  won't overwrite it); `DELETE /api/rx-note/{code}` removes it (`delete_rx_note`).
+  All writes are trusted-extension (no login) — same model as the other rx routes.
 - Persisted server-side to `pharmacy_server/data/rx/pattern-overrides.json`
   via the same generic rx-collection REST routes `medication-db`/`premix-drugs`
   use (no auth required to read; write requires the same rx-collection rules
@@ -63,8 +74,8 @@ Each override row has a **Mode**:
 
 | File | Role |
 |---|---|
-| `page-pattern-editor.html` | Simple table UI: phrase, Thai translation, add/remove |
-| `page-pattern-editor.js` | Fetch/save via `/api/pattern-overrides` |
+| `page-pattern-editor.html` | Tabbed UI: Phrase Overrides table + Drug Instructions search/editor |
+| `page-pattern-editor.js` | Phrase CRUD via `/api/pattern-overrides`; drug-instruction CRUD via `/api/medication-db` + `/api/rx-note/{code}` |
 
 See [`../home-med/README.md`](../home-med/README.md#pattern-overrides-editable-no-code-deploy)
 for how the sheet consumes overrides.

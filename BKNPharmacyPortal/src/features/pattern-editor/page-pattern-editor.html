@@ -25,30 +25,68 @@
   #status.ok { color: #15803d; }
   #status.error { color: #b91c1c; }
   .help { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px; font-size: 12.5px; color: #92400e; margin-bottom: 14px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 2px solid var(--bd); }
+  .tab { padding: 8px 16px; border: none; border-bottom: 2px solid transparent; background: none; margin-bottom: -2px; font-size: 14px; font-weight: 600; color: #6b7280; cursor: pointer; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  textarea { width: 100%; border: 1px solid var(--bd); border-radius: 4px; padding: 6px; font-size: 13px; font-family: inherit; resize: vertical; }
+  .drug-card { background: #fff; border: 1px solid var(--bd); border-radius: 8px; padding: 14px; margin-top: 12px; }
+  .drug-hd { font-weight: 700; font-size: 15px; }
+  .drug-code { color: #6b7280; font-size: 12px; margin-left: 6px; font-weight: 400; }
+  .fld { margin-top: 10px; }
+  .fld label { display: block; font-size: 12px; color: #374151; margin-bottom: 3px; }
+  .drug-results { max-height: 260px; overflow-y: auto; border: 1px solid var(--bd); border-radius: 8px; margin-top: 8px; background: #fff; }
+  .drug-row { padding: 7px 10px; border-bottom: 1px solid #f1f3f6; cursor: pointer; font-size: 13px; }
+  .drug-row:last-child { border-bottom: none; }
+  .drug-row:hover { background: #eff6ff; }
+  .drug-row .rc { color: #6b7280; font-size: 11px; }
+  .drug-row .ri { color: #15803d; font-size: 11px; margin-left: 6px; }
 </style>
 </head>
 <body>
-  <h1>🧩 Pattern Matching — Curated Phrase Overrides</h1>
-  <p class="sub">Add or fix verbatim instruction phrases used by the Home Medication Sheet's offline translator. Matched <strong>exactly</strong> (after lowercasing/trimming) — for sentence-shape patterns (qty/frequency/timing), edit the regex in <code>medical-glossary.js</code> instead.</p>
-  <div class="help">
-    Each row is one English phrase (e.g. <em>"shake well before use"</em>) with its Thai translation. These overrides take priority over the built-in phrase list and apply immediately — no extension reload needed, just refresh the Home Med Sheet tab.
+  <h1>🧩 Pattern Editor — Offline Translation & Drug Instructions</h1>
+  <p class="sub">The Home Medication Sheet translator is <strong>fully offline</strong> (no Google / external API). Curate phrase translations and drug instructions here — changes apply on the sheet's next load.</p>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="phrases">Phrase Overrides</button>
+    <button class="tab" data-tab="drugs">Drug Instructions</button>
   </div>
 
-  <div class="toolbar">
-    <input type="text" id="search" placeholder="Filter phrases…" style="flex:1; max-width:320px;">
-    <button id="btnAdd">+ Add phrase</button>
-    <button class="primary" id="btnSave">💾 Save all</button>
-    <button id="btnReload">↻ Reload</button>
+  <!-- ── Phrase Overrides ─────────────────────────────────────── -->
+  <div class="panel active" id="panel-phrases">
+    <div class="help">
+      Each row is an English phrase with its Thai translation. <strong>Mode</strong>: <em>Exact/verb</em> matches a whole instruction line (or a topical <code>apply…</code> verb prefix); <em>Replace</em> substitutes the phrase anywhere in the line (e.g. <em>"before breakfast" → "ก่อนอาหารเช้า"</em>). For qty/frequency shapes, edit the regex in <code>medical-glossary.js</code> instead.
+    </div>
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="Filter phrases…" style="flex:1; max-width:320px;">
+      <button id="btnAdd">+ Add phrase</button>
+      <button class="primary" id="btnSave">💾 Save all</button>
+      <button id="btnReload">↻ Reload</button>
+    </div>
+    <table>
+      <thead>
+        <tr><th style="width:38%">English phrase (key)</th><th style="width:38%">Thai translation</th><th style="width:12%">Mode</th><th style="width:1%"></th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div id="status"></div>
   </div>
 
-  <table>
-    <thead>
-      <tr><th style="width:38%">English phrase (key)</th><th style="width:38%">Thai translation</th><th style="width:12%">Mode</th><th style="width:1%"></th></tr>
-    </thead>
-    <tbody id="rows"></tbody>
-  </table>
-
-  <div id="status"></div>
+  <!-- ── Drug Instructions (medication-db) ────────────────────── -->
+  <div class="panel" id="panel-drugs">
+    <div class="help">
+      Search a drug by <strong>name or item code</strong>, then set its <strong>Patient Instruction</strong> — the Thai note shown under the "How to take" cell on the Home Medication Sheet. Saved as a <em>curated</em> instruction (won't be overwritten by auto-translation).
+    </div>
+    <div class="toolbar">
+      <input type="text" id="drug-search" placeholder="Search drug name or code…" style="flex:1; max-width:360px;">
+      <button id="drug-reload">↻ Reload DB</button>
+      <span id="drug-count" style="color:#6b7280;font-size:12px;"></span>
+    </div>
+    <div class="drug-results" id="drug-results"></div>
+    <div id="drug-editor"></div>
+    <div id="drug-status"></div>
+  </div>
 
   <script src="page-pattern-editor.js"></script>
 </body>

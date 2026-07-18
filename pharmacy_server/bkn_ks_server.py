@@ -29,6 +29,8 @@ API:
   GET    /api/iv-staff                      — pharmacy staff list (array)
   PUT    /api/iv-staff                      — replace pharmacy staff list
   GET    /api/medication-db                 — BKN medication DB keyed by item code
+  PUT    /api/rx-note/{code}                 — set a drug's Patient Instruction (body {th, en?, manual?})
+  DELETE /api/rx-note/{code}                 — remove a drug's Patient Instruction(s)
 
   GET    /api/patients/{puid}                                — full patient profile
   PUT    /api/patients/{puid}                                — replace patient profile
@@ -359,6 +361,28 @@ def save_rx_note(code, th, en='', auto=True):
         db[code] = entry
         save_rx('medication-db', db)
         _extralabel_idx = None             # force rebuild on next read
+    return True
+
+
+def delete_rx_note(code):
+    """Remove ALL 'Patient Instruction' entries for `code` from medication-db.json
+    (the note-line source used by the Home Med Sheet). Returns True if the code
+    exists. Leaves other instruction types untouched."""
+    global _extralabel_idx
+    code = _hm_norm(code)
+    with _rx_note_lock:
+        db = load_rx('medication-db')
+        if not isinstance(db, dict) or code not in db:
+            return False
+        entry = db[code]
+        inss = entry.get('instructions')
+        inss = [i for i in (inss if isinstance(inss, list) else [])
+                if (i.get('type') or '') != 'Patient Instruction']
+        entry['instructions'] = inss
+        entry['instructionCount'] = len(inss)
+        db[code] = entry
+        save_rx('medication-db', db)
+        _extralabel_idx = None
     return True
 
 
@@ -3250,11 +3274,21 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, {'ok': True}); return
 
         # Same trust model as the KPI writes: the extension (chrome-extension
-        # origin) may remove a med-error record without logging in; anyone else
-        # needs editor/admin/super_admin.
-        ext_data_write = self._is_trusted_extension() and rtype == 'kpi-med-error-item'
+        # origin) may remove a med-error record or a drug's Patient Instruction
+        # without logging in; anyone else needs editor/admin/super_admin.
+        ext_data_write = self._is_trusted_extension() and rtype in ('kpi-med-error-item', 'rx-note')
         if not ext_data_write:
             if not self._require('super_admin', 'admin', 'editor'): return
+
+        # DELETE /api/rx-note/:code — remove a drug's Patient Instruction(s).
+        if rtype == 'rx-note':
+            if not key:
+                self.send_json(400, {'error': 'code required in URL'}); return
+            ok = delete_rx_note(key)
+            self.send_json(200 if ok else 404,
+                           {'ok': ok} if ok else {'error': 'Unknown item code'})
+            return
+
         if rtype != 'kpi-med-error-item':
             self.send_json(404, {'error': 'Not found'}); return
 
