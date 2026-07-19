@@ -1274,7 +1274,11 @@ function _histFmtDate(iso) {
 function _histRow(m, colorIdx, visitCount, currentCodes, isCurrent) {
   const k = _histDrugKey(m);
   const c = _histColor(k, colorIdx[k] || 0);
-  const repeats = visitCount[k] || 0;
+  const repeats = visitCount[k] || 0;   // # of history visits containing this drug
+  // "RM" (reconcile-match): a CURRENT-order drug that also appears in the visit
+  // history → shown as a blue tag in front of the drug name.
+  const rmTag = (isCurrent && repeats >= 1)
+    ? `<span class="hist-rm" title="พบในประวัติการใช้ยา (Reconcile match)">RM</span>` : "";
   const badge = repeats >= 2
     ? `<span class="hist-repeat" title="พบใน ${repeats} ครั้ง">×${repeats}</span>` : "";
   const nowTag = (!isCurrent && m.code && currentCodes.has(norm(m.code)))
@@ -1283,7 +1287,7 @@ function _histRow(m, colorIdx, visitCount, currentCodes, isCurrent) {
   return `<div class="hist-med" data-drugkey="${escapeHtml(k)}"`
     + ` style="--hc-bar:${c.bar};--hc-dot:${c.dot};--hc-soft:${c.soft};--hc-edge:${c.edge};">`
     + `<span class="hist-dot"></span>`
-    + `<span class="hist-body"><span class="hist-drug">${escapeHtml(m.drug || "")}</span>`
+    + `<span class="hist-body">${rmTag}<span class="hist-drug">${escapeHtml(m.drug || "")}</span>`
     + `${badge}${nowTag}`
     + `${info ? `<span class="hist-info">${escapeHtml(info)}</span>` : ""}</span>`
     + `</div>`;
@@ -1350,10 +1354,13 @@ function _renderHistView() {
     return;
   }
   if (sub) {
+    const total = _histAllGroups.length;
     const repeats = Object.values(visitCount).filter((n) => n >= 2).length;
-    const more = _histAllGroups.length > _histN ? ` / ${_histAllGroups.length} ทั้งหมด` : "";
-    sub.textContent = `${shown.length} visit(s)${more} · newest first`
-      + (repeats ? ` · ${repeats} ยาซ้ำ (คลิกเพื่อไฮไลต์)` : "");
+    // Always show shown/total so it's obvious when N exceeds available visits
+    // (e.g. "แสดง 3 / 3 ครั้ง (มีทั้งหมด 3)") — otherwise raising N looks like a no-op.
+    const capped = _histN > total ? ` — มีประวัติ ${total} ครั้ง` : "";
+    sub.textContent = `แสดง ${shown.length} / ${total} ครั้ง${capped} · ใหม่→เก่า`
+      + (repeats ? ` · ${repeats} ยาซ้ำ` : "");
   }
 
   list.innerHTML = shown.map((g) => {
