@@ -26,7 +26,7 @@ Printable A4 **เอกสารแนะนำการใช้ยากล�
 4. Renders an editable A4 table plus a follow-up appointment line. User edits persist per-visit via `BKNData.saveMedCache`.
 
 ### OPD last-5-visits history panel
-The server-side `build_opd_visit_history(ctx, 5)` reuses `fetch_arcus_visit_history` (searchfromvisitcount, MEDICINE only) and groups the result **by visit** (not de-duped by drug) via `build_visit_history_groups` — newest first, current visit excluded, each `{ visitDate, visitId, meds:[{drug, code, info, freqTh}] }`. The client's `renderVisitHistory(data.visitHistory)` fills `#histList`.
+The **same** `getallorderitem` response the sheet already fetches carries every visit's orders (each `patientorders[]` entry has its own `patientvisituid`), so `build_opd_visit_history(data, currentVisitUid, 5)` groups **that** data **by visit** (not de-duped by drug) via `build_visit_history_groups` — newest first, the current visit excluded (matched on `patientvisituid._id`), each `{ visitDate, visitId, meds:[{drug, code, info, freqTh}] }`. No second ArcusAir call. The client's `renderVisitHistory(data.visitHistory)` fills `#histList`.
 
 > The file-header comment mentioning a Jasper XLS flow is **stale** — the sheet now fetches from the ArcusAir API via the server.
 >

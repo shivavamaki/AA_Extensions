@@ -503,19 +503,14 @@ def build_home_med_from_opd(data):
 
 # ── OPD medical history: the patient's last N OPD visits' meds ──────────────
 # The OPD sheet shows a "last 5 visits" medical-history panel (in place of the
-# discharge sheet's Med Reconciliation). We reuse the visit-history fetch the
-# Medication Journey already uses (searchfromvisitcount → build_prev_meds_from_visits).
-def build_opd_visit_history(ctx, visitcount=5):
-    """Best-effort: the patient's recent OPD/visit medications for the history
-    panel. Returns a list of {visitDate, meds:[…]} groups, newest first, or []."""
+# discharge sheet's Med Reconciliation). The primary getallorderitem response
+# already carries every visit's orders (grouped as patientorders[], each with its
+# own patientvisituid), so we group THAT — no second ArcusAir call needed.
+def build_opd_visit_history(data, current_visit_uid='', visitcount=5):
+    """Group the getallorderitem `data` by visit for the OPD history panel.
+    Returns a list of {visitDate, visitId, meds:[…]} groups, newest first, or []."""
     try:
-        vh = fetch_arcus_visit_history(ctx, visitcount)
-    except Exception:
-        return []
-    if not vh:
-        return []
-    try:
-        return build_visit_history_groups(vh, ctx.get('patientvisituid', ''), visitcount)
+        return build_visit_history_groups(data, current_visit_uid, visitcount)
     except Exception:
         return []
 
@@ -1160,17 +1155,26 @@ def build_prev_meds_from_visits(data, current_visit_uid=''):
 
 
 def build_visit_history_groups(data, current_visit_uid='', limit=5):
-    """Group searchfromvisitcount JSON BY VISIT (not de-duped by drug) for the
-    OPD sheet's medical-history panel: the last `limit` visits, newest first,
+    """Group getallorderitem `patientorders[]` BY VISIT (not de-duped by drug) for
+    the OPD sheet's medical-history panel: the last `limit` visits, newest first,
     each { visitDate, visitId, meds:[{drug, code, info, freqTh}] }. Only MEDICINE
-    items; the current visit is excluded so the panel is genuinely history."""
+    items; the current visit (matched on patientvisituid._id) is excluded so the
+    panel is genuinely history."""
     freq_idx = _load_freq_th_index()
     visits = {}   # vuid -> {visitDate, visitId, _when, meds:[]}
     for po in ((data or {}).get('patientorders') or []):
-        vuid = po.get('patientvisituid') or ''
+        # patientvisituid is a dict in getallorderitem ({_id, visitid, …}) but a
+        # plain string in some other endpoints — accept both.
+        pv = po.get('patientvisituid')
+        if isinstance(pv, dict):
+            vuid = pv.get('_id') or ''
+            vlabel = pv.get('visitid') or ''
+        else:
+            vuid = pv or ''
+            vlabel = ''
         if not vuid or (current_visit_uid and vuid == current_visit_uid):
             continue
-        vdate = (po.get('visitdate') or po.get('orderdate')
+        vdate = (po.get('orderdate') or po.get('visitdate')
                  or po.get('createdat') or '')
         for poi in (po.get('patientorderitems') or []):
             if (poi.get('ordercattype') or '').upper() != 'MEDICINE':
@@ -1196,7 +1200,7 @@ def build_visit_history_groups(data, current_visit_uid='', limit=5):
             if freq: parts.append(freq)
             info = ' '.join(parts).strip() or freq or '—'
             grp = visits.setdefault(vuid, {
-                'visitDate': vdate, 'visitId': vuid, '_when': vdate, 'meds': []})
+                'visitDate': vdate, 'visitId': vlabel or vuid, '_when': vdate, 'meds': []})
             grp['meds'].append({'drug': name, 'code': code, 'info': info, 'freqTh': freq_th})
     # Newest first, cap to `limit`; drop the recency key.
     out = sorted(visits.values(), key=lambda g: g.get('_when', ''), reverse=True)[:limit]
@@ -3298,8 +3302,9 @@ class Handler(BaseHTTPRequestHandler):
                 result['allergies'] = build_allergies_from_arcus(fetch_arcus_allergies(ctx))
             except Exception as e:
                 result['allergies'] = {'nkda': False, 'items': [], 'hasRecord': False, 'error': str(e)}
-            # OPD panel = last 5 visits' medical history (replaces reconciliation).
-            result['visitHistory'] = build_opd_visit_history(ctx, 5)
+            # OPD panel = last 5 visits' medical history (replaces reconciliation),
+            # grouped from the same getallorderitem response, excluding this visit.
+            result['visitHistory'] = build_opd_visit_history(data, ctx.get('patientvisituid', ''), 5)
             # OPD sheets carry no discharge appointments / reconciliation.
             result['appointmentText'] = ''
             result['reconcileMeds'] = []
