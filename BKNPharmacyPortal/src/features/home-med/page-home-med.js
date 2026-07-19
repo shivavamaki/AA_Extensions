@@ -1369,18 +1369,26 @@ function _renderHistView() {
   if (_histPinned) _histSetActive(_histPinned);   // keep a pin across N changes
 }
 
-/** Apply the highlight for `key`: matching rows get .hist-hot; non-matching rows
- * are HIDDEN, and any visit group left with no visible row collapses. */
+/** Apply the highlight for `key`. In the current-order box the matching row is
+ * highlighted but rows are NEVER hidden — today's list always stays fully
+ * visible. In the HISTORY list only, non-matching rows are hidden and any visit
+ * group left with no match collapses, so only the relevant past dates remain. */
 function _histSetActive(key) {
   const panel = document.getElementById("histPanel");
   if (!panel) return;
-  panel.querySelectorAll(".hist-med").forEach((el) => {
+  // Current order: highlight the match only; never hide/collapse.
+  panel.querySelectorAll("#histCurrent .hist-med").forEach((el) => {
+    el.classList.toggle("hist-hot", !!key && el.dataset.drugkey === key);
+    el.classList.remove("hist-hidden");
+  });
+  // History rows: highlight the match, hide the rest.
+  panel.querySelectorAll("#histList .hist-med").forEach((el) => {
     const match = el.dataset.drugkey === key;
     el.classList.toggle("hist-hot", !!key && match);
     el.classList.toggle("hist-hidden", !!key && !match);
   });
-  // Collapse visit groups (and the current-order box) that have no match.
-  panel.querySelectorAll(".hist-visit, #histCurrent").forEach((grp) => {
+  // Collapse history visit groups with no match (current-order box excluded).
+  panel.querySelectorAll("#histList .hist-visit").forEach((grp) => {
     if (!key) { grp.classList.remove("hist-collapsed"); return; }
     const hasMatch = grp.querySelector(`.hist-med[data-drugkey="${cssEscape(key)}"]`);
     grp.classList.toggle("hist-collapsed", !hasMatch);
