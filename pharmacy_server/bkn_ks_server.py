@@ -535,6 +535,38 @@ def build_opd_visit_history(ctx, current_visit_uid='', visitcount=5):
         return []
 
 
+def _cmp_key(s):
+    """Normalise a dosage/frequency token for comparison: lowercase, collapse
+    whitespace, strip punctuation-ish noise so '1 Tablet' == '1 tablet'."""
+    return re.sub(r'\s+', ' ', str(s or '').strip().lower())
+
+def tag_meds_continuity(meds, visit_history):
+    """For each current OPD sheet med, look for the SAME drug code anywhere in the
+    last-5-visits history and set med['continuity']:
+      'continued' → same code AND same dosage+frequency  → รับยาต่อเนื่อง
+      'adjusted'  → same code but dosage/frequency differ → ปรับขนาดยา
+      ''          → not seen before (no matching code in history)
+    The tag is a default the user can override/edit on the sheet."""
+    # code -> list of {dosage, freq} seen across history (newest visits first)
+    hist_by_code = {}
+    for grp in (visit_history or []):
+        for m in (grp.get('meds') or []):
+            c = _hm_norm(m.get('code') or '')
+            if not c:
+                continue
+            hist_by_code.setdefault(c, []).append(
+                (_cmp_key(m.get('dosage')), _cmp_key(m.get('freq'))))
+    for med in (meds or []):
+        c = _hm_norm(med.get('code') or '')
+        prior = hist_by_code.get(c)
+        if not prior:
+            med['continuity'] = ''
+            continue
+        cur = (_cmp_key(med.get('dosage')), _cmp_key(med.get('frequency')))
+        med['continuity'] = 'continued' if cur in prior else 'adjusted'
+    return meds
+
+
 ARCUS_MEDRECON_URL = ARCUS_BASE + '/ordermanagement/medreconcile/getdetail'
 
 ARCUS_APPT_URL = ARCUS_BASE + '/enterprise/appointmentschedule/getfuturebookingforpatient'
@@ -1221,7 +1253,11 @@ def build_visit_history_groups(data, current_visit_uid='', limit=5):
             info = ' '.join(parts).strip() or freq or '—'
             grp = visits.setdefault(vuid, {
                 'visitDate': vdate, 'visitId': vlabel or vuid, '_when': vdate, 'meds': []})
-            grp['meds'].append({'drug': name, 'code': code, 'info': info, 'freqTh': freq_th})
+            # dosage/freq kept alongside `info` so the sheet can compare a current
+            # med against history (same code + same dosage+freq → รับยาต่อเนื่อง;
+            # same code but different → ปรับขนาดยา).
+            grp['meds'].append({'drug': name, 'code': code, 'info': info, 'freqTh': freq_th,
+                                'dosage': str(dosage or ''), 'freq': freq})
     # Newest first, cap to `limit`; drop the recency key.
     out = sorted(visits.values(), key=lambda g: g.get('_when', ''), reverse=True)[:limit]
     for g in out:
@@ -3325,6 +3361,12 @@ class Handler(BaseHTTPRequestHandler):
             # OPD panel = last 5 visits' medical history (replaces reconciliation),
             # fetched from patientorder/search and grouped by visit (this visit excluded).
             result['visitHistory'] = build_opd_visit_history(ctx, ctx.get('patientvisituid', ''), 5)
+            # Tag each current med by continuity vs. the last-5-visits history
+            # (รับยาต่อเนื่อง / ปรับขนาดยา) — a default the pharmacist can override.
+            try:
+                tag_meds_continuity(result.get('meds'), result.get('visitHistory'))
+            except Exception:
+                pass
             # Future appointments — same source as the IPD sheet; best-effort.
             try:
                 result['appointmentText'] = format_appointments_th(fetch_arcus_future_appointments(ctx))

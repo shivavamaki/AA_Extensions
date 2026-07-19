@@ -26,7 +26,15 @@ Printable A4 **เอกสารแนะนำการใช้ยากล�
 4. Renders an editable A4 table plus a follow-up appointment line. User edits persist per-visit via `BKNData.saveMedCache`.
 
 ### OPD last-5-visits history panel
-`getallorderitem` is scoped to the **current** visit, so it can't supply history. Instead `build_opd_visit_history(ctx, currentVisitUid, 5)` fetches **`patientorder/search`** (`fetch_arcus_opd_history` — payload `{patientuid, ordercattype:["MEDICINE"], pagenumber:1, issummary:false}`, keyed by patientuid + incusToken only), the same call the OPD EMR page fires, which returns every visit's orders as `patientorders[]`. `build_visit_history_groups` groups them **by visit** (not de-duped by drug) — newest first, the current visit excluded (matched on `patientvisituid._id`), each `{ visitDate, visitId, meds:[{drug, code, info, freqTh}] }`. The client's `renderVisitHistory(data.visitHistory)` fills `#histList`.
+`getallorderitem` is scoped to the **current** visit, so it can't supply history. Instead `build_opd_visit_history(ctx, currentVisitUid, 5)` fetches **`patientorder/search`** (`fetch_arcus_opd_history` — payload `{patientuid, ordercattype:["MEDICINE"], pagenumber:1, issummary:false}`, keyed by patientuid + incusToken only), the same call the OPD EMR page fires, which returns every visit's orders as `patientorders[]`. `build_visit_history_groups` groups them **by visit** (not de-duped by drug) — newest first, the current visit excluded (matched on `patientvisituid._id`), each `{ visitDate, visitId, meds:[{drug, code, info, freqTh, dosage, freq}] }`. The client's `renderVisitHistory(data.visitHistory)` fills `#histList`.
+
+### OPD continuity tags (รับยาต่อเนื่อง / ปรับขนาดยา)
+`tag_meds_continuity(meds, visitHistory)` (server) sets `med.continuity` on each current sheet med by matching its **code** against the history:
+- **same code + same dosage & frequency** → `continued` → **รับยาต่อเนื่อง** (green)
+- **same code but dosage/frequency differ** → `adjusted` → **ปรับขนาดยา** (amber)
+- code not in history → `''` (no tag)
+
+The client (`_buildContinuityTag`, OPD sheet only) renders it as a bold pill under the drug code, seeded from `med.continuity` **once** then **editable** — the pharmacist can override the label, clear it, or add one to a med the auto-check left blank (a deliberately-cleared tag stays cleared across reloads via `continuitySeeded`). The label + override persist in the med cache.
 
 > The file-header comment mentioning a Jasper XLS flow is **stale** — the sheet now fetches from the ArcusAir API via the server.
 >

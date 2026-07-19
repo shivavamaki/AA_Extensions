@@ -491,6 +491,14 @@ function _takeContinueLabel() {
   return (_currentLang === "en") ? "Take until finished" : "ทานต่อเนื่องจนหมด";
 }
 
+/** Default Thai label for a med's continuity vs. last-5-visits history.
+ * "" when the drug wasn't seen before. User-overridable on the sheet. */
+function _continuityDefaultLabel(continuity) {
+  if (continuity === "continued") return "รับยาต่อเนื่อง";
+  if (continuity === "adjusted")  return "ปรับขนาดยา";
+  return "";
+}
+
 function _takeContinueMealNote() {
   return (_currentLang === "en")
     ? "🚨 Continued medications are shown in the top section for the patient to follow until the course is finished."
@@ -552,6 +560,10 @@ function _medFromReport(m) {
     // Authoritative Thai frequency phrase (BKN frequency master); when present
     // it overrides the engine's frequency translation on the instruction line.
     frequencyTh: norm(m.frequencyTh || ""),
+    // Continuity vs. last-5-visits history (OPD only): "continued" | "adjusted" | "".
+    // The server computes a default; the pharmacist can override the text below.
+    continuity: norm(m.continuity || ""),
+    continuityLabel: "",   // set on load from continuity; user-editable thereafter
     takeUntilFinished: false,
     continueStartDate: "",
     continueEndDate: "",
@@ -565,6 +577,27 @@ function _appendNoData(tbody, text) {
   const tr = document.createElement("tr");
   tr.innerHTML = `<td colspan="5" class="empty">${escapeHtml(text)}</td>`;
   tbody.appendChild(tr);
+}
+
+/** Continuity tag shown under the drug code (OPD sheet). Bold-highlighted,
+ * editable so the pharmacist can override the auto-computed default (or add one
+ * to a med the auto-check left blank). The `data-continuity` class drives the
+ * colour: green for รับยาต่อเนื่อง, amber for ปรับขนาดยา. */
+function _buildContinuityTag(med) {
+  // OPD sheet only — the IPD discharge sheet has no last-5-visits comparison.
+  if (!_IS_OPD_SHEET) return "";
+  // Seed the editable label from the server's continuity default ONCE; after that
+  // the pharmacist's edits (including clearing it) win.
+  if (!med.continuitySeeded) {
+    med.continuitySeeded = true;
+    if (!med.continuityLabel && med.continuity) {
+      med.continuityLabel = _continuityDefaultLabel(med.continuity);
+    }
+  }
+  const cls = med.continuity ? ` cont-${med.continuity}` : "";
+  return `<div class="med-continuity${cls}" contenteditable="true" data-field="continuityLabel"`
+       + ` data-ph="+ สถานะการรับยา" data-no-translate translate="no">`
+       + `${escapeHtml(med.continuityLabel || "")}</div>`;
 }
 
 /** Build one editable medicine row. `index` is the stable position in _meds
@@ -589,6 +622,7 @@ ${photo}
         <div class="med-text">
           <div class="med-name" contenteditable="true" data-field="drug" data-ph="ชื่อยา" data-no-translate translate="no">${escapeHtml(med.drug || "")}</div>${med.source === "pom" ? `<span class="pom-badge no-translate" data-no-translate translate="no" title="Patient's Own Medication — added from Medication Reconciliation">POM</span>` : ""}
           ${med.code ? `<div class="med-code">Code: ${escapeHtml(med.code)}</div>` : ""}
+          ${_buildContinuityTag(med)}
           ${med.takeUntilFinished ? `<div class="take-continue">${escapeHtml(_takeContinueLabel())}</div>` : ""}
         </div>
       </div>
@@ -1127,6 +1161,11 @@ async function fetchAndRender() {
       code: norm(m.code || ""), provider: norm(m.provider || ""),
       frequencyTh: norm(m.frequencyTh || ""),
       source: norm(m.source || ""),
+      // OPD continuity tag + the pharmacist's override; continuitySeeded true so a
+      // reload keeps a deliberately-cleared tag cleared (no re-seed from default).
+      continuity: norm(m.continuity || ""),
+      continuityLabel: norm(m.continuityLabel || ""),
+      continuitySeeded: true,
       takeUntilFinished: !!m.takeUntilFinished,
       continueStartDate: norm(m.continueStartDate || ""),
       continueEndDate: norm(m.continueEndDate || ""),

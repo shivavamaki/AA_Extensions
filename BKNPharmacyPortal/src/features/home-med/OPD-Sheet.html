@@ -579,6 +579,34 @@
       font-weight: 700;
       color: #065f46;
     }
+
+    /* Continuity tag under the code (OPD): auto-computed vs. last-5-visits,
+       pharmacist-overridable. Bold + coloured pill; green = รับยาต่อเนื่อง,
+       amber = ปรับขนาดยา; a blank one shows a faint "+ add status" prompt. */
+    .med-continuity {
+      margin-top: 3px;
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.3;
+      padding: 1px 6px;
+      border-radius: 999px;
+      color: #334155;
+      background: #eef2f7;
+      border: 1px solid #dbe2ea;
+    }
+    .med-continuity.cont-continued { color: #065f46; background: #e7f6ee; border-color: #b7e2c9; }
+    .med-continuity.cont-adjusted  { color: #92400e; background: #fdf3e3; border-color: #f4d9a8; }
+    .med-continuity:empty {
+      font-weight: 400;
+      color: #9ca3af;
+      background: transparent;
+      border: 1px dashed #d1d5db;
+    }
+    @media print {
+      /* Don't print the empty prompt or its dashed box — only real tags show. */
+      .med-continuity:empty { display: none; }
+    }
     .med-row.med-continue .med-name::before {
       content: "🚨 ";
       display: inline;
