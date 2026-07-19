@@ -196,6 +196,12 @@ An optional second page (`.mealcard-section` / `#mealcardGrid`) groups the disch
 
 `renderMealCard()` runs at the end of `renderMeds()` (so it tracks add/remove/edit) and delegates bucketing + markup to the shared **`window.BKNMealSlots`** engine (`../../shared/meal-slots.js`) — the same one the Medication Journey card uses. Matching runs on `instruction + frequencyTh`, so a meal time supplied only by the authoritative Thai frequency phrase still buckets. The `.mc-*` CSS lives in this page's `<style>` (2-column masonry for portrait); empty slots are dropped so the card stays compact.
 
+The card also holds the per-med **start/end date** inputs for meds marked 🚨 *take until finished* (`continueStartDate` / `continueEndDate`).
+
+## Missing-end-date guard on Print (both sheets)
+
+`bindToolbar()`'s Print **and** Save PDF buttons run `_confirmEndDatesBeforePrint()` first (`_medsMissingEndDate()` lists any 🚨 take-until-finished med with a blank `continueEndDate`). If any are missing it shows a `confirm()` naming the drugs — OK prints anyway, Cancel returns to pick the date. Shared by both the IPD Home Medication Sheet and the OPD Medication Sheet (both load `page-home-med.js`). Note it only guards the toolbar buttons, not the browser's own Ctrl+P.
+
 ## Files
 
 | File | Role |

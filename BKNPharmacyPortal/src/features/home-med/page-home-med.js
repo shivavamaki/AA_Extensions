@@ -1662,6 +1662,29 @@ function buildFileName(context) {
   return `HomeMedicationSheet_${hn ? String(hn).replace(/[^\w-]+/g, "_") : "UnknownHN"}`;
 }
 
+/** Meds marked "take until finished" (🚨) but missing an end date — the sheet
+ * shouldn't go out telling the patient to take a med "until finished" with no
+ * stop date. Returns the list of offending drug names (empty if all OK). */
+function _medsMissingEndDate() {
+  return _meds
+    .filter((m) => m.takeUntilFinished && !norm(m.continueEndDate || ""))
+    .map((m) => norm(m.drug || "") || "(ไม่มีชื่อ)");
+}
+
+/** Warn (and let the pharmacist decide) when a take-until-finished med has no end
+ * date, just before printing/PDF. Returns true to proceed, false to cancel. */
+function _confirmEndDatesBeforePrint() {
+  const missing = _medsMissingEndDate();
+  if (!missing.length) return true;
+  const list = missing.map((n) => `  • ${n}`).join("\n");
+  return window.confirm(
+    "⚠️ ยังไม่ได้เลือกวันสิ้นสุด (end date) สำหรับยาที่ทานต่อเนื่อง:\n\n" +
+    list +
+    "\n\nต้องการพิมพ์ต่อโดยไม่ระบุวันสิ้นสุดหรือไม่?\n" +
+    "(กด OK เพื่อพิมพ์ต่อ, Cancel เพื่อกลับไปเลือกวันที่)"
+  );
+}
+
 function bindToolbar() {
   const btnPrint = document.getElementById("btnPrint");
   const btnPdf = document.getElementById("btnPdf");
@@ -1670,13 +1693,19 @@ function bindToolbar() {
   // default save/print filename, so the HN ends up in the file name. The whole
   // header (logo/title, patient info, diagnosis/allergy) now lives inside
   // <thead> and repeats with the column-header row on every printed page.
-  if (btnPrint) btnPrint.onclick = () => { document.title = buildFileName(_context); applyPrintSettings(currentPrintSettingsFromControls()); window.print(); };
+  const doPrint = () => {
+    if (!_confirmEndDatesBeforePrint()) return;
+    document.title = buildFileName(_context);
+    applyPrintSettings(currentPrintSettingsFromControls());
+    window.print();
+  };
+  if (btnPrint) btnPrint.onclick = doPrint;
   if (btnRevert) btnRevert.onclick = () => {
     // Signal the next load to skip the saved cache and use fresh ArcusAir data.
     sessionStorage.setItem('hm:revert', '1');
     location.reload();
   };
-  if (btnPdf) btnPdf.onclick = () => { document.title = buildFileName(_context); applyPrintSettings(currentPrintSettingsFromControls()); window.print(); };
+  if (btnPdf) btnPdf.onclick = doPrint;
 }
 
 // Chrome has no CSS counter for total printed pages, so estimate it from the
