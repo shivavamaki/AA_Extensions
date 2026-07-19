@@ -689,6 +689,9 @@ async function renderMeds() {
   if (_currentLang) await _applyTranslate(_currentLang, _offlineOnly);
 
   renderMealCard();  // keep the by-meal card in sync with the med list
+
+  // OPD: keep the history panel's "current order" box in sync with med edits.
+  if (document.getElementById("histCurrent") && _histAllGroups.length) _renderHistView();
 }
 
 /* ─────────────────── Daily Pill Journey Card (by meal) ─────────────────── */
@@ -1257,90 +1260,152 @@ function _histColor(key, idx) {
   };
 }
 
+let _histAllGroups = [];       // full server data (up to OPD_HISTORY_MAX visits)
+let _histN         = 5;        // how many visits to show (user-selectable)
+let _histPinned    = "";       // currently pinned drug key ("" = none)
+
+function _histFmtDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ""));
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : (iso || "-");
+}
+
+/** One coloured med row (shared by the current-order box and the history list).
+ * `nowTag` marks a history row also on the current sheet. */
+function _histRow(m, colorIdx, visitCount, currentCodes, isCurrent) {
+  const k = _histDrugKey(m);
+  const c = _histColor(k, colorIdx[k] || 0);
+  const repeats = visitCount[k] || 0;
+  const badge = repeats >= 2
+    ? `<span class="hist-repeat" title="พบใน ${repeats} ครั้ง">×${repeats}</span>` : "";
+  const nowTag = (!isCurrent && m.code && currentCodes.has(norm(m.code)))
+    ? `<span class="hist-now" title="อยู่ในใบสั่งยาปัจจุบัน">ครั้งนี้</span>` : "";
+  const info = m.info || m.instruction || "";
+  return `<div class="hist-med" data-drugkey="${escapeHtml(k)}"`
+    + ` style="--hc-bar:${c.bar};--hc-dot:${c.dot};--hc-soft:${c.soft};--hc-edge:${c.edge};">`
+    + `<span class="hist-dot"></span>`
+    + `<span class="hist-body"><span class="hist-drug">${escapeHtml(m.drug || "")}</span>`
+    + `${badge}${nowTag}`
+    + `${info ? `<span class="hist-info">${escapeHtml(info)}</span>` : ""}</span>`
+    + `</div>`;
+}
+
+/** Entry point: stash the full server groups, then render the current view. */
 function renderVisitHistory(groups) {
+  _histAllGroups = Array.isArray(groups) ? groups : [];
+  const sel = document.getElementById("histCountSel");
+  if (sel) {
+    _histN = Number(sel.value) || 5;
+    if (!sel._bknBound) {
+      sel._bknBound = true;
+      sel.addEventListener("change", () => { _histN = Number(sel.value) || 5; _renderHistView(); });
+    }
+  }
+  _renderHistView();
+}
+
+/** Render the current-order box + the sliced history list, then wire interaction.
+ * Colours + repeat counts are computed over the DISPLAYED visits plus the current
+ * order, so the same drug shares a colour everywhere in the panel. */
+function _renderHistView() {
   const list = document.getElementById("histList");
-  const sub  = document.getElementById("histSub");
   if (!list) return;
-  const gs = Array.isArray(groups) ? groups : [];
-  if (!gs.length) {
+  const label = document.getElementById("histCountLabel");
+  const sub   = document.getElementById("histSub");
+  const curBox  = document.getElementById("histCurrent");
+  const curMeds = document.getElementById("histCurrentMeds");
+
+  const shown = _histAllGroups.slice(0, _histN);
+  if (label) label.textContent = String(_histN);
+
+  // Colour index + per-drug visit counts across the SHOWN history (current order
+  // seeded first so today's drugs always get a colour even if new).
+  const colorIdx = {};
+  const visitCount = {};
+  const currentCodes = new Set(_meds.map((m) => norm(m.code || "")).filter(Boolean));
+  _meds.forEach((m) => { const k = _histDrugKey(m); if (!(k in colorIdx)) colorIdx[k] = Object.keys(colorIdx).length; });
+  shown.forEach((g) => {
+    const seen = new Set();
+    (g.meds || []).forEach((m) => {
+      const k = _histDrugKey(m);
+      if (!(k in colorIdx)) colorIdx[k] = Object.keys(colorIdx).length;
+      if (!seen.has(k)) { seen.add(k); visitCount[k] = (visitCount[k] || 0) + 1; }
+    });
+  });
+
+  // Current-order box.
+  if (curBox && curMeds) {
+    if (_meds.length) {
+      curBox.style.display = "";
+      curMeds.innerHTML = _meds.map((m) => _histRow(m, colorIdx, visitCount, currentCodes, true)).join("");
+    } else {
+      curBox.style.display = "none";
+      curMeds.innerHTML = "";
+    }
+  }
+
+  // History list.
+  if (!shown.length) {
     if (sub) sub.textContent = "No prior visits found";
     list.innerHTML = `<div class="recon-empty"><span class="recon-empty-icon">🕑</span>ไม่พบประวัติการใช้ยาก่อนหน้า</div>`;
     return;
   }
-  const fmtDate = (iso) => {
-    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ""));
-    return m ? `${m[3]}/${m[2]}/${m[1]}` : (iso || "-");
-  };
-
-  // Pass 1: assign a stable colour index per distinct drug (first-seen order)
-  // and count how many visits each drug appears in (for the "×N" repeat badge).
-  const colorIdx = {};      // key -> palette index
-  const visitCount = {};    // key -> number of DISTINCT visits containing it
-  gs.forEach((g) => {
-    const seenThisVisit = new Set();
-    (g.meds || []).forEach((m) => {
-      const k = _histDrugKey(m);
-      if (!(k in colorIdx)) colorIdx[k] = Object.keys(colorIdx).length;
-      if (!seenThisVisit.has(k)) { seenThisVisit.add(k); visitCount[k] = (visitCount[k] || 0) + 1; }
-    });
-  });
-  // Which drugs are on the CURRENT sheet — flag them so the pharmacist sees
-  // "this is being re-dispensed now".
-  const currentCodes = new Set(_meds.map((m) => norm(m.code || "")).filter(Boolean));
-
   if (sub) {
     const repeats = Object.values(visitCount).filter((n) => n >= 2).length;
-    sub.textContent = `${gs.length} visit(s) · newest first`
+    const more = _histAllGroups.length > _histN ? ` / ${_histAllGroups.length} ทั้งหมด` : "";
+    sub.textContent = `${shown.length} visit(s)${more} · newest first`
       + (repeats ? ` · ${repeats} ยาซ้ำ (คลิกเพื่อไฮไลต์)` : "");
   }
 
-  list.innerHTML = gs.map((g) => {
-    const meds = (g.meds || []).map((m) => {
-      const k = _histDrugKey(m);
-      const c = _histColor(k, colorIdx[k] || 0);
-      const repeats = visitCount[k] || 1;
-      const onSheet = m.code && currentCodes.has(norm(m.code));
-      const badge = repeats >= 2
-        ? `<span class="hist-repeat" title="พบใน ${repeats} ครั้ง">×${repeats}</span>` : "";
-      const nowTag = onSheet
-        ? `<span class="hist-now" title="อยู่ในใบสั่งยาปัจจุบัน">ครั้งนี้</span>` : "";
-      return `<div class="hist-med" data-drugkey="${escapeHtml(k)}"`
-        + ` style="--hc-bar:${c.bar};--hc-dot:${c.dot};--hc-soft:${c.soft};--hc-edge:${c.edge};">`
-        + `<span class="hist-dot"></span>`
-        + `<span class="hist-body"><span class="hist-drug">${escapeHtml(m.drug || "")}</span>`
-        + `${badge}${nowTag}`
-        + `${m.info ? `<span class="hist-info">${escapeHtml(m.info)}</span>` : ""}</span>`
-        + `</div>`;
-    }).join("");
+  list.innerHTML = shown.map((g) => {
+    const rows = (g.meds || []).map((m) => _histRow(m, colorIdx, visitCount, currentCodes, false)).join("");
     return `<div class="hist-visit">
-      <div class="hist-visit-hd">🗓 ${escapeHtml(fmtDate(g.visitDate))}
+      <div class="hist-visit-hd">🗓 ${escapeHtml(_histFmtDate(g.visitDate))}
         <span class="hist-count">${(g.meds || []).length} รายการ</span></div>
-      <div class="hist-meds">${meds || '<div class="hist-med" style="color:#9ca3af">—</div>'}</div>
+      <div class="hist-meds">${rows || '<div class="hist-med" style="color:#9ca3af">—</div>'}</div>
     </div>`;
   }).join("");
 
-  _bindHistInteraction(list);
+  _bindHistInteraction();
+  if (_histPinned) _histSetActive(_histPinned);   // keep a pin across N changes
 }
 
-/** Hover highlights every occurrence of the same drug across all visits; click
- * pins/unpins that highlight (click again — or click empty space — to clear). */
-function _bindHistInteraction(list) {
-  let pinned = "";
-  const setActive = (key) => {
-    list.querySelectorAll(".hist-med").forEach((el) => {
-      el.classList.toggle("hist-hot", !!key && el.dataset.drugkey === key);
-      el.classList.toggle("hist-dim", !!key && el.dataset.drugkey !== key);
-    });
-  };
-  list.querySelectorAll(".hist-med[data-drugkey]").forEach((el) => {
-    el.addEventListener("mouseenter", () => { if (!pinned) setActive(el.dataset.drugkey); });
-    el.addEventListener("mouseleave", () => { if (!pinned) setActive(""); });
+/** Apply the highlight for `key`: matching rows get .hist-hot; non-matching rows
+ * are HIDDEN, and any visit group left with no visible row collapses. */
+function _histSetActive(key) {
+  const panel = document.getElementById("histPanel");
+  if (!panel) return;
+  panel.querySelectorAll(".hist-med").forEach((el) => {
+    const match = el.dataset.drugkey === key;
+    el.classList.toggle("hist-hot", !!key && match);
+    el.classList.toggle("hist-hidden", !!key && !match);
+  });
+  // Collapse visit groups (and the current-order box) that have no match.
+  panel.querySelectorAll(".hist-visit, #histCurrent").forEach((grp) => {
+    if (!key) { grp.classList.remove("hist-collapsed"); return; }
+    const hasMatch = grp.querySelector(`.hist-med[data-drugkey="${cssEscape(key)}"]`);
+    grp.classList.toggle("hist-collapsed", !hasMatch);
+  });
+  panel.classList.toggle("hist-filtering", !!key);
+}
+
+/** Minimal CSS.escape fallback (drug keys are codes/names — quote-safe). */
+function cssEscape(s) {
+  return (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/["\\]/g, "\\$&");
+}
+
+/** Hover highlights every occurrence of the same drug (current + history); click
+ * pins/unpins. Bound on the whole panel so current-order rows participate too. */
+function _bindHistInteraction() {
+  const panel = document.getElementById("histPanel");
+  if (!panel) return;
+  panel.querySelectorAll(".hist-med[data-drugkey]").forEach((el) => {
+    el.addEventListener("mouseenter", () => { if (!_histPinned) _histSetActive(el.dataset.drugkey); });
+    el.addEventListener("mouseleave", () => { if (!_histPinned) _histSetActive(""); });
     el.addEventListener("click", () => {
-      pinned = (pinned === el.dataset.drugkey) ? "" : el.dataset.drugkey;
-      setActive(pinned);
+      _histPinned = (_histPinned === el.dataset.drugkey) ? "" : el.dataset.drugkey;
+      _histSetActive(_histPinned);
     });
   });
-  list.addEventListener("mouseleave", () => { if (!pinned) setActive(""); });
 }
 
 /* ─────────────────── HM Process Checklist card (read-only) ────────────────

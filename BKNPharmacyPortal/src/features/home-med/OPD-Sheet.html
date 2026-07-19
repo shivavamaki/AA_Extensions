@@ -268,7 +268,37 @@
       border-left-color: var(--hc-bar, #6366f1);
       box-shadow: 0 0 0 1px var(--hc-edge, #c7d2fe) inset;
     }
-    .hist-med.hist-dim { opacity: .32; }
+    /* While filtering to one drug: non-matching rows are hidden, and any visit
+       group (or the current-order box) left with no match collapses away. */
+    .hist-med.hist-hidden { display: none; }
+    .hist-collapsed { display: none; }
+    .hist-filtering .hist-visit-hd { color: #90a4ae; }
+
+    /* Visit-count selector in the panel header. */
+    .hist-nsel-wrap { flex: 0 0 auto; }
+    .hist-nsel {
+      appearance: none; -webkit-appearance: none;
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.4);
+      color: #fff; font-family: inherit; font-size: 11px; font-weight: 700;
+      padding: 2px 6px; border-radius: 4px; cursor: pointer;
+    }
+    .hist-nsel option { color: #1a2027; }
+
+    /* Current order (today) box — same coloured rows as history, for comparison. */
+    .hist-current {
+      flex: 0 0 auto;
+      margin: 8px 10px 4px;
+      border: 1px solid #b7e2c9;
+      border-radius: 8px;
+      background: #f3fbf6;
+      overflow: hidden;
+    }
+    .hist-current-hd {
+      font-weight: 700; font-size: 10.5px; color: #065f46;
+      padding: 6px 9px; background: #e7f6ee; border-bottom: 1px solid #cdebd9;
+    }
+    .hist-current-meds { padding: 5px 6px; display: flex; flex-direction: column; gap: 4px; }
     .recon-item {
       display: flex;
       gap: 8px;
@@ -1310,12 +1340,28 @@
     <div class="print-status" id="printStatus">A4 portrait · margin 8 mm</div>
   </div>
 
-  <!-- OPD: last-5-visits medical history (replaces the IPD Med Reconciliation) -->
+  <!-- OPD: recent-visits medical history (replaces the IPD Med Reconciliation) -->
   <div class="recon-panel no-print" id="histPanel">
     <div class="recon-hdr">
-      <span class="recon-title">🕑 ประวัติการใช้ยา (5 ครั้งล่าสุด)</span>
+      <span class="recon-title">🕑 ประวัติการใช้ยา (<span id="histCountLabel">5</span> ครั้งล่าสุด)</span>
+      <label class="hist-nsel-wrap" title="จำนวนครั้งที่แสดง">
+        <select id="histCountSel" class="hist-nsel">
+          <option value="3">3</option>
+          <option value="5" selected>5</option>
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="20">20</option>
+        </select>
+      </label>
     </div>
     <div class="recon-sub" id="histSub">Last 5 visits · medication history</div>
+
+    <!-- Current order (today) — compare against the history below -->
+    <div class="hist-current" id="histCurrent">
+      <div class="hist-current-hd">📋 ใบสั่งยาปัจจุบัน (วันนี้)</div>
+      <div class="hist-current-meds" id="histCurrentMeds"></div>
+    </div>
+
     <div class="recon-list" id="histList">
       <div class="recon-empty"><span class="recon-empty-icon">🕑</span>กำลังโหลดประวัติ…</div>
     </div>

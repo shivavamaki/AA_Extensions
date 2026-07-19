@@ -573,6 +573,12 @@ def fetch_arcus_discharge_meds(ctx):
 # _is_medicine drops those.
 ARCUS_OPD_ORDERTYPE_UID = '5796e65d1526f6ebabe3b4a4'  # DAILY ORDER (OPD)
 
+# OPD history panel: how many prior visits to build. The server returns up to
+# _MAX so the client's "x ครั้งล่าสุด" selector can slice locally (no re-fetch);
+# _DEFAULT is the initial window and the one continuity tags compare against.
+OPD_HISTORY_DEFAULT = 5
+OPD_HISTORY_MAX     = 20
+
 def fetch_arcus_opd_meds(ctx):
     """POST to ArcusAir getallorderitem for the patient's OPD daily orders.
     Needs patientuid + patientvisituid. Returns JSON."""
@@ -3454,13 +3460,18 @@ class Handler(BaseHTTPRequestHandler):
                 result['allergies'] = build_allergies_from_arcus(fetch_arcus_allergies(ctx))
             except Exception as e:
                 result['allergies'] = {'nkda': False, 'items': [], 'hasRecord': False, 'error': str(e)}
-            # OPD panel = last 5 visits' medical history (replaces reconciliation),
-            # fetched from patientorder/search and grouped by visit (this visit excluded).
-            result['visitHistory'] = build_opd_visit_history(ctx, ctx.get('patientvisituid', ''), 5)
-            # Tag each current med by continuity vs. the last-5-visits history
-            # (รับยาต่อเนื่อง / ปรับขนาดยา) — a default the pharmacist can override.
+            # OPD panel = recent visits' medical history (replaces reconciliation),
+            # fetched from patientorder/search and grouped by visit (this visit
+            # excluded). Return up to OPD_HISTORY_MAX groups so the client's visit-
+            # count selector can slice locally without a re-fetch.
+            result['visitHistory'] = build_opd_visit_history(
+                ctx, ctx.get('patientvisituid', ''), OPD_HISTORY_MAX)
+            # Tag each current med by continuity vs. the history (รับยาต่อเนื่อง /
+            # ปรับขนาดยา) — a default the pharmacist can override. Compare against
+            # the DEFAULT window so the tag doesn't shift when the user changes N.
             try:
-                tag_meds_continuity(result.get('meds'), result.get('visitHistory'))
+                tag_meds_continuity(result.get('meds'),
+                                    (result.get('visitHistory') or [])[:OPD_HISTORY_DEFAULT])
             except Exception:
                 pass
             # Future appointments — same source as the IPD sheet; best-effort.
