@@ -7,20 +7,26 @@ Printable A4 **เอกสารแนะนำการใช้ยากล�
 - **`content-home-med.js`** injects a 🏠💊 button into the ArcusAir dispense-workbench tool group. Two modes (`sheetMode()`):
   - **IPD (discharge)** — page has a **"DISCHARGE MEDICATION"** cell (`hasDischargeMedicationCell()`).
   - **OPD (outpatient)** — the outpatient dispense workbench URL (`pharmacy/dispenseworkbench/pharmacy/dispense`), no discharge cell (`isOpdDispenseWorkbench()`).
-- On click: extracts patient/visit context (reusing the ADR Timeline / `MedicationJourney` extractor), mirrors it to `BKNData`, and opens **`page-home-med.html`** via the `LOAD_MED_TABLE` message (payload stashed in `chrome.storage.session` as `payload_sheet`). OPD sets `context.mode="opd"` and carries the captured `orderid`.
+- On click: extracts patient/visit context (reusing the ADR Timeline / `MedicationJourney` extractor), mirrors it to `BKNData`, and opens a page via a per-mode message:
+  - **IPD** → **`page-home-med.html`** via `LOAD_MED_TABLE` (payload `payload_sheet`).
+  - **OPD** → **`OPD-Sheet.html`** via `LOAD_MED_TABLE_OPD` (payload `payload_sheetOpd`); the click sets `context.mode="opd"`.
+  Both modes validate **patientuid + patientvisituid** before sending (OPD no longer uses an orderid).
+
+## Two sheets, one JS
+`page-home-med.html` (IPD discharge) and **`OPD-Sheet.html`** (OPD) both load `page-home-med.js`. The JS distinguishes them at boot by the presence of `#histPanel` (OPD only): IPD uses `LOAD_MED_TABLE` / `payload_sheet`, OPD uses `LOAD_MED_TABLE_OPD` / `payload_sheetOpd`. OPD-Sheet.html **replaces** the IPD Med Reconciliation panel with a **last-5-visits medical-history** panel (`#histList`) and **omits** the HM Process Checklist card. Panel-specific binds (`_bindReconPanel`, checklist) are null-guarded so they no-op on the OPD sheet.
 
 ## Data flow
 
-1. Page receives `{ context }` (IPD: patientuid + patientvisituid + incusToken; **OPD: `orderid` + incusToken + `mode:"opd"`**).
+1. Page receives `{ context }` — both modes carry **patientuid + patientvisituid + incusToken**; OPD additionally sets `mode:"opd"`.
 2. Endpoint by mode (`fetchAndRender` picks it):
    - IPD → **`POST /api/report/home-med-api`** → ArcusAir `getallorderitem` (DISCHARGE MEDICATION).
-   - OPD → **`POST /api/report/home-med-opd`** → ArcusAir **`pharmacy/dispense/search`** by `orderid` (`fetch_arcus_opd_meds`). The response's `dispense[].patientorderitems` are adapted into the IPD `orderitems` shape (`_opd_search_to_orderitems`) and fed through the **same** `_normalize_orderitems` / `_map_orderitem` pipeline, so parse / note-line / frequencyTh / images / translation / render are identical. OPD carries no discharge reconciliation or appointments (both returned empty).
-   - Both return `{ patient, meds, allMeds, allergies, appointmentText, reconcileMeds }`.
+   - OPD → **`POST /api/report/home-med-opd`** → ArcusAir **`getallorderitem`** with `ordertype:"DAILYORDER"` / `ordertypeuid:"5796e65d1526f6ebabe3b4a4"` keyed by patientuid + patientvisituid (`fetch_arcus_opd_meds`). Same `orderitems[]` shape as IPD, so it flows through the **same** `_normalize_orderitems` / `_map_orderitem` pipeline with **no adapter** — parse / note-line / frequencyTh / images / translation / render are identical. OPD carries no discharge reconciliation or appointments (both returned empty); instead the server adds `visitHistory` (see below).
+   - Both return `{ patient, meds, allMeds, allergies, appointmentText, reconcileMeds }`; OPD adds `visitHistory`.
 3. Drug photos: **`GET /api/medication-db`** (name/code index) + **`GET /med-image/{code}`** (extension-agnostic).
 4. Renders an editable A4 table plus a follow-up appointment line. User edits persist per-visit via `BKNData.saveMedCache`.
 
-### OPD `orderid` capture
-The OPD orderid is captured passively by the MAIN-world XHR tap (`arcus-xhr-tap.js`) from the outpatient workbench's own `pharmacy/dispense/search` request body (`{orderid}`), stored on `window.__arcus_opd__.orderid`, surfaced via `background.js`'s extractor as `_raw.opd.orderid`, and read into `ctx.orderid` in `content-home-med.js`'s `extractContext`.
+### OPD last-5-visits history panel
+The server-side `build_opd_visit_history(ctx, 5)` reuses `fetch_arcus_visit_history` (searchfromvisitcount, MEDICINE only) and groups the result **by visit** (not de-duped by drug) via `build_visit_history_groups` — newest first, current visit excluded, each `{ visitDate, visitId, meds:[{drug, code, info, freqTh}] }`. The client's `renderVisitHistory(data.visitHistory)` fills `#histList`.
 
 > The file-header comment mentioning a Jasper XLS flow is **stale** — the sheet now fetches from the ArcusAir API via the server.
 >
@@ -186,9 +192,10 @@ An optional second page (`.mealcard-section` / `#mealcardGrid`) groups the disch
 
 | File | Role |
 |---|---|
-| `content-home-med.js` | ArcusAir button injection, context extraction, route to page |
-| `page-home-med.html` | A4 layout + toolbar (language, paper, margin, scale, font, picture size, by-meal page) |
-| `page-home-med.js` | Fetch, build editable med list, render, translate, persist, by-meal card |
+| `content-home-med.js` | ArcusAir button injection, context extraction, route to IPD/OPD page |
+| `page-home-med.html` | IPD discharge A4 layout + toolbar (language, paper, margin, scale, font, picture size, by-meal page) |
+| `OPD-Sheet.html` | OPD A4 layout — same toolbar, Med Reconciliation panel replaced by last-5-visits history, no Checklist card |
+| `page-home-med.js` | Shared: fetch, build editable med list, render, translate, persist, by-meal card, OPD history panel |
 
 ## Translation (offline-first, Thai default)
 

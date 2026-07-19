@@ -56,7 +56,7 @@ API:
 
   POST   /api/report/fetch                  — Jasper XLS proxy (aa-report.bdms.co.th only)
   POST   /api/report/home-med-api           — discharge meds → Home Medication Sheet (+ reconcileMeds)
-  POST   /api/report/home-med-opd           — OPD order (pharmacy/dispense/search by orderid) → Home Medication Sheet
+  POST   /api/report/home-med-opd           — OPD daily orders (getallorderitem DAILYORDER) → OPD Medication Sheet (+ last-5-visits history)
   POST   /api/report/med-journey            — all orders → continuity timeline
   POST   /api/report/reconcile-api          — standalone Medication Reconciliation refresh
 
@@ -472,57 +472,52 @@ def fetch_arcus_discharge_meds(ctx):
     })
 
 
-# ── OPD (outpatient) Home Med Sheet — pharmacy/dispense/search ──────────────
-# The OPD dispense workbench fetches one order by orderid. Its response is
-# {dispense:[{_id, patientorderitems:[…], patientuid, ordernumber, orderdate, …}]}
-# — each patientorderitems object has the SAME shape as the discharge
-# getallorderitem's, so we adapt it into the IPD wrapper shape and reuse the whole
-# _normalize_orderitems / _map_orderitem pipeline (parse, note-line, frequencyTh,
-# images, translation, render). orderid is client-captured (arcus-xhr-tap.js).
-ARCUS_DISPENSE_SEARCH_URL = ARCUS_BASE + '/pharmacy/dispense/search'
+# ── OPD (outpatient) Home Med Sheet — getallorderitem (DAILY ORDER) ─────────
+# OPD uses the SAME endpoint as the discharge sheet (getallorderitem), only the
+# ordertype differs: DAILYORDER instead of DISCHARGEMEDICATION. Its response is
+# the identical `orderitems[]` shape, so it flows through _normalize_orderitems /
+# _map_orderitem unchanged — no adapter needed. Keyed by patientuid +
+# patientvisituid (the same context the discharge sheet already captures).
+# The response mixes MEDICINE with non-meds (e.g. DOCTORFEE "Physician fee");
+# _is_medicine drops those.
+ARCUS_OPD_ORDERTYPE_UID = '5796e65d1526f6ebabe3b4a4'  # DAILY ORDER (OPD)
 
 def fetch_arcus_opd_meds(ctx):
-    """POST to ArcusAir pharmacy/dispense/search for one OPD order. Needs
-    ctx.orderid (client-captured). Returns JSON or None if no orderid."""
-    oid = ctx.get('orderid')
-    if not oid:
-        return None
-    return _arcus_post_json(ARCUS_DISPENSE_SEARCH_URL, ctx, {
-        'orderid': oid,
-        'includerefillorders': True,
-        'broughtfromoutside': None,
-        'statusuid': None,
+    """POST to ArcusAir getallorderitem for the patient's OPD daily orders.
+    Needs patientuid + patientvisituid. Returns JSON."""
+    return _arcus_post_json(ARCUS_ORDERITEM_URL, ctx, {
+        'pagesize': 30, 'pagenumber': 1,
+        'patientuid': ctx.get('patientuid', ''),
+        'patientvisituid': ctx.get('patientvisituid', ''),
+        'ordertype': 'DAILYORDER',
+        'ordertypeuid': ARCUS_OPD_ORDERTYPE_UID,
+        'filtersearch': True, 'isactive': True,
+        'includedispensereturns': True, 'sortorder': '-orderdate',
     })
 
-def _opd_search_to_orderitems(data):
-    """Adapt a dispense/search response into the getallorderitem `orderitems`
-    shape (a flat list of item wrappers), so _normalize_orderitems can consume it
-    unchanged. Each OPD patientorderitems entry becomes one wrapper carrying the
-    dispense-level patientuid / ordernumber / orderdate. OPD has no per-item
-    ordertypeuid (it isn't a discharge-phase order), which is fine — the home-med
-    sheet doesn't use phase; it just filters medicines and drops cancelled."""
-    out = []
-    for disp in (data or {}).get('dispense') or []:
-        patientuid = disp.get('patientuid')
-        ordernumber = disp.get('ordernumber')
-        orderdate = disp.get('orderdate')
-        for poi in disp.get('patientorderitems') or []:
-            out.append({
-                'patientorderitems': poi,
-                'patientuid': patientuid,
-                'ordernumber': ordernumber,
-                'orderdate': orderdate,
-                # OPD take-home meds — tag as the 'home' phase for consistency
-                # with the discharge sheet's expectations.
-                'ordertypeuid': {'valuedescription': 'Outpatient', 'valuecode': 'OPD'},
-                'ordercattype': poi.get('ordercattype') or '',
-            })
-    return {'orderitems': out}
-
 def build_home_med_from_opd(data):
-    """OPD dispense/search JSON → the same {patient, meds, allMeds} the discharge
-    sheet produces, via the shared normaliser."""
-    return build_home_med_from_arcus(_opd_search_to_orderitems(data))
+    """OPD getallorderitem JSON → the same {patient, meds, allMeds} the discharge
+    sheet produces, via the shared normaliser (identical shape, no adapter)."""
+    return build_home_med_from_arcus(data)
+
+
+# ── OPD medical history: the patient's last N OPD visits' meds ──────────────
+# The OPD sheet shows a "last 5 visits" medical-history panel (in place of the
+# discharge sheet's Med Reconciliation). We reuse the visit-history fetch the
+# Medication Journey already uses (searchfromvisitcount → build_prev_meds_from_visits).
+def build_opd_visit_history(ctx, visitcount=5):
+    """Best-effort: the patient's recent OPD/visit medications for the history
+    panel. Returns a list of {visitDate, meds:[…]} groups, newest first, or []."""
+    try:
+        vh = fetch_arcus_visit_history(ctx, visitcount)
+    except Exception:
+        return []
+    if not vh:
+        return []
+    try:
+        return build_visit_history_groups(vh, ctx.get('patientvisituid', ''), visitcount)
+    except Exception:
+        return []
 
 
 ARCUS_MEDRECON_URL = ARCUS_BASE + '/ordermanagement/medreconcile/getdetail'
@@ -1162,6 +1157,52 @@ def build_prev_meds_from_visits(data, current_visit_uid=''):
                 prev[key] = {'drug': name, 'code': code, 'info': info,
                              'freqTh': freq_th, '_when': when}
     return prev
+
+
+def build_visit_history_groups(data, current_visit_uid='', limit=5):
+    """Group searchfromvisitcount JSON BY VISIT (not de-duped by drug) for the
+    OPD sheet's medical-history panel: the last `limit` visits, newest first,
+    each { visitDate, visitId, meds:[{drug, code, info, freqTh}] }. Only MEDICINE
+    items; the current visit is excluded so the panel is genuinely history."""
+    freq_idx = _load_freq_th_index()
+    visits = {}   # vuid -> {visitDate, visitId, _when, meds:[]}
+    for po in ((data or {}).get('patientorders') or []):
+        vuid = po.get('patientvisituid') or ''
+        if not vuid or (current_visit_uid and vuid == current_visit_uid):
+            continue
+        vdate = (po.get('visitdate') or po.get('orderdate')
+                 or po.get('createdat') or '')
+        for poi in (po.get('patientorderitems') or []):
+            if (poi.get('ordercattype') or '').upper() != 'MEDICINE':
+                continue
+            name = _hm_norm(poi.get('orderitemname') or '')
+            if not name:
+                continue
+            code = _hm_norm(poi.get('chargecode') or '')
+            if not _is_medicine({'code': code}):
+                continue
+            verb = _hm_norm((_arc_first(poi.get('instructionuid')) or {}).get('valuedescription') or '')
+            dosage = poi.get('dosage')
+            dose_unit = _hm_norm((_arc_first(poi.get('dosageUOM')) or {}).get('valuedescription') or '')
+            route = _hm_norm((_arc_first(poi.get('routeuid')) or {}).get('valuedescription') or '')
+            fq = _arc_first(poi.get('frequencyuid')) or {}
+            freq = _hm_norm(fq.get('name') or '')
+            freq_code = _hm_norm(fq.get('code') or '')
+            freq_th = freq_idx.get(_freq_key(freq)) or freq_idx.get(_freq_key(freq_code)) or ''
+            parts = []
+            if verb: parts.append(verb)
+            if dosage: parts.append(str(dosage) + (' ' + dose_unit if dose_unit else ''))
+            if route: parts.append(route)
+            if freq: parts.append(freq)
+            info = ' '.join(parts).strip() or freq or '—'
+            grp = visits.setdefault(vuid, {
+                'visitDate': vdate, 'visitId': vuid, '_when': vdate, 'meds': []})
+            grp['meds'].append({'drug': name, 'code': code, 'info': info, 'freqTh': freq_th})
+    # Newest first, cap to `limit`; drop the recency key.
+    out = sorted(visits.values(), key=lambda g: g.get('_when', ''), reverse=True)[:limit]
+    for g in out:
+        g.pop('_when', None)
+    return out
 
 
 # ArcusAir order-type → journey phase, keyed on the STABLE valuecode (not the
@@ -2459,7 +2500,7 @@ class Handler(BaseHTTPRequestHandler):
         if parts == ['api', 'report', 'home-med-api']:
             return 'report-home-med-api', None, None
 
-        # /api/report/home-med-opd — OPD version: pharmacy/dispense/search by orderid
+        # /api/report/home-med-opd — OPD version: getallorderitem DAILYORDER by patientvisituid
         if parts == ['api', 'report', 'home-med-opd']:
             return 'report-home-med-opd', None, None
 
@@ -3234,11 +3275,11 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, result)
             return
 
-        # ── OPD Home Medication Sheet: one order via pharmacy/dispense/search ──
+        # ── OPD Home Medication Sheet: DAILY ORDER meds via getallorderitem ──
         if rtype == 'report-home-med-opd':
             ctx = body.get('context') or {}
-            if not ctx.get('orderid'):
-                self.send_json(400, {'error': 'orderid required — select the OPD order on ArcusAir first'}); return
+            if not ctx.get('patientuid') or not ctx.get('patientvisituid'):
+                self.send_json(400, {'error': 'patientuid + patientvisituid required'}); return
             if not ctx.get('incusToken'):
                 self.send_json(400, {'error': 'incusToken missing — open the patient on ArcusAir first'}); return
             try:
@@ -3252,15 +3293,13 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 self.send_json(500, {'error': f'Parse error: {e}'}); return
             _log_home_med_fetch(ctx, data, result)
-            # Allergies — best-effort. OPD has no patientvisituid; fetch only when
-            # the client supplied one (some OPD flows do), else skip cleanly.
-            if ctx.get('patientuid') and ctx.get('patientvisituid'):
-                try:
-                    result['allergies'] = build_allergies_from_arcus(fetch_arcus_allergies(ctx))
-                except Exception as e:
-                    result['allergies'] = {'nkda': False, 'items': [], 'hasRecord': False, 'error': str(e)}
-            else:
-                result['allergies'] = {'nkda': False, 'items': [], 'hasRecord': False}
+            # Allergies — best-effort (OPD has patientuid + patientvisituid).
+            try:
+                result['allergies'] = build_allergies_from_arcus(fetch_arcus_allergies(ctx))
+            except Exception as e:
+                result['allergies'] = {'nkda': False, 'items': [], 'hasRecord': False, 'error': str(e)}
+            # OPD panel = last 5 visits' medical history (replaces reconciliation).
+            result['visitHistory'] = build_opd_visit_history(ctx, 5)
             # OPD sheets carry no discharge appointments / reconciliation.
             result['appointmentText'] = ''
             result['reconcileMeds'] = []

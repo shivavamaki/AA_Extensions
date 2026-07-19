@@ -1063,8 +1063,8 @@ function _setStatus(text) {
 async function fetchAndRender() {
   const tbody = document.querySelector("#medTable tbody");
   const _isOpd = _context && _context.mode === "opd";
-  // IPD needs patientvisituid; OPD needs a captured orderid.
-  const _hasCtx = _context && (_isOpd ? _context.orderid : _context.patientvisituid);
+  // Both IPD and OPD fetch getallorderitem by patientvisituid.
+  const _hasCtx = _context && _context.patientvisituid;
   if (!_hasCtx) {
     if (tbody) { tbody.innerHTML = ""; _appendNoData(tbody, "No patient context. Open from the Discharge (IPD) or OPD dispense view."); }
     return;
@@ -1155,10 +1155,48 @@ async function fetchAndRender() {
   renderDiagnosis(_context && _context.diagnosis);
   renderAllergies(data.allergies);
   renderAppointments(data.appointmentText);
-  const checklistHn = (data.patient && data.patient.hn) || (_context && (_context.hn || _context.patientId)) || "";
-  fetchAndRenderChecklist(checklistHn);  // best-effort, non-blocking
-  _setReconMeds(data.reconcileMeds);
+  if (_isOpd) {
+    // OPD-Sheet.html: last-5-visits medical history panel; no Checklist / recon.
+    renderVisitHistory(data.visitHistory);
+  } else {
+    const checklistHn = (data.patient && data.patient.hn) || (_context && (_context.hn || _context.patientId)) || "";
+    fetchAndRenderChecklist(checklistHn);  // best-effort, non-blocking
+    _setReconMeds(data.reconcileMeds);
+  }
   await renderMeds();
+}
+
+/* ─────────────── OPD medical-history panel (last 5 visits) ────────────────
+ * Renders data.visitHistory (from build_opd_visit_history) into the OPD sheet's
+ * right sidebar (#histList), replacing the IPD Med Reconciliation panel. Each
+ * group is one prior visit with its medicines. Read-only. */
+function renderVisitHistory(groups) {
+  const list = document.getElementById("histList");
+  const sub  = document.getElementById("histSub");
+  if (!list) return;
+  const gs = Array.isArray(groups) ? groups : [];
+  if (sub) sub.textContent = gs.length
+    ? `${gs.length} visit(s) · newest first`
+    : "No prior visits found";
+  if (!gs.length) {
+    list.innerHTML = `<div class="recon-empty"><span class="recon-empty-icon">🕑</span>ไม่พบประวัติการใช้ยาก่อนหน้า</div>`;
+    return;
+  }
+  const fmtDate = (iso) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ""));
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : (iso || "-");
+  };
+  list.innerHTML = gs.map((g) => {
+    const meds = (g.meds || []).map((m) =>
+      `<div class="hist-med"><span class="hist-drug">${escapeHtml(m.drug || "")}</span>` +
+      `${m.info ? ` <span class="hist-info">${escapeHtml(m.info)}</span>` : ""}</div>`
+    ).join("");
+    return `<div class="hist-visit">
+      <div class="hist-visit-hd">🗓 ${escapeHtml(fmtDate(g.visitDate))}
+        <span class="hist-count">${(g.meds || []).length} รายการ</span></div>
+      <div class="hist-meds">${meds || '<div class="hist-med" style="color:#9ca3af">—</div>'}</div>
+    </div>`;
+  }).join("");
 }
 
 /* ─────────────────── HM Process Checklist card (read-only) ────────────────
@@ -1339,6 +1377,8 @@ function _updateReconAddButton() {
 }
 
 function _bindReconPanel() {
+  // OPD-Sheet.html has no reconciliation panel — bail if the elements are absent.
+  if (!document.getElementById("reconFilters")) return;
   document.getElementById("reconFilters").addEventListener("click", (e) => {
     const chip = e.target.closest(".recon-chip");
     if (!chip) return;
@@ -1627,8 +1667,15 @@ function bindLangControl() {
 }
 
 /* ─────────────────────────────── Boot ─────────────────────────────────── */
+// This one JS drives both sheets: page-home-med.html (IPD) and OPD-Sheet.html.
+// The OPD sheet is identified by its history panel; each opens via its own
+// message type + chrome.storage.session key (see background.js openOrReuseTab).
+const _IS_OPD_SHEET = !!document.getElementById("histPanel");
+const _MSG_TYPE     = _IS_OPD_SHEET ? MSG.LOAD_MED_TABLE_OPD : MSG.LOAD_MED_TABLE;
+const _PAYLOAD_KEY  = _IS_OPD_SHEET ? "payload_sheetOpd" : "payload_sheet";
+
 function _applyContextAndRender(msg) {
-  if (!msg || msg.type !== MSG.LOAD_MED_TABLE) return;
+  if (!msg || msg.type !== _MSG_TYPE) return;
   _context = msg.context || null;
   populateHeader(null, _context);
   fetchAndRender();
@@ -1641,15 +1688,17 @@ document.addEventListener("DOMContentLoaded", () => {
   _bindReconPanel();
 
   chrome.runtime.onMessage.addListener((msg) => {
-    if (msg.type === MSG.LOAD_MED_TABLE) _applyContextAndRender(msg);
+    if (msg.type === _MSG_TYPE) _applyContextAndRender(msg);
   });
 
-  chrome.storage.session.get("payload_sheet", (res) => {
-    const stored = res?.payload_sheet;
-    if (stored?.type === MSG.LOAD_MED_TABLE) _applyContextAndRender(stored);
+  chrome.storage.session.get(_PAYLOAD_KEY, (res) => {
+    const stored = res && res[_PAYLOAD_KEY];
+    if (stored && stored.type === _MSG_TYPE) _applyContextAndRender(stored);
     else {
       const tbody = document.querySelector("#medTable tbody");
-      if (tbody) _appendNoData(tbody, "No medication data loaded. Open from the Discharge Medication dispense view.");
+      if (tbody) _appendNoData(tbody, _IS_OPD_SHEET
+        ? "No medication data loaded. Open from the OPD dispense view."
+        : "No medication data loaded. Open from the Discharge Medication dispense view.");
     }
   });
 });

@@ -39,6 +39,7 @@ function _isAllowedProxyUrl(url) {
 /* ── AAOverlay feature-tab registry ──────────────────────────────────────── */
 const MSG = Object.freeze({
   LOAD_MED_TABLE:          'LOAD_MED_TABLE',
+  LOAD_MED_TABLE_OPD:      'LOAD_MED_TABLE_OPD',
   OPEN_STICKER:            'OPEN_STICKER',
   OPEN_PATIENT_STICKER:    'OPEN_PATIENT_STICKER',
   OPEN_MED_RECONCILE:      'OPEN_MED_RECONCILE',
@@ -49,6 +50,7 @@ const MSG = Object.freeze({
 
 const tabRegistry = {
   aa_sheet:             null,
+  aa_sheetOpd:          null,
   aa_sticker:           null,
   aa_patientSticker:    null,
   aa_medReconcile:      null,
@@ -59,6 +61,7 @@ const tabRegistry = {
 
 const ROUTE_MAP = {
   [MSG.LOAD_MED_TABLE]:          { key: 'aa_sheet',             url: 'src/features/home-med/page-home-med.html' },
+  [MSG.LOAD_MED_TABLE_OPD]:      { key: 'aa_sheetOpd',          url: 'src/features/home-med/OPD-Sheet.html' },
   [MSG.OPEN_STICKER]:            { key: 'aa_sticker',            url: 'src/features/med-sticker/page-med-sticker.html' },
   [MSG.OPEN_PATIENT_STICKER]:    { key: 'aa_patientSticker',     url: 'src/features/patient-sticker/page-patient-sticker.html' },
   [MSG.OPEN_MED_RECONCILE]:      { key: 'aa_medReconcile',       url: 'src/features/patient-sticker/page-med-reconcile.html' },
@@ -296,7 +299,6 @@ function _arcusExtractAngularCtx() {
       out._raw.arcusHdrs = window.__arcus_hdrs__ ? Object.assign({}, window.__arcus_hdrs__) : {};
       out._raw.medreconMap   = window.__arcus_medrecon__   || {};
       out._raw.medhistoryMap = window.__arcus_medhistory__ || {};
-      out._raw.opd           = window.__arcus_opd__        || {};   // { orderid }
     } catch (_) {}
 
     if (pc && (pc.patientuid || pc.patientvisituid)) out.patientCtx = pc;

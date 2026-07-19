@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OPD Medication Sheet</title>
+
+  <style>
+    @font-face {
+      font-family: "Sarabun";
+      src: url("../../assets/fonts/Sarabun-Regular.ttf") format("truetype");
+      font-weight: 400;
+    }
+
+    * { box-sizing: border-box; }
+
+    :root {
+      --screen-scale: 1;
+      --sheet-padding-x: 14mm;
+      --sheet-padding-y: 13mm;
+      --base-font-size: 13px;
+      --medicine-image-size: 20mm;
+      --row-padding-y: 7px;
+      --row-padding-x: 7px;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Sarabun", Arial, sans-serif;
+      color: #111827;
+      background: #eef2f7;
+      font-size: var(--base-font-size);
+    }
+
+    /* ── Control panel: fixed left sidebar (screen only), pastel-green ─────── */
+    /* padding-right reserves room for the Medication Reconciliation panel (screen
+       only); both reset in @media print. */
+    body { padding-left: 236px; padding-right: 280px; }
+    .toolbar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 1000;
+      width: 220px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      padding: 14px 12px;
+      background: #e6f5ec;
+      color: #14532d;
+      border-right: 1px solid #bfe6cd;
+      box-shadow: 2px 0 12px rgba(22,101,52,.10);
+    }
+
+    .toolbar-title { font-size: 13px; font-weight: 800; color: #166534; letter-spacing: .02em; }
+
+    .toolbar-group {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      padding: 0 0 12px;
+      border-bottom: 1px solid #cde9d8;
+    }
+
+    .toolbar-group:last-child { border-bottom: 0; padding-bottom: 0; }
+
+    .toolbar button {
+      width: 100%;
+      padding: 9px 12px;
+      border: 0;
+      border-radius: 9px;
+      background: #22c55e;
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .toolbar button:hover { background: #16a34a; }
+    .toolbar button.secondary { background: #d4ecdc; color: #166534; }
+    .toolbar button.secondary:hover { background: #c2e3cd; }
+
+    .toolbar label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: #14532d;
+    }
+
+    /* For "Label [select]" rows, push the select to the right edge. */
+    .toolbar label > select { margin-left: auto; }
+
+    .toolbar select,
+    .toolbar input[type="number"],
+    .toolbar input[type="date"] {
+      height: 30px;
+      max-width: 118px;
+      border-radius: 7px;
+      border: 1px solid #86efac;
+      background: #fff;
+      color: #14532d;
+      padding: 4px 7px;
+      font-size: 12px;
+    }
+
+    .toolbar input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #22c55e;
+    }
+
+    .print-status {
+      color: #15803d;
+      font-size: 11.5px;
+      line-height: 1.35;
+    }
+
+    /* ── Medication Reconciliation panel: fixed right sidebar (screen only) ──
+       Pulls the patient's pre-admission/home meds (same ArcusAir data
+       Medication Journey already fetches) so the pharmacist can pick items to
+       add as POM (Patient's Own Medication) into the sheet below. ──────────── */
+    .recon-panel {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      bottom: 16px;
+      width: 260px;
+      background: #fff;
+      border: 1px solid #90caf9;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(21,101,192,.12);
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 11.5px;
+      color: #263238;
+      display: flex;
+      flex-direction: column;
+      z-index: 999;
+    }
+    .recon-hdr {
+      background: linear-gradient(135deg, #1565c0, #1e88e5);
+      color: #fff;
+      padding: 9px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+    .recon-title { font-weight: 700; font-size: 12.5px; flex: 1; }
+    .recon-reload {
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.35);
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      padding: 3px 7px;
+      font-family: inherit;
+    }
+    .recon-reload:hover { background: rgba(255,255,255,.28); }
+    .recon-reload:disabled { opacity: .5; cursor: default; }
+    .recon-sub {
+      padding: 6px 10px;
+      font-size: 9.5px;
+      color: #607d8b;
+      background: #f5f9ff;
+      border-bottom: 1px solid #e3eefa;
+      flex: 0 0 auto;
+    }
+    .recon-filters {
+      display: flex;
+      gap: 4px;
+      padding: 7px 10px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid #eef2f8;
+      flex: 0 0 auto;
+    }
+    .recon-selectall {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 10px;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #37474f;
+      background: #f5f9ff;
+      border-bottom: 1px solid #e3eefa;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+    .recon-selectall input[type="checkbox"] { width: 14px; height: 14px; accent-color: #1565c0; }
+    .recon-chip {
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      background: #f1f3f5;
+      color: #607d8b;
+      font-family: inherit;
+    }
+    .recon-chip.active[data-status="all"]       { background: #e0e0e0; color: #37474f; border-color: #bdbdbd; }
+    .recon-chip.active[data-status="continued"] { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+    .recon-chip.active[data-status="stopped"]   { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
+    .recon-chip.active[data-status="changed"]   { background: #e3f2fd; color: #0d47a1; border-color: #90caf9; }
+    .recon-chip.active[data-status="new"]       { background: #f3e5f5; color: #6a1b9a; border-color: #ce93d8; }
+
+    .recon-list { overflow-y: auto; flex: 1; }
+    /* OPD visit-history panel (reuses .recon-panel chrome; own item styles). */
+    .hist-visit { border-bottom: 1px solid #eef2f8; padding: 8px 10px; }
+    .hist-visit:last-child { border-bottom: none; }
+    .hist-visit-hd { font-weight: 700; font-size: 11px; color: #1565c0; display: flex; align-items: center; gap: 6px; }
+    .hist-visit-hd .hist-count { margin-left: auto; font-weight: 600; font-size: 9px; color: #90a4ae; }
+    .hist-meds { margin-top: 4px; display: flex; flex-direction: column; gap: 3px; }
+    .hist-med { font-size: 10.5px; line-height: 1.3; }
+    .hist-med .hist-drug { font-weight: 600; color: #1a2027; }
+    .hist-med .hist-info { color: #78909c; }
+    .recon-item {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      padding: 8px 10px;
+      border-bottom: 1px solid #f1f3f6;
+    }
+    .recon-item:last-child { border-bottom: none; }
+    .recon-item input[type="checkbox"] { margin-top: 2px; flex: 0 0 auto; width: 13px; height: 13px; accent-color: #1565c0; }
+    .recon-item.added { background: #f5fbf6; }
+    .recon-item-body { flex: 1; min-width: 0; }
+    .recon-drug { font-weight: 600; font-size: 11.5px; color: #1a2027; }
+    .recon-meta { font-size: 9.5px; color: #78909c; margin-top: 1px; line-height: 1.35; }
+    .recon-added-tag { font-size: 9px; font-weight: 700; color: #2e7d32; margin-top: 2px; }
+    .recon-status {
+      flex: 0 0 auto;
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      padding: 2px 6px;
+      border-radius: 999px;
+      white-space: nowrap;
+      margin-top: 1px;
+    }
+    .recon-status.continued { background: #e8f5e9; color: #2e7d32; }
+    .recon-status.stopped   { background: #ffebee; color: #c62828; }
+    .recon-status.changed   { background: #e3f2fd; color: #0d47a1; }
+    .recon-status.new       { background: #f3e5f5; color: #6a1b9a; }
+
+    .recon-footer { padding: 8px 10px; border-top: 1px solid #eef2f8; background: #fafcff; flex: 0 0 auto; }
+    .recon-add-btn {
+      width: 100%;
+      background: #1565c0;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 8px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .recon-add-btn:disabled { background: #cfd8dc; cursor: default; }
+    .recon-add-hint { font-size: 9px; color: #90a4ae; text-align: center; margin-top: 4px; }
+
+    .recon-empty, .recon-list-empty {
+      padding: 28px 18px;
+      text-align: center;
+      color: #90a4ae;
+      font-size: 11.5px;
+      line-height: 1.6;
+    }
+    .recon-empty-icon { font-size: 26px; margin-bottom: 8px; display: block; }
+    .recon-empty b { color: #607d8b; }
+
+    /* Tag on a medicine row added from the reconciliation panel. */
+    .pom-badge {
+      display: inline-block;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: .03em;
+      background: #ede9fe;
+      color: #6d28d9;
+      border: 1px solid #ddd6fe;
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+
+    .sheet-wrap {
+      transform: scale(var(--screen-scale));
+      transform-origin: top center;
+      width: 210mm;
+      margin: 12px auto;
+    }
+
+    .sheet {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: var(--sheet-padding-y) var(--sheet-padding-x);
+      background: #fff;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, .12);
+    }
+
+    /* Fit-width editing view: sheet expands to the full window so the
+       medicine table content uses all available width on screen. Print is
+       unaffected (always A4 portrait). */
+    body.fit-width .sheet-wrap {
+      width: 100%;
+      transform: none;
+    }
+    body.fit-width .sheet {
+      width: 100%;
+      min-height: auto;
+    }
+    /* When fitting width, let the medicine table columns redistribute to fill
+       the wider sheet instead of staying at their fixed mm widths. */
+    body.fit-width #medTable col.cg-med { width: 36% !important; }
+    body.fit-width #medTable col.cg-how { width: auto !important; }
+    body.fit-width #medTable col.cg-qty { width: 14% !important; }
+
+    .top-title {
+      display: grid;
+      grid-template-columns: 26mm 1fr 50mm;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 5px;
+      border-bottom: 3px solid #111827;
+      margin-bottom: 5px;
+    }
+
+    .logo-zone {
+      width: 26mm;
+      min-height: 12mm;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .logo-zone img {
+      max-width: 24mm;
+      max-height: 11mm;
+      object-fit: contain;
+    }
+
+    .title-zone {
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      margin-top: 1px;
+      font-size: 11px;
+      color: #4b5563;
+    }
+
+    .date-box {
+      text-align: right;
+      font-size: 11px;
+      color: #374151;
+      padding-top: 0;
+    }
+
+    /* Patient info + diagnosis/allergy share one outer frame instead of two
+       separate bordered boxes — visual style of each part is unchanged,
+       only the outer border is merged. */
+    .patient-clinical-card {
+      margin: 5px 0 6px;
+      border: 1.5px solid #111827;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f9fafb;
+    }
+
+    .patient-card {
+      display: grid;
+      grid-template-columns: 1.6fr .7fr 1.05fr .7fr;
+      gap: 5px;
+      padding: 5px 8px;
+    }
+
+    .patient-field .label {
+      display: block;
+      font-size: 9px;
+      color: #6b7280;
+      font-weight: 400;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+
+    /* ── Clinical banner (Diagnosis + Allergies, stacked) ──────── */
+    .clinical-banner {
+      border-top: 1.5px solid #111827;
+    }
+    .clinical-banner .dx-line,
+    .clinical-banner .allergy-line,
+    .clinical-banner .physician-line {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 4px 10px;
+      font-size: 12px;
+      line-height: 1.25;
+    }
+    /* Physician — sits above Diagnosis, neutral tone (not blue/red like the
+       clinical lines below it). */
+    .clinical-banner .physician-line {
+      background: #f3f4f6;
+      color: #374151;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    /* Diagnosis on the upper line — distinct blue tone. */
+    .clinical-banner .dx-line {
+      background: #eff6ff;
+      color: #1e3a8a;
+      border-bottom: 1px solid #dbeafe;
+    }
+    .clinical-banner .dx-label,
+    .clinical-banner .allergy-label,
+    .clinical-banner .physician-label { font-weight: 400; white-space: nowrap; }
+    .clinical-banner .dx-value,
+    .clinical-banner .allergy-value,
+    .clinical-banner .physician-value { font-weight: 400; word-break: break-word; }
+    /* Allergy line: red when present, calm grey for NKDA. */
+    .clinical-banner .allergy-line {
+      background: #fef2f2;
+      color: #7f1d1d;
+    }
+    .clinical-banner .allergy-line.nkda {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    /* Hide the diagnosis line entirely when there's no diagnosis. */
+    .clinical-banner .dx-line.empty { display: none; }
+
+    .patient-field .value {
+      margin-top: 0;
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    /* border-collapse:collapse ignores border-radius on cells in Chrome, so
+       the medicine table uses the separate model with each cell drawing only
+       its right/bottom edge (plus an explicit left/top edge on the first
+       column/row) — same 1px grid look, but corners can round like the
+       other containers. The patient/diagnosis header row above is unaffected
+       (its <td class="hdr-cell"> has border: none). */
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+    }
+
+    th {
+      background: #dbeafe;
+      border-right: 1px solid #111827;
+      border-bottom: 1px solid #111827;
+      padding: 6px 7px;
+      text-align: left;
+      font-size: 12px;
+      line-height: 1.25;
+      color: #1e3a8a;
+    }
+
+    thead tr:last-child th { border-top: 1px solid #111827; }
+    th:first-child, td:first-child { border-left: 1px solid #111827; }
+
+    /* Round the medicine table's own corners (column-header row + last data
+       row) to match the 8px radius used on the other containers. */
+    thead tr:last-child th:first-child { border-top-left-radius: 8px; }
+    thead tr:last-child th:last-child { border-top-right-radius: 8px; }
+    tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
+    tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
+
+    .th-sub {
+      font-size: 10px;
+      color: #475569;
+      font-weight: 600;
+    }
+
+    td {
+      border-right: 1px solid #111827;
+      border-bottom: 1px solid #111827;
+      padding: var(--row-padding-y) var(--row-padding-x);
+      vertical-align: top;
+      line-height: 1.28;
+      word-break: break-word;
+    }
+
+    .col-no { width: 8mm; text-align: center; }
+    .col-med { width: 64mm; }
+    .col-how { width: auto; }
+    .col-qty { width: 28mm; }
+
+    .med-cell {
+      display: grid;
+      grid-template-columns: var(--medicine-image-size) 1fr;
+      gap: 6px;
+      align-items: start;
+    }
+
+    .med-photo-slot {
+      width: var(--medicine-image-size);
+      height: var(--medicine-image-size);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #9ca3af;
+      background: #f9fafb;
+      font-size: 10px;
+      line-height: 1.1;
+      text-align: center;
+      flex-shrink: 0;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+    }
+
+    .med-photo-slot.no-image {
+      border: 1.2px dashed #9ca3af;
+    }
+
+    .med-photo-slot.has-image {
+      border: 1px solid #d1d5db;
+      background: #fff;
+      padding: 1px;
+    }
+
+    .med-photo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .med-photo-icon {
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .med-photo-label {
+      font-size: 9px;
+      color: #9ca3af;
+    }
+
+    .med-text {
+      min-width: 0;
+    }
+
+    .med-name {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.2;
+    }
+
+    .med-code {
+      margin-top: 2px;
+      font-size: 9px;
+      color: #6b7280;
+    }
+
+    .take-continue {
+      margin-top: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #065f46;
+    }
+    .med-row.med-continue .med-name::before {
+      content: "🚨 ";
+      display: inline;
+    }
+    .row-cont {
+      width: 24px;
+      height: 24px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #0f172a;
+      font-size: 14px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-bottom: 4px;
+    }
+    .row-cont.active {
+      background: #d1fae5;
+      border-color: #10b981;
+      color: #047857;
+    }
+
+    .instruction-card {
+      display: grid;
+      grid-template-columns: 8mm 1fr;
+      gap: 5px;
+      align-items: start;
+      padding: 6px 7px;
+      border-radius: 10px;
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+    }
+
+    .instruction-icon {
+      width: 8mm;
+      height: 8mm;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: #ffffff;
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    .instruction-text {
+      font-size: 15px;
+      font-weight: 400;
+      line-height: 1.35;
+      color: #0f172a;
+    }
+
+    .comment {
+      margin-top: 5px;
+      padding: 5px 7px;
+      border-left: 4px solid #2563eb;
+      border-radius: 8px;
+      background: #eff6ff;
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 1.3;
+      /* The note is two lines: administrationinstruction + Patient Instruction,
+         joined by "\n" — render the newline as a line break. */
+      white-space: pre-line;
+    }
+
+    .muted {
+      color: #6b7280;
+      font-size: 11px;
+    }
+
+    .qty-main {
+      font-size: 13px;
+      font-weight: 400;
+    }
+
+    .footer-note {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid #d1d5db;
+      display: grid;
+      grid-template-columns: 5fr 3fr 2fr;
+      gap: 8px;
+      font-size: 11px;
+      color: #374151;
+      align-items: stretch;
+    }
+    /* OPD footer: 2 columns (appointment + sign-off; no Checklist). */
+    .opd-footer { grid-template-columns: 5fr 3fr !important; }
+
+
+    /* Appointment card: solid blue border + blue gradient header bar,
+       replacing the plain dashed .sign-box look for this one section. */
+    .sign-box.appt-box {
+      padding: 0;
+      border: 1px solid #90caf9;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .sign-box.appt-box > .label-ul {
+      display: block;
+      background: linear-gradient(135deg, #1565c0, #1e88e5);
+      color: #fff;
+      font-weight: 700;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    .sign-box.appt-box .appt-list {
+      margin-top: 0;
+      padding: 6px 8px 7px;
+    }
+
+    .appt-list {
+      margin-top: 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .appt-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 5px;
+      font-size: 11px;
+      line-height: 1.35;
+      padding: 5px 7px;
+      border-left: 3px solid #2563eb;
+      border-radius: 6px;
+      background: #eff6ff;
+      color: #1e3a8a;
+    }
+
+    .appt-item.empty {
+      border-left-color: #cbd5e1;
+      background: #f8fafc;
+      color: #6b7280;
+      font-style: italic;
+    }
+
+    .appt-remove {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      margin-top: 1px;
+      border: none;
+      border-radius: 3px;
+      background: #fee2e2;
+      color: #dc2626;
+      font-size: 11px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+    }
+    .appt-remove:hover { background: #fca5a5; }
+
+    .appt-body { flex: 1; min-width: 0; }
+    .appt-row1 { font-weight: 600; }
+    .appt-row2 { color: #2563eb; margin-top: 1px; }
+
+    @media print {
+      .appt-remove { display: none; }
+    }
+
+    /* Pharmacist sign-off card: same solid-blue-border + gradient-header
+       treatment as the appointment card and the Checklist card, so all three
+       footer boxes read as one family instead of two styles side by side. */
+    .sign-box.providers-box {
+      padding: 0;
+      border: 1px solid #90caf9;
+      border-radius: 8px;
+      overflow: hidden;
+      display: block;
+    }
+    .providers-hdr {
+      background: linear-gradient(135deg, #1565c0, #1e88e5);
+      color: #fff;
+      font-weight: 700;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    .providers-body {
+      padding: 6px 8px 7px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .provider-block {
+      padding: 6px 0;
+    }
+
+    .provider-block + .provider-block {
+      border-top: 1px solid rgba(21,101,192,.28);
+    }
+
+    .provider-block .provider-value {
+      margin-top: 3px;
+    }
+
+    .provider-block .provider-value div + div {
+      margin-top: 2px;
+    }
+
+    /* Blank signature line — no name, just room to sign by hand on paper. */
+    .provider-signature {
+      min-height: 18px;
+      border-bottom: 1px dashed #9ca3af;
+    }
+
+    /* ── Checklist card: mirrors the ward-view HM Process widget's manual
+       checks, plus 2 blank paper checkboxes with no digital backing. ──────── */
+    .hmproc-box {
+      padding: 0;
+      border: 1px solid #90caf9;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .hmproc-hdr {
+      background: linear-gradient(135deg, #1565c0, #1e88e5);
+      color: #fff;
+      font-weight: 700;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    .hmproc-body { padding: 6px 8px 7px; display: flex; flex-direction: column; gap: 4px; }
+    .hmproc-checks { display: flex; flex-direction: column; gap: 3px; }
+    .hmproc-check-row { display: flex; align-items: flex-start; gap: 5px; font-size: 10px; color: #374151; line-height: 1.3; }
+    .chk-dot {
+      width: 13px; height: 13px; border-radius: 50%; flex: 0 0 auto;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 8.5px; font-weight: 700; color: #fff;
+      background: #9e9e9e;
+      margin-top: 1px;
+    }
+    .chk-dot.yes { background: #43a047; }
+    .chk-dot.no  { background: #e53935; }
+    .chk-box {
+      width: 11px; height: 11px; border-radius: 2px; flex: 0 0 auto;
+      border: 1.3px solid #78909c;
+      background: #fff;
+      margin-top: 2px;
+    }
+    .foot-semi-line { border-top: 1px solid rgba(21,101,192,.28); margin: 2px 0; }
+    .hmproc-meta { font-size: 9px; color: #90a4ae; margin-top: 2px; }
+
+    /* ── Print-repeating page header — lives inside <thead> so the logo/title,
+       patient info, and diagnosis/allergy banner repeat on every printed page. ── */
+    .hdr-cell { padding: 0 0 7px 0; border: none !important; }
+    .hdr-cell .top-title { margin-bottom: 7px; }
+    .hdr-cell .patient-clinical-card { margin: 7px 0 8px; }
+
+    /* ── Page number footer (current page / estimated total) ───────────── */
+    .page-counter { display: none; }
+    @media print {
+      body { counter-reset: page; }
+      .page-counter {
+        display: block;
+        position: fixed;
+        bottom: 4mm;
+        right: var(--sheet-padding-x);
+        font-size: 9px;
+        color: #6b7280;
+      }
+      .page-counter::before {
+        counter-increment: page;
+        content: "Page " counter(page) " / " attr(data-total);
+      }
+    }
+
+    .sign-box {
+      min-height: 38px;
+      border: 1px dashed #9ca3af;
+      border-radius: 8px;
+      padding: 6px 8px;
+    }
+
+    .label-ul {
+      font-weight: 400;
+      font-family: inherit;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 24px;
+      color: #6b7280;
+      font-style: italic;
+    }
+
+    body.compact-mode {
+      --row-padding-y: 4px;
+      --row-padding-x: 5px;
+      --base-font-size: 12px;
+    }
+
+    body.compact-mode .instruction-card { padding: 4px 6px; }
+    body.compact-mode .instruction-text { font-size: 13px; line-height: 1.25; }
+    body.compact-mode .comment { font-size: 12px; padding: 4px 6px; }
+
+    /* ── Editing controls (screen only) ───────────────────────── */
+    .col-act { width: 9mm; text-align: center; vertical-align: middle; }
+
+    .row-del, .row-add {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: 1.5px solid #cbd5e1;
+      background: #fff;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1;
+      color: #475569;
+    }
+    .row-del:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
+    .row-add { border-color: #22c55e; color: #16a34a; }
+    .row-add:hover { background: #f0fdf4; }
+
+    [contenteditable][data-field] {
+      outline: none;
+      border-radius: 5px;
+      padding: 1px 3px;
+      min-height: 1.2em;
+      cursor: text;
+    }
+    [contenteditable][data-field]:hover { background: #f1f5f9; }
+    [contenteditable][data-field]:focus { background: #eff6ff; box-shadow: 0 0 0 2px #93c5fd inset; }
+    [contenteditable][data-field]:empty::before {
+      content: attr(data-ph);
+      color: #9ca3af;
+      font-weight: 400;
+    }
+
+    .note-line { margin-top: 5px; }
+    .note-line:empty { border-left-color: #cbd5e1; background: #f8fafc; }
+
+    .add-row td { background: #f8fafc; }
+    .add-wrap { position: relative; }
+    .add-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      border: 1.5px dashed #94a3b8;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 13px;
+    }
+    .add-input:focus { outline: none; border-color: #2563eb; border-style: solid; }
+    .add-suggest {
+      position: absolute;
+      z-index: 50;
+      left: 0;
+      right: 0;
+      top: 100%;
+      margin-top: 2px;
+      max-height: 240px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, .18);
+    }
+    .add-opt {
+      padding: 7px 10px;
+      font-size: 13px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .add-opt:hover { background: #eff6ff; }
+    .add-opt:last-child { border-bottom: 0; }
+
+    /* ── Daily Pill Journey Card (optional second page) ──────────────────── */
+    /* Hidden unless the "แนบหน้า จัดตามมื้อ" toggle adds .hm-with-mealcard. */
+    .mealcard-section { display: none; margin-top: 18px; }
+    body.hm-with-mealcard .mealcard-section { display: block; }
+    .mealcard-section .timeline-head { display: grid; grid-template-columns: 26mm 1fr 50mm; align-items: center; gap: 8px; border-bottom: 3px solid #111827; padding-bottom: 5px; margin-bottom: 10px; }
+    .mealcard-section .tt-logo { display: flex; align-items: center; }
+    .mealcard-section .tt-logo img { max-width: 24mm; max-height: 11mm; width: auto; display: block; object-fit: contain; }
+    .mealcard-section .th-titles { text-align: center; }
+    .mealcard-section h2 { margin: 0; font-size: 18px; line-height: 1.1; }
+    .mealcard-section .sub { font-size: 11px; color: #4b5563; margin-top: 1px; }
+    .mc-info { background: #eff6ff; color: #1e3a8a; border: 1px solid #dbeafe; border-radius: 8px; padding: 6px 12px; font-size: 12px; margin-bottom: 9px; }
+    .mc-info-detail { margin-top: 6px; font-size: 12px; color: #1f2937; }
+    /* Continued ("take until finished") block — full width, always above the
+       by-meal grid. Orange palette (was red). */
+    .mc-continue-host { break-inside: avoid; page-break-inside: avoid; }
+    .mc-continue-section { border: 1.5px solid #fed7aa; border-radius: 10px; background: #fff7ed; padding: 10px 10px 8px; margin-bottom: 10px; break-inside: avoid; page-break-inside: avoid; }
+    .mc-continue-section .continue-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: #ea580c; color: #fff; font-weight: 700; }
+    .mc-continue-list { margin-top: 10px; display: grid; gap: 8px; }
+    .mc-continue-item { border: 1px solid #fed7aa; border-radius: 10px; background: #fff; padding: 8px 10px; break-inside: avoid; page-break-inside: avoid; text-align: left; }
+    /* Name line: drug name + date range (edit inputs on screen / plain text in
+       print) + note, all on ONE line, left-aligned. */
+    .mc-continue-drug { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-weight: 700; font-size: 13px; line-height: 1.3; }
+    .mcc-name { flex: 0 0 auto; }
+    /* Date range: editable inputs on screen, plain text in print. */
+    .mcc-date-edit { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; font-weight: 400; }
+    .mcc-date-edit label { font-size: 12px; color: #334155; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .mcc-date-edit input[type="date"] { border: 1px solid #cbd5e1; border-radius: 8px; padding: 4px 6px; font-size: 12px; }
+    .mc-continue-note { min-width: 130px; border: 1px solid #fdba74; border-radius: 8px; padding: 4px 8px; font-size: 12px; font-family: inherit; color: #7c2d12; background: #fffbeb; }
+    .mc-continue-note::placeholder { color: #d6a06a; }
+    .mc-continue-note:focus { outline: none; border-color: #ea580c; background: #fff; }
+    /* Print-only text form of the date range (hidden on screen). */
+    .mcc-date-print { display: none; font-size: 12px; color: #7c2d12; font-weight: 600; white-space: nowrap; }
+
+    /* Calendar grid: header row = one date column per day (label + tick),
+       each following row = a meal (label + one tick per day). Borderless. */
+    .mcc-table { width: auto; table-layout: auto; border-collapse: collapse; margin-top: 6px; }
+    .mcc-table th, .mcc-table td { border: none !important; border-radius: 0 !important; padding: 3px 8px 3px 0; vertical-align: middle; font-size: 12px; line-height: 1.3; text-align: left; background: none; color: inherit; }
+    .mcc-mealhead { width: 1%; }
+    .mcc-meal { color: #7c2d12; white-space: nowrap; }
+    .mcc-meal .mcc-ico { font-size: 13px; }
+    .mcc-nomeal { color: #9a6a4a; font-style: italic; }
+    /* Date-column header: small date label above a tick-box, centred. */
+    .mcc-dayhead { text-align: center; width: 1%; white-space: nowrap; padding: 3px 6px; }
+    .mcc-dayhead .mcc-daylbl { display: block; font-size: 9.5px; font-weight: 600; color: #c2410c; }
+    /* On screen: a custom tick-box that shows an ✗ (not a native check) when
+       ticked — matches the "X = dose done" concept. (In print, checked boxes
+       are hidden and unchecked ones draw an empty square — see @media print.) */
+    .mcc-tick input[type="checkbox"] {
+      -webkit-appearance: none; appearance: none;
+      position: relative;
+      width: 15px; height: 15px; margin: 0;
+      border: 1.4px solid #ea580c; border-radius: 3px;
+      background: #fff; cursor: pointer; vertical-align: middle;
+    }
+    .mcc-tick input[type="checkbox"]:checked { background: #fff5ed; }
+    .mcc-tick input[type="checkbox"]:checked::after {
+      content: "✗";
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 13px; line-height: 1; font-weight: 700; color: #c2410c;
+    }
+    .mcc-tick { text-align: center; width: 1%; padding: 3px 6px; }
+    /* Masonry columns: cards size to content and pack tightly; empty slots dropped. */
+    .mc-grid { column-count: 2; column-gap: 8px; }
+    .mc-slot { border: 1.5px solid #cbd5e1; border-radius: 10px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; margin: 0 0 8px; }
+    .mc-slot-head { display: flex; align-items: center; gap: 7px; padding: 5px 10px; font-weight: 800; font-size: 13px; color: #fff; }
+    .mc-slot-head .mc-ico { font-size: 15px; line-height: 1; }
+    .mc-slot-head .mc-en { font-weight: 500; font-size: 10px; opacity: .9; margin-left: auto; }
+    .mc-slot.t-bbf .mc-slot-head { background: #f59e0b; }
+    .mc-slot.t-abf .mc-slot-head { background: #f97316; }
+    .mc-slot.t-blu .mc-slot-head { background: #0ea5e9; }
+    .mc-slot.t-alu .mc-slot-head { background: #0284c7; }
+    .mc-slot.t-bdn .mc-slot-head { background: #6366f1; }
+    .mc-slot.t-adn .mc-slot-head { background: #4f46e5; }
+    .mc-slot.t-bed .mc-slot-head { background: #1e293b; }
+    .mc-slot.t-prn .mc-slot-head { background: #0d9488; }
+    .mc-list { padding: 3px 10px; }
+    .mc-item { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; border-bottom: 1px dashed #e5e7eb; font-size: 12px; }
+    .mc-item:last-child { border-bottom: 0; }
+    .mc-item .mc-drug { font-weight: 700; }
+    .mc-item .mc-dose { color: #475569; }
+    .mc-emptyall { color: #6b7280; font-style: italic; padding: 10px 2px; }
+
+    @page {
+      size: A4 portrait;
+      margin: 8mm;
+    }
+
+    @media print {
+      body { background: #fff; padding-left: 0 !important; padding-right: 0 !important; }
+      .toolbar { display: none !important; }
+      .recon-panel { display: none !important; }
+      .sheet-wrap {
+        width: auto;
+        margin: 0;
+        transform: none !important;
+      }
+      .sheet {
+        width: auto;
+        min-height: auto;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+      /* The column-header row repeats on every printed page. */
+      thead { display: table-header-group; }
+      tfoot { display: table-footer-group; }
+      tr { break-inside: avoid; page-break-inside: avoid; }
+      .footer-note { break-inside: avoid; break-before: avoid; }
+      /* By-meal card: auto page-break — the card only moves to a new page when
+         it doesn't fit in the room left on the current one (no forced break).
+         Don't split the card's header + intro + continued block across a page
+         boundary — if they can't fit, the whole group moves together (the
+         by-meal grid below still flows/breaks per slot). */
+      body.hm-with-mealcard .mealcard-section .timeline-head,
+      body.hm-with-mealcard .mealcard-section .mc-info,
+      body.hm-with-mealcard .mealcard-section .mc-continue-host {
+        break-inside: avoid; page-break-inside: avoid;
+      }
+      /* Glue the BKH header + intro into one unit with what follows: each block
+         forbids a break AFTER it, so the header never prints alone at the bottom
+         with its content orphaned onto the next page. */
+      body.hm-with-mealcard .mealcard-section .timeline-head,
+      body.hm-with-mealcard .mealcard-section .mc-info {
+        break-after: avoid; page-break-after: avoid;
+      }
+      .mc-slot { break-inside: avoid; page-break-inside: avoid; }
+      .mc-slot-head, .mc-info, .mc-continue-section .continue-head { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      /* Date range prints as plain text, not date-input boxes: hide the
+         editable inputs and reveal the text form ("เริ่ม 16-07-2026 …"). */
+      .mcc-date-edit { display: none !important; }
+      .mcc-date-print { display: inline !important; }
+      /* Unchecked tick-boxes print as visible empty squares the patient can
+         check by hand (native checkboxes print inconsistently across browsers). */
+      .mcc-tick input[type="checkbox"] {
+        -webkit-appearance: none; appearance: none;
+        width: 13px !important; height: 13px !important;
+        border: 1.3px solid #7c2d12 !important; border-radius: 3px !important;
+        background: #fff !important;
+        -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+      }
+      /* A checked tick-box (dose already done) prints NOTHING — the cell is blank. */
+      .mcc-tick input[type="checkbox"]:checked { display: none !important; }
+      /* Header sections (.screen-only) now also print once at the top. */
+      /* Hide all editing chrome: action column, add-medicine row, suggestions */
+      .no-print { display: none !important; }
+      .add-row { display: none !important; }
+      .add-suggest { display: none !important; }
+      /* Don't show edit affordances or empty-field placeholders on paper */
+      [contenteditable][data-field] { background: none !important; box-shadow: none !important; padding: 0 !important; }
+      [contenteditable][data-field]:empty::before { content: "" !important; }
+      .note-line:empty { display: none !important; }
+
+      /* ── Fit table to full page width ──────────────────────────
+       * The action column is hidden in print; force the table to 100% and
+       * size the remaining 4 columns so the medicine content (esp. the
+       * How-to-take column) fills the page rather than leaving whitespace.
+       * !important overrides the inline mm widths on the <col> elements. */
+      #medTable { width: 100% !important; table-layout: fixed; }
+      #medTable col.col-act-col { width: 0 !important; }
+      #medTable col.cg-no  { width: 7% !important; }
+      #medTable col.cg-med { width: 38% !important; }
+      #medTable col.cg-how { width: 41% !important; }
+      #medTable col.cg-qty { width: 14% !important; }
+
+      /* The action column (true first-child) is hidden in print, so the
+         left border + rounded left corners need to move to the "#" column,
+         which becomes the visually-first one. */
+      th:first-child, td:first-child { border-left: none; }
+      thead tr:last-child th:first-child,
+      tbody tr:last-child td:first-child { border-radius: 0; }
+      th:nth-child(2), td:nth-child(2) { border-left: 1px solid #111827; }
+      thead tr:last-child th:nth-child(2) { border-top-left-radius: 8px; }
+      tbody tr:last-child td:nth-child(2) { border-bottom-left-radius: 8px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="toolbar" id="printToolbar">
+    <div class="toolbar-title">⚙️ ตั้งค่าการพิมพ์</div>
+    <div class="toolbar-group">
+      <button id="btnPrint" type="button">🖨 Print</button>
+      <button id="btnPdf" type="button">📄 Save PDF</button>
+      <button id="btnRevert" class="secondary" type="button">↩ Revert</button>
+    </div>
+
+    <div class="toolbar-group" aria-label="Status">
+      <span class="print-status" id="fetchStatus"></span>
+    </div>
+
+    <div class="toolbar-group" aria-label="Translate instructions">
+      <label>Language
+        <select id="lang">
+          <option value="">🌐 Translate</option>
+          <optgroup label="🌏 Southeast Asia">
+            <option value="th">Thai (ไทย)</option>
+            <option value="lo">Lao (ລາວ)</option>
+            <option value="my">Myanmar (မြန်မာ)</option>
+            <option value="km">Khmer (ខ្មែរ)</option>
+            <option value="vi">Vietnamese</option>
+            <option value="id">Indonesian</option>
+            <option value="ms">Malay</option>
+            <option value="tl">Filipino</option>
+          </optgroup>
+          <optgroup label="🌏 East / South Asia">
+            <option value="zh-CN">Chinese (Simplified)</option>
+            <option value="zh-TW">Chinese (Traditional)</option>
+            <option value="ja">Japanese</option>
+            <option value="ko">Korean</option>
+            <option value="hi">Hindi</option>
+            <option value="bn">Bengali</option>
+          </optgroup>
+          <optgroup label="🌍 Other">
+            <option value="en">English</option>
+            <option value="ar">Arabic</option>
+            <option value="fr">French</option>
+            <option value="ru">Russian</option>
+          </optgroup>
+        </select>
+      </label>
+    </div>
+
+    <div class="toolbar-group" aria-label="Page format controls">
+      <label>Margin
+        <select id="printMargin">
+          <option value="6">6 mm</option>
+          <option value="8" selected>8 mm</option>
+          <option value="10">10 mm</option>
+          <option value="12">12 mm</option>
+        </select>
+      </label>
+      <label>Preview scale
+        <select id="previewScale">
+          <option value="0.85">85%</option>
+          <option value="0.9">90%</option>
+          <option value="0.95">95%</option>
+          <option value="1" selected>100%</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="toolbar-group" aria-label="Content controls">
+      <label>Font
+        <select id="fontSizeMode">
+          <option value="small">Small</option>
+          <option value="normal" selected>Normal</option>
+          <option value="large">Large</option>
+        </select>
+      </label>
+      <label>Picture
+        <select id="pictureSizeMode">
+          <option value="small">Small</option>
+          <option value="normal" selected>Normal</option>
+          <option value="large">Large</option>
+        </select>
+      </label>
+      <label><input id="compactMode" type="checkbox" /> Compact rows</label>
+      <label><input id="fitWidth" type="checkbox" /> Fit width</label>
+    </div>
+
+    <div class="toolbar-group" aria-label="By-meal page">
+      <label><input id="includeMealCard" type="checkbox" /> แนบหน้า จัดตามมื้อ</label>
+    </div>
+
+    <div class="print-status" id="printStatus">A4 portrait · margin 8 mm</div>
+  </div>
+
+  <!-- OPD: last-5-visits medical history (replaces the IPD Med Reconciliation) -->
+  <div class="recon-panel no-print" id="histPanel">
+    <div class="recon-hdr">
+      <span class="recon-title">🕑 ประวัติการใช้ยา (5 ครั้งล่าสุด)</span>
+    </div>
+    <div class="recon-sub" id="histSub">Last 5 visits · medication history</div>
+    <div class="recon-list" id="histList">
+      <div class="recon-empty"><span class="recon-empty-icon">🕑</span>กำลังโหลดประวัติ…</div>
+    </div>
+  </div>
+
+  <div class="sheet-wrap">
+  <main class="sheet">
+    <table id="medTable">
+      <colgroup>
+        <col class="col-act-col no-print" style="width:9mm">
+        <col class="cg-no" style="width:8mm">
+        <col class="cg-med" style="width:64mm">
+        <col class="cg-how">
+        <col class="cg-qty" style="width:28mm">
+      </colgroup>
+      <thead>
+        <!-- This whole header (logo/title, patient info, diagnosis/allergy)
+             repeats on every printed page via <thead>. -->
+        <tr class="hdr-row">
+          <td class="hdr-cell" colspan="5">
+            <section class="top-title">
+              <div class="logo-zone">
+                <img src="../patient-sticker/bkh-logo.png" alt="Hospital logo" />
+              </div>
+              <div class="title-zone">
+                <h1>OPD Medication Sheet</h1>
+                <div class="subtitle">เอกสารแนะนำการใช้ยากลับบ้าน</div>
+              </div>
+              <div class="date-box">
+                <div><span class="label-ul">Date:</span> <span id="sheetDate">-</span></div>
+                <div class="muted">Please follow the medication instructions below.</div>
+              </div>
+            </section>
+
+            <div class="patient-clinical-card">
+              <section class="patient-card">
+                <div class="patient-field">
+                  <span class="label">Patient name</span>
+                  <div class="value" id="patientName">-</div>
+                </div>
+                <div class="patient-field">
+                  <span class="label">HN</span>
+                  <div class="value" id="patientHN">-</div>
+                </div>
+                <div class="patient-field">
+                  <span class="label">Visit / AN</span>
+                  <div class="value" id="patientAN">-</div>
+                </div>
+                <div class="patient-field">
+                  <span class="label">Room</span>
+                  <div class="value" id="patientRoom">-</div>
+                </div>
+              </section>
+
+              <section class="clinical-banner" id="clinicalBanner" data-no-translate translate="no">
+                <div class="physician-line" id="physicianLine">
+                  <span class="physician-label">แพทย์ (Physician):</span>
+                  <span class="physician-value" id="physicianNameTop">-</span>
+                </div>
+                <div class="dx-line" id="dxLine">
+                  <span class="dx-label"> Diagnosis / การวินิจฉัย:</span>
+                  <span class="dx-value" id="diagnosisValue">-</span>
+                </div>
+                <div class="allergy-line nkda" id="allergyBanner">
+                  <span class="allergy-label"> Allergies / แพ้ยา:</span>
+                  <span class="allergy-value" id="allergyValue">No Known Drug Allergies (ไม่มีประวัติแพ้ยา)</span>
+                </div>
+              </section>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <th class="col-act no-print"></th>
+          <th class="col-no">#</th>
+          <th class="col-med">Medicine / Picture<br><span class="th-sub">ชื่อยา / รูปยา</span></th>
+          <th class="col-how">How to take<br><span class="th-sub">วิธีใช้ยา</span></th>
+          <th class="col-qty">Qty<br><span class="th-sub">จำนวน</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- page-home-med.js appends rows here -->
+      </tbody>
+    </table>
+
+    <!-- OPD footer: appointment + pharmacist sign-off only (no HM Process
+         Checklist — that's an inpatient/discharge concern). Two columns. -->
+    <section class="footer-note opd-footer">
+      <div class="sign-box appt-box">
+        <span class="label-ul">นัดหมายติดตามอาการ</span>
+        <div class="appt-list" id="appointmentList"></div>
+      </div>
+
+      <div class="sign-box providers-box">
+        <div class="providers-hdr">ลงชื่อเภสัชกร</div>
+        <div class="providers-body">
+          <div class="provider-block">
+            <span class="label-ul">ผู้ตรวจสอบรายการยา</span>
+            <div class="provider-value" id="pharmacistCheckedName">-</div>
+          </div>
+          <div class="provider-block">
+            <span class="label-ul">ผู้จ่ายยา</span>
+            <div class="provider-value provider-signature">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Daily Pill Journey Card: discharge meds grouped by meal slot. Optional
+         (toggled by "แนบหน้า จัดตามมื้อ"); prints on its own page. -->
+    <section class="mealcard-section" id="mealcardSection" data-no-translate translate="no">
+      <div class="timeline-head">
+        <div class="tt-logo"><img src="../patient-sticker/bkh-logo.png" alt="BKH" /></div>
+        <div class="th-titles">
+          <h2>ยากลับบ้าน — จัดตามมื้อ</h2>
+          <span class="sub">Daily Pill Journey Card · เวลาในการรับประทานยาที่บ้าน</span>
+        </div>
+        <div></div>
+      </div>
+      <div class="mc-info" id="mealCardInfo">ℹ️ มียาหลายตัวในมื้อเดียวกัน โปรดสังเกตว่าตัวใดกินก่อนอาหาร และตัวใดกินหลังอาหาร</div>
+      <!-- Continued ("take until finished") meds: full-width block, always at
+           the top, above the by-meal grid. -->
+      <div class="mc-continue-host" id="mealcardContinue"><!-- continued block injected by JS --></div>
+      <div class="mc-grid" id="mealcardGrid"><!-- slots injected by JS --></div>
+    </section>
+  </main>
+  <div class="page-counter" id="pageCounter" data-total="1"></div>
+  </div>
+
+  <script src="../../core/messages.js"></script>
+  <script src="../../core/utils.js"></script>
+  <script src="../../core/dom.js"></script>
+  <script src="../../shared/shared-data-client.js"></script>
+  <script src="../../shared/translate-core.js"></script>
+  <script src="../../shared/medical-glossary.js"></script>
+  <script src="../../shared/meal-slots.js"></script>
+  <script src="page-home-med.js"></script>
+</body>
+</html>

@@ -185,11 +185,6 @@
         const hdrs = (pageCtx._raw && pageCtx._raw.arcusHdrs) || {};
         if (hdrs["incus-token"]) ctx.incusToken = hdrs["incus-token"];
 
-        // OPD orderid captured from the outpatient dispense workbench's
-        // pharmacy/dispense/search request — the OPD Home Med Sheet fetches by it.
-        const opd = (pageCtx._raw && pageCtx._raw.opd) || {};
-        if (opd.orderid) ctx.orderid = opd.orderid;
-
         // Reconciliation data for THIS visit. The server is the source of
         // truth — the HM Process workstation's "Med Reconcile" step (▶ Run,
         // src/features/hmr/content-hmr.js) persists the captured
@@ -256,13 +251,12 @@
 
     const mode = sheetMode() || "ipd";
 
-    // Readiness differs by mode:
-    //   IPD (discharge): needs patientuid + patientvisituid (+ session uids for Jasper).
-    //   OPD: needs the captured orderid (+ incus-token); patientvisituid isn't required.
+    // Both IPD (discharge) and OPD (DAILYORDER) pull from getallorderitem keyed by
+    // patientuid + patientvisituid; the difference is the ordertype the server sends.
+    // IPD additionally needs the session uids for Jasper; OPD is rendered client-side.
     const _hasPatient = (c) => c && c.patientuid && c.patientvisituid;
     const _hasAuth    = (c) => c && c.loginuid;
-    const _hasOpd     = (c) => c && c.orderid;
-    const _ready = (c) => (mode === "opd") ? _hasOpd(c) : (_hasPatient(c) && _hasAuth(c));
+    const _ready = (c) => (mode === "opd") ? _hasPatient(c) : (_hasPatient(c) && _hasAuth(c));
     let context = null;
     try {
       for (let attempt = 0; attempt < 8; attempt++) {
@@ -280,9 +274,9 @@
     if (mode === "opd") {
       context = context || {};
       context.mode = "opd";
-      if (!_hasOpd(context)) {
+      if (!_hasPatient(context)) {
         _sending = false;
-        alert("ไม่พบ orderid ของใบสั่งยา OPD\n\nกรุณาคลิกเลือกใบสั่งยาในรายการ (worklist) ก่อน แล้วกดปุ่มซ้ำ");
+        alert("ไม่พบ patientvisituid ของผู้ป่วย OPD\n\nกรุณาคลิกเลือกผู้ป่วยในรายการ (worklist) ก่อน แล้วกดปุ่มซ้ำ");
         return;
       }
       // Fall through to diagnosis/mirror/route below.
@@ -317,9 +311,13 @@
       }
     } catch (_) { /* non-fatal */ }
 
+    // The Home Med Sheet button opens the IPD or OPD sheet by mode; the Journey
+    // button keeps its own type.
+    let outType = _msgType;
+    if (_msgType === MSG.LOAD_MED_TABLE && mode === "opd") outType = MSG.LOAD_MED_TABLE_OPD;
     try {
       chrome.runtime
-        .sendMessage({ type: _msgType, context })
+        .sendMessage({ type: outType, context })
         .finally(() => setTimeout(() => (_sending = false), 300));
     } catch (e) {
       _sending = false;
