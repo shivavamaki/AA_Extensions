@@ -34,7 +34,7 @@ Printable A4 **เอกสารแนะนำการใช้ยากล�
 - **same code but dosage/frequency differ** → `adjusted` → **ปรับขนาดยา** (amber)
 - code not in history → `''` (no tag)
 
-The client (`_buildContinuityTag`, OPD sheet only) renders it as a bold pill under the drug code, seeded from `med.continuity` **once** then **editable** — the pharmacist can override the label, clear it, or add one to a med the auto-check left blank (a deliberately-cleared tag stays cleared across reloads via `continuitySeeded`). The label + override persist in the med cache.
+The client (`_buildContinuityTag`, OPD sheet only) renders it as a bold pill under the drug code, seeded from `med.continuity` **once** then **editable** — the pharmacist can override the label, clear it, or add one to a med the auto-check left blank (a deliberately-cleared tag stays cleared across reloads via `continuitySeeded`). The label + override persist in the med cache. On a **cached** load, `continuity` (a server fact) is re-merged from the fresh report by code, so a cache saved before this field existed still tags correctly; only a saved *override* (`continuitySeeded`) is preserved verbatim.
 
 > The file-header comment mentioning a Jasper XLS flow is **stale** — the sheet now fetches from the ArcusAir API via the server.
 >

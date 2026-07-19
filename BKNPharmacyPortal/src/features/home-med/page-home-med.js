@@ -1154,24 +1154,36 @@ async function fetchAndRender() {
   if (revertFlag) sessionStorage.removeItem('hm:revert');
   const saved = revertFlag ? null : await _loadSavedMeds();
   if (saved && saved.length) {
-    _meds = saved.map((m) => ({
+    // Fresh server continuity signal, by code — merged onto cached meds so a cache
+    // saved before this field existed (or a changed history) still tags correctly.
+    const _freshCont = {};
+    reportMeds.forEach((m) => { if (m.code) _freshCont[norm(m.code)] = norm(m.continuity || ""); });
+    _meds = saved.map((m) => {
+      const code = norm(m.code || "");
+      // Server continuity is a fact — always take the fresh value.
+      const continuity = (code in _freshCont) ? _freshCont[code] : norm(m.continuity || "");
+      // Label: keep the pharmacist's cached override if they had one; otherwise
+      // leave blank + unseeded so _buildContinuityTag seeds the default from the
+      // fresh signal. A cached label present with continuitySeeded means a prior
+      // deliberate choice (including a clear) — respect it.
+      const hadLabel = typeof m.continuityLabel === "string" && m.continuitySeeded;
+      return {
       drug: norm(m.drug || ""), instruction: norm(m.instruction || ""),
       note: normMultiline(m.note || ""), noteEn: normMultiline(m.noteEn || ""),
       quantity: norm(m.quantity || ""),
-      code: norm(m.code || ""), provider: norm(m.provider || ""),
+      code, provider: norm(m.provider || ""),
       frequencyTh: norm(m.frequencyTh || ""),
       source: norm(m.source || ""),
-      // OPD continuity tag + the pharmacist's override; continuitySeeded true so a
-      // reload keeps a deliberately-cleared tag cleared (no re-seed from default).
-      continuity: norm(m.continuity || ""),
-      continuityLabel: norm(m.continuityLabel || ""),
-      continuitySeeded: true,
+      continuity,
+      continuityLabel: hadLabel ? norm(m.continuityLabel || "") : "",
+      continuitySeeded: hadLabel,
       takeUntilFinished: !!m.takeUntilFinished,
       continueStartDate: norm(m.continueStartDate || ""),
       continueEndDate: norm(m.continueEndDate || ""),
       continueNote: norm(m.continueNote || ""),
       continueTicks: (m.continueTicks && typeof m.continueTicks === "object") ? m.continueTicks : {},
-    }));
+      };
+    });
     // Detect new discharge meds added after the cache was saved and inject them.
     const savedCodes = new Set(_meds.map((m) => m.code).filter(Boolean));
     const newItems = reportMeds.filter((m) => m.code && !savedCodes.has(norm(m.code)));
