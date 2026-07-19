@@ -580,32 +580,43 @@
       color: #065f46;
     }
 
-    /* Continuity tag under the code (OPD): auto-computed vs. last-5-visits,
-       pharmacist-overridable. Bold + coloured pill; green = รับยาต่อเนื่อง,
-       amber = ปรับขนาดยา; a blank one shows a faint "+ add status" prompt. */
+    /* Continuity tag under the code (OPD): pharmacist picks from a dropdown —
+       🟢 รับยาต่อเนื่อง / 🟡 ปรับขนาดยา / 🔵 ยาใหม่ / —. Pre-selected from the
+       auto-computed value. Coloured pill; the <select> shows on screen, a static
+       label prints. */
     .med-continuity {
       margin-top: 3px;
       display: inline-block;
+      border-radius: 999px;
+      background: #eef2f7;
+      border: 1px solid #dbe2ea;
+    }
+    .med-continuity.cont-continued { background: #e7f6ee; border-color: #b7e2c9; }
+    .med-continuity.cont-adjusted  { background: #fdf3e3; border-color: #f4d9a8; }
+    .med-continuity.cont-new       { background: #e6f0fb; border-color: #b9d4f2; }
+    .continuity-select {
+      appearance: none; -webkit-appearance: none;
+      border: none; outline: none; cursor: pointer;
+      background: transparent;
+      font-family: inherit;
       font-size: 10px;
       font-weight: 700;
       line-height: 1.3;
       padding: 1px 6px;
-      border-radius: 999px;
       color: #334155;
-      background: #eef2f7;
-      border: 1px solid #dbe2ea;
     }
-    .med-continuity.cont-continued { color: #065f46; background: #e7f6ee; border-color: #b7e2c9; }
-    .med-continuity.cont-adjusted  { color: #92400e; background: #fdf3e3; border-color: #f4d9a8; }
-    .med-continuity:empty {
-      font-weight: 400;
-      color: #9ca3af;
-      background: transparent;
-      border: 1px dashed #d1d5db;
-    }
+    .med-continuity.cont-continued .continuity-select { color: #065f46; }
+    .med-continuity.cont-adjusted  .continuity-select { color: #92400e; }
+    .med-continuity.cont-new       .continuity-select { color: #1e3a8a; }
+    .continuity-print { display: none; }   /* screen: the <select> is the control */
     @media print {
-      /* Don't print the empty prompt or its dashed box — only real tags show. */
-      .med-continuity:empty { display: none; }
+      .continuity-select { display: none; }
+      .continuity-print  { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 6px; }
+      .med-continuity.cont-continued .continuity-print { color: #065f46; }
+      .med-continuity.cont-adjusted  .continuity-print { color: #92400e; }
+      .med-continuity.cont-new       .continuity-print { color: #1e3a8a; }
+      /* An unselected (—) tag shouldn't print an empty pill. */
+      .med-continuity:not(.cont-continued):not(.cont-adjusted):not(.cont-new) { display: none; }
     }
     .med-row.med-continue .med-name::before {
       content: "🚨 ";

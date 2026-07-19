@@ -34,7 +34,7 @@ Printable A4 **เอกสารแนะนำการใช้ยากล�
 - **same code but dosage/frequency differ** → `adjusted` → **ปรับขนาดยา** (amber)
 - code not in history → `''` (no tag)
 
-The client (`_buildContinuityTag`, OPD sheet only) renders it as a bold pill under the drug code, seeded from `med.continuity` **once** then **editable** — the pharmacist can override the label, clear it, or add one to a med the auto-check left blank (a deliberately-cleared tag stays cleared across reloads via `continuitySeeded`). The label + override persist in the med cache. On a **cached** load, `continuity` (a server fact) is re-merged from the fresh report by code, so a cache saved before this field existed still tags correctly; only a saved *override* (`continuitySeeded`) is preserved verbatim.
+The client (`_buildContinuityTag`, OPD sheet only) renders a **dropdown** (`<select>`) under the drug code, pre-selected from `med.continuity`. The pharmacist picks the final value from a fixed list (`CONTINUITY_OPTIONS`): `—` / **🟢 รับยาต่อเนื่อง** / **🟡 ปรับขนาดยา** / **🔵 ยาใหม่** (the last is a manual-only choice the auto-check never sets). The chosen value drives the pill colour (`cont-*`) and persists in the med cache. On a **cached** load, a med that already carries a saved `continuity` (a pharmacist pick — even blank) wins; only when the key is absent (cache predates the field) is the fresh server value seeded. Print shows a static coloured label (`.continuity-print`); the `<select>` is screen-only, and an unselected (`—`) tag doesn't print.
 
 > The file-header comment mentioning a Jasper XLS flow is **stale** — the sheet now fetches from the ArcusAir API via the server.
 >

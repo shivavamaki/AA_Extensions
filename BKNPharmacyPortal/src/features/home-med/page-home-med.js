@@ -491,12 +491,19 @@ function _takeContinueLabel() {
   return (_currentLang === "en") ? "Take until finished" : "ทานต่อเนื่องจนหมด";
 }
 
-/** Default Thai label for a med's continuity vs. last-5-visits history.
- * "" when the drug wasn't seen before. User-overridable on the sheet. */
-function _continuityDefaultLabel(continuity) {
-  if (continuity === "continued") return "รับยาต่อเนื่อง";
-  if (continuity === "adjusted")  return "ปรับขนาดยา";
-  return "";
+/** Canonical continuity options for the OPD sheet dropdown. `value` is stored on
+ * the med (server-comparable), `label` is what shows on the pill. Order matters —
+ * it's the dropdown order. "" is the "no tag" choice. */
+const CONTINUITY_OPTIONS = [
+  { value: "",          label: "—" },
+  { value: "continued", label: "🟢 รับยาต่อเนื่อง" },
+  { value: "adjusted",  label: "🟡 ปรับขนาดยา" },
+  { value: "new",       label: "🔵 ยาใหม่" },
+];
+
+function _continuityLabelFor(value) {
+  const o = CONTINUITY_OPTIONS.find((x) => x.value === value);
+  return o ? o.label : "";
 }
 
 function _takeContinueMealNote() {
@@ -560,10 +567,10 @@ function _medFromReport(m) {
     // Authoritative Thai frequency phrase (BKN frequency master); when present
     // it overrides the engine's frequency translation on the instruction line.
     frequencyTh: norm(m.frequencyTh || ""),
-    // Continuity vs. last-5-visits history (OPD only): "continued" | "adjusted" | "".
-    // The server computes a default; the pharmacist can override the text below.
+    // Continuity vs. last-5-visits history (OPD only): "" | "continued" | "adjusted"
+    // | "new". Server auto-computes continued/adjusted; the pharmacist picks the
+    // final value from the OPD sheet dropdown (which also offers "new").
     continuity: norm(m.continuity || ""),
-    continuityLabel: "",   // set on load from continuity; user-editable thereafter
     takeUntilFinished: false,
     continueStartDate: "",
     continueEndDate: "",
@@ -579,25 +586,26 @@ function _appendNoData(tbody, text) {
   tbody.appendChild(tr);
 }
 
-/** Continuity tag shown under the drug code (OPD sheet). Bold-highlighted,
- * editable so the pharmacist can override the auto-computed default (or add one
- * to a med the auto-check left blank). The `data-continuity` class drives the
- * colour: green for รับยาต่อเนื่อง, amber for ปรับขนาดยา. */
+/** Continuity tag shown under the drug code (OPD sheet): a dropdown the
+ * pharmacist picks from — 🟢 รับยาต่อเนื่อง / 🟡 ปรับขนาดยา / 🔵 ยาใหม่ / —.
+ * Pre-selected from the server's auto-computed `continuity`; the pharmacist's
+ * pick then wins and persists. The selected value drives the pill colour via the
+ * `cont-*` class, and the screen shows a native <select>; print shows a static
+ * coloured label (see OPD-Sheet.html print CSS). */
 function _buildContinuityTag(med) {
   // OPD sheet only — the IPD discharge sheet has no last-5-visits comparison.
   if (!_IS_OPD_SHEET) return "";
-  // Seed the editable label from the server's continuity default ONCE; after that
-  // the pharmacist's edits (including clearing it) win.
-  if (!med.continuitySeeded) {
-    med.continuitySeeded = true;
-    if (!med.continuityLabel && med.continuity) {
-      med.continuityLabel = _continuityDefaultLabel(med.continuity);
-    }
-  }
-  const cls = med.continuity ? ` cont-${med.continuity}` : "";
-  return `<div class="med-continuity${cls}" contenteditable="true" data-field="continuityLabel"`
-       + ` data-ph="+ สถานะการรับยา" data-no-translate translate="no">`
-       + `${escapeHtml(med.continuityLabel || "")}</div>`;
+  const val = med.continuity || "";
+  const opts = CONTINUITY_OPTIONS.map((o) =>
+    `<option value="${escapeHtml(o.value)}"${o.value === val ? " selected" : ""}>${escapeHtml(o.label)}</option>`
+  ).join("");
+  const cls = val ? ` cont-${val}` : "";
+  // The static label mirrors the selection for print (select controls are hidden
+  // when printing). data-field lets the generic row binder persist changes.
+  return `<span class="med-continuity${cls}" data-no-translate translate="no">`
+       + `<select class="continuity-select" data-field="continuity">${opts}</select>`
+       + `<span class="continuity-print">${escapeHtml(_continuityLabelFor(val))}</span>`
+       + `</span>`;
 }
 
 /** Build one editable medicine row. `index` is the stable position in _meds
@@ -973,6 +981,20 @@ function _bindRowEditing(tbody) {
     });
   });
 
+  // Continuity dropdown (OPD) → commit on change; re-render to update pill colour
+  // + the print label.
+  tbody.querySelectorAll("select.continuity-select[data-field]").forEach((sel) => {
+    sel.addEventListener("change", () => {
+      const tr = sel.closest(".med-row");
+      if (!tr) return;
+      const idx = Number(tr.dataset.index);
+      if (idx < 0 || idx >= _meds.length) return;
+      _meds[idx].continuity = sel.value;
+      _persist();
+      renderMeds();
+    });
+  });
+
   // Toggle take-until-finished buttons.
   tbody.querySelectorAll(".row-cont").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -1154,19 +1176,16 @@ async function fetchAndRender() {
   if (revertFlag) sessionStorage.removeItem('hm:revert');
   const saved = revertFlag ? null : await _loadSavedMeds();
   if (saved && saved.length) {
-    // Fresh server continuity signal, by code — merged onto cached meds so a cache
-    // saved before this field existed (or a changed history) still tags correctly.
+    // Fresh server continuity signal, by code — seeds cached meds saved before this
+    // field existed. A cache that DOES carry `continuity` is a pharmacist pick and
+    // wins (even when blank); only when the key is absent do we take the fresh value.
     const _freshCont = {};
     reportMeds.forEach((m) => { if (m.code) _freshCont[norm(m.code)] = norm(m.continuity || ""); });
     _meds = saved.map((m) => {
       const code = norm(m.code || "");
-      // Server continuity is a fact — always take the fresh value.
-      const continuity = (code in _freshCont) ? _freshCont[code] : norm(m.continuity || "");
-      // Label: keep the pharmacist's cached override if they had one; otherwise
-      // leave blank + unseeded so _buildContinuityTag seeds the default from the
-      // fresh signal. A cached label present with continuitySeeded means a prior
-      // deliberate choice (including a clear) — respect it.
-      const hadLabel = typeof m.continuityLabel === "string" && m.continuitySeeded;
+      const continuity = Object.prototype.hasOwnProperty.call(m, "continuity")
+        ? norm(m.continuity || "")
+        : (_freshCont[code] || "");
       return {
       drug: norm(m.drug || ""), instruction: norm(m.instruction || ""),
       note: normMultiline(m.note || ""), noteEn: normMultiline(m.noteEn || ""),
@@ -1175,8 +1194,6 @@ async function fetchAndRender() {
       frequencyTh: norm(m.frequencyTh || ""),
       source: norm(m.source || ""),
       continuity,
-      continuityLabel: hadLabel ? norm(m.continuityLabel || "") : "",
-      continuitySeeded: hadLabel,
       takeUntilFinished: !!m.takeUntilFinished,
       continueStartDate: norm(m.continueStartDate || ""),
       continueEndDate: norm(m.continueEndDate || ""),
