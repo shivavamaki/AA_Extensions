@@ -278,6 +278,32 @@
       border-left-color: var(--hc-bar, #6366f1);
       box-shadow: 0 0 0 1px var(--hc-edge, #c7d2fe) inset;
     }
+
+    /* Connector arrow: hovered current-order med → its row on the sheet. Fixed
+       full-window SVG overlay; screen-only. */
+    #histArrowLayer {
+      position: fixed; inset: 0; width: 100vw; height: 100vh;
+      pointer-events: none; z-index: 1200;
+      opacity: 0; transition: opacity .15s ease;
+    }
+    #histArrowLayer.show { opacity: 1; }
+    #histArrowPath {
+      stroke-dasharray: 10 7;
+      animation: histArrowFlow .6s linear infinite;
+      filter: drop-shadow(0 1px 2px rgba(29,78,216,.35));
+    }
+    @keyframes histArrowFlow { to { stroke-dashoffset: -17; } }
+    /* The pointed-at sheet row pulses so it's obvious which line the arrow hits. */
+    .med-row.sheet-pointed > td { background: #eef4ff !important; }
+    .med-row.sheet-pointed { animation: sheetRowPulse 1s ease-in-out infinite; }
+    @keyframes sheetRowPulse {
+      0%,100% { box-shadow: inset 0 0 0 0 rgba(29,78,216,0); }
+      50%     { box-shadow: inset 0 0 0 2px rgba(29,78,216,.55); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #histArrowPath, .med-row.sheet-pointed { animation: none; }
+    }
+    @media print { #histArrowLayer { display: none !important; } }
     /* While filtering to one drug: non-matching rows are hidden, and any visit
        group (or the current-order box) left with no match collapses away. */
     .hist-med.hist-hidden { display: none; }

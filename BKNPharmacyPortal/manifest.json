@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.20.0",
-  "version_name": "2026.07.19 — OPD history: current-order compare, selectable N, filter-collapse",
+  "version": "3.21.0",
+  "version_name": "2026.07.19 — OPD history: hover-arrow to sheet row + RM match tag",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",

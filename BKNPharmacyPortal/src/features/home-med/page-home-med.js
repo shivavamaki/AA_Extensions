@@ -1271,7 +1271,7 @@ function _histFmtDate(iso) {
 
 /** One coloured med row (shared by the current-order box and the history list).
  * `nowTag` marks a history row also on the current sheet. */
-function _histRow(m, colorIdx, visitCount, currentCodes, isCurrent) {
+function _histRow(m, colorIdx, visitCount, currentCodes, isCurrent, medIdx) {
   const k = _histDrugKey(m);
   const c = _histColor(k, colorIdx[k] || 0);
   const repeats = visitCount[k] || 0;   // # of history visits containing this drug
@@ -1284,7 +1284,10 @@ function _histRow(m, colorIdx, visitCount, currentCodes, isCurrent) {
   const nowTag = (!isCurrent && m.code && currentCodes.has(norm(m.code)))
     ? `<span class="hist-now" title="อยู่ในใบสั่งยาปัจจุบัน">ครั้งนี้</span>` : "";
   const info = m.info || m.instruction || "";
-  return `<div class="hist-med" data-drugkey="${escapeHtml(k)}"`
+  // data-medidx (current-order rows only) links the panel row to its sheet row
+  // (.med-row[data-index]) so hover can draw a connector arrow.
+  const idxAttr = (isCurrent && Number.isInteger(medIdx)) ? ` data-medidx="${medIdx}"` : "";
+  return `<div class="hist-med" data-drugkey="${escapeHtml(k)}"${idxAttr}`
     + ` style="--hc-bar:${c.bar};--hc-dot:${c.dot};--hc-soft:${c.soft};--hc-edge:${c.edge};">`
     + `<span class="hist-dot"></span>`
     + `<span class="hist-body">${rmTag}<span class="hist-drug">${escapeHtml(m.drug || "")}</span>`
@@ -1340,7 +1343,7 @@ function _renderHistView() {
   if (curBox && curMeds) {
     if (_meds.length) {
       curBox.style.display = "";
-      curMeds.innerHTML = _meds.map((m) => _histRow(m, colorIdx, visitCount, currentCodes, true)).join("");
+      curMeds.innerHTML = _meds.map((m, i) => _histRow(m, colorIdx, visitCount, currentCodes, true, i)).join("");
     } else {
       curBox.style.display = "none";
       curMeds.innerHTML = "";
@@ -1408,17 +1411,88 @@ function cssEscape(s) {
   return (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/["\\]/g, "\\$&");
 }
 
+/* ── Connector arrow: current-order row → its row on the printed sheet ────────
+ * A fixed-position SVG overlay drawn from the hovered panel med to the matching
+ * .med-row on the OPD sheet, so the pharmacist sees which sheet line it is. */
+let _histArrowEl = null;
+let _histArrowRedraw = null;   // bound redraw fn while an arrow is shown
+
+function _ensureArrowLayer() {
+  if (_histArrowEl) return _histArrowEl;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.id = "histArrowLayer";
+  svg.setAttribute("aria-hidden", "true");
+  svg.innerHTML =
+    `<defs><marker id="histArrowHead" markerWidth="9" markerHeight="9" refX="7" refY="3"
+        orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#1d4ed8"></path></marker></defs>
+     <path id="histArrowPath" fill="none" stroke="#1d4ed8" stroke-width="2.4"
+        stroke-linecap="round" marker-end="url(#histArrowHead)"></path>`;
+  document.body.appendChild(svg);
+  _histArrowEl = svg;
+  return svg;
+}
+
+function _hideHistArrow() {
+  if (_histArrowEl) _histArrowEl.classList.remove("show");
+  document.querySelectorAll(".med-row.sheet-pointed").forEach((r) => r.classList.remove("sheet-pointed"));
+  if (_histArrowRedraw) {
+    window.removeEventListener("scroll", _histArrowRedraw, true);
+    window.removeEventListener("resize", _histArrowRedraw);
+    _histArrowRedraw = null;
+  }
+}
+
+/** Draw the arrow from panel row `fromEl` to the sheet's .med-row[data-index=idx]. */
+function _pointToSheetRow(fromEl, idx) {
+  const target = document.querySelector(`#medTable .med-row[data-index="${idx}"]`);
+  if (!target) { _hideHistArrow(); return; }
+  target.classList.add("sheet-pointed");
+  // Bring the target into view if it's scrolled off.
+  const tr = target.getBoundingClientRect();
+  if (tr.top < 60 || tr.bottom > window.innerHeight - 20) {
+    target.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+  const svg = _ensureArrowLayer();
+  const draw = () => {
+    const a = fromEl.getBoundingClientRect();
+    const b = target.getBoundingClientRect();
+    // Start at the panel row's left edge, end at the sheet row's right edge.
+    const x1 = a.left - 2,          y1 = a.top + a.height / 2;
+    const x2 = b.right + 6,         y2 = b.top + b.height / 2;
+    // Cubic curve bowing left so it arcs from the sidebar to the sheet.
+    const midx = (x1 + x2) / 2;
+    const d = `M ${x1} ${y1} C ${midx} ${y1}, ${midx} ${y2}, ${x2} ${y2}`;
+    svg.querySelector("#histArrowPath").setAttribute("d", d);
+  };
+  draw();
+  svg.classList.add("show");
+  // Keep the arrow anchored while the sheet scrolls/resizes under a held hover.
+  if (_histArrowRedraw) {
+    window.removeEventListener("scroll", _histArrowRedraw, true);
+    window.removeEventListener("resize", _histArrowRedraw);
+  }
+  _histArrowRedraw = draw;
+  window.addEventListener("scroll", _histArrowRedraw, true);
+  window.addEventListener("resize", _histArrowRedraw);
+}
+
 /** Interaction model (deliberate): only the CURRENT-order rows drive the hover
- * filter — hovering a today's-med highlights + narrows the history to that drug.
- * Hovering a HISTORY row does NOT filter (that would hide the very rows you're
- * reading). Click-to-pin works on both so a history row can still be pinned. */
+ * filter — hovering a today's-med highlights + narrows the history to that drug,
+ * and draws a connector arrow to that med's row on the sheet. Hovering a HISTORY
+ * row does NOT filter. Click-to-pin works on both. */
 function _bindHistInteraction() {
   const panel = document.getElementById("histPanel");
   if (!panel) return;
-  // Hover filter — current-order rows only.
+  // Hover filter + sheet arrow — current-order rows only.
   panel.querySelectorAll("#histCurrent .hist-med[data-drugkey]").forEach((el) => {
-    el.addEventListener("mouseenter", () => { if (!_histPinned) _histSetActive(el.dataset.drugkey); });
-    el.addEventListener("mouseleave", () => { if (!_histPinned) _histSetActive(""); });
+    el.addEventListener("mouseenter", () => {
+      if (!_histPinned) _histSetActive(el.dataset.drugkey);
+      if (el.dataset.medidx != null) _pointToSheetRow(el, Number(el.dataset.medidx));
+    });
+    el.addEventListener("mouseleave", () => {
+      if (!_histPinned) _histSetActive("");
+      _hideHistArrow();
+    });
   });
   // Click to pin/unpin — any row (current or history).
   panel.querySelectorAll(".hist-med[data-drugkey]").forEach((el) => {
