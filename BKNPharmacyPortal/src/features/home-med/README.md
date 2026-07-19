@@ -61,6 +61,8 @@ The on-screen controls live in a fixed **left sidebar** (`.toolbar`, pastel-gree
 
 The toolbar **slides off the left edge**: the header's `‹` button collapses it (`body.toolbar-collapsed` → `transform: translateX(-100%)`, and the sheet reclaims the left padding), and a fixed vertical **ribbon tab** (`#toolbarRibbon`) on the left edge reopens it. State persists in `localStorage["hm:toolbarCollapsed"]` (`bindToolbarCollapse`). Screen-only; the ribbon is hidden on print.
 
+**Current-visit summary panel (OPD sheet only).** A second left-edge ribbon (`#vsRibbon`, purple, below the settings ribbon) slides out a **📋 สรุปการรักษาครั้งนี้** panel (`#visitSummaryPanel` → `body.vs-open`). `bindVisitSummary` toggles it (state in `localStorage["hm:vsOpen"]`); `renderVisitSummary(data)` fills `#vsBody` — currently a placeholder, **data pipeline TBD**. Screen-only.
+
 > Removed: **Fit width** (`body.fit-width`), the dead **Paper** select, and the **Hide logo** toggle. When editing the config, keep the spots in sync — `PRINT_CONTROL_DEFAULTS`, `_getPrintControls`, `applyPrintSettings`, `currentPrintSettingsFromControls`, and the `bindPrintControls` set + listener array.
 
 ## Follow-up appointment section

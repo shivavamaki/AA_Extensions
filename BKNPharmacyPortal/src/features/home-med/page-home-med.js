@@ -1937,6 +1937,38 @@ function bindToolbarCollapse() {
   if (ribbon)   ribbon.addEventListener("click", () => setCollapsed(false));
 }
 
+/** Current-visit summary panel (OPD sheet): left-edge ribbon slides out a panel.
+ * Data pipeline TBD — for now it toggles the shell; renderVisitSummary() fills
+ * #vsBody once the data source is wired. State persists in localStorage. */
+function bindVisitSummary() {
+  const ribbon = document.getElementById("vsRibbon");
+  const panel  = document.getElementById("visitSummaryPanel");
+  const close  = document.getElementById("vsClose");
+  if (!ribbon || !panel) return;   // not the OPD sheet
+  const KEY = "hm:vsOpen";
+  const setOpen = (on) => {
+    document.body.classList.toggle("vs-open", on);
+    try { localStorage.setItem(KEY, on ? "1" : "0"); } catch (_e) { /* ignore */ }
+  };
+  let start = false;
+  try { start = localStorage.getItem(KEY) === "1"; } catch (_e) { /* ignore */ }
+  document.body.classList.toggle("vs-open", start);
+  ribbon.addEventListener("click", () => setOpen(!document.body.classList.contains("vs-open")));
+  if (close) close.addEventListener("click", () => setOpen(false));
+}
+
+/** Fill the current-visit summary panel. Placeholder until the data pipeline is
+ * defined — call with the summary payload to render. */
+function renderVisitSummary(data) {
+  const body = document.getElementById("vsBody");
+  if (!body) return;
+  if (!data) {
+    body.innerHTML = `<div class="vs-empty"><span class="vs-empty-icon">📋</span>ยังไม่มีข้อมูลสรุป — รอเชื่อมต่อ data pipeline</div>`;
+    return;
+  }
+  // TODO: render the real summary once the pipeline is defined.
+}
+
 function bindToolbar() {
   const btnPrint = document.getElementById("btnPrint");
   const btnPdf = document.getElementById("btnPdf");
@@ -2034,6 +2066,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindPrintControls();
   bindToolbar();
   bindToolbarCollapse();
+  bindVisitSummary();
   bindLangControl();
   _bindReconPanel();
 

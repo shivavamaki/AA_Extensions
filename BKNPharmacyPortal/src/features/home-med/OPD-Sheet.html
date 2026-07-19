@@ -87,6 +87,68 @@
     .toolbar-collapse-btn:hover { background: #c2e3cd; }
     @media print { .toolbar-ribbon { display: none !important; } }
 
+    /* ── Current-visit summary: left-edge ribbon (always visible) + slide-out
+       panel. Sits below the settings ribbon. Screen-only. ─────────────────── */
+    .vs-ribbon {
+      position: fixed;
+      top: calc(50% + 96px); left: 220px;   /* beside the open toolbar by default */
+      transform: translateY(-50%);
+      z-index: 1001;
+      display: flex; align-items: center; gap: 6px;
+      writing-mode: vertical-rl;
+      padding: 14px 6px;
+      background: #7c3aed; color: #fff;
+      font-weight: 800; font-size: 12px; letter-spacing: .04em;
+      border: none; border-radius: 0 10px 10px 0;
+      cursor: pointer;
+      box-shadow: 2px 0 10px rgba(76,29,149,.28);
+      transition: left .22s ease;
+    }
+    .vs-ribbon:hover { background: #6d28d9; }
+    /* Toolbar collapsed → its ribbon sits at 50%,left:0; drop this one to the
+       edge just below it. Panel open → tuck the ribbon against the panel edge. */
+    body.toolbar-collapsed .vs-ribbon { left: 0; }
+    body.vs-open .vs-ribbon { left: 340px; }
+
+    .vs-panel {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 1002;
+      width: 340px; max-width: 88vw;
+      display: flex; flex-direction: column;
+      background: #faf5ff;
+      color: #2e1065;
+      border-right: 1px solid #d8b4fe;
+      box-shadow: 3px 0 18px rgba(76,29,149,.20);
+      transform: translateX(-100%);
+      transition: transform .22s ease;
+    }
+    body.vs-open .vs-panel { transform: translateX(0); }
+    .vs-hdr {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 14px;
+      background: linear-gradient(135deg, #7c3aed, #9333ea);
+      color: #fff; font-weight: 800; font-size: 14px;
+      flex: 0 0 auto;
+    }
+    .vs-hdr .vs-close {
+      margin-left: auto;
+      width: 24px; height: 24px; line-height: 1;
+      border: 1px solid rgba(255,255,255,.5); border-radius: 6px;
+      background: rgba(255,255,255,.15); color: #fff;
+      font-size: 16px; font-weight: 800; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .vs-hdr .vs-close:hover { background: rgba(255,255,255,.28); }
+    .vs-body {
+      flex: 1; overflow-y: auto;
+      padding: 14px;
+      font-size: 12.5px; line-height: 1.5;
+    }
+    .vs-empty { color: #7c6f9c; text-align: center; padding: 32px 12px; }
+    .vs-empty-icon { display: block; font-size: 26px; margin-bottom: 8px; opacity: .7; }
+    @media print { .vs-ribbon, .vs-panel { display: none !important; } }
+
     .toolbar-title { font-size: 13px; font-weight: 800; color: #166534; letter-spacing: .02em; display: flex; align-items: center; gap: 6px; }
 
     .toolbar-group {
@@ -1305,6 +1367,17 @@
 
 <body>
   <button class="toolbar-ribbon" id="toolbarRibbon" type="button" title="เปิดแผงตั้งค่า">⚙️ ตั้งค่า ›</button>
+
+  <!-- Current-visit summary: left-edge ribbon + slide-out panel (screen only) -->
+  <button class="vs-ribbon no-print" id="vsRibbon" type="button" title="สรุปการรักษาครั้งนี้">📋 สรุปครั้งนี้ ›</button>
+  <div class="vs-panel no-print" id="visitSummaryPanel">
+    <div class="vs-hdr">📋 สรุปการรักษาครั้งนี้
+      <button class="vs-close" id="vsClose" type="button" title="ปิด">‹</button>
+    </div>
+    <div class="vs-body" id="vsBody">
+      <div class="vs-empty"><span class="vs-empty-icon">📋</span>ยังไม่มีข้อมูลสรุป — รอเชื่อมต่อ data pipeline</div>
+    </div>
+  </div>
 
   <div class="toolbar" id="printToolbar">
     <div class="toolbar-title">⚙️ ตั้งค่าการพิมพ์
