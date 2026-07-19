@@ -51,9 +51,43 @@
       color: #14532d;
       border-right: 1px solid #bfe6cd;
       box-shadow: 2px 0 12px rgba(22,101,52,.10);
+      transition: transform .22s ease;
     }
+    /* Collapse the toolbar off the left edge; the sheet reclaims the space. */
+    body.toolbar-collapsed .toolbar { transform: translateX(-100%); }
+    body.toolbar-collapsed { padding-left: 14px; }
 
-    .toolbar-title { font-size: 13px; font-weight: 800; color: #166534; letter-spacing: .02em; }
+    /* Ribbon tab on the left edge to reopen the toolbar (shown only when collapsed). */
+    .toolbar-ribbon {
+      position: fixed;
+      top: 50%; left: 0; transform: translateY(-50%);
+      z-index: 1001;
+      display: none;
+      align-items: center; gap: 6px;
+      writing-mode: vertical-rl;
+      padding: 14px 6px;
+      background: #16a34a; color: #fff;
+      font-weight: 800; font-size: 12px; letter-spacing: .04em;
+      border: none; border-radius: 0 10px 10px 0;
+      cursor: pointer;
+      box-shadow: 2px 0 10px rgba(22,101,52,.25);
+    }
+    .toolbar-ribbon:hover { background: #15803d; }
+    body.toolbar-collapsed .toolbar-ribbon { display: flex; }
+
+    /* Close (‹) button inside the toolbar header. */
+    .toolbar-collapse-btn {
+      margin-left: auto;
+      width: 22px; height: 22px; line-height: 1;
+      border: 1px solid #bfe6cd; border-radius: 6px;
+      background: #d4ecdc; color: #166534;
+      font-size: 14px; font-weight: 800; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .toolbar-collapse-btn:hover { background: #c2e3cd; }
+    @media print { .toolbar-ribbon { display: none !important; } }
+
+    .toolbar-title { font-size: 13px; font-weight: 800; color: #166534; letter-spacing: .02em; display: flex; align-items: center; gap: 6px; }
 
     .toolbar-group {
       display: flex;
@@ -420,23 +454,6 @@
       background: #fff;
       box-shadow: 0 4px 18px rgba(15, 23, 42, .12);
     }
-
-    /* Fit-width editing view: sheet expands to the full window so the
-       medicine table content uses all available width on screen. Print is
-       unaffected (always A4 portrait). */
-    body.fit-width .sheet-wrap {
-      width: 100%;
-      transform: none;
-    }
-    body.fit-width .sheet {
-      width: 100%;
-      min-height: auto;
-    }
-    /* When fitting width, let the medicine table columns redistribute to fill
-       the wider sheet instead of staying at their fixed mm widths. */
-    body.fit-width #medTable col.cg-med { width: 36% !important; }
-    body.fit-width #medTable col.cg-how { width: auto !important; }
-    body.fit-width #medTable col.cg-qty { width: 14% !important; }
 
     .top-title {
       display: grid;
@@ -1287,8 +1304,12 @@
 </head>
 
 <body>
+  <button class="toolbar-ribbon" id="toolbarRibbon" type="button" title="เปิดแผงตั้งค่า">⚙️ ตั้งค่า ›</button>
+
   <div class="toolbar" id="printToolbar">
-    <div class="toolbar-title">⚙️ ตั้งค่าการพิมพ์</div>
+    <div class="toolbar-title">⚙️ ตั้งค่าการพิมพ์
+      <button class="toolbar-collapse-btn" id="toolbarCollapse" type="button" title="ซ่อนแผง">‹</button>
+    </div>
     <div class="toolbar-group">
       <button id="btnPrint" type="button">🖨 Print</button>
       <button id="btnPdf" type="button">📄 Save PDF</button>
@@ -1365,12 +1386,11 @@
           <option value="large">Large</option>
         </select>
       </label>
-      <label><input id="compactMode" type="checkbox" /> Compact rows</label>
-      <label><input id="fitWidth" type="checkbox" /> Fit width</label>
+      <label><input id="compactMode" type="checkbox" checked /> Compact rows</label>
     </div>
 
     <div class="toolbar-group" aria-label="By-meal page">
-      <label><input id="includeMealCard" type="checkbox" /> แนบหน้า จัดตามมื้อ</label>
+      <label><input id="includeMealCard" type="checkbox" checked /> แนบหน้า จัดตามมื้อ</label>
     </div>
 
     <div class="print-status" id="printStatus">A4 portrait · margin 8 mm</div>

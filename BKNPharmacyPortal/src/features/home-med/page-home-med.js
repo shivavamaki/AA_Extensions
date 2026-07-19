@@ -1801,8 +1801,10 @@ async function fetchAndRenderReconcile() {
 /* ───────────────────────────── Print controls ─────────────────────────── */
 const PRINT_CONTROL_DEFAULTS = {
   marginMm: "8", previewScale: "1", fontSizeMode: "normal",
-  pictureSizeMode: "normal", compactMode: false, fitWidth: false,
-  includeMealCard: false,
+  pictureSizeMode: "normal",
+  compactMode: true,        // compact rows on by default
+  includeMealCard: true,    // แนบหน้า จัดตามมื้อ on by default
+  // fitWidth removed — the control no longer exists.
 };
 
 function _getPrintControls() {
@@ -1812,7 +1814,6 @@ function _getPrintControls() {
     fontSizeMode: document.getElementById("fontSizeMode"),
     pictureSizeMode: document.getElementById("pictureSizeMode"),
     compactMode: document.getElementById("compactMode"),
-    fitWidth: document.getElementById("fitWidth"),
     includeMealCard: document.getElementById("includeMealCard"),
     printStatus: document.getElementById("printStatus"),
   };
@@ -1846,7 +1847,6 @@ function applyPrintSettings(settings) {
   root.style.setProperty("--base-font-size", _fontSizePx(cfg.fontSizeMode));
   root.style.setProperty("--medicine-image-size", _pictureSizeMm(cfg.pictureSizeMode));
   body.classList.toggle("compact-mode", !!cfg.compactMode);
-  body.classList.toggle("fit-width", !!cfg.fitWidth);
   body.classList.toggle("hm-with-mealcard", !!cfg.includeMealCard);
   const margin = Number(cfg.marginMm) || 8;
   _ensurePrintStyleTag().textContent = `@page { size: A4 portrait; margin: ${margin}mm; }`;
@@ -1867,7 +1867,6 @@ function currentPrintSettingsFromControls() {
     fontSizeMode: c.fontSizeMode?.value || PRINT_CONTROL_DEFAULTS.fontSizeMode,
     pictureSizeMode: c.pictureSizeMode?.value || PRINT_CONTROL_DEFAULTS.pictureSizeMode,
     compactMode: !!c.compactMode?.checked,
-    fitWidth: !!c.fitWidth?.checked,
     includeMealCard: !!c.includeMealCard?.checked,
   };
 }
@@ -1880,10 +1879,9 @@ function bindPrintControls() {
   if (c.fontSizeMode) c.fontSizeMode.value = saved.fontSizeMode;
   if (c.pictureSizeMode) c.pictureSizeMode.value = saved.pictureSizeMode;
   if (c.compactMode) c.compactMode.checked = !!saved.compactMode;
-  if (c.fitWidth) c.fitWidth.checked = !!saved.fitWidth;
   if (c.includeMealCard) c.includeMealCard.checked = !!saved.includeMealCard;
   applyPrintSettings(saved);
-  [c.printMargin, c.previewScale, c.fontSizeMode, c.pictureSizeMode, c.compactMode, c.fitWidth, c.includeMealCard]
+  [c.printMargin, c.previewScale, c.fontSizeMode, c.pictureSizeMode, c.compactMode, c.includeMealCard]
     .filter(Boolean)
     .forEach((el) => el.addEventListener("change", () => {
       _savePrintSettings(applyPrintSettings(currentPrintSettingsFromControls()));
@@ -1919,6 +1917,24 @@ function _confirmEndDatesBeforePrint() {
     "\n\nต้องการพิมพ์ต่อโดยไม่ระบุวันสิ้นสุดหรือไม่?\n" +
     "(กด OK เพื่อพิมพ์ต่อ, Cancel เพื่อกลับไปเลือกวันที่)"
   );
+}
+
+/** Slide the print-controls toolbar off the left edge; a ribbon tab reopens it.
+ * State persists in localStorage so it stays where the pharmacist left it. */
+function bindToolbarCollapse() {
+  const ribbon = document.getElementById("toolbarRibbon");
+  const closeBtn = document.getElementById("toolbarCollapse");
+  if (!ribbon && !closeBtn) return;   // sheet without the slide-out controls
+  const KEY = "hm:toolbarCollapsed";
+  const setCollapsed = (on) => {
+    document.body.classList.toggle("toolbar-collapsed", on);
+    try { localStorage.setItem(KEY, on ? "1" : "0"); } catch (_e) { /* ignore */ }
+  };
+  let start = false;
+  try { start = localStorage.getItem(KEY) === "1"; } catch (_e) { /* ignore */ }
+  document.body.classList.toggle("toolbar-collapsed", start);
+  if (closeBtn) closeBtn.addEventListener("click", () => setCollapsed(true));
+  if (ribbon)   ribbon.addEventListener("click", () => setCollapsed(false));
 }
 
 function bindToolbar() {
@@ -2017,6 +2033,7 @@ function _applyContextAndRender(msg) {
 document.addEventListener("DOMContentLoaded", () => {
   bindPrintControls();
   bindToolbar();
+  bindToolbarCollapse();
   bindLangControl();
   _bindReconPanel();
 

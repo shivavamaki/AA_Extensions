@@ -56,10 +56,12 @@ The on-screen controls live in a fixed **left sidebar** (`.toolbar`, pastel-gree
 | Language | Re-translate instructions (offline engine; user pick allows Google fallback) |
 | Margin · Preview scale | `@page` margin · on-screen `--screen-scale` |
 | Font · Picture | `--base-font-size` · `--medicine-image-size` |
-| Compact rows · Fit width | `body.compact-mode` · `body.fit-width` |
-| แนบหน้า จัดตามมื้อ (`includeMealCard`) | Show the by-meal page (`body.hm-with-mealcard`). The by-meal card **auto page-breaks**: its header + intro + continued block avoid splitting, so the whole card moves to a new page only when it doesn't fit — no manual break toggle. |
+| Compact rows (`compactMode`) | `body.compact-mode`. **On by default.** |
+| แนบหน้า จัดตามมื้อ (`includeMealCard`) | Show the by-meal page (`body.hm-with-mealcard`). **On by default.** The by-meal card **auto page-breaks**: its header + intro + continued block avoid splitting, so the whole card moves to a new page only when it doesn't fit — no manual break toggle. |
 
-> Removed: the dead **Paper** select (only A4, never wired) and the **Hide logo** toggle. When editing the config, keep all five spots in sync — `PRINT_CONTROL_DEFAULTS`, `_getPrintControls`, `applyPrintSettings`, `currentPrintSettingsFromControls`, and the `bindPrintControls` set + listener array.
+The toolbar **slides off the left edge**: the header's `‹` button collapses it (`body.toolbar-collapsed` → `transform: translateX(-100%)`, and the sheet reclaims the left padding), and a fixed vertical **ribbon tab** (`#toolbarRibbon`) on the left edge reopens it. State persists in `localStorage["hm:toolbarCollapsed"]` (`bindToolbarCollapse`). Screen-only; the ribbon is hidden on print.
+
+> Removed: **Fit width** (`body.fit-width`), the dead **Paper** select, and the **Hide logo** toggle. When editing the config, keep the spots in sync — `PRINT_CONTROL_DEFAULTS`, `_getPrintControls`, `applyPrintSettings`, `currentPrintSettingsFromControls`, and the `bindPrintControls` set + listener array.
 
 ## Follow-up appointment section
 
