@@ -1401,14 +1401,20 @@ function cssEscape(s) {
   return (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/["\\]/g, "\\$&");
 }
 
-/** Hover highlights every occurrence of the same drug (current + history); click
- * pins/unpins. Bound on the whole panel so current-order rows participate too. */
+/** Interaction model (deliberate): only the CURRENT-order rows drive the hover
+ * filter — hovering a today's-med highlights + narrows the history to that drug.
+ * Hovering a HISTORY row does NOT filter (that would hide the very rows you're
+ * reading). Click-to-pin works on both so a history row can still be pinned. */
 function _bindHistInteraction() {
   const panel = document.getElementById("histPanel");
   if (!panel) return;
-  panel.querySelectorAll(".hist-med[data-drugkey]").forEach((el) => {
+  // Hover filter — current-order rows only.
+  panel.querySelectorAll("#histCurrent .hist-med[data-drugkey]").forEach((el) => {
     el.addEventListener("mouseenter", () => { if (!_histPinned) _histSetActive(el.dataset.drugkey); });
     el.addEventListener("mouseleave", () => { if (!_histPinned) _histSetActive(""); });
+  });
+  // Click to pin/unpin — any row (current or history).
+  panel.querySelectorAll(".hist-med[data-drugkey]").forEach((el) => {
     el.addEventListener("click", () => {
       _histPinned = (_histPinned === el.dataset.drugkey) ? "" : el.dataset.drugkey;
       _histSetActive(_histPinned);
