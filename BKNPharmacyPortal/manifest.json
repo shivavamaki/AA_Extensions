@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.17.1",
-  "version_name": "2026.07.09 — IPD Queue discharge-stage highlight",
+  "version": "3.17.2",
+  "version_name": "2026.07.19 — OPD Medication Sheet (history · continuity · appointments)",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",
