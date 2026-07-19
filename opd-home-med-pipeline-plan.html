@@ -1,0 +1,276 @@
+<title>OPD Home Medication Sheet — Data Pipeline Plan</title>
+<style>
+  /* ---- tokens: clinical, calm; blue-biased neutrals, one teal accent ---- */
+  :root {
+    --bg:        #f4f6f8;
+    --surface:   #ffffff;
+    --ink:       #14202b;
+    --ink-soft:  #47586a;
+    --line:      #dbe3ea;
+    --accent:    #0e7c86;   /* teal — pharmacy/clinical, not the AI-default blue */
+    --accent-weak:#e2f1f2;
+    --ipd:       #1d6fb8;   /* existing IPD path */
+    --opd:       #0e7c86;   /* new OPD path */
+    --warn-bg:   #fdf3e3;
+    --warn-ink:  #8a5a12;
+    --warn-line: #f0d9ac;
+    --ok:        #227a52;
+    --code-bg:   #eef2f5;
+    --radius:    10px;
+    --maxw:      940px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0f1519; --surface:#161f26; --ink:#e7eef3; --ink-soft:#9fb1bf;
+      --line:#273540; --accent:#3fb3bc; --accent-weak:#123138;
+      --ipd:#4f9fe0; --opd:#3fb3bc;
+      --warn-bg:#2c2412; --warn-ink:#e8c583; --warn-line:#4a3c1c;
+      --ok:#57c08b; --code-bg:#0e161b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#0f1519; --surface:#161f26; --ink:#e7eef3; --ink-soft:#9fb1bf;
+    --line:#273540; --accent:#3fb3bc; --accent-weak:#123138;
+    --ipd:#4f9fe0; --opd:#3fb3bc; --warn-bg:#2c2412; --warn-ink:#e8c583;
+    --warn-line:#4a3c1c; --ok:#57c08b; --code-bg:#0e161b;
+  }
+  :root[data-theme="light"] {
+    --bg:#f4f6f8; --surface:#ffffff; --ink:#14202b; --ink-soft:#47586a;
+    --line:#dbe3ea; --accent:#0e7c86; --accent-weak:#e2f1f2;
+    --ipd:#1d6fb8; --opd:#0e7c86; --warn-bg:#fdf3e3; --warn-ink:#8a5a12;
+    --warn-line:#f0d9ac; --ok:#227a52; --code-bg:#eef2f5;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 40px 24px 80px; }
+
+  .eyebrow {
+    font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin: 0 0 6px;
+  }
+  h1 { font-size: 30px; line-height: 1.15; margin: 0 0 8px; text-wrap: balance; letter-spacing: -.01em; }
+  .lede { color: var(--ink-soft); font-size: 16px; margin: 0 0 4px; max-width: 62ch; }
+  .meta { color: var(--ink-soft); font-size: 12.5px; margin-top: 10px; }
+  .meta b { color: var(--ink); font-weight: 600; }
+
+  h2 {
+    font-size: 19px; margin: 40px 0 14px; padding-bottom: 6px;
+    border-bottom: 2px solid var(--line); letter-spacing: -.01em;
+  }
+  h2 .n {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 6px; background: var(--accent-weak);
+    color: var(--accent); font-size: 13px; font-weight: 800; margin-right: 10px;
+    vertical-align: 2px;
+  }
+  h3 { font-size: 15px; margin: 22px 0 8px; }
+  p  { margin: 0 0 12px; }
+  ul { margin: 0 0 12px; padding-left: 20px; }
+  li { margin: 4px 0; }
+
+  code, .mono {
+    font-family: "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 12.5px; background: var(--code-bg); padding: 1.5px 5px;
+    border-radius: 4px; color: var(--ink);
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 18px 20px; margin: 14px 0;
+  }
+
+  /* IPD vs OPD comparison */
+  .cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 680px) { .cmp { grid-template-columns: 1fr; } }
+  .cmp .col { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .cmp .col > .hd { padding: 10px 16px; font-weight: 700; font-size: 14px; color:#fff; display:flex; align-items:center; gap:8px; }
+  .cmp .ipd .hd { background: var(--ipd); }
+  .cmp .opd .hd { background: var(--opd); }
+  .cmp .bd { padding: 14px 16px; }
+  .cmp dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 13px; }
+  .cmp dt { color: var(--ink-soft); }
+  .cmp dd { margin: 0; }
+  .tag { display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:.03em; padding:1px 6px; border-radius:999px; }
+  .tag.reuse { background: var(--accent-weak); color: var(--accent); }
+  .tag.new   { background: #f3e2ef; color: #8a2c76; }
+  :root[data-theme="dark"] .tag.new, @media (prefers-color-scheme: dark){ .tag.new { background:#3a2136; color:#e0a5d1; } }
+
+  /* pipeline flow */
+  .flow { display: flex; flex-direction: column; gap: 0; margin: 8px 0 4px; }
+  .step { display: grid; grid-template-columns: 34px 1fr; gap: 14px; }
+  .step .rail { display: flex; flex-direction: column; align-items: center; }
+  .step .dot {
+    width: 30px; height: 30px; border-radius: 8px; flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13px; color: #fff; background: var(--opd);
+    font-variant-numeric: tabular-nums;
+  }
+  .step .line { width: 2px; flex: 1; background: var(--line); margin: 4px 0; min-height: 14px; }
+  .step:last-child .line { display: none; }
+  .step .body { padding-bottom: 18px; }
+  .step .t { font-weight: 700; font-size: 14.5px; margin: 4px 0 3px; }
+  .step .where { font-size: 11.5px; color: var(--accent); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+  .step .d { font-size: 13.5px; color: var(--ink-soft); }
+  .step .d code { font-size: 12px; }
+
+  .callout {
+    background: var(--warn-bg); border: 1px solid var(--warn-line);
+    border-left: 4px solid var(--warn-ink); color: var(--warn-ink);
+    border-radius: 8px; padding: 12px 16px; margin: 14px 0; font-size: 13.5px;
+  }
+  .callout b { color: var(--warn-ink); }
+  .callout.decide { --warn-bg: var(--accent-weak); --warn-ink: var(--accent); --warn-line: var(--accent); color: var(--ink); }
+  .callout.decide b { color: var(--accent); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 6px 0 4px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-soft); }
+  .scroll { overflow-x: auto; }
+
+  .q { background: var(--surface); border:1px solid var(--line); border-left:4px solid var(--accent); border-radius:8px; padding:12px 16px; margin:10px 0; }
+  .q .qh { font-weight:700; font-size:13.5px; margin-bottom:3px; }
+  .q .qd { font-size:13px; color: var(--ink-soft); }
+  .footnote { color: var(--ink-soft); font-size:12.5px; margin-top:6px; }
+  a { color: var(--accent); }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Design plan · review before build</p>
+  <h1>OPD Home Medication Sheet — data pipeline</h1>
+  <p class="lede">How the outpatient version gets its medication data end-to-end, what it reuses from the existing IPD sheet, and the two decisions I need from you before writing code.</p>
+  <p class="meta"><b>Scope of this doc:</b> data pipeline only. The vertical button-group redesign is a separate, self-contained CSS change I'll do alongside — no pipeline impact.</p>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2><span class="n">1</span>The core difference: IPD vs OPD</h2>
+  <p>The existing sheet is built for <b>discharge (IPD)</b>. OPD is a different worklist and a different ArcusAir API, but — crucially — the <b>same order-item shape</b>, so almost the entire parse + render stack is reusable.</p>
+
+  <div class="cmp">
+    <div class="col ipd">
+      <div class="hd">🏥 IPD — existing (discharge)</div>
+      <div class="bd">
+        <dl>
+          <dt>Trigger DOM</dt><dd>“DISCHARGE MEDICATION” cell on Ward View / dispense</dd>
+          <dt>ArcusAir API</dt><dd><code>getallorderitem</code></dd>
+          <dt>Keyed by</dt><dd><code>patientvisituid</code> + <code>ordertype=DISCHARGEMEDICATION</code></dd>
+          <dt>Returns</dt><dd><code>orderitems[].patientorderitems</code></dd>
+          <dt>Server route</dt><dd><code>POST /api/report/home-med-api</code></dd>
+        </dl>
+      </div>
+    </div>
+    <div class="col opd">
+      <div class="hd">💊 OPD — new (outpatient)</div>
+      <div class="bd">
+        <dl>
+          <dt>Trigger DOM</dt><dd>OPD dispense workbench (<code>…/pharmacy/dispense</code>, Floor 1)</dd>
+          <dt>ArcusAir API</dt><dd><code>pharmacy/dispense/search</code></dd>
+          <dt>Keyed by</dt><dd><b><code>orderid</code></b> (the OP prescription/order)</dd>
+          <dt>Returns</dt><dd><code>dispense[].patientorderitems</code> <span class="tag reuse">same shape</span></dd>
+          <dt>Server route</dt><dd><code>POST /api/report/home-med-opd</code> <span class="tag new">new</span></dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <p class="footnote">You already showed me the <code>dispense/search</code> response — its <code>patientorderitems</code> carry <code>orderitemuid</code>, <code>frequencyuid</code>, <code>routeuid</code>, <code>dosage</code>, <code>quantity</code>, <code>instructions[]</code>, and <code>administrationinstruction</code> — the exact fields <code>_map_orderitem</code> already reads. That’s why this is mostly plumbing, not a rewrite.</p>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2><span class="n">2</span>The pipeline, step by step</h2>
+  <p>Green nodes are new work; the rest reuse existing code.</p>
+
+  <div class="flow">
+    <div class="step">
+      <div class="rail"><div class="dot" style="background:var(--ink-soft)">A</div><div class="line"></div></div>
+      <div class="body">
+        <div class="where">content-home-med.js · ArcusAir OPD tab</div>
+        <div class="t">Detect the OPD dispense context <span class="tag reuse">extend</span></div>
+        <div class="d">Add an OPD gate next to <code>hasDischargeMedicationCell()</code>: show the “🏠💊 Home Med Sheet” button when the OPD dispense workbench is open. Same button-group plumbing.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="rail"><div class="dot" style="background:var(--ink-soft)">B</div><div class="line"></div></div>
+      <div class="body">
+        <div class="where">arcus-xhr-tap.js · MAIN world</div>
+        <div class="t">Capture the <code>orderid</code> <span class="tag new">new</span></div>
+        <div class="d">The workbench fires <code>pharmacy/dispense/search</code> with <code>{orderid}</code> in the request body. Tap it exactly like the medreconcile capture already does — grab <code>orderid</code> keyed by the current OP visit, expose it on context.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="rail"><div class="dot" style="background:var(--ink-soft)">C</div><div class="line"></div></div>
+      <div class="body">
+        <div class="where">content-home-med.js → background → sheet tab</div>
+        <div class="t">Route to the sheet with OPD context <span class="tag reuse">reuse</span></div>
+        <div class="d">Same <code>LOAD_MED_TABLE</code> message + tab-open flow. Context now carries <code>orderid</code> and a <code>mode:"opd"</code> flag alongside the existing session/token UIDs.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="rail"><div class="dot">D</div><div class="line"></div></div>
+      <div class="body">
+        <div class="where">bkn_ks_server.py</div>
+        <div class="t">New fetch: <code>fetch_arcus_opd_meds(ctx)</code> <span class="tag new">new</span></div>
+        <div class="d">POST <code>pharmacy/dispense/search</code> with <code>{orderid, includerefillorders:true}</code> using the captured <code>incus-token</code> — same auth helper (<code>_arcus_post_json</code>) the discharge fetch uses.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="rail"><div class="dot" style="background:var(--ok)">E</div><div class="line"></div></div>
+      <div class="body">
+        <div class="where">bkn_ks_server.py · shared normaliser</div>
+        <div class="t">Normalise via the existing engine <span class="tag reuse">reuse</span></div>
+        <div class="d">Map <code>dispense[].patientorderitems</code> into the same list <code>_map_orderitem</code> / <code>_normalize_orderitems</code> produce. One small adapter reads <code>dispense[]</code> instead of <code>orderitems[]</code>; everything downstream (dedupe, note-line = <code>administrationinstruction</code> + Patient Instruction, frequencyTh, images) is identical.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="rail"><div class="dot" style="background:var(--ok)">F</div><div class="line"></div></div>
+      <div class="body">
+        <div class="where">page-home-med.js / .html</div>
+        <div class="t">Render — same sheet, OPD header <span class="tag reuse">reuse</span></div>
+        <div class="d">Identical table, offline translation, meal-card, print. Only the header labels differ (OPD visit / no AN, no discharge diagnosis block). Persist &amp; edit paths unchanged.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2><span class="n">3</span>What’s reused vs. new</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Layer</th><th>Component</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Capture</td><td>XHR tap for <code>orderid</code></td><td><span class="tag new">new</span> (small — mirrors medrecon capture)</td></tr>
+      <tr><td>Detect</td><td>OPD dispense gate + button</td><td><span class="tag new">new</span> (a few lines)</td></tr>
+      <tr><td>Fetch</td><td><code>fetch_arcus_opd_meds</code> + route <code>/api/report/home-med-opd</code></td><td><span class="tag new">new</span></td></tr>
+      <tr><td>Normalise</td><td><code>_map_orderitem</code>, dedupe, note-line, frequencyTh</td><td><span class="tag reuse">reuse as-is</span></td></tr>
+      <tr><td>Translate</td><td>offline engine + pattern editor</td><td><span class="tag reuse">reuse as-is</span></td></tr>
+      <tr><td>Render/print</td><td>sheet table, meal card, PDF</td><td><span class="tag reuse">reuse</span> (header tweak)</td></tr>
+      <tr><td>Persist/edit</td><td>med cache, inline edit, revert</td><td><span class="tag reuse">reuse as-is</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="footnote">Estimated new code: one capture path, one server fetch + route + adapter, one detection gate, one header variant. The heavy lifting (parse, translate, render) is already built and shared.</p>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2><span class="n">4</span>Two decisions before I build</h2>
+
+  <div class="q">
+    <div class="qh">① How is the OPD <code>orderid</code> obtained?</div>
+    <div class="qd"><b>Preferred:</b> passively capture it from the workbench’s own <code>dispense/search</code> call in the XHR tap (zero extra clicks) — same pattern as medreconcileuid. <b>Fallback:</b> if the workbench doesn’t always fire it before the button is clicked, resolve the <code>orderid</code> from the selected-row DOM / Angular scope. I’ll build capture-first with the DOM resolver as backstop unless you know the orderid isn’t in that request.</div>
+  </div>
+
+  <div class="q">
+    <div class="qh">② Which OPD orders go on the sheet?</div>
+    <div class="qd">The <code>dispense/search</code> response lists all items for the order (incl. refills). Options: <b>(a)</b> all dispensed items for the current order, <b>(b)</b> only take-home meds (exclude in-clinic/administered), <b>(c)</b> the pharmacist’s current dispense selection only. Default I’ll assume: <b>(a) all items in the searched order</b>, since that’s what “home medication” means for OPD — tell me if you want it filtered.</div>
+  </div>
+
+  <div class="callout decide">
+    <b>My recommendation:</b> capture <code>orderid</code> in the tap (① preferred), render all items in the order (② a), reuse the entire IPD parse/translate/render stack via a thin OPD adapter. Minimal new surface, maximum consistency between the two sheets. <b>Confirm or adjust these two, and I’ll build it.</b>
+  </div>
+
+  <p class="meta" style="margin-top:28px">Once confirmed I’ll implement in this order: XHR-tap capture → server fetch/route/adapter → detection gate + button → OPD header variant, verifying each against a live payload before moving on (no assumptions — same discipline as the last few changes). The vertical button-group CSS ships in the same batch.</p>
+</div>
