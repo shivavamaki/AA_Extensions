@@ -217,10 +217,58 @@
     .hist-visit:last-child { border-bottom: none; }
     .hist-visit-hd { font-weight: 700; font-size: 11px; color: #1565c0; display: flex; align-items: center; gap: 6px; }
     .hist-visit-hd .hist-count { margin-left: auto; font-weight: 600; font-size: 9px; color: #90a4ae; }
-    .hist-meds { margin-top: 4px; display: flex; flex-direction: column; gap: 3px; }
-    .hist-med { font-size: 10.5px; line-height: 1.3; }
+    .hist-meds { margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
+
+    /* Each med row is colour-tagged by drug (--hc-* set inline per drug), with a
+       coloured dot + left edge so the same medicine is instantly recognisable
+       across visits. Hover/click highlights all rows of that drug. */
+    .hist-med {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      font-size: 10.5px;
+      line-height: 1.35;
+      padding: 3px 6px 3px 7px;
+      border-left: 3px solid var(--hc-edge, transparent);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background .12s, box-shadow .12s, opacity .12s;
+    }
+    .hist-med .hist-dot {
+      flex: 0 0 auto;
+      width: 8px; height: 8px;
+      margin-top: 3px;
+      border-radius: 50%;
+      background: var(--hc-dot, #cbd5e1);
+      box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--hc-edge, #e2e8f0);
+    }
+    .hist-med .hist-body { min-width: 0; }
     .hist-med .hist-drug { font-weight: 600; color: #1a2027; }
-    .hist-med .hist-info { color: #78909c; }
+    .hist-med .hist-info { color: #78909c; margin-left: 4px; }
+    .hist-repeat {
+      display: inline-block;
+      margin-left: 5px;
+      padding: 0 5px;
+      font-size: 8.5px; font-weight: 800; line-height: 1.5;
+      color: #fff; background: var(--hc-dot, #64748b);
+      border-radius: 999px; vertical-align: middle;
+    }
+    .hist-now {
+      display: inline-block;
+      margin-left: 5px;
+      padding: 0 5px;
+      font-size: 8px; font-weight: 800; line-height: 1.5;
+      color: #065f46; background: #d1fae5; border: 1px solid #a7f3d0;
+      border-radius: 999px; vertical-align: middle;
+    }
+    /* Interaction states */
+    .hist-med:hover { background: var(--hc-soft, #f1f5f9); border-left-color: var(--hc-bar, #cbd5e1); }
+    .hist-med.hist-hot {
+      background: var(--hc-soft, #eef2ff);
+      border-left-color: var(--hc-bar, #6366f1);
+      box-shadow: 0 0 0 1px var(--hc-edge, #c7d2fe) inset;
+    }
+    .hist-med.hist-dim { opacity: .32; }
     .recon-item {
       display: flex;
       gap: 8px;

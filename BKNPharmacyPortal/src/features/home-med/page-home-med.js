@@ -1238,15 +1238,32 @@ async function fetchAndRender() {
  * Renders data.visitHistory (from build_opd_visit_history) into the OPD sheet's
  * right sidebar (#histList), replacing the IPD Med Reconciliation panel. Each
  * group is one prior visit with its medicines. Read-only. */
+/** A stable identity key for a history med — code when present (most reliable),
+ * else the lowercased drug name. Used to colour + link the same drug across
+ * visits. */
+function _histDrugKey(m) {
+  return norm(m.code || "") || norm((m.drug || "").toLowerCase());
+}
+
+/** Deterministic pastel colour for a drug key, so the SAME drug always gets the
+ * SAME colour across renders. Golden-angle hue spread keeps neighbours distinct. */
+function _histColor(key, idx) {
+  const hue = (idx * 137.508) % 360;              // golden angle → well-spread hues
+  return {
+    bar:  `hsl(${hue} 70% 55%)`,
+    dot:  `hsl(${hue} 70% 48%)`,
+    soft: `hsl(${hue} 82% 95%)`,
+    edge: `hsl(${hue} 60% 82%)`,
+  };
+}
+
 function renderVisitHistory(groups) {
   const list = document.getElementById("histList");
   const sub  = document.getElementById("histSub");
   if (!list) return;
   const gs = Array.isArray(groups) ? groups : [];
-  if (sub) sub.textContent = gs.length
-    ? `${gs.length} visit(s) · newest first`
-    : "No prior visits found";
   if (!gs.length) {
+    if (sub) sub.textContent = "No prior visits found";
     list.innerHTML = `<div class="recon-empty"><span class="recon-empty-icon">🕑</span>ไม่พบประวัติการใช้ยาก่อนหน้า</div>`;
     return;
   }
@@ -1254,17 +1271,76 @@ function renderVisitHistory(groups) {
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ""));
     return m ? `${m[3]}/${m[2]}/${m[1]}` : (iso || "-");
   };
+
+  // Pass 1: assign a stable colour index per distinct drug (first-seen order)
+  // and count how many visits each drug appears in (for the "×N" repeat badge).
+  const colorIdx = {};      // key -> palette index
+  const visitCount = {};    // key -> number of DISTINCT visits containing it
+  gs.forEach((g) => {
+    const seenThisVisit = new Set();
+    (g.meds || []).forEach((m) => {
+      const k = _histDrugKey(m);
+      if (!(k in colorIdx)) colorIdx[k] = Object.keys(colorIdx).length;
+      if (!seenThisVisit.has(k)) { seenThisVisit.add(k); visitCount[k] = (visitCount[k] || 0) + 1; }
+    });
+  });
+  // Which drugs are on the CURRENT sheet — flag them so the pharmacist sees
+  // "this is being re-dispensed now".
+  const currentCodes = new Set(_meds.map((m) => norm(m.code || "")).filter(Boolean));
+
+  if (sub) {
+    const repeats = Object.values(visitCount).filter((n) => n >= 2).length;
+    sub.textContent = `${gs.length} visit(s) · newest first`
+      + (repeats ? ` · ${repeats} ยาซ้ำ (คลิกเพื่อไฮไลต์)` : "");
+  }
+
   list.innerHTML = gs.map((g) => {
-    const meds = (g.meds || []).map((m) =>
-      `<div class="hist-med"><span class="hist-drug">${escapeHtml(m.drug || "")}</span>` +
-      `${m.info ? ` <span class="hist-info">${escapeHtml(m.info)}</span>` : ""}</div>`
-    ).join("");
+    const meds = (g.meds || []).map((m) => {
+      const k = _histDrugKey(m);
+      const c = _histColor(k, colorIdx[k] || 0);
+      const repeats = visitCount[k] || 1;
+      const onSheet = m.code && currentCodes.has(norm(m.code));
+      const badge = repeats >= 2
+        ? `<span class="hist-repeat" title="พบใน ${repeats} ครั้ง">×${repeats}</span>` : "";
+      const nowTag = onSheet
+        ? `<span class="hist-now" title="อยู่ในใบสั่งยาปัจจุบัน">ครั้งนี้</span>` : "";
+      return `<div class="hist-med" data-drugkey="${escapeHtml(k)}"`
+        + ` style="--hc-bar:${c.bar};--hc-dot:${c.dot};--hc-soft:${c.soft};--hc-edge:${c.edge};">`
+        + `<span class="hist-dot"></span>`
+        + `<span class="hist-body"><span class="hist-drug">${escapeHtml(m.drug || "")}</span>`
+        + `${badge}${nowTag}`
+        + `${m.info ? `<span class="hist-info">${escapeHtml(m.info)}</span>` : ""}</span>`
+        + `</div>`;
+    }).join("");
     return `<div class="hist-visit">
       <div class="hist-visit-hd">🗓 ${escapeHtml(fmtDate(g.visitDate))}
         <span class="hist-count">${(g.meds || []).length} รายการ</span></div>
       <div class="hist-meds">${meds || '<div class="hist-med" style="color:#9ca3af">—</div>'}</div>
     </div>`;
   }).join("");
+
+  _bindHistInteraction(list);
+}
+
+/** Hover highlights every occurrence of the same drug across all visits; click
+ * pins/unpins that highlight (click again — or click empty space — to clear). */
+function _bindHistInteraction(list) {
+  let pinned = "";
+  const setActive = (key) => {
+    list.querySelectorAll(".hist-med").forEach((el) => {
+      el.classList.toggle("hist-hot", !!key && el.dataset.drugkey === key);
+      el.classList.toggle("hist-dim", !!key && el.dataset.drugkey !== key);
+    });
+  };
+  list.querySelectorAll(".hist-med[data-drugkey]").forEach((el) => {
+    el.addEventListener("mouseenter", () => { if (!pinned) setActive(el.dataset.drugkey); });
+    el.addEventListener("mouseleave", () => { if (!pinned) setActive(""); });
+    el.addEventListener("click", () => {
+      pinned = (pinned === el.dataset.drugkey) ? "" : el.dataset.drugkey;
+      setActive(pinned);
+    });
+  });
+  list.addEventListener("mouseleave", () => { if (!pinned) setActive(""); });
 }
 
 /* ─────────────────── HM Process Checklist card (read-only) ────────────────

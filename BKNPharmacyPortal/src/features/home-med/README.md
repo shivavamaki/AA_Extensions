@@ -28,6 +28,8 @@ Printable A4 **เอกสารแนะนำการใช้ยากล�
 ### OPD last-5-visits history panel
 `getallorderitem` is scoped to the **current** visit, so it can't supply history. Instead `build_opd_visit_history(ctx, currentVisitUid, 5)` fetches **`patientorder/search`** (`fetch_arcus_opd_history` — payload `{patientuid, ordercattype:["MEDICINE"], pagenumber:1, issummary:false}`, keyed by patientuid + incusToken only), the same call the OPD EMR page fires, which returns every visit's orders as `patientorders[]`. `build_visit_history_groups` groups them **by visit** (not de-duped by drug) — newest first, the current visit excluded (matched on `patientvisituid._id`), each `{ visitDate, visitId, meds:[{drug, code, info, freqTh, dosage, freq}] }`. The client's `renderVisitHistory(data.visitHistory)` fills `#histList`.
 
+**Recognising a drug across visits.** Each row is colour-tagged by drug identity (`_histDrugKey` = code, else lowercased name) with a stable golden-angle hue (`_histColor`) shown as a coloured dot + left edge, so the *same* medicine looks the same on every date. A drug appearing in ≥2 visits gets a `×N` repeat badge; one that's also on the current sheet gets a green **ครั้งนี้** tag. `_bindHistInteraction` links them: **hover** a row to highlight every occurrence of that drug (others dim); **click** to pin/unpin the highlight. Screen-only panel — none of this affects the printed sheet.
+
 ### OPD continuity tags (รับยาต่อเนื่อง / ปรับขนาดยา)
 `tag_meds_continuity(meds, visitHistory)` (server) sets `med.continuity` on each current sheet med by matching its **code** against the history:
 - **same code + same dosage & frequency** → `continued` → **รับยาต่อเนื่อง** (green)
