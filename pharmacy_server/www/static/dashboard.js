@@ -551,6 +551,8 @@
     setText('rpmText', data.requestsPerMin || 0);
     setText('avgText', `${data.avgResponseMs || 0}ms`);
 
+    renderArcus(data.arcus);
+
     drawSparkline();
     renderRequests(recent);
 
@@ -559,6 +561,31 @@
     } else if (!ok) {
       setText('miniScene', 'Server degraded — check Endpoint Health!');
     }
+  }
+
+  // ArcusAir upstream monitor: per-endpoint calls, avg latency, error rate.
+  function renderArcus(arcus) {
+    const list = $('arcusList');
+    if (!list) return;
+    const a = arcus || { totalCalls: 0, err: 0, endpoints: [] };
+    setText('arcusTotal', `${a.totalCalls || 0} calls`);
+    const errRate = Math.round((a.errorRate || 0) * 100);
+    const errEl = $('arcusErr');
+    if (errEl) {
+      errEl.textContent = `${errRate}% err`;
+      errEl.className = 'code ' + (a.err ? 'err' : 'ok');
+    }
+    const rows = (a.endpoints || []).slice(0, 10).map((e) => {
+      const name = String(e.endpoint || '').split('/').pop() || e.endpoint;
+      const bad = e.err > 0;
+      return `<div class="arcus-row" title="${e.endpoint}${e.lastError ? ' — ' + e.lastError : ''}">
+        <span class="arcus-name">${name}</span>
+        <span class="arcus-calls">${e.calls}×</span>
+        <span class="arcus-ms ${e.avgMs > 3000 ? 'slow' : ''}">${e.avgMs}ms</span>
+        <i class="dot ${bad ? '' : 'ok'}"></i>
+      </div>`;
+    }).join('');
+    list.innerHTML = rows || '<div class="arcus-row muted">no ArcusAir calls yet</div>';
   }
 
   function drawSparkline() {
@@ -979,6 +1006,10 @@
 
   addClickHandler('healthJson', () => {
     window.open('/api/server-status', '_blank', 'noopener,noreferrer');
+  });
+
+  addClickHandler('arcusStats', () => {
+    window.open('/api/arcus-stats', '_blank', 'noopener,noreferrer');
   });
 
   addClickHandler('adminPortal', () => {

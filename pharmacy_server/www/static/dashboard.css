@@ -285,6 +285,17 @@ h2 {
 .module-row span { color: var(--gray); }
 .module-row b    { color: var(--cyan); font-size: 8px; }
 
+/* ── ArcusAir monitor ── */
+.code.err   { color: var(--red); }
+.panel-tag  { color: var(--gray); font-size: 6px; margin-left: 4px; }
+.arcus-list { display: flex; flex-direction: column; gap: 4px; }
+.arcus-row  { display: grid; grid-template-columns: 1fr auto auto 10px; gap: 6px; align-items: center; font-size: 7px; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+.arcus-row.muted { color: var(--gray); grid-template-columns: 1fr; }
+.arcus-name { color: var(--gray); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arcus-calls{ color: var(--cyan); font-size: 8px; }
+.arcus-ms   { color: var(--green); text-align: right; }
+.arcus-ms.slow { color: var(--orange); }
+
 /* ── Recent Requests ── */
 .recent-panel {
   min-height: 0;

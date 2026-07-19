@@ -36,7 +36,8 @@ The server prints its URL on startup. The extension connects to it automatically
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/ping` | Health check — returns the server URL |
-| `GET` | `/api/server-status` | Dashboard JSON: endpoint health, per-module record counts, uptime |
+| `GET` | `/api/server-status` | Dashboard JSON: endpoint health, per-module record counts, uptime, **`.arcus`** (ArcusAir call monitor) |
+| `GET` | `/api/arcus-stats` | ArcusAir upstream call monitor — per-endpoint counts, avg/min/max latency, retries, error rate, last error, recent window |
 
 ### KPI (`data/kpi/YYYY-MM-DD.json`)
 
@@ -145,6 +146,10 @@ rotated by the server — they're kept indefinitely (still readable by the HMQ
 Dashboard) until an admin manually cleans them up. Older `DAY_YYYY-MM-DD.json`
 files written before this naming change are still read transparently, just
 never written again.
+
+### ArcusAir call monitoring
+
+Every server-side ArcusAir fetch goes through the single `_arcus_post_json()` chokepoint, which records each call (success or final failure) into an in-memory, thread-safe monitor (`_record_arcus_call` → `_ARCUS_STATS` / `_ARCUS_RECENT`). Keyed by the **endpoint path only** — never the request body or patient ids, so no PHI is retained. `arcus_stats()` aggregates it: per-endpoint `calls / ok / err / errorRate / retries / avgMs / minMs / maxMs / lastMs / lastAt / lastError`, a totals row, and a rolling `recent` window. Exposed at **`GET /api/arcus-stats`** and embedded in `/api/server-status` under `.arcus`; the dashboard's **ARCUS MONITOR** panel renders it live (per-endpoint call count, avg latency — amber when >3 s — and an error dot). Only covers server-side calls; the `hmr` discharge fetch runs browser→ArcusAir via `background.js` and isn't seen here.
 
 ### Reports (ArcusAir-backed)
 

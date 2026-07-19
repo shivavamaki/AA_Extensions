@@ -10,6 +10,8 @@ Usage:
 
 API:
   GET    /ping                              — health check (returns server URL)
+  GET    /api/server-status                 — dashboard status (incl. ArcusAir monitor under .arcus)
+  GET    /api/arcus-stats                   — ArcusAir upstream call stats (counts, latency, error rate)
   GET    /api/kpi                           — all daily KPI docs (newest first)
   GET    /api/kpi/YYYY-MM-DD               — one day's KPI doc (null if missing)
   PUT    /api/kpi/YYYY-MM-DD               — replace full day doc
@@ -434,15 +436,98 @@ def _is_transient_net_err(exc):
     return False
 
 
+# ── ArcusAir call monitoring ────────────────────────────────────────────────
+# Per-endpoint counters + latency, so the dashboard can show how the extension is
+# using ArcusAir and spot a slow/failing upstream. In-memory only, thread-safe;
+# no patient data (keyed by the endpoint path, never the request body/ids).
+_ARCUS_LOCK  = threading.Lock()
+_ARCUS_STATS = {}   # path -> {calls, ok, err, retries, totalMs, minMs, maxMs, lastMs, lastAt, lastError}
+_ARCUS_RECENT = []  # rolling window of the last N calls: {path, ok, ms, at, error}
+_ARCUS_RECENT_MAX = 50
+
+def _arcus_endpoint(url):
+    """The path portion of an ArcusAir URL — a stable, non-PHI stats key."""
+    try:
+        return urllib.parse.urlsplit(url).path or url
+    except Exception:
+        return url
+
+def _record_arcus_call(url, ok, elapsed_ms, retries=0, error=''):
+    """Record one ArcusAir call outcome into the in-memory monitor."""
+    path = _arcus_endpoint(url)
+    ms = int(elapsed_ms)
+    now = time.time()
+    with _ARCUS_LOCK:
+        s = _ARCUS_STATS.get(path)
+        if s is None:
+            s = {'calls': 0, 'ok': 0, 'err': 0, 'retries': 0,
+                 'totalMs': 0, 'minMs': None, 'maxMs': 0, 'lastMs': 0,
+                 'lastAt': '', 'lastError': ''}
+            _ARCUS_STATS[path] = s
+        s['calls'] += 1
+        s['ok' if ok else 'err'] += 1
+        s['retries'] += int(retries)
+        s['totalMs'] += ms
+        s['minMs'] = ms if s['minMs'] is None else min(s['minMs'], ms)
+        s['maxMs'] = max(s['maxMs'], ms)
+        s['lastMs'] = ms
+        s['lastAt'] = datetime.now().isoformat(timespec='seconds')
+        if not ok:
+            s['lastError'] = str(error)[:200]
+        _ARCUS_RECENT.append({'path': path, 'ok': bool(ok), 'ms': ms,
+                              'at': datetime.now().strftime('%H:%M:%S'),
+                              'error': ('' if ok else str(error)[:120])})
+        if len(_ARCUS_RECENT) > _ARCUS_RECENT_MAX:
+            _ARCUS_RECENT.pop(0)
+    # Also surface on the general dashboard request stream (short label).
+    try:
+        _record_request('ARCUS', path, 'ok' if ok else 'ERR', 0, ms)
+    except Exception:
+        pass
+
+def arcus_stats():
+    """Aggregated ArcusAir call stats for the dashboard / /api/arcus-stats."""
+    with _ARCUS_LOCK:
+        endpoints = []
+        tot_calls = tot_ok = tot_err = 0
+        for path, s in sorted(_ARCUS_STATS.items()):
+            calls = s['calls'] or 1
+            endpoints.append({
+                'endpoint': path,
+                'calls': s['calls'], 'ok': s['ok'], 'err': s['err'],
+                'errorRate': round(s['err'] / calls, 3),
+                'retries': s['retries'],
+                'avgMs': int(s['totalMs'] / calls),
+                'minMs': int(s['minMs'] or 0), 'maxMs': int(s['maxMs']),
+                'lastMs': int(s['lastMs']), 'lastAt': s['lastAt'],
+                'lastError': s['lastError'],
+            })
+            tot_calls += s['calls']; tot_ok += s['ok']; tot_err += s['err']
+        recent = list(_ARCUS_RECENT[-20:])
+    endpoints.sort(key=lambda e: e['calls'], reverse=True)
+    return {
+        'totalCalls': tot_calls, 'ok': tot_ok, 'err': tot_err,
+        'errorRate': round(tot_err / tot_calls, 3) if tot_calls else 0.0,
+        'endpoints': endpoints,
+        'recent': recent,
+        'generatedAt': datetime.now().isoformat(timespec='seconds'),
+    }
+
+
 def _arcus_post_json(url, ctx, payload, retries=2):
     """POST JSON to an ArcusAir endpoint with session headers; return parsed JSON.
 
     Retries on transient network errors (e.g. the occasional slow TLS handshake to
     arcusair.bdms.co.th, which otherwise surfaces as
     '_ssl.c:993: The handshake operation timed out').
+
+    Each call (success or final failure) is recorded into the ArcusAir monitor
+    (`_record_arcus_call`) for the dashboard's performance view.
     """
     body = json.dumps(payload).encode('utf-8')
     last_exc = None
+    started = time.time()
+    used_retries = 0
     for attempt in range(retries + 1):
         req = urllib.request.Request(url, data=body, headers=_arcus_headers(ctx), method='POST')
         try:
@@ -451,13 +536,18 @@ def _arcus_post_json(url, ctx, payload, retries=2):
                 if raw[:2] == b'\x1f\x8b':
                     import gzip
                     raw = gzip.decompress(raw)
-            return json.loads(raw.decode('utf-8'))
+            result = json.loads(raw.decode('utf-8'))
+            _record_arcus_call(url, True, (time.time() - started) * 1000, used_retries)
+            return result
         except Exception as exc:  # noqa: BLE001 — re-raised below if not retryable
             last_exc = exc
             if attempt < retries and _is_transient_net_err(exc):
+                used_retries += 1
                 time.sleep(0.6 * (attempt + 1))
                 continue
+            _record_arcus_call(url, False, (time.time() - started) * 1000, used_retries, exc)
             raise
+    _record_arcus_call(url, False, (time.time() - started) * 1000, used_retries, last_exc)  # pragma: no cover
     raise last_exc  # pragma: no cover
 
 
@@ -2349,6 +2439,7 @@ def dashboard_status():
         'recent': recent,
         'okCountWindow': ok_count,
         'errorCountWindow': err_count,
+        'arcus': arcus_stats(),
         'generatedAt': datetime.now().isoformat(timespec='seconds'),
     }
 
@@ -2720,6 +2811,11 @@ class Handler(BaseHTTPRequestHandler):
         # ── API ────────────────────────────────────────────────
         if clean in ('/api/health', '/api/server-status'):
             self.send_json(200, dashboard_status())
+            return
+
+        # ArcusAir upstream call monitoring (counts, latency, error rate).
+        if clean in ('/api/arcus-stats', '/api/arcus-status'):
+            self.send_json(200, arcus_stats())
             return
 
         if self.path == '/ping':
