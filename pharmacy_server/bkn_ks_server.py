@@ -3325,8 +3325,12 @@ class Handler(BaseHTTPRequestHandler):
             # OPD panel = last 5 visits' medical history (replaces reconciliation),
             # fetched from patientorder/search and grouped by visit (this visit excluded).
             result['visitHistory'] = build_opd_visit_history(ctx, ctx.get('patientvisituid', ''), 5)
-            # OPD sheets carry no discharge appointments / reconciliation.
-            result['appointmentText'] = ''
+            # Future appointments — same source as the IPD sheet; best-effort.
+            try:
+                result['appointmentText'] = format_appointments_th(fetch_arcus_future_appointments(ctx))
+            except Exception as e:
+                result['appointmentText'] = f'(ไม่สามารถโหลดนัดหมายได้: {e})'
+            # OPD sheets carry no discharge reconciliation.
             result['reconcileMeds'] = []
             result['hasReconcile'] = False
             result['ok'] = True
