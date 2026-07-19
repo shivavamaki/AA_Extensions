@@ -392,6 +392,7 @@ ARCUS_BASE = 'https://arcusair.bdms.co.th'
 ARCUS_ORDERITEM_URL = ARCUS_BASE + '/ordermanagement/patientorder/getallorderitem'
 ARCUS_ALLERGY_URL   = ARCUS_BASE + '/emr/drugalergy/getallergies'
 ARCUS_VISITCOUNT_URL = ARCUS_BASE + '/ordermanagement/patientorder/searchfromvisitcount'
+ARCUS_ORDERSEARCH_URL = ARCUS_BASE + '/ordermanagement/patientorder/search'
 ARCUS_DISCHARGE_ORDERTYPE_UID = '57ce9bc44ac9670b1c439ba9'  # DISCHARGE MEDICATION
 
 
@@ -501,14 +502,33 @@ def build_home_med_from_opd(data):
     return build_home_med_from_arcus(data)
 
 
-# ── OPD medical history: the patient's last N OPD visits' meds ──────────────
+# ── OPD medical history: the patient's last N visits' meds ──────────────────
 # The OPD sheet shows a "last 5 visits" medical-history panel (in place of the
-# discharge sheet's Med Reconciliation). The primary getallorderitem response
-# already carries every visit's orders (grouped as patientorders[], each with its
-# own patientvisituid), so we group THAT — no second ArcusAir call needed.
-def build_opd_visit_history(data, current_visit_uid='', visitcount=5):
-    """Group the getallorderitem `data` by visit for the OPD history panel.
-    Returns a list of {visitDate, visitId, meds:[…]} groups, newest first, or []."""
+# discharge sheet's Med Reconciliation). getallorderitem is scoped to the CURRENT
+# visit, so it can't supply history. patientorder/search — the call the OPD EMR
+# page itself fires — returns every visit's orders as patientorders[] (each with
+# its own patientvisituid), keyed by just patientuid. We call that and group it.
+def fetch_arcus_opd_history(ctx):
+    """POST patientorder/search — MEDICINE orders across ALL of the patient's
+    visits (needs only patientuid + incusToken). Returns {patientorders:[…]}."""
+    # issummary:false so every visit carries its full patientorderitems[] (summary
+    # mode collapses some entries to just an _id, which would drop those visits).
+    return _arcus_post_json(ARCUS_ORDERSEARCH_URL, ctx, {
+        'patientuid': ctx.get('patientuid', ''),
+        'ordercattype': ['MEDICINE'],
+        'pagenumber': 1,
+        'issummary': False,
+    })
+
+def build_opd_visit_history(ctx, current_visit_uid='', visitcount=5):
+    """Fetch patientorder/search and group its patientorders[] by visit for the
+    OPD history panel. Returns [{visitDate, visitId, meds:[…]}] newest first, []."""
+    try:
+        data = fetch_arcus_opd_history(ctx)
+    except Exception:
+        return []
+    if not data:
+        return []
     try:
         return build_visit_history_groups(data, current_visit_uid, visitcount)
     except Exception:
@@ -3303,8 +3323,8 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 result['allergies'] = {'nkda': False, 'items': [], 'hasRecord': False, 'error': str(e)}
             # OPD panel = last 5 visits' medical history (replaces reconciliation),
-            # grouped from the same getallorderitem response, excluding this visit.
-            result['visitHistory'] = build_opd_visit_history(data, ctx.get('patientvisituid', ''), 5)
+            # fetched from patientorder/search and grouped by visit (this visit excluded).
+            result['visitHistory'] = build_opd_visit_history(ctx, ctx.get('patientvisituid', ''), 5)
             # OPD sheets carry no discharge appointments / reconciliation.
             result['appointmentText'] = ''
             result['reconcileMeds'] = []
