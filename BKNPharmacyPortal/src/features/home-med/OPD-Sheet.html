@@ -87,87 +87,26 @@
     .toolbar-collapse-btn:hover { background: #c2e3cd; }
     @media print { .toolbar-ribbon { display: none !important; } }
 
-    /* ── Current-visit summary: left-edge ribbon (always visible) + slide-out
-       panel. Sits below the settings ribbon. Screen-only. ─────────────────── */
-    .vs-ribbon {
-      position: fixed;
-      top: calc(50% + 96px); left: 220px;   /* beside the open toolbar by default */
-      transform: translateY(-50%);
-      z-index: 1001;
-      display: flex; align-items: center; gap: 6px;
-      writing-mode: vertical-rl;
-      padding: 14px 6px;
-      background: #7c3aed; color: #fff;
-      font-weight: 800; font-size: 12px; letter-spacing: .04em;
-      border: none; border-radius: 0 10px 10px 0;
-      cursor: pointer;
-      box-shadow: 2px 0 10px rgba(76,29,149,.28);
-      transition: left .22s ease;
-    }
-    .vs-ribbon:hover { background: #6d28d9; }
-    /* Toolbar collapsed → its ribbon sits at 50%,left:0; drop this one to the
-       edge just below it. Panel open → tuck the ribbon against the panel edge. */
-    body.toolbar-collapsed .vs-ribbon { left: 0; }
-    body.vs-open .vs-ribbon { left: 340px; }
-
-    .vs-panel {
-      position: fixed;
-      top: 0; left: 0; bottom: 0;
-      z-index: 1002;
-      width: 340px; max-width: 88vw;
-      display: flex; flex-direction: column;
-      background: #faf5ff;
-      color: #2e1065;
-      border-right: 1px solid #d8b4fe;
-      box-shadow: 3px 0 18px rgba(76,29,149,.20);
-      transform: translateX(-100%);
-      transition: transform .22s ease;
-    }
-    body.vs-open .vs-panel { transform: translateX(0); }
-    .vs-hdr {
-      display: flex; align-items: center; gap: 8px;
-      padding: 12px 14px;
-      background: linear-gradient(135deg, #7c3aed, #9333ea);
-      color: #fff; font-weight: 800; font-size: 14px;
-      flex: 0 0 auto;
-    }
-    .vs-hdr .vs-close {
-      margin-left: auto;
-      width: 24px; height: 24px; line-height: 1;
-      border: 1px solid rgba(255,255,255,.5); border-radius: 6px;
-      background: rgba(255,255,255,.15); color: #fff;
-      font-size: 16px; font-weight: 800; cursor: pointer;
-      display: inline-flex; align-items: center; justify-content: center;
-    }
-    .vs-hdr .vs-close:hover { background: rgba(255,255,255,.28); }
-    .vs-body {
-      flex: 1; overflow-y: auto;
-      padding: 14px;
-      font-size: 12.5px; line-height: 1.5;
-    }
-    .vs-empty { color: #7c6f9c; text-align: center; padding: 32px 12px; }
-    .vs-empty-icon { display: block; font-size: 26px; margin-bottom: 8px; opacity: .7; }
-    @media print { .vs-ribbon, .vs-panel { display: none !important; } }
 
     /* Visit-summary panel content */
-    .vs-sec { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #eaddff; }
+    .vs-sec { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #d1fae5; }
     .vs-sec:last-child { border-bottom: none; margin-bottom: 0; }
-    .vs-sec-hd { font-weight: 800; font-size: 12px; color: #6d28d9; margin-bottom: 7px; }
-    .vs-none { color: #9a8fb8; font-size: 11.5px; font-style: italic; }
+    .vs-sec-hd { font-weight: 800; font-size: 12px; color: #166534; margin-bottom: 7px; }
+    .vs-none { color: #8fae9d; font-size: 11.5px; font-style: italic; }
 
-    .vs-pt-name { font-weight: 800; font-size: 14px; color: #2e1065; }
-    .vs-pt-meta { font-size: 11px; color: #6b5b8f; margin-top: 2px; }
-    .vs-dx { margin-top: 5px; font-size: 11.5px; color: #3b0764; background: #f3e8ff; padding: 5px 8px; border-radius: 6px; }
+    .vs-pt-name { font-weight: 800; font-size: 14px; color: #14532d; }
+    .vs-pt-meta { font-size: 11px; color: #6b8f7a; margin-top: 2px; }
+    .vs-dx { margin-top: 5px; font-size: 11.5px; color: #14532d; background: #dcfce7; padding: 5px 8px; border-radius: 6px; }
 
     /* Vitals grid */
     .vs-vitals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
     .vs-vital {
-      background: #fff; border: 1px solid #e9d5ff; border-radius: 8px;
+      background: #fff; border: 1px solid #bbf7d0; border-radius: 8px;
       padding: 5px 7px; display: flex; flex-direction: column; gap: 1px;
     }
-    .vs-vital .vs-vk { font-size: 9px; font-weight: 800; color: #7c3aed; letter-spacing: .03em; }
+    .vs-vital .vs-vk { font-size: 9px; font-weight: 800; color: #16a34a; letter-spacing: .03em; }
     .vs-vital .vs-vv { font-size: 15px; font-weight: 800; color: #1a2027; line-height: 1.1; }
-    .vs-vital .vs-vu { font-size: 8.5px; color: #8b7fa8; }
+    .vs-vital .vs-vu { font-size: 8.5px; color: #7ba690; }
     .vs-vital.vs-hi { background: #fef2f2; border-color: #fecaca; }
     .vs-vital.vs-hi .vs-vv { color: #dc2626; }
     .vs-vital.vs-lo { background: #eff6ff; border-color: #bfdbfe; }
@@ -180,23 +119,23 @@
     .vs-alg-rx { font-weight: 500; color: #9a3412; }
 
     /* Doctor notes */
-    .vs-note { background: #fff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 8px 10px; margin-bottom: 7px; }
+    .vs-note { background: #fff; border: 1px solid #bbf7d0; border-radius: 8px; padding: 8px 10px; margin-bottom: 7px; }
     .vs-note:last-child { margin-bottom: 0; }
-    .vs-note-hd { font-weight: 800; font-size: 11px; color: #6d28d9; display: flex; align-items: baseline; gap: 6px; }
-    .vs-note-at { margin-left: auto; font-weight: 600; font-size: 9.5px; color: #a99cc4; }
-    .vs-note-body { margin-top: 4px; font-size: 11.5px; line-height: 1.55; color: #2e1065; }
+    .vs-note-hd { font-weight: 800; font-size: 11px; color: #166534; display: flex; align-items: baseline; gap: 6px; }
+    .vs-note-at { margin-left: auto; font-weight: 600; font-size: 9.5px; color: #8fae9d; }
+    .vs-note-body { margin-top: 4px; font-size: 11.5px; line-height: 1.55; color: #14532d; }
     .vs-note-body p { margin: 0 0 4px; }
     .vs-note-body p:last-child { margin-bottom: 0; }
     .vs-note-body ul, .vs-note-body ol { margin: 2px 0 4px; padding-left: 18px; }
 
     /* Visit summary rows */
-    .vs-visit { background: #fff; border: 1px solid #e9d5ff; border-left: 3px solid #c4b5fd; border-radius: 8px; padding: 7px 10px; margin-bottom: 6px; }
+    .vs-visit { background: #fff; border: 1px solid #bbf7d0; border-left: 3px solid #86efac; border-radius: 8px; padding: 7px 10px; margin-bottom: 6px; }
     .vs-visit:last-child { margin-bottom: 0; }
     .vs-visit.vs-cur { border-left-color: #16a34a; background: #f0fdf4; }
-    .vs-visit-hd { font-weight: 800; font-size: 11.5px; color: #3b0764; display: flex; align-items: baseline; gap: 6px; }
-    .vs-visit-at { margin-left: auto; font-weight: 600; font-size: 9.5px; color: #a99cc4; }
-    .vs-visit-meta { font-size: 10.5px; color: #6b5b8f; margin-top: 2px; }
-    .vs-visit-cc { font-size: 11px; color: #3b0764; margin-top: 3px; }
+    .vs-visit-hd { font-weight: 800; font-size: 11.5px; color: #14532d; display: flex; align-items: baseline; gap: 6px; }
+    .vs-visit-at { margin-left: auto; font-weight: 600; font-size: 9.5px; color: #8fae9d; }
+    .vs-visit-meta { font-size: 10.5px; color: #6b8f7a; margin-top: 2px; }
+    .vs-visit-cc { font-size: 11px; color: #14532d; margin-top: 3px; }
 
     .toolbar-title { font-size: 13px; font-weight: 800; color: #166534; letter-spacing: .02em; display: flex; align-items: center; gap: 6px; }
 
@@ -544,8 +483,8 @@
       font-weight: 700;
       letter-spacing: .03em;
       background: #ede9fe;
-      color: #6d28d9;
-      border: 1px solid #ddd6fe;
+      color: #166534;
+      border: 1px solid #bbf7d0;
       border-radius: 4px;
       padding: 1px 5px;
       margin-left: 5px;
@@ -559,36 +498,52 @@
       margin: 12px auto;
     }
 
-    /* ── Review mode ──────────────────────────────────────────────────────
+    /* ── Checking mode ────────────────────────────────────────────────────
        When the print toolbar is minimized (body.toolbar-collapsed), hide the
-       A4 print sheet and show the interactive review area instead. */
+       A4 print sheet and show the interactive review area instead. Uses the full
+       freed width (minus the right history panel) in a two-column layout:
+       left = summary + pharmacist note, right = editable medicine list. */
     .review-area { display: none; }
     body.toolbar-collapsed .sheet-wrap { display: none; }
     body.toolbar-collapsed .review-area {
-      display: block;
-      max-width: 900px;
-      margin: 16px auto;
-      padding: 0 16px 40px;
+      display: grid;
+      grid-template-columns: minmax(320px, 1.1fr) minmax(360px, 1.4fr);
+      grid-template-areas: "head head" "summary meds" "note meds";
+      align-content: start;
+      gap: 14px 18px;
+      margin: 14px 18px;
+      padding-bottom: 30px;
     }
-    .review-head { margin-bottom: 12px; }
-    .review-title { margin: 0; font-size: 20px; font-weight: 800; color: #6d28d9; }
-    .review-hint { font-size: 12px; color: #7c6f9c; margin-top: 2px; }
+    /* Narrow window → single column. */
+    @media (max-width: 1180px) {
+      body.toolbar-collapsed .review-area {
+        grid-template-columns: 1fr;
+        grid-template-areas: "head" "summary" "meds" "note";
+      }
+    }
+    .review-head { grid-area: head; margin-bottom: 0; }
+    .review-summary { grid-area: summary; }
+    .review-meds-block { grid-area: meds; }
+    .review-note-block { grid-area: note; }
+
+    .review-title { margin: 0; font-size: 19px; font-weight: 800; color: #166534; }
+    .review-hint { font-size: 11.5px; color: #6b8f7a; margin-top: 2px; }
     .review-summary {
-      background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 12px;
-      padding: 14px 16px; margin-bottom: 16px;
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px;
+      padding: 12px 14px; align-self: start;
     }
-    /* The review summary lays vitals out wider than the narrow side panel. */
-    .review-summary .vs-vitals { grid-template-columns: repeat(6, 1fr); }
-    .review-sec-hd { font-weight: 800; font-size: 13px; color: #6d28d9; margin-bottom: 8px; display: block; }
-    .review-meds-block { margin-bottom: 18px; }
-    .review-meds { display: flex; flex-direction: column; gap: 8px; }
+    /* Vitals grid adapts to the column width. */
+    .review-summary .vs-vitals { grid-template-columns: repeat(4, 1fr); }
+    .review-summary .vs-sec { margin-bottom: 11px; padding-bottom: 9px; }
+    .review-sec-hd { font-weight: 800; font-size: 13px; color: #166534; margin-bottom: 8px; display: block; }
+    .review-meds { display: flex; flex-direction: column; gap: 7px; }
 
     /* Editable medicine cards (mirror the sheet's fields, card layout). */
     .rev-med {
       display: grid;
       grid-template-columns: auto 1fr 2fr 90px auto;
       gap: 10px; align-items: start;
-      background: #fff; border: 1px solid #e5e7eb; border-left: 4px solid var(--hc-edge, #c4b5fd);
+      background: #fff; border: 1px solid #e5e7eb; border-left: 4px solid var(--hc-edge, #86efac);
       border-radius: 10px; padding: 9px 12px;
     }
     .rev-med .rev-idx { font-weight: 800; color: #9ca3af; font-size: 13px; padding-top: 2px; }
@@ -606,7 +561,7 @@
     }
     .rev-med .rev-del:hover { background: #fee2e2; }
     .rev-med.rev-pointed { box-shadow: 0 0 0 2px rgba(29,78,216,.5); border-left-color: #1d4ed8; }
-    .rev-empty { color: #9a8fb8; font-style: italic; padding: 10px; }
+    .rev-empty { color: #8fae9d; font-style: italic; padding: 10px; }
 
     /* Reuse the RM / continuity pills on review cards. */
     .rev-med .hist-rm, .rev-med .med-continuity { vertical-align: middle; }
@@ -617,7 +572,7 @@
       border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px;
       font-family: inherit; font-size: 13px; line-height: 1.5; color: #1a2027;
     }
-    .review-note:focus { outline: none; border-color: #a78bfa; box-shadow: 0 0 0 2px #ddd6fe; }
+    .review-note:focus { outline: none; border-color: #4ade80; box-shadow: 0 0 0 2px #bbf7d0; }
     .review-note-status { font-size: 10.5px; color: #92400e; margin-top: 4px; min-height: 13px; }
     @media print { .review-area { display: none !important; } }
 
@@ -1480,17 +1435,6 @@
 
 <body>
   <button class="toolbar-ribbon" id="toolbarRibbon" type="button" title="เปิดแผงตั้งค่า">⚙️ ตั้งค่า ›</button>
-
-  <!-- Current-visit summary: left-edge ribbon + slide-out panel (screen only) -->
-  <button class="vs-ribbon no-print" id="vsRibbon" type="button" title="สรุปการรักษาครั้งนี้">📋 สรุปครั้งนี้ ›</button>
-  <div class="vs-panel no-print" id="visitSummaryPanel">
-    <div class="vs-hdr">📋 สรุปการรักษาครั้งนี้
-      <button class="vs-close" id="vsClose" type="button" title="ปิด">‹</button>
-    </div>
-    <div class="vs-body" id="vsBody">
-      <div class="vs-empty"><span class="vs-empty-icon">📋</span>ยังไม่มีข้อมูลสรุป — รอเชื่อมต่อ data pipeline</div>
-    </div>
-  </div>
 
   <div class="toolbar" id="printToolbar">
     <div class="toolbar-title">⚙️ ตั้งค่าการพิมพ์

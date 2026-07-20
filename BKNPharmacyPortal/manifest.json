@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.25.0",
-  "version_name": "2026.07.20 — OPD review mode: interactive med list + pharmacist note",
+  "version": "3.26.0",
+  "version_name": "2026.07.20 — OPD Checking mode: de-dup, 2-col layout, green accent, arrow fix",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",

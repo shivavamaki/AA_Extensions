@@ -1550,9 +1550,13 @@ function _hideHistArrow() {
   }
 }
 
-/** Draw the arrow from panel row `fromEl` to the sheet's .med-row[data-index=idx]. */
+/** Draw the arrow from panel row `fromEl` to the current med — the sheet's
+ * .med-row in editor mode, or the review card in checking mode (sheet hidden). */
 function _pointToSheetRow(fromEl, idx) {
-  const target = document.querySelector(`#medTable .med-row[data-index="${idx}"]`);
+  const checking = document.body.classList.contains("toolbar-collapsed");
+  const target = checking
+    ? document.querySelector(`#reviewMeds .rev-med[data-index="${idx}"]`)
+    : document.querySelector(`#medTable .med-row[data-index="${idx}"]`);
   _pointToEl(fromEl, target);
 }
 
@@ -1560,7 +1564,13 @@ function _pointToSheetRow(fromEl, idx) {
  * their horizontal order). Highlights the target and keeps the arrow anchored on
  * scroll/resize. Used by both the history→sheet and review→history links. */
 function _pointToEl(fromEl, targetEl) {
-  if (!targetEl) { _hideHistArrow(); return; }
+  // Guard: no target, or a hidden (zero-size) target → don't draw a broken arrow.
+  if (!targetEl || !fromEl) { _hideHistArrow(); return; }
+  const tRect = targetEl.getBoundingClientRect();
+  const fRect = fromEl.getBoundingClientRect();
+  if ((tRect.width === 0 && tRect.height === 0) || (fRect.width === 0 && fRect.height === 0)) {
+    _hideHistArrow(); return;
+  }
   targetEl.classList.add("sheet-pointed");
   const tr = targetEl.getBoundingClientRect();
   if (tr.top < 60 || tr.bottom > window.innerHeight - 20) {
@@ -2052,34 +2062,14 @@ function bindToolbarCollapse() {
   if (ribbon)   ribbon.addEventListener("click", () => setCollapsed(false));
 }
 
-/** Current-visit summary panel (OPD sheet): left-edge ribbon slides out a panel.
- * Data pipeline TBD — for now it toggles the shell; renderVisitSummary() fills
- * #vsBody once the data source is wired. State persists in localStorage. */
-function bindVisitSummary() {
-  const ribbon = document.getElementById("vsRibbon");
-  const panel  = document.getElementById("visitSummaryPanel");
-  const close  = document.getElementById("vsClose");
-  if (!ribbon || !panel) return;   // not the OPD sheet
-  const KEY = "hm:vsOpen";
-  const setOpen = (on) => {
-    document.body.classList.toggle("vs-open", on);
-    try { localStorage.setItem(KEY, on ? "1" : "0"); } catch (_e) { /* ignore */ }
-  };
-  let start = false;
-  try { start = localStorage.getItem(KEY) === "1"; } catch (_e) { /* ignore */ }
-  document.body.classList.toggle("vs-open", start);
-  ribbon.addEventListener("click", () => setOpen(!document.body.classList.contains("vs-open")));
-  if (close) close.addEventListener("click", () => setOpen(false));
-}
-
-/** Fill the current-visit summary panel: 3 parts —
+/** Fill the current-visit summary (Checking mode center area): 3 parts —
  *   1. Patient + vital signs + allergy
  *   2. Doctor notes (emr/doctornote/search)
  *   3. Visit summary (emr/summary/getemrsummaryvisit)
  * `data` = { patient, allergies, diagnosis, vitals, visits, doctorNotes }. */
 function renderVisitSummary(data) {
-  const targets = [document.getElementById("vsBody"), document.getElementById("reviewSummary")].filter(Boolean);
-  if (!targets.length) return;
+  const target = document.getElementById("reviewSummary");
+  if (!target) return;
   const d = data || {};
   _visitSummaryData = d;   // stash for review-mode re-render
   const fmtDT = (iso) => {
@@ -2162,7 +2152,7 @@ function renderVisitSummary(data) {
        <div class="vs-sec-hd">📄 สรุปการมาตรวจ (Visit Summary)</div>
        ${visitsHtml}
      </section>`;
-  targets.forEach((t) => { t.innerHTML = html; });
+  target.innerHTML = html;
 }
 
 /** Second-line client-side guard on note HTML (server already sanitised it):
@@ -2275,7 +2265,6 @@ document.addEventListener("DOMContentLoaded", () => {
   bindPrintControls();
   bindToolbar();
   bindToolbarCollapse();
-  bindVisitSummary();
   bindPharmNote();
   bindLangControl();
   _bindReconPanel();
