@@ -1255,27 +1255,51 @@ function bindSendDispense() {
       })),
     };
     if (!payload.hn) { if (status) status.textContent = "⚠️ ไม่พบ HN ผู้ป่วย"; return; }
-    btn.disabled = true;
     const prev = btn.textContent;
-    btn.textContent = "⏳ กำลังส่ง…";
-    try {
+    const doSend = async (force) => {
+      btn.disabled = true;
+      btn.textContent = "⏳ กำลังส่ง…";
       const r = await window.BKNData.serverFetch("/api/opd-queue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(force ? { ...payload, force: true } : payload),
       });
-      if (r && r.ok && r.json && r.json.ok) {
-        btn.textContent = "✅ ส่งแล้ว";
-        if (status) status.textContent = `ส่งเข้า OPD Queue: ${r.json.case?.id || ""}`;
-        setTimeout(() => { btn.textContent = prev; btn.disabled = false; if (status) status.textContent = ""; }, 2500);
-      } else {
-        const err = (r && r.json && r.json.error) || `HTTP ${r?.status || "?"}`;
-        throw new Error(err);
+      // Duplicate: the same visit is already in today's queue.
+      if (r && r.status === 409 && r.json && r.json.error === "duplicate") {
+        btn.disabled = false; btn.textContent = prev;
+        const ex = r.json.existing || {};
+        if (r.json.completed) {
+          // Already dispensed — do NOT quietly re-queue; tell the pharmacist to
+          // coordinate with the dispensing zone in person.
+          window.alert(
+            `⛔ เคสนี้ถูก "จ่ายยาเสร็จแล้ว" ในคิว (${ex.id || ""})\n\n` +
+            `กรุณาติดต่อห้องจ่ายยาโดยตรงทันที ก่อนส่งซ้ำ\n` +
+            `(เพื่อป้องกันการจ่ายยาซ้ำซ้อน)`
+          );
+          if (status) status.textContent = "⛔ เคสจ่ายยาเสร็จแล้ว — ติดต่อห้องจ่ายยา";
+          return;
+        }
+        const again = window.confirm(
+          `⚠️ เคสนี้อยู่ในคิวรอจ่ายอยู่แล้ว (${ex.id || ""})\n\n` +
+          `ต้องการส่งซ้ำเพื่ออัปเดตรายการยาในเคสเดิมหรือไม่?\n` +
+          `(กด OK = อัปเดตเคสเดิม, Cancel = ยกเลิก)`
+        );
+        if (again) return doSend(true);
+        if (status) status.textContent = "ยกเลิกการส่งซ้ำ";
+        return;
       }
-    } catch (e) {
-      btn.textContent = prev; btn.disabled = false;
-      if (status) status.textContent = `❌ ส่งไม่สำเร็จ: ${e.message || e}`;
-    }
+      if (r && (r.ok || r.status === 200 || r.status === 201) && r.json && r.json.ok) {
+        const updated = r.json.updated;
+        btn.textContent = updated ? "✅ อัปเดตแล้ว" : "✅ ส่งแล้ว";
+        if (status) status.textContent = `${updated ? "อัปเดตเคส" : "ส่งเข้า OPD Queue"}: ${r.json.case?.id || ""}`;
+        setTimeout(() => { btn.textContent = prev; btn.disabled = false; if (status) status.textContent = ""; }, 2500);
+        return;
+      }
+      btn.disabled = false; btn.textContent = prev;
+      if (status) status.textContent = `❌ ส่งไม่สำเร็จ: ${(r && r.json && r.json.error) || `HTTP ${r?.status || "?"}`}`;
+    };
+    try { await doSend(false); }
+    catch (e) { btn.disabled = false; btn.textContent = prev; if (status) status.textContent = `❌ ส่งไม่สำเร็จ: ${e.message || e}`; }
   });
 }
 

@@ -33,6 +33,7 @@
     .ev .at { color:#6b7280; font-variant-numeric:tabular-nums; }
     .ev .tag { font-weight:800; font-size:11px; padding:2px 8px; border-radius:999px; text-align:center; }
     .tag.sent { background:#e0f2fe; color:#0369a1; }
+    .tag.resent { background:#fef9c3; color:#a16207; }
     .tag.completed { background:#dcfce7; color:var(--green-d); }
     .ev .who { color:#6b7280; }
     .ev .desc b { color:#1a2027; }
@@ -67,7 +68,7 @@
     const todayStr = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
     const waitTxt = (mins) => { const h=Math.floor(mins/60),m=mins%60; return h?`${h}ชม ${m}น`:`${m}น`; };
 
-    const EV = { sent: "ส่งเข้าคิว", completed: "จ่ายยาเสร็จ" };
+    const EV = { sent: "ส่งเข้าคิว", resent: "ส่งซ้ำ/อัปเดต", completed: "จ่ายยาเสร็จ" };
 
     function renderStats(s) {
       s = s || {};

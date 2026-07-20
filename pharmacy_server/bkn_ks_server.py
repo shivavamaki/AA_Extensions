@@ -848,6 +848,44 @@ def add_opd_queue_case(case):
         pass
     return stored
 
+def find_opd_queue_for_visit(hn, visit_id='', patientvisituid=''):
+    """Find today's most-recent case for the same patient visit (by
+    patientvisituid, else visitId, else HN). Returns (case, dayStr) or (None, None)."""
+    today = _bangkok_today()
+    cases = _load_opd_queue_day(today)
+    hn = _hm_norm(hn or ''); vid = _hm_norm(visit_id or ''); pvu = patientvisituid or ''
+    match = None
+    for c in cases:
+        same = False
+        if pvu and c.get('patientvisituid') == pvu: same = True
+        elif vid and _hm_norm(c.get('visitId') or '') == vid: same = True
+        elif hn and _hm_norm(c.get('hn') or '') == hn and not vid and not pvu: same = True
+        if same:
+            match = c   # keep the last (newest, since appended in order)
+    return (match, today) if match else (None, None)
+
+def update_opd_queue_case(case_id, body):
+    """Overwrite an existing queued case's meds/note/etc (re-send). Keeps id,
+    createdAt, status; bumps resentAt. Returns the updated case or None."""
+    today = _bangkok_today()
+    cases = _load_opd_queue_day(today)
+    for c in cases:
+        if c.get('id') == case_id:
+            c['name'] = _hm_norm(body.get('name') or c.get('name') or '')
+            c['visitId'] = _hm_norm(body.get('visitId') or c.get('visitId') or '')
+            c['room'] = _hm_norm(body.get('room') or c.get('room') or '')
+            c['meds'] = body.get('meds') if isinstance(body.get('meds'), list) else c.get('meds')
+            c['pharmacistNote'] = _hm_norm(body.get('pharmacistNote') or '')
+            c['sentBy'] = _hm_norm(body.get('sentBy') or c.get('sentBy') or '')
+            c['resentAt'] = _now_iso()
+            c['resendCount'] = int(c.get('resendCount') or 0) + 1
+            _atomic_write_json(_opd_queue_file(today), cases)
+            _log_opd_queue('resent', c, c.get('sentBy'))
+            try: _record_request('OPDQ', f'resent {case_id} ({c.get("hn")})', 'ok')
+            except Exception: pass
+            return c
+    return None
+
 def complete_opd_queue_case(case_id, user=''):
     """Mark a queued case 'completed' (idempotent). Searches today then recent
     days. Returns the updated case, or None if not found."""
@@ -3733,6 +3771,26 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(400, {'error': 'hn is required'}); return
             if not isinstance(meds, list) or not meds:
                 self.send_json(400, {'error': 'meds (non-empty list) is required'}); return
+            # Duplicate guard: same visit already sent today?
+            existing, _day = find_opd_queue_for_visit(
+                hn, body.get('visitId'), body.get('patientvisituid'))
+            force = bool(body.get('force'))
+            if existing and not force:
+                self.send_json(409, {
+                    'error': 'duplicate',
+                    'completed': existing.get('status') == 'completed',
+                    'existing': existing,
+                }); return
+            if existing and force:
+                if existing.get('status') == 'completed':
+                    # Already dispensed — a re-send must not silently reopen it;
+                    # the client is told to contact the dispensing zone. But if the
+                    # pharmacist still forces, add a NEW case so nothing is lost.
+                    stored = add_opd_queue_case(body)
+                    self.send_json(201, {'ok': True, 'case': stored, 'note': 'was-completed'}); return
+                updated = update_opd_queue_case(existing.get('id'), body)
+                if updated:
+                    self.send_json(200, {'ok': True, 'case': updated, 'updated': True}); return
             stored = add_opd_queue_case(body)
             self.send_json(201, {'ok': True, 'case': stored}); return
 

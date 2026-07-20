@@ -39,7 +39,7 @@ The server prints its URL on startup. The extension connects to it automatically
 | `GET` | `/api/server-status` | Dashboard JSON: endpoint health, per-module record counts, uptime, **`.arcus`** (ArcusAir call monitor) |
 | `GET` | `/api/arcus-stats` | ArcusAir upstream call monitor — per-endpoint counts, avg/min/max latency, retries, error rate, last error, recent window |
 | `GET` | `/api/opd-queue` | OPD dispensing queue **+ `stats`** (`?from=&to=`, newest first; default today). Stats: waiting/completed counts, `over2h/over4h/over6h` overdue buckets, `avgWaitMin`. |
-| `POST` | `/api/opd-queue` | Send a case to the dispensing zone `{hn, name, visitId, room, meds:[{drug,code,instruction,quantity,group}], pharmacistNote, sentBy}` → stored in `data/opd-queue/ddmmyyyy_opd_queue.json` (status `queued`) + logged (`sent`). |
+| `POST` | `/api/opd-queue` | Send a case `{hn, name, visitId, patientvisituid, room, meds:[…], pharmacistNote, sentBy}` → stored (`queued`) + logged (`sent`). **Duplicate guard:** if the same visit is already queued today → `409 {error:'duplicate', completed, existing}`. Re-post with `force:true` to **update** the existing queued case (`update_opd_queue_case`, logs `resent`) instead of creating a new one; if the existing case is completed, `force` adds a fresh case (`note:'was-completed'`). |
 | `PUT` | `/api/opd-queue/{id}` | `{action:'complete', user}` → mark the case `completed` (timestamp + `completedBy`) + logged. |
 | `GET` | `/api/opd-logs` | OPD event-log feed (`sent`/`completed`) + `stats` (`?from=&to=`; default today). |
 
