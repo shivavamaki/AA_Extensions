@@ -159,6 +159,19 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnPatternEditor')?.addEventListener('click', () => {
     chrome.tabs.create({ url: chrome.runtime.getURL('src/features/pattern-editor/page-pattern-editor.html') });
   });
+
+  document.getElementById('btnOpdQueue')?.addEventListener('click', async () => {
+    // Open the server-hosted OPD dispensing queue viewer (uses the configured
+    // pharmacy-server URL, same key as shared-data-client.js).
+    const srv = await new Promise((res) => {
+      try {
+        chrome.storage.local.get(['bknks.serverUrl'], (r) => {
+          res((r && r['bknks.serverUrl']) ? String(r['bknks.serverUrl']).replace(/\/$/, '') : REPORT_SERVER);
+        });
+      } catch (_) { res(REPORT_SERVER); }
+    });
+    chrome.tabs.create({ url: `${srv}/opd-queue-view` });
+  });
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
