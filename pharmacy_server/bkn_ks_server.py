@@ -1485,17 +1485,29 @@ def _arcus_item_to_med(it):
                             .get('name') if isinstance((_arc_first(poi.get('orderitemuid')) or {}).get('ordercatuid'), dict) else '')
 
     # Priority — "Stat" orders default to the STAT/used group on the OPD sheet.
-    # Read the item priority first, then the order priority. relatedvalue 'S'/'R'.
-    _prio = _arc_first(poi.get('priorityuid')) or _arc_first(it.get('orderpriorityuid')) or {}
+    # Check the item then the order level; relatedvalue 'S' (Stat) / 'R' (Routine).
+    def _uid_name(obj):
+        o = _arc_first(obj) or {}
+        return o if isinstance(o, dict) else {}
+    _prio = (_uid_name(poi.get('priorityuid')) or _uid_name(it.get('priorityuid'))
+             or _uid_name(it.get('orderpriorityuid')))
     priority = _hm_norm(_prio.get('valuedescription') or '')
-    priority_rel = _hm_norm(_prio.get('relatedvalue') or it.get('orderpriorityvalue') or '')
+    priority_rel = _hm_norm(_prio.get('relatedvalue')
+                            or poi.get('orderpriorityvalue') or it.get('orderpriorityvalue') or '')
     is_stat = (priority_rel.upper() == 'S') or ('stat' in priority.lower())
 
     # Dispensing store / location — for sub-grouping (Outpatient Pharmacy Floor 1,
-    # Central Supply, Inpatient Pharmacy Floor G/2, …).
-    store = _hm_norm((_arc_first(it.get('ordertodepartmentuid')) or {}).get('name') or '')
-    if not store:
-        store = _hm_norm((_arc_first(it.get('invstoreuid')) or {}).get('name') or '')
+    # Central Supply, Inpatient Pharmacy Floor G/2, …). The flat getallorderitem
+    # shape may carry it on the item (poi) or the order (it); try both + several
+    # field names.
+    def _store_from(o):
+        for f in ('ordertodepartmentuid', 'invstoreuid', 'dispensestoreuid',
+                  'inventorystoreuid', 'storeuid', 'departmentuid'):
+            nm = _hm_norm(_uid_name(o.get(f)).get('name') or '')
+            if nm:
+                return nm
+        return ''
+    store = _store_from(poi) or _store_from(it)
 
     return {
         'drug': name, 'code': code, 'quantity': quantity,
@@ -1522,6 +1534,27 @@ def _is_medicine(med):
     if 'MEDICINE' in cat:
         return True
     return False
+
+
+def _opd_store_prio_probe(item):
+    """Diagnostic: surface any key on the order-item (it) or its patientorderitems
+    (poi) that looks store- or priority-related, with the resolved name/value.
+    Used only in the fetch log to discover the correct field path. No PHI."""
+    poi = item.get('patientorderitems')
+    poi = poi if isinstance(poi, dict) else {}
+    out = {'it': {}, 'poi': {}}
+    for label, obj in (('it', item), ('poi', poi)):
+        for k, v in (obj or {}).items():
+            kl = k.lower()
+            if any(t in kl for t in ('store', 'depart', 'priority', 'invstore', 'dispens', 'location')):
+                if isinstance(v, dict):
+                    out[label][k] = {'name': v.get('name'), 'valuedescription': v.get('valuedescription'),
+                                     'relatedvalue': v.get('relatedvalue'), 'valuecode': v.get('valuecode')}
+                elif isinstance(v, list) and v and isinstance(v[0], dict):
+                    out[label][k] = {'name': v[0].get('name'), 'valuedescription': v[0].get('valuedescription')}
+                else:
+                    out[label][k] = v
+    return out
 
 
 def _log_home_med_fetch(ctx, raw, result):
@@ -1558,6 +1591,10 @@ def _log_home_med_fetch(ctx, raw, result):
                 'poi._id': (order_items[0].get('patientorderitems') or {}).get('_id'),
                 'poi.administrationinstruction': (order_items[0].get('patientorderitems') or {}).get('administrationinstruction'),
             } if order_items and isinstance(order_items[0], dict) else None),
+            # Diagnostic for store/priority field discovery (values only, no PHI):
+            # which keys on it/poi look store- or priority-related and their names.
+            'sampleStorePrio': (_opd_store_prio_probe(order_items[0])
+                                if order_items and isinstance(order_items[0], dict) else None),
         }
         # One file per day, JSON Lines (one record per line) for easy tailing.
         log_path = LOGS_DIR / f'home-med-fetch-{ts:%Y-%m-%d}.jsonl'
