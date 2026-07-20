@@ -301,6 +301,10 @@
     .hist-visit:last-child { border-bottom: none; }
     .hist-visit-hd { font-weight: 700; font-size: 11px; color: #1565c0; display: flex; align-items: center; gap: 6px; }
     .hist-visit-hd .hist-count { margin-left: auto; font-weight: 600; font-size: 9px; color: #90a4ae; }
+    /* Merged visit-summary line under each date header (dept · doctor · CC). */
+    .hist-visit-sum { margin: 2px 0 3px; font-size: 9.5px; color: #55708a; line-height: 1.4; }
+    .hist-visit-cc { color: #7a5b1e; }
+    .hist-visit-cc b { color: #92400e; }
     .hist-meds { margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
 
     /* Each med row is colour-tagged by drug (--hc-* set inline per drug), with a
@@ -535,6 +539,13 @@
     }
     .review-status .vs-pt-row .vs-sec { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
 
+    /* Doctor notes + current-visit summary side by side. */
+    .review-status .vs-notes-row {
+      display: grid; grid-template-columns: 2fr 1fr; gap: 14px; align-items: start;
+    }
+    .review-status .vs-notes-row .vs-sec { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+    .review-status .vs-cursum-col .vs-visit { margin: 0; }
+
     /* Vitals on a single line: one row, each card auto-sized, small; scrolls
        horizontally only if the window is too narrow to fit them all. */
     .review-status .vs-vitals {
@@ -566,23 +577,13 @@
     .rev-group-stat .rev-med { border-left-color: #fdba74; }
 
     /* Right column (checking mode): hide the history's current-order box (the med
-       list is now in the center); reveal the merged Visit Summary + note. */
-    .hist-note-block, .hist-visitsum-block { display: none; }
+       list is now in the center); reveal the pharmacist note at the bottom. */
+    .hist-note-block { display: none; }
     body.toolbar-collapsed #histCurrent { display: none; }
     body.toolbar-collapsed .hist-note-block {
       display: block; flex: 0 0 auto;
       padding: 10px 12px; border-top: 1px solid #bbf7d0; background: #f0fdf4;
     }
-    /* In checking mode the panel stacks history + summary + note, so cap the
-       history list so the summary and note stay visible. */
-    body.toolbar-collapsed #histList { flex: 1 1 auto; max-height: 42vh; }
-    /* Visit Summary merged into the right panel (below the history list). */
-    body.toolbar-collapsed .hist-visitsum-block {
-      display: block; flex: 0 0 auto; max-height: 34vh; overflow-y: auto;
-      padding: 8px 12px; border-top: 2px solid #bbf7d0; background: #f6fef9;
-    }
-    .hist-visitsum .vs-sec { margin-bottom: 8px; padding-bottom: 6px; }
-    .hist-visitsum .vs-sec:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
     .hist-note-hd { font-weight: 800; font-size: 12px; color: #166534; display: block; }
     .hist-note-topline { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
     .hist-note-topline .hist-note-hd { flex: 1; margin: 0; }
@@ -1626,11 +1627,6 @@
       <div class="recon-empty"><span class="recon-empty-icon">🕑</span>กำลังโหลดประวัติ…</div>
     </div>
 
-    <!-- Visit Summary (merged into the right panel, Checking mode only). -->
-    <div class="hist-visitsum-block" id="histVisitSumBlock">
-      <div class="hist-visitsum" id="reviewVisits"><!-- renderVisitSummary → visits --></div>
-    </div>
-
     <!-- Pharmacist note: shown at the bottom of the right column in Checking mode. -->
     <div class="hist-note-block" id="histNoteBlock">
       <div class="hist-note-topline">
@@ -1778,8 +1774,9 @@
       <div class="review-hint">โหมดตรวจสอบ · ชี้เมาส์ที่ยาเพื่อเทียบกับประวัติ →</div>
     </div>
 
-    <!-- Center column (full width): patient/vitals/allergy/notes, then med list.
-         The Visit Summary now lives in the right history panel (#histVisitSummary). -->
+    <!-- Center column (full width): patient/vitals/allergy + [doctor notes |
+         current-visit summary], then med list. Past visits' summaries are merged
+         into the right history-by-date panel. -->
     <div class="review-center">
       <div class="review-status" id="reviewStatus"><!-- renderVisitSummary → patient+vitals+allergy+notes --></div>
       <div class="review-meds-block">

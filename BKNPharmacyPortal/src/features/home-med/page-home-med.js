@@ -1533,6 +1533,7 @@ let _histAllGroups = [];       // full server data (up to OPD_HISTORY_MAX visits
 let _histN         = 5;        // how many visits to show (user-selectable)
 let _histPinned    = "";       // currently pinned drug key ("" = none)
 let _visitSummaryData = null;  // last visit-summary payload (for review re-render)
+let _visitSummaryByVisit = {}; // visitId → {department, provider, complaint, date} (for the merged history-by-date panel)
 
 function _histFmtDate(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ""));
@@ -1638,9 +1639,16 @@ function _renderHistView() {
 
   list.innerHTML = shown.map((g) => {
     const rows = (g.meds || []).map((m) => _histRow(m, colorIdx, visitCount, currentCodes, false)).join("");
+    // Merge this date's visit summary (dept · doctor · CC) under the date header.
+    const vs = _visitSummaryByVisit[norm(g.visitId || "")];
+    const sumLine = vs
+      ? `<div class="hist-visit-sum">${escapeHtml(vs.department || "")}${vs.provider ? " · " + escapeHtml(vs.provider) : ""}`
+        + `${vs.complaint ? `<div class="hist-visit-cc"><b>CC:</b> ${escapeHtml(vs.complaint)}</div>` : ""}</div>`
+      : "";
     return `<div class="hist-visit">
       <div class="hist-visit-hd">🗓 ${escapeHtml(_histFmtDate(g.visitDate))}
         <span class="hist-count">${(g.meds || []).length} รายการ</span></div>
+      ${sumLine}
       <div class="hist-meds">${rows || '<div class="hist-med" style="color:#9ca3af">—</div>'}</div>
     </div>`;
   }).join("");
@@ -2230,11 +2238,18 @@ function bindToolbarCollapse() {
  *   3. Visit summary (emr/summary/getemrsummaryvisit)
  * `data` = { patient, allergies, diagnosis, vitals, visits, doctorNotes }. */
 function renderVisitSummary(data) {
-  const statusTarget = document.getElementById("reviewStatus");   // patient/vitals/allergy/notes
-  const visitsTarget = document.getElementById("reviewVisits");   // visit summary (left column)
-  if (!statusTarget && !visitsTarget) return;
+  const statusTarget = document.getElementById("reviewStatus");   // patient/vitals/allergy/notes + current-visit summary
+  if (!statusTarget) return;
   const d = data || {};
   _visitSummaryData = d;   // stash for review-mode re-render
+  // Index visit summaries by visitId so the merged history-by-date panel can show
+  // each date's dept · doctor · CC; keep the CURRENT visit's summary for the centre.
+  _visitSummaryByVisit = {};
+  let _curVisit = null;
+  (Array.isArray(d.visits) ? d.visits : []).forEach((v) => {
+    if (v.visitId) _visitSummaryByVisit[norm(v.visitId)] = v;
+    if (v.isCurrent && !_curVisit) _curVisit = v;
+  });
   const fmtDT = (iso) => {
     const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(iso || ""));
     return m ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}` : (iso || "");
@@ -2280,17 +2295,8 @@ function renderVisitSummary(data) {
          </div>`).join("")
     : `<div class="vs-none">ไม่มีบันทึกแพทย์</div>`;
 
-  // ── Part 3: visit summary ──
-  const visits = Array.isArray(d.visits) ? d.visits : [];
-  const visitsHtml = visits.length
-    ? visits.map((v) =>
-        `<div class="vs-visit${v.isCurrent ? " vs-cur" : ""}">
-           <div class="vs-visit-hd">${v.isCurrent ? "🟢 " : ""}${escapeHtml(v.visitId || "")}
-             <span class="vs-visit-at">${escapeHtml(fmtDT(v.date))}</span></div>
-           <div class="vs-visit-meta">${escapeHtml(v.department || "")}${v.provider ? " · " + escapeHtml(v.provider) : ""}</div>
-           ${v.complaint ? `<div class="vs-visit-cc"><b>CC:</b> ${escapeHtml(v.complaint)}</div>` : ""}
-         </div>`).join("")
-    : `<div class="vs-none">ไม่มีข้อมูลการมาตรวจ</div>`;
+  // (Past visits' summaries are merged into the history-by-date panel below; the
+  // current visit's summary is rendered inline in the notes row.)
 
   // Center column: [patient | allergy] two-column row, then vitals (1 line),
   // then doctor notes.
@@ -2311,18 +2317,26 @@ function renderVisitSummary(data) {
        <div class="vs-sec-hd">🩹 สัญญาณชีพล่าสุด</div>
        ${vitalsHtml}
      </section>
-     <section class="vs-sec vs-sec-notes">
-       <div class="vs-sec-hd">🩺 บันทึกแพทย์ (Doctor Notes)</div>
-       ${notesHtml}
-     </section>`;
-  // Left column: visit summary only.
-  const visitsSecHtml =
-    `<section class="vs-sec">
-       <div class="vs-sec-hd">📄 สรุปการมาตรวจ (Visit Summary)</div>
-       ${visitsHtml}
-     </section>`;
-  if (statusTarget) statusTarget.innerHTML = statusHtml;
-  if (visitsTarget) visitsTarget.innerHTML = visitsSecHtml;
+     <div class="vs-notes-row">
+       <section class="vs-sec vs-sec-notes vs-notes-col">
+         <div class="vs-sec-hd">🩺 บันทึกแพทย์ (Doctor Notes)</div>
+         ${notesHtml}
+       </section>
+       <section class="vs-sec vs-cursum-col">
+         <div class="vs-sec-hd">📄 สรุปการมาตรวจครั้งนี้</div>
+         ${_curVisit
+           ? `<div class="vs-visit vs-cur">
+                <div class="vs-visit-hd">🟢 ${escapeHtml(_curVisit.visitId || "")}
+                  <span class="vs-visit-at">${escapeHtml(fmtDT(_curVisit.date))}</span></div>
+                <div class="vs-visit-meta">${escapeHtml(_curVisit.department || "")}${_curVisit.provider ? " · " + escapeHtml(_curVisit.provider) : ""}</div>
+                ${_curVisit.complaint ? `<div class="vs-visit-cc"><b>CC:</b> ${escapeHtml(_curVisit.complaint)}</div>` : ""}
+              </div>`
+           : `<div class="vs-none">ไม่มีข้อมูลการมาตรวจครั้งนี้</div>`}
+       </section>
+     </div>`;
+  statusTarget.innerHTML = statusHtml;
+  // Past visits' summaries are now merged into the history-by-date panel.
+  if (_histAllGroups.length) _renderHistView();
 }
 
 /** Second-line client-side guard on note HTML (server already sanitised it):
