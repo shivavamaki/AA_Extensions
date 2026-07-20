@@ -1263,6 +1263,16 @@ function bindSendDispense() {
     if (!window.BKNData || !window.BKNData.serverFetch) { if (status) status.textContent = "⚠️ เชื่อมต่อเซิร์ฟเวอร์ไม่ได้"; return; }
     const c = _context || {};
     const patEl = document.getElementById("patientName");
+    const vs = _visitSummaryData || {};
+    // Full patient context so the dispensing zone sees the same summary the
+    // pharmacist reviewed (patient · Dx · allergy · vitals · doctor notes · visit).
+    const context = {
+      diagnosis: (c.diagnosis || document.getElementById("diagnosisValue")?.textContent || "").trim(),
+      allergies: vs.allergies || null,
+      vitals: Array.isArray(vs.vitals) ? vs.vitals : [],
+      doctorNotes: Array.isArray(vs.doctorNotes) ? vs.doctorNotes : [],
+      visit: (Array.isArray(vs.visits) ? vs.visits.find((v) => v.isCurrent) : null) || null,
+    };
     const payload = {
       hn: (document.getElementById("patientHN")?.textContent || c.hn || c.patientId || "").trim(),
       name: (patEl?.textContent || "").trim(),
@@ -1272,10 +1282,12 @@ function bindSendDispense() {
       patientvisituid: c.patientvisituid || "",
       sentBy: (c.loginName || c.userName || "").trim(),
       pharmacistNote: _pharmNote || "",
+      context,
       meds: _meds.map((m) => ({
         drug: norm(m.drug || ""), code: norm(m.code || ""),
         instruction: norm(m.instruction || ""), quantity: norm(m.quantity || ""),
         continuity: norm(m.continuity || ""), group: _medGroup(m),
+        store: norm(m.store || ""),
       })),
     };
     if (!payload.hn) { if (status) status.textContent = "⚠️ ไม่พบ HN ผู้ป่วย"; return; }

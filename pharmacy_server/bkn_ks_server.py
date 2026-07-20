@@ -836,6 +836,9 @@ def add_opd_queue_case(case):
         'meds': case.get('meds') if isinstance(case.get('meds'), list) else [],
         'pharmacistNote': _hm_norm(case.get('pharmacistNote') or ''),
         'sentBy': _hm_norm(case.get('sentBy') or ''),
+        # Clinical context the pharmacist reviewed (Dx, allergy, vitals, doctor
+        # notes, current visit) so the dispensing zone sees the same picture.
+        'context': case.get('context') if isinstance(case.get('context'), dict) else {},
         'createdAt': now,
         'status': 'queued',
     }
@@ -877,6 +880,8 @@ def update_opd_queue_case(case_id, body):
             c['meds'] = body.get('meds') if isinstance(body.get('meds'), list) else c.get('meds')
             c['pharmacistNote'] = _hm_norm(body.get('pharmacistNote') or '')
             c['sentBy'] = _hm_norm(body.get('sentBy') or c.get('sentBy') or '')
+            if isinstance(body.get('context'), dict):
+                c['context'] = body['context']
             c['resentAt'] = _now_iso()
             c['resendCount'] = int(c.get('resendCount') or 0) + 1
             _atomic_write_json(_opd_queue_file(today), cases)

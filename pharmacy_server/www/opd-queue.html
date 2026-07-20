@@ -72,6 +72,36 @@
     .dcase-pt { font-weight:800; font-size:17px; }
     .dcase-meta { color:#6b7280; font-size:12.5px; }
     .dcase-at { margin-left:auto; color:#9ca3af; font-size:11.5px; }
+    /* Clinical context block (Dx · allergy · vitals · visit · doctor notes) */
+    .ctx-block { margin-top:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:10px 12px; }
+    .ctx-hd { font-weight:800; font-size:11.5px; color:var(--green-d); margin-bottom:5px; }
+    .ctx-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:10px; }
+    .ctx-cell { min-width:0; }
+    .ctx-dx { font-size:12.5px; background:#dcfce7; border-radius:6px; padding:5px 8px; color:#14532d; }
+    .ctx-alg { display:flex; flex-direction:column; gap:4px; }
+    .alg-nkda { align-self:flex-start; font-weight:800; font-size:11px; color:var(--green-d); background:#d1fae5; border:1px solid #a7f3d0; border-radius:999px; padding:2px 8px; }
+    .alg-item { font-size:12px; font-weight:700; color:#b91c1c; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:3px 8px; }
+    .alg-item i { font-weight:500; color:#9a3412; font-style:normal; }
+    .ctx-sec { margin-bottom:10px; }
+    .ctx-sec:last-child { margin-bottom:0; }
+    .vitals { display:flex; flex-wrap:wrap; gap:5px; }
+    .vital { background:#fff; border:1px solid #bbf7d0; border-radius:7px; padding:3px 7px; min-width:60px; display:flex; flex-direction:column; }
+    .vital .vk { font-size:8.5px; font-weight:800; color:var(--green); }
+    .vital .vv { font-size:13px; font-weight:800; color:#1a2027; line-height:1.1; }
+    .vital .vu { font-size:8px; color:#7ba690; }
+    .vital.hi { background:#fef2f2; border-color:#fecaca; } .vital.hi .vv { color:#dc2626; }
+    .vital.lo { background:#eff6ff; border-color:#bfdbfe; } .vital.lo .vv { color:#2563eb; }
+    .ctx-visit { font-size:12.5px; background:#fff; border:1px solid #bbf7d0; border-left:3px solid var(--green); border-radius:7px; padding:6px 9px; }
+    .ctx-cc { margin-top:3px; color:#3b0764; }
+    .ctx-note { background:#fff; border:1px solid #bbf7d0; border-radius:7px; padding:6px 9px; margin-bottom:6px; }
+    .ctx-note:last-child { margin-bottom:0; }
+    .ctx-note-hd { font-weight:800; font-size:11px; color:var(--green-d); display:flex; gap:8px; }
+    .ctx-note-hd span { margin-left:auto; font-weight:600; color:#9ca3af; font-size:10px; }
+    .ctx-note-body { font-size:12.5px; line-height:1.5; margin-top:3px; }
+    .ctx-note-body p { margin:0 0 3px; }
+    .ctx-note-body p:last-child { margin-bottom:0; }
+    @media (max-width:900px) { .ctx-row { grid-template-columns:1fr; } }
+
     .grp { margin-top:11px; }
     .grp-hd { font-weight:800; font-size:12px; padding:2px 9px; border-radius:6px; display:inline-block; margin-bottom:5px; }
     .grp-home .grp-hd { color:var(--green-d); background:#dcfce7; }
@@ -152,6 +182,63 @@
         <div class="l2"><span class="lhn">HN ${esc(c.hn)}${c.room&&c.room!=="-"?" · ห้อง "+esc(c.room):""}</span>${badge(c)}</div>
       </div>`;
     }
+    /* Clinical context captured at send time: Dx · allergy · vitals · doctor
+       notes · current visit — the same picture the pharmacist checked. */
+    function ctxBlock(ctx) {
+      if (!ctx || typeof ctx !== "object") return "";
+      const parts = [];
+      // Dx + allergy row
+      const alg = ctx.allergies || {};
+      let algHtml = "";
+      if (alg.nkda) algHtml = `<span class="alg-nkda">NKDA (ไม่มีประวัติแพ้ยา)</span>`;
+      else if (Array.isArray(alg.items) && alg.items.length) {
+        algHtml = alg.items.map((a)=>`<span class="alg-item">⚠ ${esc(a.allergen||a.name||a.drug||"")}${a.reaction?` <i>(${esc(a.reaction)})</i>`:""}</span>`).join("");
+      }
+      if (ctx.diagnosis || algHtml) {
+        parts.push(`<div class="ctx-row">
+          ${ctx.diagnosis ? `<div class="ctx-cell"><div class="ctx-hd">🩻 Dx</div><div class="ctx-dx">${esc(ctx.diagnosis)}</div></div>` : ""}
+          ${algHtml ? `<div class="ctx-cell"><div class="ctx-hd">⚠️ ประวัติการแพ้</div><div class="ctx-alg">${algHtml}</div></div>` : ""}
+        </div>`);
+      }
+      // Vitals
+      const vt = Array.isArray(ctx.vitals) ? ctx.vitals : [];
+      if (vt.length) {
+        parts.push(`<div class="ctx-sec"><div class="ctx-hd">🩹 สัญญาณชีพล่าสุด</div>
+          <div class="vitals">${vt.map((v)=>{
+            const f = v.flag==="H"?" hi":v.flag==="L"?" lo":"";
+            const ar = v.flag==="H"?" ▲":v.flag==="L"?" ▼":"";
+            return `<div class="vital${f}" title="${esc(v.name||"")}${v.range?" · ปกติ "+esc(v.range):""}">
+              <span class="vk">${esc(v.key)}</span><span class="vv">${esc(v.value)}${ar}</span><span class="vu">${esc(v.unit||"")}</span></div>`;
+          }).join("")}</div></div>`);
+      }
+      // Current visit
+      const v = ctx.visit;
+      if (v) {
+        parts.push(`<div class="ctx-sec"><div class="ctx-hd">📄 สรุปการมาตรวจครั้งนี้</div>
+          <div class="ctx-visit"><b>${esc(v.visitId||"")}</b> ${esc(v.department||"")}${v.provider?" · "+esc(v.provider):""}
+          ${v.complaint?`<div class="ctx-cc"><b>CC:</b> ${esc(v.complaint)}</div>`:""}</div></div>`);
+      }
+      // Doctor notes
+      const dn = Array.isArray(ctx.doctorNotes) ? ctx.doctorNotes : [];
+      if (dn.length) {
+        parts.push(`<div class="ctx-sec"><div class="ctx-hd">🩺 บันทึกแพทย์ (Doctor Notes)</div>
+          ${dn.map((n)=>`<div class="ctx-note"><div class="ctx-note-hd">${esc(n.provider||"แพทย์")}<span>${esc(fmt(n.at))}</span></div>
+            <div class="ctx-note-body">${sanitizeNote(n.html||"")}</div></div>`).join("")}</div>`);
+      }
+      return parts.length ? `<div class="ctx-block">${parts.join("")}</div>` : "";
+    }
+    /* Keep only safe formatting tags from the stored note HTML. */
+    function sanitizeNote(html) {
+      const allowed = new Set(["P","BR","B","STRONG","I","EM","U","UL","OL","LI"]);
+      const t = document.createElement("div");
+      t.innerHTML = String(html||"");
+      t.querySelectorAll("*").forEach((el)=>{
+        if (!allowed.has(el.tagName)) { el.replaceWith(...el.childNodes); return; }
+        [...el.attributes].forEach((a)=>el.removeAttribute(a.name));
+      });
+      return t.innerHTML;
+    }
+
     function renderDetail() {
       const col = $("detailCol");
       const c = _cases.find((x)=>x.id===_sel);
@@ -166,6 +253,7 @@
           ${badge(c)}
           <span class="dcase-at">ส่ง ${esc(fmt(c.createdAt))}${c.sentBy?" · "+esc(c.sentBy):""}</span>
         </div>
+        ${ctxBlock(c.context)}
         ${group(meds,"home","🏠 ยากลับบ้าน","grp-home")}
         ${group(meds,"stat","⚡ ใช้ที่ รพ./STAT","grp-stat")}
         ${c.pharmacistNote ? `<div class="note"><b>📝 บันทึกเภสัชกร:</b> ${esc(c.pharmacistNote)}</div>` : ""}
