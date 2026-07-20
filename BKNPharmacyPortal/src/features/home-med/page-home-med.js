@@ -2132,21 +2132,24 @@ function renderVisitSummary(data) {
          </div>`).join("")
     : `<div class="vs-none">ไม่มีข้อมูลการมาตรวจ</div>`;
 
-  // Center column: patient + vitals + allergy + doctor notes.
+  // Center column: [patient | allergy] two-column row, then vitals (1 line),
+  // then doctor notes.
   const statusHtml =
-    `<section class="vs-sec">
-       <div class="vs-sec-hd">👤 ผู้ป่วย</div>
-       <div class="vs-pt-name">${pName}</div>
-       ${pMeta ? `<div class="vs-pt-meta">${pMeta}</div>` : ""}
-       ${dx}
-     </section>
+    `<div class="vs-pt-row">
+       <section class="vs-sec vs-pt-col">
+         <div class="vs-sec-hd">👤 ผู้ป่วย</div>
+         <div class="vs-pt-name">${pName}</div>
+         ${pMeta ? `<div class="vs-pt-meta">${pMeta}</div>` : ""}
+         ${dx}
+       </section>
+       <section class="vs-sec vs-alg-col">
+         <div class="vs-sec-hd">⚠️ ประวัติการแพ้</div>
+         <div class="vs-alg">${algHtml}</div>
+       </section>
+     </div>
      <section class="vs-sec">
        <div class="vs-sec-hd">🩹 สัญญาณชีพล่าสุด</div>
        ${vitalsHtml}
-     </section>
-     <section class="vs-sec">
-       <div class="vs-sec-hd">⚠️ ประวัติการแพ้</div>
-       <div class="vs-alg">${algHtml}</div>
      </section>
      <section class="vs-sec vs-sec-notes">
        <div class="vs-sec-hd">🩺 บันทึกแพทย์ (Doctor Notes)</div>

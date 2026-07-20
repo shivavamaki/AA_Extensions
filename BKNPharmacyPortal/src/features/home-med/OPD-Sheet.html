@@ -542,12 +542,24 @@
     .review-visits .vs-sec { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
     .review-status .vs-sec:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
     .review-status .vs-sec { margin-bottom: 11px; padding-bottom: 9px; }
-    /* Vitals grid in the center column: more, smaller cards (auto-fit). */
-    .review-status .vs-vitals { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 5px; }
-    .review-status .vs-vital { padding: 3px 6px; }
-    .review-status .vs-vital .vs-vk { font-size: 8.5px; }
-    .review-status .vs-vital .vs-vv { font-size: 13px; }
-    .review-status .vs-vital .vs-vu { font-size: 8px; }
+    /* Patient + allergy as a 2-column row inside the status card. */
+    .review-status .vs-pt-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+      margin-bottom: 11px; padding-bottom: 9px; border-bottom: 1px solid #d1fae5;
+    }
+    .review-status .vs-pt-row .vs-sec { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+
+    /* Vitals on a single line: one row, each card auto-sized, small; scrolls
+       horizontally only if the window is too narrow to fit them all. */
+    .review-status .vs-vitals {
+      display: flex; flex-wrap: nowrap; gap: 4px; overflow-x: auto; padding-bottom: 2px;
+    }
+    .review-status .vs-vital {
+      flex: 1 1 auto; min-width: 52px; padding: 3px 4px;
+    }
+    .review-status .vs-vital .vs-vk { font-size: 8px; }
+    .review-status .vs-vital .vs-vv { font-size: 12.5px; white-space: nowrap; }
+    .review-status .vs-vital .vs-vu { font-size: 7.5px; white-space: nowrap; }
     .review-sec-hd { font-weight: 800; font-size: 13px; color: #166534; margin-bottom: 8px; display: block; }
     .review-meds { display: flex; flex-direction: column; gap: 7px; }
 
