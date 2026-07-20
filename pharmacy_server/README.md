@@ -38,8 +38,12 @@ The server prints its URL on startup. The extension connects to it automatically
 | `GET` | `/ping` | Health check — returns the server URL |
 | `GET` | `/api/server-status` | Dashboard JSON: endpoint health, per-module record counts, uptime, **`.arcus`** (ArcusAir call monitor) |
 | `GET` | `/api/arcus-stats` | ArcusAir upstream call monitor — per-endpoint counts, avg/min/max latency, retries, error rate, last error, recent window |
-| `GET` | `/api/opd-queue` | OPD dispensing queue (`?from=&to=`, newest first; default today) |
-| `POST` | `/api/opd-queue` | Send a case to the dispensing zone `{hn, name, visitId, room, meds:[{drug,code,instruction,quantity,group}], pharmacistNote, sentBy}` → stored in `data/opd-queue/ddmmyyyy_opd_queue.json` + logged. Viewer at `/opd-queue-view`. |
+| `GET` | `/api/opd-queue` | OPD dispensing queue **+ `stats`** (`?from=&to=`, newest first; default today). Stats: waiting/completed counts, `over2h/over4h/over6h` overdue buckets, `avgWaitMin`. |
+| `POST` | `/api/opd-queue` | Send a case to the dispensing zone `{hn, name, visitId, room, meds:[{drug,code,instruction,quantity,group}], pharmacistNote, sentBy}` → stored in `data/opd-queue/ddmmyyyy_opd_queue.json` (status `queued`) + logged (`sent`). |
+| `PUT` | `/api/opd-queue/{id}` | `{action:'complete', user}` → mark the case `completed` (timestamp + `completedBy`) + logged. |
+| `GET` | `/api/opd-logs` | OPD event-log feed (`sent`/`completed`) + `stats` (`?from=&to=`; default today). |
+
+**OPD queue store + monitoring:** `add_opd_queue_case` / `complete_opd_queue_case` / `list_opd_queue` write day-archived JSON (`ddmmyyyy_opd_queue.json`); every event is appended to `data/logs/opd-queue-YYYY-MM-DD.jsonl` (`_log_opd_queue`, read back by `read_opd_logs`). `opd_queue_stats` computes waiting/completed + 2h/4h/6h overdue buckets from `createdAt`. Pages: **`/opd-queue-view`** (live queue — today by default, colour-escalating wait alerts, click a case to collapse the list left + show full detail, Complete button) and **`/opd-dashboard`** (stats cards + chronological activity log feed). Both auto-refresh.
 
 ### KPI (`data/kpi/YYYY-MM-DD.json`)
 

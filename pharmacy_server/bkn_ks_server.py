@@ -52,8 +52,10 @@ API:
   GET    /api/hmr/{visitid}                 — one record (I48-xx-xxxxxx), {} if none
   PUT    /api/hmr/{visitid}                 — read-merge-write; auditLog entries append, never overwrite
 
-  GET    /api/opd-queue                     — OPD dispensing queue (?from=&to=, newest first; default today)
+  GET    /api/opd-queue                     — OPD dispensing queue + stats (?from=&to=, newest first; default today)
   POST   /api/opd-queue                     — send a case {hn,name,visitId,room,meds[],pharmacistNote,sentBy}
+  PUT    /api/opd-queue/{id}                — {action:'complete', user} → mark case completed
+  GET    /api/opd-logs                      — OPD event log feed + stats (?from=&to=; default today). Dashboard at /opd-dashboard
   GET    /api/hmq                           — HM Process Queue entries (?from=&to=, newest first)
   POST   /api/hmq                           — add a case {hn,name,ward,room,addedBy}; 409 if HN already active today
   PUT    /api/hmq/{id}                      — transition {action: start|complete|revert-process|revert-new, user}
@@ -839,32 +841,119 @@ def add_opd_queue_case(case):
     }
     cases.append(stored)
     _atomic_write_json(_opd_queue_file(today), cases)
-    _log_opd_queue(stored)
+    _log_opd_queue('sent', stored)
     try:
         _record_request('OPDQ', f'queued {stored["id"]} ({stored["hn"]})', 'ok')
     except Exception:
         pass
     return stored
 
-def _log_opd_queue(case):
-    """Append one queue event to data/logs/opd-queue-YYYY-MM-DD.jsonl."""
+def complete_opd_queue_case(case_id, user=''):
+    """Mark a queued case 'completed' (idempotent). Searches today then recent
+    days. Returns the updated case, or None if not found."""
+    today = _bangkok_today()
+    for i in range(0, 7):   # today + up to 6 days back
+        day = (datetime.strptime(today, '%Y-%m-%d') - timedelta(days=i)).strftime('%Y-%m-%d')
+        cases = _load_opd_queue_day(day)
+        changed = False
+        for c in cases:
+            if c.get('id') == case_id:
+                if c.get('status') != 'completed':
+                    c['status'] = 'completed'
+                    c['completedAt'] = _now_iso()
+                    c['completedBy'] = _hm_norm(user or '')
+                    changed = True
+                if changed:
+                    _atomic_write_json(_opd_queue_file(day), cases)
+                    _log_opd_queue('completed', c, user)
+                    try:
+                        _record_request('OPDQ', f'completed {case_id}', 'ok')
+                    except Exception:
+                        pass
+                return c
+    return None
+
+def _log_opd_queue(event, case, user=''):
+    """Append one queue event to data/logs/opd-queue-YYYY-MM-DD.jsonl.
+    event: 'sent' | 'completed'."""
     try:
         LOGS_DIR.mkdir(parents=True, exist_ok=True)
         ts = datetime.now()
         rec = {
             'at': ts.isoformat(),
+            'event': event,
             'id': case.get('id'),
             'hn': case.get('hn'),
+            'name': case.get('name'),
             'visitId': case.get('visitId'),
             'medCount': len(case.get('meds') or []),
             'homeCount': sum(1 for m in (case.get('meds') or []) if (m.get('group') or 'home') == 'home'),
             'statCount': sum(1 for m in (case.get('meds') or []) if (m.get('group') or 'home') == 'stat'),
-            'sentBy': case.get('sentBy'),
+            'by': _hm_norm(user or '') or case.get('sentBy'),
         }
         with open(LOGS_DIR / f'opd-queue-{ts:%Y-%m-%d}.jsonl', 'a', encoding='utf-8') as f:
             f.write(json.dumps(rec, ensure_ascii=False) + '\n')
     except Exception as e:
         print(f'[opd-queue-log] failed: {e}', file=sys.stderr)
+
+def read_opd_logs(date_from='', date_to='', limit=500):
+    """Read the OPD queue event logs across a Bangkok-date range (inclusive),
+    newest first. Defaults to today."""
+    today = _bangkok_today()
+    date_from = date_from or today
+    date_to = date_to or today
+    try:
+        d0 = datetime.strptime(date_from, '%Y-%m-%d').date()
+        d1 = datetime.strptime(date_to, '%Y-%m-%d').date()
+    except Exception:
+        d0 = d1 = datetime.strptime(today, '%Y-%m-%d').date()
+    events = []
+    cur = d0
+    while cur <= d1:
+        p = LOGS_DIR / f'opd-queue-{cur.strftime("%Y-%m-%d")}.jsonl'
+        if p.exists():
+            try:
+                for line in p.read_text(encoding='utf-8').splitlines():
+                    line = line.strip()
+                    if line:
+                        try: events.append(json.loads(line))
+                        except Exception: pass
+            except Exception:
+                pass
+        cur += timedelta(days=1)
+    events.sort(key=lambda e: e.get('at', ''), reverse=True)
+    return events[:limit]
+
+def opd_queue_stats(cases):
+    """Compute live stats from a case list: counts by status + waiting-time
+    overdue buckets (2h/4h/6h) for still-queued cases."""
+    now = datetime.now(timezone.utc)
+    waiting = completed = 0
+    over2 = over4 = over6 = 0
+    total_wait_min = 0
+    for c in cases:
+        if c.get('status') == 'completed':
+            completed += 1
+            continue
+        waiting += 1
+        # Waiting minutes = now − createdAt (UTC ISO).
+        try:
+            s = str(c.get('createdAt') or '')
+            if s.endswith('Z'): s = s[:-1] + '+00:00'
+            dt = datetime.fromisoformat(s)
+            if dt.tzinfo is None: dt = dt.replace(tzinfo=timezone.utc)
+            mins = max(0, int((now - dt).total_seconds() // 60))
+        except Exception:
+            mins = 0
+        total_wait_min += mins
+        if mins >= 360: over6 += 1
+        elif mins >= 240: over4 += 1
+        elif mins >= 120: over2 += 1
+    return {
+        'total': len(cases), 'waiting': waiting, 'completed': completed,
+        'over2h': over2, 'over4h': over4, 'over6h': over6,
+        'avgWaitMin': int(total_wait_min / waiting) if waiting else 0,
+    }
 
 def list_opd_queue(date_from='', date_to=''):
     """List queued cases across the given Bangkok-date range (inclusive),
@@ -2977,8 +3066,17 @@ class Handler(BaseHTTPRequestHandler):
             return 'hmr', vid, None
 
         # /api/opd-queue         → ('opd-queue', None, None)  (GET: list, POST: add)
+        # /api/opd-queue/{id}    → ('opd-queue', id, None)    (PUT: complete)
+        # /api/opd-logs          → ('opd-logs', None, None)   (GET: event feed)
         if parts == ['api', 'opd-queue']:
             return 'opd-queue', None, None
+        if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'opd-queue':
+            cid = urllib.parse.unquote(parts[2])
+            if re.fullmatch(r'OPDQ-\d{8}-\d{3}', cid):
+                return 'opd-queue', cid, None
+            return None, None, None
+        if parts == ['api', 'opd-logs']:
+            return 'opd-logs', None, None
 
         # /api/hmq               → ('hmq-list', None, None)  (GET: list, POST: add)
         # /api/hmq/{id}          → ('hmq', id, None)          (PUT: start/complete)
@@ -3027,6 +3125,9 @@ class Handler(BaseHTTPRequestHandler):
 
         if clean in ('/opd-queue-view', '/opd-queue.html'):
             self._serve_file(WWW_DIR / 'opd-queue.html', 'text/html; charset=utf-8'); return
+
+        if clean in ('/opd-dashboard', '/opd-dashboard.html'):
+            self._serve_file(WWW_DIR / 'opd-dashboard.html', 'text/html; charset=utf-8'); return
         if clean in ('/index', '/home'):
             # Explicit route to the legacy index.html (dashboard.html shadows it at /).
             self._serve_file(WWW_DIR / 'index.html', 'text/html; charset=utf-8'); return
@@ -3211,7 +3312,15 @@ class Handler(BaseHTTPRequestHandler):
             qs        = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
             from_date = (qs.get('from') or [''])[0]
             to_date   = (qs.get('to')   or [''])[0]
-            self.send_json(200, {'ok': True, 'queue': list_opd_queue(from_date, to_date)})
+            q = list_opd_queue(from_date, to_date)
+            self.send_json(200, {'ok': True, 'queue': q, 'stats': opd_queue_stats(q)})
+        elif rtype == 'opd-logs':
+            qs        = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            from_date = (qs.get('from') or [''])[0]
+            to_date   = (qs.get('to')   or [''])[0]
+            q = list_opd_queue(from_date, to_date)
+            self.send_json(200, {'ok': True, 'stats': opd_queue_stats(q),
+                                 'logs': read_opd_logs(from_date, to_date)})
         elif rtype == 'report-cache':
             # GET /api/report-cache/{key}[/{date}] — default date = today (BKK).
             date_key = extra or _bangkok_today()
@@ -3254,7 +3363,7 @@ class Handler(BaseHTTPRequestHandler):
             'kpi-day', 'kpi-section', 'ks', 'rx', 'rx-note',
             'med-image-upload', 'ks-file-upload', 'schedule',
             'patient', 'patient-context', 'patient-adr', 'patient-medcache',
-            'patient-captures', 'report-cache', 'hmr', 'hmq',
+            'patient-captures', 'report-cache', 'hmr', 'hmq', 'opd-queue',
         )
         if not ext_data_write:
             if not self._require('super_admin', 'admin', 'editor'): return
@@ -3483,6 +3592,19 @@ class Handler(BaseHTTPRequestHandler):
                 doc['auditLog'] = existing
             save_hmr(key, doc)
             self.send_json(200, {'ok': True})
+
+        elif rtype == 'opd-queue':
+            # Complete a queued case: {'action': 'complete', 'user'}.
+            if not isinstance(body, dict):
+                self.send_json(400, {'error': 'Body must be a JSON object'}); return
+            action = body.get('action')
+            user   = (body.get('user') or '').strip()
+            if action != 'complete':
+                self.send_json(400, {'error': "action must be 'complete'"}); return
+            doc = complete_opd_queue_case(key, user)
+            if doc is None:
+                self.send_json(404, {'error': 'Case not found'}); return
+            self.send_json(200, {'ok': True, 'case': doc}); return
 
         elif rtype == 'hmq':
             # Advance/revert a queue entry, or backfill its ward/room:
