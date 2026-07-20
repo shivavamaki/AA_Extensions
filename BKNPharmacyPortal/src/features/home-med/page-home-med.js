@@ -574,8 +574,9 @@ function _medFromReport(m) {
     // Dispensing store / location (for sub-grouping), from ArcusAir.
     store: norm(m.store || ""),
     // OPD dispensing group (Checking mode): "home" (default) | "stat".
-    // A "Stat" order (m.isStat) auto-defaults to the STAT/used group.
-    dispenseGroup: norm(m.dispenseGroup || "") || (m.isStat ? "stat" : "home"),
+    // Auto-STAT when the order is "Stat" OR it comes from a used-at-hospital
+    // store (Central Supply) — those are consumed in the department, not taken home.
+    dispenseGroup: norm(m.dispenseGroup || "") || (_isUsedAtHospital(m) ? "stat" : "home"),
     takeUntilFinished: false,
     continueStartDate: "",
     continueEndDate: "",
@@ -707,6 +708,15 @@ async function renderMeds() {
  * history panel. Edits go through the same _commitField/_removeMed path. */
 function _medGroup(m) { return (m.dispenseGroup === "stat") ? "stat" : "home"; }
 
+/** Stores whose items are consumed at the hospital rather than taken home —
+ * they default into the ⚡ STAT/used group. Matched loosely on the store name. */
+const USED_AT_HOSPITAL_STORES = [/central\s*supply/i];
+function _isUsedAtHospital(m) {
+  if (m && m.isStat) return true;
+  const s = String((m && m.store) || "");
+  return USED_AT_HOSPITAL_STORES.some((re) => re.test(s));
+}
+
 function renderReviewMeds() {
   const homeHost = document.getElementById("reviewMedsHome");
   const statHost = document.getElementById("reviewMedsStat");
@@ -731,7 +741,8 @@ function renderReviewMeds() {
     const rm = repeats >= 1 ? `<span class="hist-rm">RM</span>` : "";
     const cont = m.continuity ? `<span class="med-continuity cont-${escapeHtml(m.continuity)}">${escapeHtml(_continuityLabelFor(m.continuity))}</span>` : "";
     // The button MOVES the med between groups (home ⇄ stat), never deletes.
-    const btnLabel = group === "home" ? "→ STAT" : "← Home";
+    // Short labels so move + ลบ fit on one line.
+    const btnLabel = group === "home" ? "STAT →" : "← บ้าน";
     const btnTitle = group === "home" ? "ย้ายไป ใช้ที่ รพ./STAT" : "ย้ายกลับ ยากลับบ้าน";
     return `<div class="rev-med" data-index="${i}" data-drugkey="${escapeHtml(k)}" data-medidx="${i}"
                  style="--hc-bar:${c.bar};--hc-dot:${c.dot};--hc-soft:${c.soft};--hc-edge:${c.edge};">
@@ -752,6 +763,7 @@ function renderReviewMeds() {
 
   // Split into home/stat, then SUB-GROUP each by dispensing store (Outpatient
   // Pharmacy Floor 1, Central Supply, Pharmacy Floor 2, …). Store order = first-seen.
+  // Within each store, RM (reconcile-match) meds sort FIRST.
   const buckets = { home: new Map(), stat: new Map() };
   let homeN = 0, statN = 0;
   _meds.forEach((m, i) => {
@@ -760,17 +772,21 @@ function renderReviewMeds() {
     const store = norm(m.store || "") || "อื่นๆ (ไม่ระบุคลัง)";
     const map = buckets[g];
     if (!map.has(store)) map.set(store, []);
-    map.get(store).push(card(m, i, g));
+    // Keep the med + its index + RM flag so we can sort before rendering.
+    map.get(store).push({ m, i, g, rm: (visitCount[_histDrugKey(m)] || 0) >= 1 });
   });
   // Render a group's store buckets. If everything is one store (or none), skip the
   // sub-headers to keep it clean.
+  const sortRmFirst = (rows) =>
+    rows.slice().sort((a, b) => (b.rm ? 1 : 0) - (a.rm ? 1 : 0) || a.i - b.i);
+  const cardsOf = (rows) => sortRmFirst(rows).map((r) => card(r.m, r.i, r.g)).join("");
   const renderGroup = (map, emptyText) => {
     if (!map.size) return `<div class="rev-empty">${emptyText}</div>`;
-    if (map.size === 1) return [...map.values()][0].join("");
-    return [...map.entries()].map(([store, cards]) =>
+    if (map.size === 1) return cardsOf([...map.values()][0]);
+    return [...map.entries()].map(([store, rows]) =>
       `<div class="rev-store">
-         <div class="rev-store-hd">🏬 ${escapeHtml(store)} <span class="rev-store-count">${cards.length}</span></div>
-         ${cards.join("")}
+         <div class="rev-store-hd">🏬 ${escapeHtml(store)} <span class="rev-store-count">${rows.length}</span></div>
+         ${cardsOf(rows)}
        </div>`).join("");
   };
   homeHost.innerHTML = renderGroup(buckets.home, "ไม่มียากลับบ้าน");
@@ -1494,7 +1510,8 @@ async function fetchAndRender() {
       source: norm(m.source || ""),
       continuity,
       store: norm(m.store || ""),
-      dispenseGroup: norm(m.dispenseGroup || "") || "home",
+      // Same auto-STAT rule as a fresh load, so cached and fresh agree.
+      dispenseGroup: norm(m.dispenseGroup || "") || (_isUsedAtHospital(m) ? "stat" : "home"),
       takeUntilFinished: !!m.takeUntilFinished,
       continueStartDate: norm(m.continueStartDate || ""),
       continueEndDate: norm(m.continueEndDate || ""),
