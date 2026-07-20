@@ -186,15 +186,19 @@
       renderDetail();
     }
     async function complete(btn) {
-      btn.disabled = true; btn.textContent = "⏳ …";
+      btn.disabled = true; const orig = btn.textContent; btn.textContent = "⏳ …";
       try {
         const r = await fetch(`/api/opd-queue/${encodeURIComponent(btn.dataset.id)}`, {
           method:"PUT", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ action:"complete", user:"" }),
         });
-        const j = await r.json();
-        if (!(j&&j.ok)) throw new Error(j&&j.error||"failed");
-        await load();
-      } catch (e) { btn.disabled=false; btn.textContent="✅ Complete"; $("status").textContent="ผิดพลาด: "+e; }
+        let j = {}; try { j = await r.json(); } catch(_) {}
+        if (!r.ok || !(j&&j.ok)) throw new Error((j&&j.error) || `HTTP ${r.status}`);
+        await load();                 // reloads → case moves to the เสร็จแล้ว section
+      } catch (e) {
+        btn.disabled=false; btn.textContent=orig;
+        $("status").textContent = "❌ Complete ไม่สำเร็จ: " + (e.message||e);
+        alert("จ่ายยาเสร็จไม่สำเร็จ: " + (e.message||e) + "\n(หากขึ้น 401/403 หรือ 404 ให้รีสตาร์ท pharmacy server)");
+      }
     }
     function renderStats(s) {
       s = s||{};

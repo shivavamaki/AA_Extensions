@@ -3403,6 +3403,11 @@ class Handler(BaseHTTPRequestHandler):
             'patient', 'patient-context', 'patient-adr', 'patient-medcache',
             'patient-captures', 'report-cache', 'hmr', 'hmq', 'opd-queue',
         )
+        # The OPD queue viewer (/opd-queue-view) is a first-party server page, not
+        # the extension — allow its Complete action (opd-queue PUT) without login,
+        # like the workflow queue it drives. Cross-origin is still blocked by CORS.
+        if rtype == 'opd-queue':
+            ext_data_write = True
         if not ext_data_write:
             if not self._require('super_admin', 'admin', 'editor'): return
 
