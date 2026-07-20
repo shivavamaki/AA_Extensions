@@ -530,6 +530,13 @@
     .review-status, .review-meds-block {
       background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px 14px;
     }
+    /* Keep the patient/vitals/allergy/notes status pinned to the top while the
+       medicine list scrolls under it. Its own long content scrolls internally. */
+    body.toolbar-collapsed .review-status {
+      position: sticky; top: 8px; z-index: 5;
+      max-height: 60vh; overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(15,23,42,.08);
+    }
     .review-status .vs-sec:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
     .review-status .vs-sec { margin-bottom: 11px; padding-bottom: 9px; }
     /* Patient + allergy as a 2-column row inside the status card. */
