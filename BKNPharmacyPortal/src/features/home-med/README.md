@@ -67,6 +67,8 @@ The toolbar **slides off the left edge**: the header's `‹` button collapses it
 > 3. **Visit summary** — from `emr/summary/getemrsummaryvisit`, current visit first (🟢), department · careprovider · chief complaint.
 > Screen-only.
 
+**Review mode (OPD).** When the print toolbar is **minimized** (`body.toolbar-collapsed`), the A4 print sheet is hidden and a center **review area** (`#reviewArea`) appears instead: the visit-summary content (rendered into `#reviewSummary` — `renderVisitSummary` writes to both it and the side `#vsBody`), the **full current medicine list as editable cards** (`renderReviewMeds` → `#reviewMeds`; same `_commitField`/`_removeMed` path as the sheet, with RM + continuity tags), and a **Pharmacist note** textarea (`#pharmNote`, persisted per-visit in the med cache as `pharmNote`, `bindPharmNote`). Hovering a review card draws the connector arrow (`_pointToEl`, the generalised `_pointToSheetRow`) to the matching drug in the 🕑 history panel. The ⚙️ ribbon reopens the toolbar to return to the print sheet.
+
 > Removed: **Fit width** (`body.fit-width`), the dead **Paper** select, and the **Hide logo** toggle. When editing the config, keep the spots in sync — `PRINT_CONTROL_DEFAULTS`, `_getPrintControls`, `applyPrintSettings`, `currentPrintSettingsFromControls`, and the `bindPrintControls` set + listener array.
 
 ## Follow-up appointment section

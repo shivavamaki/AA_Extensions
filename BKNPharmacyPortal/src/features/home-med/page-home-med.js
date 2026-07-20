@@ -692,6 +692,88 @@ async function renderMeds() {
 
   // OPD: keep the history panel's "current order" box in sync with med edits.
   if (document.getElementById("histCurrent") && _histAllGroups.length) _renderHistView();
+  // OPD review mode: keep the interactive med cards in sync too.
+  renderReviewMeds();
+}
+
+/* ─────────────────── OPD review-mode medicine cards ───────────────────────
+ * Editable cards mirroring the sheet's meds, shown in the center when the print
+ * toolbar is minimized. Reuse the continuity/RM tags + the hover-arrow to the
+ * history panel. Edits go through the same _commitField/_removeMed path. */
+function renderReviewMeds() {
+  const host = document.getElementById("reviewMeds");
+  if (!host) return;
+  if (!_meds.length) {
+    host.innerHTML = `<div class="rev-empty">ไม่มีรายการยา — เพิ่มจากใบสั่งยา</div>`;
+    return;
+  }
+  // Colour + continuity context (same source as the history panel).
+  const colorIdx = {}, visitCount = {};
+  _meds.forEach((m) => { const k = _histDrugKey(m); if (!(k in colorIdx)) colorIdx[k] = Object.keys(colorIdx).length; });
+  (_histAllGroups.slice(0, _histN)).forEach((g) => {
+    const seen = new Set();
+    (g.meds || []).forEach((m) => {
+      const k = _histDrugKey(m);
+      if (!(k in colorIdx)) colorIdx[k] = Object.keys(colorIdx).length;
+      if (!seen.has(k)) { seen.add(k); visitCount[k] = (visitCount[k] || 0) + 1; }
+    });
+  });
+
+  host.innerHTML = _meds.map((m, i) => {
+    const k = _histDrugKey(m);
+    const c = _histColor(k, colorIdx[k] || 0);
+    const repeats = visitCount[k] || 0;
+    const rm = repeats >= 1 ? `<span class="hist-rm">RM</span>` : "";
+    const cont = m.continuity ? `<span class="med-continuity cont-${escapeHtml(m.continuity)}">${escapeHtml(_continuityLabelFor(m.continuity))}</span>` : "";
+    return `<div class="rev-med" data-index="${i}" data-drugkey="${escapeHtml(k)}" data-medidx="${i}"
+                 style="--hc-bar:${c.bar};--hc-dot:${c.dot};--hc-soft:${c.soft};--hc-edge:${c.edge};">
+      <div class="rev-idx">${i + 1}</div>
+      <div>
+        <div class="rev-name" contenteditable="true" data-field="drug" data-no-translate translate="no">${escapeHtml(m.drug || "")}</div>
+        ${m.code ? `<div class="rev-code">Code: ${escapeHtml(m.code)}</div>` : ""}
+        <div class="rev-tags">${rm}${cont}</div>
+      </div>
+      <div class="rev-instr" contenteditable="true" data-field="instruction">${escapeHtml(m.instruction || "")}</div>
+      <div class="rev-qty" contenteditable="true" data-field="quantity">${escapeHtml(m.quantity || "")}</div>
+      <button class="rev-del" type="button" title="ลบ">−</button>
+    </div>`;
+  }).join("");
+
+  _bindReviewMeds(host);
+}
+
+function _bindReviewMeds(host) {
+  host.querySelectorAll(".rev-med [contenteditable][data-field]").forEach((el) => {
+    el.addEventListener("blur", () => {
+      const card = el.closest(".rev-med");
+      const idx = Number(card?.dataset.index);
+      _commitField(idx, el.dataset.field, el.textContent);
+      renderMeds();   // re-sync the sheet + cards
+    });
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); el.blur(); } });
+  });
+  host.querySelectorAll(".rev-del").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.closest(".rev-med")?.dataset.index);
+      if (Number.isInteger(idx)) _removeMed(idx);   // _removeMed re-renders
+    });
+  });
+  // Hover a review card → arrow to the same drug's history rows (and vice-versa
+  // the history panel already points to the sheet). Highlight matching history.
+  host.querySelectorAll(".rev-med[data-drugkey]").forEach((el) => {
+    el.addEventListener("mouseenter", () => { if (!_histPinned) _histSetActive(el.dataset.drugkey); _pointReviewToHistory(el); });
+    el.addEventListener("mouseleave", () => { if (!_histPinned) _histSetActive(""); _hideHistArrow(); });
+  });
+}
+
+/** In review mode, draw the connector arrow from a review med card to the first
+ * matching row in the history panel (or the current-order box). */
+function _pointReviewToHistory(fromEl) {
+  const key = fromEl.dataset.drugkey;
+  const target = document.querySelector(`#histCurrent .hist-med[data-drugkey="${cssEscape(key)}"]`)
+             || document.querySelector(`#histList .hist-med[data-drugkey="${cssEscape(key)}"]`);
+  if (!target) { _hideHistArrow(); return; }
+  _pointToEl(fromEl, target);
 }
 
 /* ─────────────────── Daily Pill Journey Card (by meal) ─────────────────── */
@@ -1084,6 +1166,7 @@ function _bindAddBox(addRow) {
 
 /* ───────────────────────────── Persistence ────────────────────────────── */
 let _persistTimer = null;
+let _pharmNote = "";        // pharmacist note (review mode), persisted per-visit
 function _persist() {
   if (!window.BKNData || !window.BKNData.saveMedCache) return;
   const c = _context || {};
@@ -1094,6 +1177,7 @@ function _persist() {
       window.BKNData.saveMedCache(c.patientuid, c.patientvisituid, {
         kind: "homeMedSheet",
         meds: _meds,
+        pharmNote: _pharmNote,
         savedAt: new Date().toISOString(),
       });
     } catch (_) { /* best-effort */ }
@@ -1106,11 +1190,26 @@ async function _loadSavedMeds() {
   if (!c.patientuid || !c.patientvisituid) return null;
   try {
     const cached = await window.BKNData.loadMedCache(c.patientuid, c.patientvisituid);
-    if (cached && cached.kind === "homeMedSheet" && Array.isArray(cached.meds)) {
-      return cached.meds;
+    if (cached && cached.kind === "homeMedSheet") {
+      if (typeof cached.pharmNote === "string") _pharmNote = cached.pharmNote;
+      if (Array.isArray(cached.meds)) return cached.meds;
     }
   } catch (_) { /* ignore */ }
   return null;
+}
+
+/** Pharmacist-note textarea (OPD review mode): loads the saved note, saves on
+ * input (debounced via _persist), shows a tiny saved-status. */
+function bindPharmNote() {
+  const ta = document.getElementById("pharmNote");
+  const status = document.getElementById("pharmNoteStatus");
+  if (!ta) return;
+  ta.value = _pharmNote || "";
+  ta.addEventListener("input", () => {
+    _pharmNote = ta.value;
+    _persist();
+    if (status) { status.textContent = "บันทึกแล้ว ✓"; clearTimeout(ta._st); ta._st = setTimeout(() => (status.textContent = ""), 1500); }
+  });
 }
 
 /* ─────────────────────────── Fetch + orchestrate ──────────────────────── */
@@ -1234,6 +1333,9 @@ async function fetchAndRender() {
       diagnosis: _context && _context.diagnosis,
       ...(data.visitSummary || {}),   // vitals, visits, doctorNotes
     });
+    // Sync the pharmacist-note textarea with the value loaded from the cache.
+    const _ta = document.getElementById("pharmNote");
+    if (_ta && _ta.value !== _pharmNote) _ta.value = _pharmNote || "";
   } else {
     const checklistHn = (data.patient && data.patient.hn) || (_context && (_context.hn || _context.patientId)) || "";
     fetchAndRenderChecklist(checklistHn);  // best-effort, non-blocking
@@ -1268,6 +1370,7 @@ function _histColor(key, idx) {
 let _histAllGroups = [];       // full server data (up to OPD_HISTORY_MAX visits)
 let _histN         = 5;        // how many visits to show (user-selectable)
 let _histPinned    = "";       // currently pinned drug key ("" = none)
+let _visitSummaryData = null;  // last visit-summary payload (for review re-render)
 
 function _histFmtDate(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ""));
@@ -1439,7 +1542,7 @@ function _ensureArrowLayer() {
 
 function _hideHistArrow() {
   if (_histArrowEl) _histArrowEl.classList.remove("show");
-  document.querySelectorAll(".med-row.sheet-pointed").forEach((r) => r.classList.remove("sheet-pointed"));
+  document.querySelectorAll(".sheet-pointed").forEach((r) => r.classList.remove("sheet-pointed"));
   if (_histArrowRedraw) {
     window.removeEventListener("scroll", _histArrowRedraw, true);
     window.removeEventListener("resize", _histArrowRedraw);
@@ -1450,28 +1553,35 @@ function _hideHistArrow() {
 /** Draw the arrow from panel row `fromEl` to the sheet's .med-row[data-index=idx]. */
 function _pointToSheetRow(fromEl, idx) {
   const target = document.querySelector(`#medTable .med-row[data-index="${idx}"]`);
-  if (!target) { _hideHistArrow(); return; }
-  target.classList.add("sheet-pointed");
-  // Bring the target into view if it's scrolled off.
-  const tr = target.getBoundingClientRect();
+  _pointToEl(fromEl, target);
+}
+
+/** Generic connector arrow from `fromEl` to `targetEl` (curved, auto-oriented by
+ * their horizontal order). Highlights the target and keeps the arrow anchored on
+ * scroll/resize. Used by both the history→sheet and review→history links. */
+function _pointToEl(fromEl, targetEl) {
+  if (!targetEl) { _hideHistArrow(); return; }
+  targetEl.classList.add("sheet-pointed");
+  const tr = targetEl.getBoundingClientRect();
   if (tr.top < 60 || tr.bottom > window.innerHeight - 20) {
-    target.scrollIntoView({ block: "center", behavior: "smooth" });
+    targetEl.scrollIntoView({ block: "center", behavior: "smooth" });
   }
   const svg = _ensureArrowLayer();
   const draw = () => {
     const a = fromEl.getBoundingClientRect();
-    const b = target.getBoundingClientRect();
-    // Start at the panel row's left edge, end at the sheet row's right edge.
-    const x1 = a.left - 2,          y1 = a.top + a.height / 2;
-    const x2 = b.right + 6,         y2 = b.top + b.height / 2;
-    // Cubic curve bowing left so it arcs from the sidebar to the sheet.
+    const b = targetEl.getBoundingClientRect();
+    // Anchor on the facing edges depending on which element is to the left.
+    const fromLeft = a.left < b.left;
+    const x1 = fromLeft ? a.right + 2 : a.left - 2;
+    const y1 = a.top + a.height / 2;
+    const x2 = fromLeft ? b.left - 6 : b.right + 6;
+    const y2 = b.top + b.height / 2;
     const midx = (x1 + x2) / 2;
     const d = `M ${x1} ${y1} C ${midx} ${y1}, ${midx} ${y2}, ${x2} ${y2}`;
     svg.querySelector("#histArrowPath").setAttribute("d", d);
   };
   draw();
   svg.classList.add("show");
-  // Keep the arrow anchored while the sheet scrolls/resizes under a held hover.
   if (_histArrowRedraw) {
     window.removeEventListener("scroll", _histArrowRedraw, true);
     window.removeEventListener("resize", _histArrowRedraw);
@@ -1968,9 +2078,10 @@ function bindVisitSummary() {
  *   3. Visit summary (emr/summary/getemrsummaryvisit)
  * `data` = { patient, allergies, diagnosis, vitals, visits, doctorNotes }. */
 function renderVisitSummary(data) {
-  const body = document.getElementById("vsBody");
-  if (!body) return;
+  const targets = [document.getElementById("vsBody"), document.getElementById("reviewSummary")].filter(Boolean);
+  if (!targets.length) return;
   const d = data || {};
+  _visitSummaryData = d;   // stash for review-mode re-render
   const fmtDT = (iso) => {
     const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(iso || ""));
     return m ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}` : (iso || "");
@@ -2028,7 +2139,7 @@ function renderVisitSummary(data) {
          </div>`).join("")
     : `<div class="vs-none">ไม่มีข้อมูลการมาตรวจ</div>`;
 
-  body.innerHTML =
+  const html =
     `<section class="vs-sec">
        <div class="vs-sec-hd">👤 ผู้ป่วย</div>
        <div class="vs-pt-name">${pName}</div>
@@ -2051,6 +2162,7 @@ function renderVisitSummary(data) {
        <div class="vs-sec-hd">📄 สรุปการมาตรวจ (Visit Summary)</div>
        ${visitsHtml}
      </section>`;
+  targets.forEach((t) => { t.innerHTML = html; });
 }
 
 /** Second-line client-side guard on note HTML (server already sanitised it):
@@ -2164,6 +2276,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindToolbar();
   bindToolbarCollapse();
   bindVisitSummary();
+  bindPharmNote();
   bindLangControl();
   _bindReconPanel();
 
