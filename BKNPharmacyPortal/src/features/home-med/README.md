@@ -66,14 +66,14 @@ The toolbar **slides off the left edge**: the header's `‹` button collapses it
 The OPD sheet has two modes, toggled by the print toolbar's collapse state:
 
 - **Editor mode** (toolbar open) — the A4 print sheet with the editable med table (default).
-- **Checking mode** (toolbar minimized, `body.toolbar-collapsed`) — the print sheet hides and a center **review area** (`#reviewArea`) takes the freed width in a **two-column grid** (`summary + pharmacist note` | `medicine list`; single column under 1180px). The ⚙️ ribbon reopens the toolbar to return to Editor mode. There's **no separate left summary panel** — the summary lives only in the center review area (no duplicated container).
+- **Checking mode** (toolbar minimized, `body.toolbar-collapsed`) — the print sheet hides and a **3-column** review layout appears. The ⚙️ ribbon reopens the toolbar to return to Editor mode. No duplicated summary container.
 
-The review area (`renderVisitSummary` → `#reviewSummary`) shows three parts from the OPD report's `data.visitSummary` (+ `data.patient`/`allergies`/diagnosis):
-> 1. **Patient + vital signs + allergy** — vitals as a colour-flagged grid (▲ red = high, ▼ blue = low, from the reading's `HLN`); allergy shows NKDA or `⚠ allergen (reaction)`.
-> 2. **Doctor notes** — from `emr/doctornote/search`, newest first, provider + timestamp, `notetext` HTML rendered (double-sanitised: server whitelist + `_sanitizeNoteClient`).
-> 3. **Visit summary** — from `emr/summary/getemrsummaryvisit`, current visit first (🟢), department · careprovider · chief complaint.
+**Checking-mode columns:**
+> - **Left (25%)** — `#reviewVisits`: **📄 สรุปการมาตรวจ (Visit Summary)** only (from `emr/summary/getemrsummaryvisit`, current visit 🟢 first; department · careprovider · chief complaint).
+> - **Center** — `#reviewStatus` (top): **👤 ผู้ป่วย** + **🩹 vitals** (colour-flagged grid, ▲ red high / ▼ blue low from `HLN`) + **⚠️ allergy** (NKDA or `⚠ allergen (reaction)`) + **🩺 doctor notes** (from `emr/doctornote/search`, double-sanitised HTML); then `#reviewMeds`: **💊 editable medicine cards** (`renderReviewMeds`; same `_commitField`/`_removeMed` path, RM + continuity tags).
+> - **Right** — the fixed `#histPanel` (already width-reserved by body padding): **🕑 history** at the top (current-order box `#histCurrent` hidden in checking mode; the current visit is already excluded server-side), and the **📝 Pharmacist note** (`#pharmNote` in `#histNoteBlock`, persisted per-visit in the med cache as `pharmNote`, `bindPharmNote`) at the bottom.
 
-Plus the **editable medicine cards** (`renderReviewMeds` → `#reviewMeds`; same `_commitField`/`_removeMed` path as the sheet, with RM + continuity tags) and a **Pharmacist note** textarea (`#pharmNote`, persisted per-visit in the med cache as `pharmNote`, `bindPharmNote`). Hovering a review card draws a connector arrow (`_pointToEl`) to the matching drug in the 🕑 history panel; the history panel's current-order hover points back to the review card (or the sheet row in Editor mode). `_pointToEl` skips hidden (zero-size) targets so no broken arrow is drawn. **Pastel-green accent** throughout (no purple). Screen-only.
+`renderVisitSummary` splits its output between `#reviewStatus` (patient/vitals/allergy/notes) and `#reviewVisits` (visit summary). Hovering a review med card draws a connector arrow (`_pointToEl`) to the first **visible** matching row in the history; `_pointToEl` skips hidden/zero-size targets so no broken arrow is drawn, and the history→current hover targets the review card in Checking mode (sheet row hidden). Under 1100px the left+center collapse to one column. **Pastel-green accent** throughout. Screen-only.
 
 > Removed: **Fit width** (`body.fit-width`), the dead **Paper** select, and the **Hide logo** toggle. When editing the config, keep the spots in sync — `PRINT_CONTROL_DEFAULTS`, `_getPrintControls`, `applyPrintSettings`, `currentPrintSettingsFromControls`, and the `bindPrintControls` set + listener array.
 

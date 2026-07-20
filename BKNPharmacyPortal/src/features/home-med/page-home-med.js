@@ -767,11 +767,13 @@ function _bindReviewMeds(host) {
 }
 
 /** In review mode, draw the connector arrow from a review med card to the first
- * matching row in the history panel (or the current-order box). */
+ * VISIBLE matching row in the history panel. In Checking mode the current-order
+ * box is hidden, so prefer a real history-list row. */
 function _pointReviewToHistory(fromEl) {
   const key = fromEl.dataset.drugkey;
-  const target = document.querySelector(`#histCurrent .hist-med[data-drugkey="${cssEscape(key)}"]`)
-             || document.querySelector(`#histList .hist-med[data-drugkey="${cssEscape(key)}"]`);
+  const sel = `.hist-med[data-drugkey="${cssEscape(key)}"]`;
+  const isVisible = (el) => el && el.getClientRects().length > 0;
+  const target = [...document.querySelectorAll(`#histList ${sel}, #histCurrent ${sel}`)].find(isVisible);
   if (!target) { _hideHistArrow(); return; }
   _pointToEl(fromEl, target);
 }
@@ -2068,8 +2070,9 @@ function bindToolbarCollapse() {
  *   3. Visit summary (emr/summary/getemrsummaryvisit)
  * `data` = { patient, allergies, diagnosis, vitals, visits, doctorNotes }. */
 function renderVisitSummary(data) {
-  const target = document.getElementById("reviewSummary");
-  if (!target) return;
+  const statusTarget = document.getElementById("reviewStatus");   // patient/vitals/allergy/notes
+  const visitsTarget = document.getElementById("reviewVisits");   // visit summary (left column)
+  if (!statusTarget && !visitsTarget) return;
   const d = data || {};
   _visitSummaryData = d;   // stash for review-mode re-render
   const fmtDT = (iso) => {
@@ -2129,7 +2132,8 @@ function renderVisitSummary(data) {
          </div>`).join("")
     : `<div class="vs-none">ไม่มีข้อมูลการมาตรวจ</div>`;
 
-  const html =
+  // Center column: patient + vitals + allergy + doctor notes.
+  const statusHtml =
     `<section class="vs-sec">
        <div class="vs-sec-hd">👤 ผู้ป่วย</div>
        <div class="vs-pt-name">${pName}</div>
@@ -2144,15 +2148,18 @@ function renderVisitSummary(data) {
        <div class="vs-sec-hd">⚠️ ประวัติการแพ้</div>
        <div class="vs-alg">${algHtml}</div>
      </section>
-     <section class="vs-sec">
+     <section class="vs-sec vs-sec-notes">
        <div class="vs-sec-hd">🩺 บันทึกแพทย์ (Doctor Notes)</div>
        ${notesHtml}
-     </section>
-     <section class="vs-sec">
+     </section>`;
+  // Left column: visit summary only.
+  const visitsSecHtml =
+    `<section class="vs-sec">
        <div class="vs-sec-hd">📄 สรุปการมาตรวจ (Visit Summary)</div>
        ${visitsHtml}
      </section>`;
-  target.innerHTML = html;
+  if (statusTarget) statusTarget.innerHTML = statusHtml;
+  if (visitsTarget) visitsTarget.innerHTML = visitsSecHtml;
 }
 
 /** Second-line client-side guard on note HTML (server already sanitised it):

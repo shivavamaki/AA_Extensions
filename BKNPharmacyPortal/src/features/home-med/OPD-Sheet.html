@@ -499,44 +499,56 @@
     }
 
     /* ── Checking mode ────────────────────────────────────────────────────
-       When the print toolbar is minimized (body.toolbar-collapsed), hide the
-       A4 print sheet and show the interactive review area instead. Uses the full
-       freed width (minus the right history panel) in a two-column layout:
-       left = summary + pharmacist note, right = editable medicine list. */
+       Toolbar minimized → hide the A4 sheet, show the review area. 3-column
+       layout: [left = Visit Summary 25%] [center = patient/vitals/allergy/
+       notes + med list] | the fixed #histPanel is the RIGHT column (its width
+       is already reserved by body padding-right). */
     .review-area { display: none; }
     body.toolbar-collapsed .sheet-wrap { display: none; }
     body.toolbar-collapsed .review-area {
       display: grid;
-      grid-template-columns: minmax(320px, 1.1fr) minmax(360px, 1.4fr);
-      grid-template-areas: "head head" "summary meds" "note meds";
+      grid-template-columns: minmax(240px, 25%) 1fr;
+      grid-template-areas: "head head" "visits center";
       align-content: start;
       gap: 14px 18px;
       margin: 14px 18px;
       padding-bottom: 30px;
     }
     /* Narrow window → single column. */
-    @media (max-width: 1180px) {
+    @media (max-width: 1100px) {
       body.toolbar-collapsed .review-area {
         grid-template-columns: 1fr;
-        grid-template-areas: "head" "summary" "meds" "note";
+        grid-template-areas: "head" "visits" "center";
       }
     }
     .review-head { grid-area: head; margin-bottom: 0; }
-    .review-summary { grid-area: summary; }
-    .review-meds-block { grid-area: meds; }
-    .review-note-block { grid-area: note; }
+    .review-visits { grid-area: visits; align-self: start; }
+    .review-center { grid-area: center; display: flex; flex-direction: column; gap: 14px; }
 
     .review-title { margin: 0; font-size: 19px; font-weight: 800; color: #166534; }
     .review-hint { font-size: 11.5px; color: #6b8f7a; margin-top: 2px; }
-    .review-summary {
-      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px;
-      padding: 12px 14px; align-self: start;
+
+    /* Green card chrome shared by the review columns. */
+    .review-visits, .review-status, .review-meds-block {
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px 14px;
     }
-    /* Vitals grid adapts to the column width. */
-    .review-summary .vs-vitals { grid-template-columns: repeat(4, 1fr); }
-    .review-summary .vs-sec { margin-bottom: 11px; padding-bottom: 9px; }
+    .review-visits .vs-sec { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+    .review-status .vs-sec:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+    .review-status .vs-sec { margin-bottom: 11px; padding-bottom: 9px; }
+    /* Vitals grid: wide in the center column. */
+    .review-status .vs-vitals { grid-template-columns: repeat(4, 1fr); }
     .review-sec-hd { font-weight: 800; font-size: 13px; color: #166534; margin-bottom: 8px; display: block; }
     .review-meds { display: flex; flex-direction: column; gap: 7px; }
+
+    /* Right column (checking mode): hide the history's current-order box (the med
+       list is now in the center) and reveal the pharmacist note at the bottom. */
+    .hist-note-block { display: none; }
+    body.toolbar-collapsed #histCurrent { display: none; }
+    body.toolbar-collapsed .hist-note-block {
+      display: block; flex: 0 0 auto;
+      padding: 10px 12px; border-top: 1px solid #bbf7d0; background: #f0fdf4;
+    }
+    .hist-note-hd { font-weight: 800; font-size: 12px; color: #166534; margin-bottom: 6px; display: block; }
 
     /* Editable medicine cards (mirror the sheet's fields, card layout). */
     .rev-med {
@@ -566,7 +578,6 @@
     /* Reuse the RM / continuity pills on review cards. */
     .rev-med .hist-rm, .rev-med .med-continuity { vertical-align: middle; }
 
-    .review-note-block { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 12px 14px; }
     .review-note {
       width: 100%; box-sizing: border-box; resize: vertical;
       border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px;
@@ -1551,6 +1562,14 @@
     <div class="recon-list" id="histList">
       <div class="recon-empty"><span class="recon-empty-icon">🕑</span>กำลังโหลดประวัติ…</div>
     </div>
+
+    <!-- Pharmacist note: shown at the bottom of the right column in Checking mode. -->
+    <div class="hist-note-block" id="histNoteBlock">
+      <label class="hist-note-hd" for="pharmNote">📝 บันทึกเภสัชกร (Pharmacist note)</label>
+      <textarea id="pharmNote" class="review-note" rows="4"
+                placeholder="พิมพ์บันทึก / คำแนะนำของเภสัชกร…"></textarea>
+      <div class="review-note-status" id="pharmNoteStatus"></div>
+    </div>
   </div>
 
   <div class="sheet-wrap">
@@ -1676,23 +1695,25 @@
   <div class="page-counter" id="pageCounter" data-total="1"></div>
   </div>
 
-  <!-- Review mode (shown when the print toolbar is minimized): interactive
-       summary + editable medicine list + pharmacist note. Screen-only. -->
+  <!-- Checking mode (shown when the print toolbar is minimized). Screen-only.
+       3-column layout: left = Visit Summary, center = patient/vitals/allergy/
+       notes + editable med list, right = history panel (fixed) + pharmacist note. -->
   <div class="review-area no-print" id="reviewArea">
     <div class="review-head">
       <h2 class="review-title">📋 สรุปการรักษาครั้งนี้</h2>
       <div class="review-hint">โหมดตรวจสอบ · ชี้เมาส์ที่ยาเพื่อเทียบกับประวัติ →</div>
     </div>
-    <div class="review-summary" id="reviewSummary"><!-- renderVisitSummary target --></div>
-    <div class="review-meds-block">
-      <div class="review-sec-hd">💊 รายการยาปัจจุบัน (แก้ไขได้)</div>
-      <div class="review-meds" id="reviewMeds"><!-- editable med cards injected by JS --></div>
-    </div>
-    <div class="review-note-block">
-      <label class="review-sec-hd" for="pharmNote">📝 บันทึกเภสัชกร (Pharmacist note)</label>
-      <textarea id="pharmNote" class="review-note" rows="4"
-                placeholder="พิมพ์บันทึก / คำแนะนำของเภสัชกร…"></textarea>
-      <div class="review-note-status" id="pharmNoteStatus"></div>
+
+    <!-- Left column: Visit Summary only -->
+    <div class="review-visits" id="reviewVisits"><!-- renderVisitSummary → visits --></div>
+
+    <!-- Center column: patient/vitals/allergy/notes, then editable med list -->
+    <div class="review-center">
+      <div class="review-status" id="reviewStatus"><!-- renderVisitSummary → patient+vitals+allergy+notes --></div>
+      <div class="review-meds-block">
+        <div class="review-sec-hd">💊 รายการยาปัจจุบัน (แก้ไขได้)</div>
+        <div class="review-meds" id="reviewMeds"><!-- editable med cards injected by JS --></div>
+      </div>
     </div>
   </div>
 
