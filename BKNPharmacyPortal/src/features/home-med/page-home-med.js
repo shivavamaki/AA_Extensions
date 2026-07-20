@@ -740,7 +740,10 @@ function renderReviewMeds() {
       </div>
       <div class="rev-instr" contenteditable="true" data-field="instruction">${escapeHtml(m.instruction || "")}</div>
       <div class="rev-qty" contenteditable="true" data-field="quantity">${escapeHtml(m.quantity || "")}</div>
-      <button class="rev-move" type="button" title="${btnTitle}" data-target="${group === "home" ? "stat" : "home"}">${btnLabel}</button>
+      <div class="rev-actions">
+        <button class="rev-move" type="button" title="${btnTitle}" data-target="${group === "home" ? "stat" : "home"}">${btnLabel}</button>
+        <button class="rev-del" type="button" title="ลบยานี้ออกจากใบสั่งยา">ลบ</button>
+      </div>
     </div>`;
   };
 
@@ -773,6 +776,15 @@ function _bindReviewMeds(host) {
       _meds[idx].dispenseGroup = btn.dataset.target === "stat" ? "stat" : "home";
       _persist();
       renderMeds();   // re-sync sheet + re-render both groups
+    });
+  });
+  // The delete button REMOVES the med from _meds (so it's gone from the sheet too).
+  host.querySelectorAll(".rev-del").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.closest(".rev-med")?.dataset.index);
+      if (idx < 0 || idx >= _meds.length) return;
+      const name = norm(_meds[idx].drug || "") || "ยานี้";
+      if (window.confirm(`ลบ "${name}" ออกจากใบสั่งยา?`)) _removeMed(idx);   // _removeMed re-renders
     });
   });
   // Hover a review card → arrow to the same drug's history rows.
@@ -1278,6 +1290,62 @@ function bindPharmNote() {
     _pharmNote = ta.value;
     _persist();
     if (status) { status.textContent = "บันทึกแล้ว ✓"; clearTimeout(ta._st); ta._st = setTimeout(() => (status.textContent = ""), 1500); }
+  });
+}
+
+/** Voice dictation for the pharmacist note via the Web Speech API (Chrome's
+ * built-in webkitSpeechRecognition). Toggles on the 🎤 button; appends final
+ * results to the textarea (Thai locale), shows interim text live. */
+function bindPharmMic() {
+  const btn = document.getElementById("btnPharmMic");
+  const ta = document.getElementById("pharmNote");
+  const status = document.getElementById("pharmNoteStatus");
+  if (!btn || !ta) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {   // not supported (non-Chromium browser)
+    btn.disabled = true;
+    btn.title = "เบราว์เซอร์นี้ไม่รองรับการพิมพ์ด้วยเสียง (ใช้ Chrome)";
+    return;
+  }
+  let rec = null, listening = false, baseText = "";
+  const stop = () => { try { rec && rec.stop(); } catch (_) {} };
+
+  btn.addEventListener("click", () => {
+    if (listening) { stop(); return; }
+    rec = new SR();
+    rec.lang = "th-TH";           // Thai; Chrome still transcribes English words too
+    rec.interimResults = true;
+    rec.continuous = true;
+    baseText = ta.value;
+    rec.onstart = () => {
+      listening = true; btn.classList.add("rec");
+      if (status) status.textContent = "🎙️ กำลังฟัง… (กด 🎤 อีกครั้งเพื่อหยุด)";
+    };
+    rec.onresult = (e) => {
+      let finalTxt = "", interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalTxt += t; else interim += t;
+      }
+      if (finalTxt) {
+        baseText = (baseText ? baseText.replace(/\s*$/, "") + " " : "") + finalTxt.trim();
+      }
+      // Show committed text + live interim; commit baseText to the model.
+      ta.value = baseText + (interim ? (baseText ? " " : "") + interim : "");
+      _pharmNote = baseText;
+      _persist();
+    };
+    rec.onerror = (e) => {
+      if (status) status.textContent = e.error === "not-allowed"
+        ? "❌ ไม่ได้อนุญาตให้ใช้ไมโครโฟน"
+        : `❌ เสียงผิดพลาด: ${e.error || ""}`;
+    };
+    rec.onend = () => {
+      listening = false; btn.classList.remove("rec");
+      ta.value = baseText; _pharmNote = baseText; _persist();
+      if (status) { status.textContent = "บันทึกเสียงแล้ว ✓"; clearTimeout(ta._st); ta._st = setTimeout(() => (status.textContent = ""), 1500); }
+    };
+    try { rec.start(); } catch (_) { /* already started */ }
   });
 }
 
@@ -2344,6 +2412,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindToolbar();
   bindToolbarCollapse();
   bindPharmNote();
+  bindPharmMic();
   bindSendDispense();
   bindLangControl();
   _bindReconPanel();
