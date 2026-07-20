@@ -1484,6 +1484,19 @@ def _arcus_item_to_med(it):
         ordercat = _hm_norm((_arc_first(poi.get('orderitemuid')) or {}).get('ordercatuid', {})
                             .get('name') if isinstance((_arc_first(poi.get('orderitemuid')) or {}).get('ordercatuid'), dict) else '')
 
+    # Priority — "Stat" orders default to the STAT/used group on the OPD sheet.
+    # Read the item priority first, then the order priority. relatedvalue 'S'/'R'.
+    _prio = _arc_first(poi.get('priorityuid')) or _arc_first(it.get('orderpriorityuid')) or {}
+    priority = _hm_norm(_prio.get('valuedescription') or '')
+    priority_rel = _hm_norm(_prio.get('relatedvalue') or it.get('orderpriorityvalue') or '')
+    is_stat = (priority_rel.upper() == 'S') or ('stat' in priority.lower())
+
+    # Dispensing store / location — for sub-grouping (Outpatient Pharmacy Floor 1,
+    # Central Supply, Inpatient Pharmacy Floor G/2, …).
+    store = _hm_norm((_arc_first(it.get('ordertodepartmentuid')) or {}).get('name') or '')
+    if not store:
+        store = _hm_norm((_arc_first(it.get('invstoreuid')) or {}).get('name') or '')
+
     return {
         'drug': name, 'code': code, 'quantity': quantity,
         'comment': instruction, 'note': note, 'noteEn': note_en,
@@ -1491,6 +1504,7 @@ def _arcus_item_to_med(it):
         'provider': provider,
         'oral': bool(re.search(r'oral|\btake\b|รับประทาน', route + ' ' + verb, re.I)),
         'ordertype': ordertype, 'ordertypecode': ordertypecode, 'status': status, 'ordercat': ordercat,
+        'priority': priority, 'isStat': is_stat, 'store': store,
         'orderdate': it.get('orderdate') or poi.get('startdate') or '',
         'startdate': poi.get('startdate') or '',
     }

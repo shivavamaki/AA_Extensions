@@ -571,8 +571,11 @@ function _medFromReport(m) {
     // | "new". Server auto-computes continued/adjusted; the pharmacist picks the
     // final value from the OPD sheet dropdown (which also offers "new").
     continuity: norm(m.continuity || ""),
+    // Dispensing store / location (for sub-grouping), from ArcusAir.
+    store: norm(m.store || ""),
     // OPD dispensing group (Checking mode): "home" (default) | "stat".
-    dispenseGroup: norm(m.dispenseGroup || "") || "home",
+    // A "Stat" order (m.isStat) auto-defaults to the STAT/used group.
+    dispenseGroup: norm(m.dispenseGroup || "") || (m.isStat ? "stat" : "home"),
     takeUntilFinished: false,
     continueStartDate: "",
     continueEndDate: "",
@@ -747,12 +750,33 @@ function renderReviewMeds() {
     </div>`;
   };
 
-  const home = [], stat = [];
-  _meds.forEach((m, i) => (_medGroup(m) === "stat" ? stat : home).push(card(m, i, _medGroup(m))));
-  homeHost.innerHTML = home.length ? home.join("") : `<div class="rev-empty">ไม่มียากลับบ้าน</div>`;
-  statHost.innerHTML = stat.length ? stat.join("") : `<div class="rev-empty">— ไม่มี —</div>`;
-  const hc = document.getElementById("revHomeCount"); if (hc) hc.textContent = String(home.length);
-  const sc = document.getElementById("revStatCount"); if (sc) sc.textContent = String(stat.length);
+  // Split into home/stat, then SUB-GROUP each by dispensing store (Outpatient
+  // Pharmacy Floor 1, Central Supply, Pharmacy Floor 2, …). Store order = first-seen.
+  const buckets = { home: new Map(), stat: new Map() };
+  let homeN = 0, statN = 0;
+  _meds.forEach((m, i) => {
+    const g = _medGroup(m);
+    if (g === "stat") statN++; else homeN++;
+    const store = norm(m.store || "") || "อื่นๆ (ไม่ระบุคลัง)";
+    const map = buckets[g];
+    if (!map.has(store)) map.set(store, []);
+    map.get(store).push(card(m, i, g));
+  });
+  // Render a group's store buckets. If everything is one store (or none), skip the
+  // sub-headers to keep it clean.
+  const renderGroup = (map, emptyText) => {
+    if (!map.size) return `<div class="rev-empty">${emptyText}</div>`;
+    if (map.size === 1) return [...map.values()][0].join("");
+    return [...map.entries()].map(([store, cards]) =>
+      `<div class="rev-store">
+         <div class="rev-store-hd">🏬 ${escapeHtml(store)} <span class="rev-store-count">${cards.length}</span></div>
+         ${cards.join("")}
+       </div>`).join("");
+  };
+  homeHost.innerHTML = renderGroup(buckets.home, "ไม่มียากลับบ้าน");
+  statHost.innerHTML = renderGroup(buckets.stat, "— ไม่มี —");
+  const hc = document.getElementById("revHomeCount"); if (hc) hc.textContent = String(homeN);
+  const sc = document.getElementById("revStatCount"); if (sc) sc.textContent = String(statN);
 
   _bindReviewMeds(homeHost);
   _bindReviewMeds(statHost);
@@ -1457,6 +1481,7 @@ async function fetchAndRender() {
       frequencyTh: norm(m.frequencyTh || ""),
       source: norm(m.source || ""),
       continuity,
+      store: norm(m.store || ""),
       dispenseGroup: norm(m.dispenseGroup || "") || "home",
       takeUntilFinished: !!m.takeUntilFinished,
       continueStartDate: norm(m.continueStartDate || ""),

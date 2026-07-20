@@ -583,6 +583,21 @@
     }
     .rev-group-stat .rev-med { border-left-color: #fdba74; }
 
+    /* Store sub-groups within Home / STAT (Outpatient Pharmacy, Central Supply…). */
+    .rev-store { margin-bottom: 10px; }
+    .rev-store:last-child { margin-bottom: 0; }
+    .rev-store-hd {
+      font-weight: 700; font-size: 11px; color: #475569;
+      display: flex; align-items: center; gap: 6px;
+      padding: 3px 4px 5px; margin-bottom: 5px;
+      border-bottom: 1px dashed #cbd5e1;
+    }
+    .rev-store-count {
+      margin-left: auto; font-weight: 800; font-size: 10px; color: #475569;
+      background: #e2e8f0; border-radius: 999px; padding: 0 7px;
+    }
+    .rev-store .rev-med { margin-bottom: 6px; }
+
     /* Right column (checking mode): hide the history's current-order box (the med
        list is now in the center); reveal the pharmacist note at the bottom. */
     .hist-note-block { display: none; }

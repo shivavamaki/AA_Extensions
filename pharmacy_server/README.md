@@ -171,7 +171,7 @@ These endpoints fetch live orders from ArcusAir and shape them into printable re
 
 Both Home Med and Journey build from **one shared normaliser** so they never disagree about what an order is. Rules (all in `bkn_ks_server.py`):
 
-- **Normalise once** — `_normalize_orderitems(raw)` maps each item (`_arcus_item_to_med`), then drops non-medicines and cancelled orders.
+- **Normalise once** — `_normalize_orderitems(raw)` maps each item (`_arcus_item_to_med`), then drops non-medicines and cancelled orders. Each med also carries `priority`/`isStat` (from `orderpriorityuid`/`priorityuid` relatedvalue `S`) and `store` (`ordertodepartmentuid`/`invstoreuid` name) — the OPD Checking view auto-defaults Stat meds to the STAT group and sub-groups meds by store.
 - **De-dupe by `(drug, code)`** — non-formulary items all share code `011001`; de-duping by code alone silently drops real take-home drugs (e.g. carvedilol vanishing behind sildenafil).
 - **Phase by stable valuecode** — `ORDERTYPE_PHASE_BY_CODE` maps `ORDTYP3`→home, `ORDTYP2`/`ORDTYP1`→ward; the free-text label is only a fallback for unknown codes.
 - **Journey noise filter** — exclude any `Intra-Op` instruction (any code/phase, incl. `51`); exclude ward-only items whose instruction is empty/`-`, or whose non-`51` code is absent from the medication DB. Discharge meds are always kept (safety net).
