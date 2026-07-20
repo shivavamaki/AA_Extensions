@@ -505,17 +505,24 @@
        is already reserved by body padding-right). */
     .review-area { display: none; }
     body.toolbar-collapsed .sheet-wrap { display: none; }
+    /* Checking mode owns the right-column width: history panel = 30vw, and the
+       body reserves exactly that on the right so nothing overlaps. The review
+       area fills the remaining 70vw, split 25:45 → overall 25 : 45 : 30. */
+    body.toolbar-collapsed { padding-right: calc(30vw + 24px); }
+    body.toolbar-collapsed #histPanel { width: 30vw; top: 16px; right: 12px; }
     body.toolbar-collapsed .review-area {
       display: grid;
-      grid-template-columns: minmax(240px, 25%) 1fr;
+      grid-template-columns: 25fr 45fr;   /* of the 70vw remaining → 25% : 45% */
       grid-template-areas: "head head" "visits center";
       align-content: start;
-      gap: 14px 18px;
-      margin: 14px 18px;
+      gap: 14px 16px;
+      margin: 14px 16px;
       padding-bottom: 30px;
     }
-    /* Narrow window → single column. */
+    /* Narrow window → single column, history panel back to a fixed width. */
     @media (max-width: 1100px) {
+      body.toolbar-collapsed { padding-right: 300px; }
+      body.toolbar-collapsed #histPanel { width: 300px; }
       body.toolbar-collapsed .review-area {
         grid-template-columns: 1fr;
         grid-template-areas: "head" "visits" "center";
@@ -535,8 +542,12 @@
     .review-visits .vs-sec { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
     .review-status .vs-sec:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
     .review-status .vs-sec { margin-bottom: 11px; padding-bottom: 9px; }
-    /* Vitals grid: wide in the center column. */
-    .review-status .vs-vitals { grid-template-columns: repeat(4, 1fr); }
+    /* Vitals grid in the center column: more, smaller cards (auto-fit). */
+    .review-status .vs-vitals { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 5px; }
+    .review-status .vs-vital { padding: 3px 6px; }
+    .review-status .vs-vital .vs-vk { font-size: 8.5px; }
+    .review-status .vs-vital .vs-vv { font-size: 13px; }
+    .review-status .vs-vital .vs-vu { font-size: 8px; }
     .review-sec-hd { font-weight: 800; font-size: 13px; color: #166534; margin-bottom: 8px; display: block; }
     .review-meds { display: flex; flex-direction: column; gap: 7px; }
 
