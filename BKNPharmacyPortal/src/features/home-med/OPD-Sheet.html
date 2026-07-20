@@ -563,6 +563,22 @@
     .review-sec-hd { font-weight: 800; font-size: 13px; color: #166534; margin-bottom: 8px; display: block; }
     .review-meds { display: flex; flex-direction: column; gap: 7px; }
 
+    /* Home / STAT groups inside the med list. */
+    .rev-group { margin-bottom: 12px; }
+    .rev-group:last-child { margin-bottom: 0; }
+    .rev-group-hd {
+      font-weight: 800; font-size: 12px; margin-bottom: 6px;
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 8px; border-radius: 6px;
+    }
+    .rev-group-home .rev-group-hd { color: #166534; background: #dcfce7; }
+    .rev-group-stat .rev-group-hd { color: #9a3412; background: #ffedd5; }
+    .rev-group-count {
+      margin-left: auto; font-weight: 800; font-size: 11px;
+      background: rgba(255,255,255,.7); border-radius: 999px; padding: 0 8px;
+    }
+    .rev-group-stat .rev-med { border-left-color: #fdba74; }
+
     /* Right column (checking mode): hide the history's current-order box (the med
        list is now in the center) and reveal the pharmacist note at the bottom. */
     .hist-note-block { display: none; }
@@ -572,11 +588,19 @@
       padding: 10px 12px; border-top: 1px solid #bbf7d0; background: #f0fdf4;
     }
     .hist-note-hd { font-weight: 800; font-size: 12px; color: #166534; margin-bottom: 6px; display: block; }
+    .hist-note-actions { margin-top: 8px; }
+    .btn-send-dispense {
+      width: 100%; padding: 9px 12px;
+      background: #16a34a; color: #fff; font-weight: 800; font-size: 13px;
+      border: none; border-radius: 8px; cursor: pointer;
+    }
+    .btn-send-dispense:hover { background: #15803d; }
+    .btn-send-dispense:disabled { opacity: .55; cursor: default; }
 
     /* Editable medicine cards (mirror the sheet's fields, card layout). */
     .rev-med {
       display: grid;
-      grid-template-columns: auto 1fr 2fr 90px auto;
+      grid-template-columns: auto 1fr 2fr 80px 74px;
       gap: 10px; align-items: start;
       background: #fff; border: 1px solid #e5e7eb; border-left: 4px solid var(--hc-edge, #86efac);
       border-radius: 10px; padding: 9px 12px;
@@ -590,11 +614,14 @@
     }
     .rev-med [contenteditable]:hover { background: #f8fafc; border-color: #e2e8f0; }
     .rev-med [contenteditable]:focus { background: #eff6ff; border-color: #93c5fd; outline: none; }
-    .rev-med .rev-del {
-      border: 1px solid #fecaca; background: #fef2f2; color: #dc2626;
-      width: 24px; height: 24px; border-radius: 6px; cursor: pointer; font-weight: 800;
+    .rev-med .rev-move {
+      align-self: center;
+      border: 1px solid #cbd5e1; background: #f1f5f9; color: #334155;
+      padding: 4px 6px; border-radius: 6px; cursor: pointer;
+      font-weight: 800; font-size: 10.5px; white-space: nowrap;
     }
-    .rev-med .rev-del:hover { background: #fee2e2; }
+    .rev-med .rev-move:hover { background: #e2e8f0; }
+    .rev-group-stat .rev-med .rev-move { border-color: #86efac; background: #dcfce7; color: #166534; }
     .rev-med.rev-pointed { box-shadow: 0 0 0 2px rgba(29,78,216,.5); border-left-color: #1d4ed8; }
     .rev-empty { color: #8fae9d; font-style: italic; padding: 10px; }
 
@@ -1589,8 +1616,11 @@
     <!-- Pharmacist note: shown at the bottom of the right column in Checking mode. -->
     <div class="hist-note-block" id="histNoteBlock">
       <label class="hist-note-hd" for="pharmNote">📝 บันทึกเภสัชกร (Pharmacist note)</label>
-      <textarea id="pharmNote" class="review-note" rows="4"
+      <textarea id="pharmNote" class="review-note" rows="3"
                 placeholder="พิมพ์บันทึก / คำแนะนำของเภสัชกร…"></textarea>
+      <div class="hist-note-actions">
+        <button id="btnSendDispense" class="btn-send-dispense" type="button">🚀 ส่งไปห้องจ่ายยา</button>
+      </div>
       <div class="review-note-status" id="pharmNoteStatus"></div>
     </div>
   </div>
@@ -1735,7 +1765,14 @@
       <div class="review-status" id="reviewStatus"><!-- renderVisitSummary → patient+vitals+allergy+notes --></div>
       <div class="review-meds-block">
         <div class="review-sec-hd">💊 รายการยาปัจจุบัน (แก้ไขได้)</div>
-        <div class="review-meds" id="reviewMeds"><!-- editable med cards injected by JS --></div>
+        <div class="rev-group rev-group-home">
+          <div class="rev-group-hd">🏠 ยากลับบ้าน (Home medicine) <span class="rev-group-count" id="revHomeCount">0</span></div>
+          <div class="review-meds" id="reviewMedsHome" data-group="home"><!-- home cards --></div>
+        </div>
+        <div class="rev-group rev-group-stat">
+          <div class="rev-group-hd">⚡ ใช้ที่ รพ. / STAT (used) <span class="rev-group-count" id="revStatCount">0</span></div>
+          <div class="review-meds" id="reviewMedsStat" data-group="stat"><!-- stat cards --></div>
+        </div>
       </div>
     </div>
   </div>

@@ -571,6 +571,8 @@ function _medFromReport(m) {
     // | "new". Server auto-computes continued/adjusted; the pharmacist picks the
     // final value from the OPD sheet dropdown (which also offers "new").
     continuity: norm(m.continuity || ""),
+    // OPD dispensing group (Checking mode): "home" (default) | "stat".
+    dispenseGroup: norm(m.dispenseGroup || "") || "home",
     takeUntilFinished: false,
     continueStartDate: "",
     continueEndDate: "",
@@ -700,13 +702,13 @@ async function renderMeds() {
  * Editable cards mirroring the sheet's meds, shown in the center when the print
  * toolbar is minimized. Reuse the continuity/RM tags + the hover-arrow to the
  * history panel. Edits go through the same _commitField/_removeMed path. */
+function _medGroup(m) { return (m.dispenseGroup === "stat") ? "stat" : "home"; }
+
 function renderReviewMeds() {
-  const host = document.getElementById("reviewMeds");
-  if (!host) return;
-  if (!_meds.length) {
-    host.innerHTML = `<div class="rev-empty">ไม่มีรายการยา — เพิ่มจากใบสั่งยา</div>`;
-    return;
-  }
+  const homeHost = document.getElementById("reviewMedsHome");
+  const statHost = document.getElementById("reviewMedsStat");
+  if (!homeHost || !statHost) return;
+
   // Colour + continuity context (same source as the history panel).
   const colorIdx = {}, visitCount = {};
   _meds.forEach((m) => { const k = _histDrugKey(m); if (!(k in colorIdx)) colorIdx[k] = Object.keys(colorIdx).length; });
@@ -719,12 +721,15 @@ function renderReviewMeds() {
     });
   });
 
-  host.innerHTML = _meds.map((m, i) => {
+  const card = (m, i, group) => {
     const k = _histDrugKey(m);
     const c = _histColor(k, colorIdx[k] || 0);
     const repeats = visitCount[k] || 0;
     const rm = repeats >= 1 ? `<span class="hist-rm">RM</span>` : "";
     const cont = m.continuity ? `<span class="med-continuity cont-${escapeHtml(m.continuity)}">${escapeHtml(_continuityLabelFor(m.continuity))}</span>` : "";
+    // The button MOVES the med between groups (home ⇄ stat), never deletes.
+    const btnLabel = group === "home" ? "→ STAT" : "← Home";
+    const btnTitle = group === "home" ? "ย้ายไป ใช้ที่ รพ./STAT" : "ย้ายกลับ ยากลับบ้าน";
     return `<div class="rev-med" data-index="${i}" data-drugkey="${escapeHtml(k)}" data-medidx="${i}"
                  style="--hc-bar:${c.bar};--hc-dot:${c.dot};--hc-soft:${c.soft};--hc-edge:${c.edge};">
       <div class="rev-idx">${i + 1}</div>
@@ -735,11 +740,19 @@ function renderReviewMeds() {
       </div>
       <div class="rev-instr" contenteditable="true" data-field="instruction">${escapeHtml(m.instruction || "")}</div>
       <div class="rev-qty" contenteditable="true" data-field="quantity">${escapeHtml(m.quantity || "")}</div>
-      <button class="rev-del" type="button" title="ลบ">−</button>
+      <button class="rev-move" type="button" title="${btnTitle}" data-target="${group === "home" ? "stat" : "home"}">${btnLabel}</button>
     </div>`;
-  }).join("");
+  };
 
-  _bindReviewMeds(host);
+  const home = [], stat = [];
+  _meds.forEach((m, i) => (_medGroup(m) === "stat" ? stat : home).push(card(m, i, _medGroup(m))));
+  homeHost.innerHTML = home.length ? home.join("") : `<div class="rev-empty">ไม่มียากลับบ้าน</div>`;
+  statHost.innerHTML = stat.length ? stat.join("") : `<div class="rev-empty">— ไม่มี —</div>`;
+  const hc = document.getElementById("revHomeCount"); if (hc) hc.textContent = String(home.length);
+  const sc = document.getElementById("revStatCount"); if (sc) sc.textContent = String(stat.length);
+
+  _bindReviewMeds(homeHost);
+  _bindReviewMeds(statHost);
 }
 
 function _bindReviewMeds(host) {
@@ -752,14 +765,17 @@ function _bindReviewMeds(host) {
     });
     el.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); el.blur(); } });
   });
-  host.querySelectorAll(".rev-del").forEach((btn) => {
+  // The move button reclassifies the med (home ⇄ stat) instead of deleting.
+  host.querySelectorAll(".rev-move").forEach((btn) => {
     btn.addEventListener("click", () => {
       const idx = Number(btn.closest(".rev-med")?.dataset.index);
-      if (Number.isInteger(idx)) _removeMed(idx);   // _removeMed re-renders
+      if (idx < 0 || idx >= _meds.length) return;
+      _meds[idx].dispenseGroup = btn.dataset.target === "stat" ? "stat" : "home";
+      _persist();
+      renderMeds();   // re-sync sheet + re-render both groups
     });
   });
-  // Hover a review card → arrow to the same drug's history rows (and vice-versa
-  // the history panel already points to the sheet). Highlight matching history.
+  // Hover a review card → arrow to the same drug's history rows.
   host.querySelectorAll(".rev-med[data-drugkey]").forEach((el) => {
     el.addEventListener("mouseenter", () => { if (!_histPinned) _histSetActive(el.dataset.drugkey); _pointReviewToHistory(el); });
     el.addEventListener("mouseleave", () => { if (!_histPinned) _histSetActive(""); _hideHistArrow(); });
@@ -1200,6 +1216,57 @@ async function _loadSavedMeds() {
   return null;
 }
 
+/** "Send to dispensing zone" (OPD Checking mode): POST the current visit's meds
+ * (grouped home/stat) + pharmacist note to the OPD queue, and log it. */
+function bindSendDispense() {
+  const btn = document.getElementById("btnSendDispense");
+  if (!btn) return;
+  const status = document.getElementById("pharmNoteStatus");
+  btn.addEventListener("click", async () => {
+    if (!_meds.length) { if (status) status.textContent = "⚠️ ไม่มีรายการยา"; return; }
+    if (!window.BKNData || !window.BKNData.serverFetch) { if (status) status.textContent = "⚠️ เชื่อมต่อเซิร์ฟเวอร์ไม่ได้"; return; }
+    const c = _context || {};
+    const patEl = document.getElementById("patientName");
+    const payload = {
+      hn: (document.getElementById("patientHN")?.textContent || c.hn || c.patientId || "").trim(),
+      name: (patEl?.textContent || "").trim(),
+      visitId: (document.getElementById("patientAN")?.textContent || "").trim(),
+      room: (document.getElementById("patientRoom")?.textContent || "").trim(),
+      patientuid: c.patientuid || "",
+      patientvisituid: c.patientvisituid || "",
+      sentBy: (c.loginName || c.userName || "").trim(),
+      pharmacistNote: _pharmNote || "",
+      meds: _meds.map((m) => ({
+        drug: norm(m.drug || ""), code: norm(m.code || ""),
+        instruction: norm(m.instruction || ""), quantity: norm(m.quantity || ""),
+        continuity: norm(m.continuity || ""), group: _medGroup(m),
+      })),
+    };
+    if (!payload.hn) { if (status) status.textContent = "⚠️ ไม่พบ HN ผู้ป่วย"; return; }
+    btn.disabled = true;
+    const prev = btn.textContent;
+    btn.textContent = "⏳ กำลังส่ง…";
+    try {
+      const r = await window.BKNData.serverFetch("/api/opd-queue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (r && r.ok && r.json && r.json.ok) {
+        btn.textContent = "✅ ส่งแล้ว";
+        if (status) status.textContent = `ส่งเข้า OPD Queue: ${r.json.case?.id || ""}`;
+        setTimeout(() => { btn.textContent = prev; btn.disabled = false; if (status) status.textContent = ""; }, 2500);
+      } else {
+        const err = (r && r.json && r.json.error) || `HTTP ${r?.status || "?"}`;
+        throw new Error(err);
+      }
+    } catch (e) {
+      btn.textContent = prev; btn.disabled = false;
+      if (status) status.textContent = `❌ ส่งไม่สำเร็จ: ${e.message || e}`;
+    }
+  });
+}
+
 /** Pharmacist-note textarea (OPD review mode): loads the saved note, saves on
  * input (debounced via _persist), shows a tiny saved-status. */
 function bindPharmNote() {
@@ -1298,6 +1365,7 @@ async function fetchAndRender() {
       frequencyTh: norm(m.frequencyTh || ""),
       source: norm(m.source || ""),
       continuity,
+      dispenseGroup: norm(m.dispenseGroup || "") || "home",
       takeUntilFinished: !!m.takeUntilFinished,
       continueStartDate: norm(m.continueStartDate || ""),
       continueEndDate: norm(m.continueEndDate || ""),
@@ -1557,7 +1625,7 @@ function _hideHistArrow() {
 function _pointToSheetRow(fromEl, idx) {
   const checking = document.body.classList.contains("toolbar-collapsed");
   const target = checking
-    ? document.querySelector(`#reviewMeds .rev-med[data-index="${idx}"]`)
+    ? document.querySelector(`.review-meds .rev-med[data-index="${idx}"]`)
     : document.querySelector(`#medTable .med-row[data-index="${idx}"]`);
   _pointToEl(fromEl, target);
 }
@@ -2276,6 +2344,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindToolbar();
   bindToolbarCollapse();
   bindPharmNote();
+  bindSendDispense();
   bindLangControl();
   _bindReconPanel();
 

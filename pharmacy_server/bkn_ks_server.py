@@ -52,6 +52,8 @@ API:
   GET    /api/hmr/{visitid}                 — one record (I48-xx-xxxxxx), {} if none
   PUT    /api/hmr/{visitid}                 — read-merge-write; auditLog entries append, never overwrite
 
+  GET    /api/opd-queue                     — OPD dispensing queue (?from=&to=, newest first; default today)
+  POST   /api/opd-queue                     — send a case {hn,name,visitId,room,meds[],pharmacistNote,sentBy}
   GET    /api/hmq                           — HM Process Queue entries (?from=&to=, newest first)
   POST   /api/hmq                           — add a case {hn,name,ward,room,addedBy}; 409 if HN already active today
   PUT    /api/hmq/{id}                      — transition {action: start|complete|revert-process|revert-new, user}
@@ -146,6 +148,7 @@ REPORT_CACHE_DIR  = DATA_DIR / 'report-cache'   # parsed report rows, 1-day rete
 PATIENTS_DIR      = DATA_DIR / 'patients'
 HMR_DIR           = DATA_DIR / 'hmr'
 HMQ_DIR           = DATA_DIR / 'hmq'
+OPD_QUEUE_DIR     = DATA_DIR / 'opd-queue'
 LOGS_DIR          = DATA_DIR / 'logs'
 WWW_DIR           = Path(__file__).parent / 'www'
 KS_COLS       = {'faqs', 'items', 'vdos'}
@@ -791,6 +794,95 @@ def build_opd_visit_summary(ctx):
             fetch_arcus_doctor_notes(ctx, dept_uid), prov_by_uid)
     except Exception:
         pass
+    return out
+
+
+# ── OPD QUEUE: cases the pharmacist sends to the dispensing zone ─────────────
+# Simple day-archived store: one JSON file per Bangkok day holding a list of
+# queued cases. Each case = {id, hn, name, visitId, room, meds:[{drug,code,
+# instruction,quantity,group}], pharmacistNote, sentBy, createdAt, status}.
+def _opd_queue_file(date_str):
+    """'YYYY-MM-DD' → OPD_QUEUE_DIR/ddmmyyyy_opd_queue.json (one file per day)."""
+    y, m, d = date_str.split('-')
+    return OPD_QUEUE_DIR / f'{d}{m}{y}_opd_queue.json'
+
+def _load_opd_queue_day(date_str):
+    p = _opd_queue_file(date_str)
+    if p.exists():
+        try:
+            data = json.loads(p.read_text(encoding='utf-8'))
+            if isinstance(data, list):
+                return data
+        except Exception:
+            pass
+    return []
+
+def add_opd_queue_case(case):
+    """Append a case to today's OPD queue file (atomic). Returns the stored case
+    (with id/createdAt/status filled). Also appends a log line."""
+    today = _bangkok_today()
+    cases = _load_opd_queue_day(today)
+    now = _now_iso()
+    stored = {
+        'id': f'OPDQ-{today.replace("-", "")}-{len(cases) + 1:03d}',
+        'hn': _hm_norm(case.get('hn') or ''),
+        'name': _hm_norm(case.get('name') or ''),
+        'visitId': _hm_norm(case.get('visitId') or ''),
+        'patientuid': case.get('patientuid') or '',
+        'patientvisituid': case.get('patientvisituid') or '',
+        'room': _hm_norm(case.get('room') or ''),
+        'meds': case.get('meds') if isinstance(case.get('meds'), list) else [],
+        'pharmacistNote': _hm_norm(case.get('pharmacistNote') or ''),
+        'sentBy': _hm_norm(case.get('sentBy') or ''),
+        'createdAt': now,
+        'status': 'queued',
+    }
+    cases.append(stored)
+    _atomic_write_json(_opd_queue_file(today), cases)
+    _log_opd_queue(stored)
+    try:
+        _record_request('OPDQ', f'queued {stored["id"]} ({stored["hn"]})', 'ok')
+    except Exception:
+        pass
+    return stored
+
+def _log_opd_queue(case):
+    """Append one queue event to data/logs/opd-queue-YYYY-MM-DD.jsonl."""
+    try:
+        LOGS_DIR.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now()
+        rec = {
+            'at': ts.isoformat(),
+            'id': case.get('id'),
+            'hn': case.get('hn'),
+            'visitId': case.get('visitId'),
+            'medCount': len(case.get('meds') or []),
+            'homeCount': sum(1 for m in (case.get('meds') or []) if (m.get('group') or 'home') == 'home'),
+            'statCount': sum(1 for m in (case.get('meds') or []) if (m.get('group') or 'home') == 'stat'),
+            'sentBy': case.get('sentBy'),
+        }
+        with open(LOGS_DIR / f'opd-queue-{ts:%Y-%m-%d}.jsonl', 'a', encoding='utf-8') as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + '\n')
+    except Exception as e:
+        print(f'[opd-queue-log] failed: {e}', file=sys.stderr)
+
+def list_opd_queue(date_from='', date_to=''):
+    """List queued cases across the given Bangkok-date range (inclusive),
+    newest first. Defaults to today only."""
+    today = _bangkok_today()
+    date_from = date_from or today
+    date_to = date_to or today
+    out = []
+    try:
+        d0 = datetime.strptime(date_from, '%Y-%m-%d').date()
+        d1 = datetime.strptime(date_to, '%Y-%m-%d').date()
+    except Exception:
+        d0 = d1 = datetime.strptime(today, '%Y-%m-%d').date()
+    cur = d0
+    while cur <= d1:
+        out.extend(_load_opd_queue_day(cur.strftime('%Y-%m-%d')))
+        cur += timedelta(days=1)
+    out.sort(key=lambda c: c.get('createdAt', ''), reverse=True)
     return out
 
 
@@ -2884,6 +2976,10 @@ class Handler(BaseHTTPRequestHandler):
                 return None, None, None
             return 'hmr', vid, None
 
+        # /api/opd-queue         → ('opd-queue', None, None)  (GET: list, POST: add)
+        if parts == ['api', 'opd-queue']:
+            return 'opd-queue', None, None
+
         # /api/hmq               → ('hmq-list', None, None)  (GET: list, POST: add)
         # /api/hmq/{id}          → ('hmq', id, None)          (PUT: start/complete)
         if len(parts) >= 2 and parts[0] == 'api' and parts[1] == 'hmq':
@@ -2928,6 +3024,9 @@ class Handler(BaseHTTPRequestHandler):
 
         if clean in ('/hmq-report', '/hmq-report.html'):
             self._serve_file(WWW_DIR / 'hmq-report.html', 'text/html; charset=utf-8'); return
+
+        if clean in ('/opd-queue-view', '/opd-queue.html'):
+            self._serve_file(WWW_DIR / 'opd-queue.html', 'text/html; charset=utf-8'); return
         if clean in ('/index', '/home'):
             # Explicit route to the legacy index.html (dashboard.html shadows it at /).
             self._serve_file(WWW_DIR / 'index.html', 'text/html; charset=utf-8'); return
@@ -3108,6 +3207,11 @@ class Handler(BaseHTTPRequestHandler):
             from_date = (qs.get('from') or [None])[0]
             to_date   = (qs.get('to')   or [None])[0]
             self.send_json(200, load_all_hmq(from_date, to_date))
+        elif rtype == 'opd-queue':
+            qs        = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            from_date = (qs.get('from') or [''])[0]
+            to_date   = (qs.get('to')   or [''])[0]
+            self.send_json(200, {'ok': True, 'queue': list_opd_queue(from_date, to_date)})
         elif rtype == 'report-cache':
             # GET /api/report-cache/{key}[/{date}] — default date = today (BKK).
             date_key = extra or _bangkok_today()
@@ -3499,6 +3603,17 @@ class Handler(BaseHTTPRequestHandler):
             _save_users(users)
             self.send_json(201, {'ok': True, 'username': uname, 'role': role}); return
 
+        # ── OPD QUEUE: pharmacist sends a case to the dispensing zone ──
+        if rtype == 'opd-queue':
+            hn = (body.get('hn') or '').strip()
+            meds = body.get('meds')
+            if not hn:
+                self.send_json(400, {'error': 'hn is required'}); return
+            if not isinstance(meds, list) or not meds:
+                self.send_json(400, {'error': 'meds (non-empty list) is required'}); return
+            stored = add_opd_queue_case(body)
+            self.send_json(201, {'ok': True, 'case': stored}); return
+
         # ── HMQ: add a new case to today's queue ────────────────
         if rtype == 'hmq-list':
             hn   = (body.get('hn') or '').strip()
@@ -3879,6 +3994,7 @@ def _init_data_dirs():
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
     HMR_DIR.mkdir(parents=True, exist_ok=True)
     HMQ_DIR.mkdir(parents=True, exist_ok=True)
+    OPD_QUEUE_DIR.mkdir(parents=True, exist_ok=True)
     WWW_DIR.mkdir(parents=True, exist_ok=True)
     for col in KS_COLS:
         p = ks_file(col)

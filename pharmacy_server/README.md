@@ -38,6 +38,8 @@ The server prints its URL on startup. The extension connects to it automatically
 | `GET` | `/ping` | Health check — returns the server URL |
 | `GET` | `/api/server-status` | Dashboard JSON: endpoint health, per-module record counts, uptime, **`.arcus`** (ArcusAir call monitor) |
 | `GET` | `/api/arcus-stats` | ArcusAir upstream call monitor — per-endpoint counts, avg/min/max latency, retries, error rate, last error, recent window |
+| `GET` | `/api/opd-queue` | OPD dispensing queue (`?from=&to=`, newest first; default today) |
+| `POST` | `/api/opd-queue` | Send a case to the dispensing zone `{hn, name, visitId, room, meds:[{drug,code,instruction,quantity,group}], pharmacistNote, sentBy}` → stored in `data/opd-queue/ddmmyyyy_opd_queue.json` + logged. Viewer at `/opd-queue-view`. |
 
 ### KPI (`data/kpi/YYYY-MM-DD.json`)
 
