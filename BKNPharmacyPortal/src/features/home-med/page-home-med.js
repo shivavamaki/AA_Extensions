@@ -1229,6 +1229,11 @@ async function fetchAndRender() {
   if (_isOpd) {
     // OPD-Sheet.html: last-5-visits medical history panel; no Checklist / recon.
     renderVisitHistory(data.visitHistory);
+    renderVisitSummary({
+      patient: data.patient, allergies: data.allergies,
+      diagnosis: _context && _context.diagnosis,
+      ...(data.visitSummary || {}),   // vitals, visits, doctorNotes
+    });
   } else {
     const checklistHn = (data.patient && data.patient.hn) || (_context && (_context.hn || _context.patientId)) || "";
     fetchAndRenderChecklist(checklistHn);  // best-effort, non-blocking
@@ -1957,16 +1962,108 @@ function bindVisitSummary() {
   if (close) close.addEventListener("click", () => setOpen(false));
 }
 
-/** Fill the current-visit summary panel. Placeholder until the data pipeline is
- * defined — call with the summary payload to render. */
+/** Fill the current-visit summary panel: 3 parts —
+ *   1. Patient + vital signs + allergy
+ *   2. Doctor notes (emr/doctornote/search)
+ *   3. Visit summary (emr/summary/getemrsummaryvisit)
+ * `data` = { patient, allergies, diagnosis, vitals, visits, doctorNotes }. */
 function renderVisitSummary(data) {
   const body = document.getElementById("vsBody");
   if (!body) return;
-  if (!data) {
-    body.innerHTML = `<div class="vs-empty"><span class="vs-empty-icon">📋</span>ยังไม่มีข้อมูลสรุป — รอเชื่อมต่อ data pipeline</div>`;
-    return;
-  }
-  // TODO: render the real summary once the pipeline is defined.
+  const d = data || {};
+  const fmtDT = (iso) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(iso || ""));
+    return m ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}` : (iso || "");
+  };
+
+  // ── Part 1: patient + vitals + allergy ──
+  const p = d.patient || {};
+  const pName = escapeHtml(p.name || p.fullName || "");
+  const pMeta = [p.hn && `HN ${p.hn}`, p.visitId || p.an, p.room]
+    .map((x) => escapeHtml(x || "")).filter(Boolean).join(" · ");
+  const dx = d.diagnosis ? `<div class="vs-dx"><b>Dx:</b> ${escapeHtml(d.diagnosis)}</div>` : "";
+
+  const vitals = Array.isArray(d.vitals) ? d.vitals : [];
+  const vitalsHtml = vitals.length
+    ? `<div class="vs-vitals">` + vitals.map((v) => {
+        const flag = v.flag === "H" ? " vs-hi" : v.flag === "L" ? " vs-lo" : "";
+        const arrow = v.flag === "H" ? " ▲" : v.flag === "L" ? " ▼" : "";
+        return `<div class="vs-vital${flag}" title="${escapeHtml(v.name || "")}${v.range ? " · ปกติ " + escapeHtml(v.range) : ""}">`
+          + `<span class="vs-vk">${escapeHtml(v.key)}</span>`
+          + `<span class="vs-vv">${escapeHtml(v.value)}${arrow}</span>`
+          + `<span class="vs-vu">${escapeHtml(v.unit || "")}</span></div>`;
+      }).join("") + `</div>`
+    : `<div class="vs-none">ไม่มีข้อมูลสัญญาณชีพ</div>`;
+
+  const alg = d.allergies || {};
+  let algHtml;
+  if (alg.nkda) algHtml = `<span class="vs-alg-nkda">NKDA (ไม่มีประวัติแพ้ยา)</span>`;
+  else if (Array.isArray(alg.items) && alg.items.length) {
+    algHtml = alg.items.map((a) => {
+      const name = escapeHtml(a.allergen || a.name || a.drug || "");
+      const rx = a.reaction ? ` <span class="vs-alg-rx">(${escapeHtml(a.reaction)})</span>` : "";
+      return `<span class="vs-alg-item">⚠ ${name}${rx}</span>`;
+    }).join("");
+  } else algHtml = `<span class="vs-none">ไม่มีข้อมูลการแพ้</span>`;
+
+  // ── Part 2: doctor notes ──
+  const notes = Array.isArray(d.doctorNotes) ? d.doctorNotes : [];
+  const notesHtml = notes.length
+    ? notes.map((n) =>
+        `<div class="vs-note">
+           <div class="vs-note-hd">🩺 ${escapeHtml(n.provider || "แพทย์")}<span class="vs-note-at">${escapeHtml(fmtDT(n.at))}</span></div>
+           <div class="vs-note-body">${_sanitizeNoteClient(n.html || "")}</div>
+         </div>`).join("")
+    : `<div class="vs-none">ไม่มีบันทึกแพทย์</div>`;
+
+  // ── Part 3: visit summary ──
+  const visits = Array.isArray(d.visits) ? d.visits : [];
+  const visitsHtml = visits.length
+    ? visits.map((v) =>
+        `<div class="vs-visit${v.isCurrent ? " vs-cur" : ""}">
+           <div class="vs-visit-hd">${v.isCurrent ? "🟢 " : ""}${escapeHtml(v.visitId || "")}
+             <span class="vs-visit-at">${escapeHtml(fmtDT(v.date))}</span></div>
+           <div class="vs-visit-meta">${escapeHtml(v.department || "")}${v.provider ? " · " + escapeHtml(v.provider) : ""}</div>
+           ${v.complaint ? `<div class="vs-visit-cc"><b>CC:</b> ${escapeHtml(v.complaint)}</div>` : ""}
+         </div>`).join("")
+    : `<div class="vs-none">ไม่มีข้อมูลการมาตรวจ</div>`;
+
+  body.innerHTML =
+    `<section class="vs-sec">
+       <div class="vs-sec-hd">👤 ผู้ป่วย</div>
+       <div class="vs-pt-name">${pName}</div>
+       ${pMeta ? `<div class="vs-pt-meta">${pMeta}</div>` : ""}
+       ${dx}
+     </section>
+     <section class="vs-sec">
+       <div class="vs-sec-hd">🩹 สัญญาณชีพล่าสุด</div>
+       ${vitalsHtml}
+     </section>
+     <section class="vs-sec">
+       <div class="vs-sec-hd">⚠️ ประวัติการแพ้</div>
+       <div class="vs-alg">${algHtml}</div>
+     </section>
+     <section class="vs-sec">
+       <div class="vs-sec-hd">🩺 บันทึกแพทย์ (Doctor Notes)</div>
+       ${notesHtml}
+     </section>
+     <section class="vs-sec">
+       <div class="vs-sec-hd">📄 สรุปการมาตรวจ (Visit Summary)</div>
+       ${visitsHtml}
+     </section>`;
+}
+
+/** Second-line client-side guard on note HTML (server already sanitised it):
+ * keep only the whitelisted formatting tags, drop everything else. */
+function _sanitizeNoteClient(html) {
+  const allowed = new Set(["P", "BR", "B", "STRONG", "I", "EM", "U", "UL", "OL", "LI"]);
+  const tpl = document.createElement("div");
+  tpl.innerHTML = String(html || "");
+  tpl.querySelectorAll("*").forEach((el) => {
+    if (!allowed.has(el.tagName)) { el.replaceWith(...el.childNodes); return; }
+    [...el.attributes].forEach((a) => el.removeAttribute(a.name));   // strip all attrs
+  });
+  return tpl.innerHTML;
 }
 
 function bindToolbar() {

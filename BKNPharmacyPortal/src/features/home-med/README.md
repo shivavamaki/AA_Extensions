@@ -61,7 +61,11 @@ The on-screen controls live in a fixed **left sidebar** (`.toolbar`, pastel-gree
 
 The toolbar **slides off the left edge**: the header's `‹` button collapses it (`body.toolbar-collapsed` → `transform: translateX(-100%)`, and the sheet reclaims the left padding), and a fixed vertical **ribbon tab** (`#toolbarRibbon`) on the left edge reopens it. State persists in `localStorage["hm:toolbarCollapsed"]` (`bindToolbarCollapse`). Screen-only; the ribbon is hidden on print.
 
-**Current-visit summary panel (OPD sheet only).** A second left-edge ribbon (`#vsRibbon`, purple, below the settings ribbon) slides out a **📋 สรุปการรักษาครั้งนี้** panel (`#visitSummaryPanel` → `body.vs-open`). `bindVisitSummary` toggles it (state in `localStorage["hm:vsOpen"]`); `renderVisitSummary(data)` fills `#vsBody` — currently a placeholder, **data pipeline TBD**. Screen-only.
+**Current-visit summary panel (OPD sheet only).** A second left-edge ribbon (`#vsRibbon`, purple, below the settings ribbon) slides out a **📋 สรุปการรักษาครั้งนี้** panel (`#visitSummaryPanel` → `body.vs-open`; `bindVisitSummary`, state in `localStorage["hm:vsOpen"]`). `renderVisitSummary` fills `#vsBody` with three parts from the OPD report's `data.visitSummary` (+ `data.patient`/`allergies`/diagnosis):
+> 1. **Patient + vital signs + allergy** — vitals as a colour-flagged grid (▲ red = high, ▼ blue = low, from the reading's `HLN`); allergy shows NKDA or `⚠ allergen (reaction)`.
+> 2. **Doctor notes** — from `emr/doctornote/search`, newest first, provider + timestamp, `notetext` HTML rendered (double-sanitised: server whitelist + `_sanitizeNoteClient`).
+> 3. **Visit summary** — from `emr/summary/getemrsummaryvisit`, current visit first (🟢), department · careprovider · chief complaint.
+> Screen-only.
 
 > Removed: **Fit width** (`body.fit-width`), the dead **Paper** select, and the **Hide logo** toggle. When editing the config, keep the spots in sync — `PRINT_CONTROL_DEFAULTS`, `_getPrintControls`, `applyPrintSettings`, `currentPrintSettingsFromControls`, and the `bindPrintControls` set + listener array.
 

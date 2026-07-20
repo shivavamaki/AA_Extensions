@@ -149,6 +149,55 @@
     .vs-empty-icon { display: block; font-size: 26px; margin-bottom: 8px; opacity: .7; }
     @media print { .vs-ribbon, .vs-panel { display: none !important; } }
 
+    /* Visit-summary panel content */
+    .vs-sec { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #eaddff; }
+    .vs-sec:last-child { border-bottom: none; margin-bottom: 0; }
+    .vs-sec-hd { font-weight: 800; font-size: 12px; color: #6d28d9; margin-bottom: 7px; }
+    .vs-none { color: #9a8fb8; font-size: 11.5px; font-style: italic; }
+
+    .vs-pt-name { font-weight: 800; font-size: 14px; color: #2e1065; }
+    .vs-pt-meta { font-size: 11px; color: #6b5b8f; margin-top: 2px; }
+    .vs-dx { margin-top: 5px; font-size: 11.5px; color: #3b0764; background: #f3e8ff; padding: 5px 8px; border-radius: 6px; }
+
+    /* Vitals grid */
+    .vs-vitals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .vs-vital {
+      background: #fff; border: 1px solid #e9d5ff; border-radius: 8px;
+      padding: 5px 7px; display: flex; flex-direction: column; gap: 1px;
+    }
+    .vs-vital .vs-vk { font-size: 9px; font-weight: 800; color: #7c3aed; letter-spacing: .03em; }
+    .vs-vital .vs-vv { font-size: 15px; font-weight: 800; color: #1a2027; line-height: 1.1; }
+    .vs-vital .vs-vu { font-size: 8.5px; color: #8b7fa8; }
+    .vs-vital.vs-hi { background: #fef2f2; border-color: #fecaca; }
+    .vs-vital.vs-hi .vs-vv { color: #dc2626; }
+    .vs-vital.vs-lo { background: #eff6ff; border-color: #bfdbfe; }
+    .vs-vital.vs-lo .vs-vv { color: #2563eb; }
+
+    /* Allergy */
+    .vs-alg { display: flex; flex-direction: column; gap: 4px; }
+    .vs-alg-nkda { display: inline-block; font-weight: 800; color: #065f46; background: #d1fae5; border: 1px solid #a7f3d0; padding: 3px 8px; border-radius: 999px; font-size: 11px; align-self: flex-start; }
+    .vs-alg-item { font-size: 11.5px; font-weight: 700; color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 3px 8px; }
+    .vs-alg-rx { font-weight: 500; color: #9a3412; }
+
+    /* Doctor notes */
+    .vs-note { background: #fff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 8px 10px; margin-bottom: 7px; }
+    .vs-note:last-child { margin-bottom: 0; }
+    .vs-note-hd { font-weight: 800; font-size: 11px; color: #6d28d9; display: flex; align-items: baseline; gap: 6px; }
+    .vs-note-at { margin-left: auto; font-weight: 600; font-size: 9.5px; color: #a99cc4; }
+    .vs-note-body { margin-top: 4px; font-size: 11.5px; line-height: 1.55; color: #2e1065; }
+    .vs-note-body p { margin: 0 0 4px; }
+    .vs-note-body p:last-child { margin-bottom: 0; }
+    .vs-note-body ul, .vs-note-body ol { margin: 2px 0 4px; padding-left: 18px; }
+
+    /* Visit summary rows */
+    .vs-visit { background: #fff; border: 1px solid #e9d5ff; border-left: 3px solid #c4b5fd; border-radius: 8px; padding: 7px 10px; margin-bottom: 6px; }
+    .vs-visit:last-child { margin-bottom: 0; }
+    .vs-visit.vs-cur { border-left-color: #16a34a; background: #f0fdf4; }
+    .vs-visit-hd { font-weight: 800; font-size: 11.5px; color: #3b0764; display: flex; align-items: baseline; gap: 6px; }
+    .vs-visit-at { margin-left: auto; font-weight: 600; font-size: 9.5px; color: #a99cc4; }
+    .vs-visit-meta { font-size: 10.5px; color: #6b5b8f; margin-top: 2px; }
+    .vs-visit-cc { font-size: 11px; color: #3b0764; margin-top: 3px; }
+
     .toolbar-title { font-size: 13px; font-weight: 800; color: #166534; letter-spacing: .02em; display: flex; align-items: center; gap: 6px; }
 
     .toolbar-group {

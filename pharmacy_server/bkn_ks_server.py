@@ -631,6 +631,169 @@ def build_opd_visit_history(ctx, current_visit_uid='', visitcount=5):
         return []
 
 
+# ── Current-visit summary panel (OPD): vitals + visit summary + doctor notes ──
+ARCUS_VITALS_URL     = ARCUS_BASE + '/emr/observation/getlatestemrbannervitalsigns'
+ARCUS_SUMMARY_URL    = ARCUS_BASE + '/emr/summary/getemrsummaryvisit'
+ARCUS_DOCTORNOTE_URL = ARCUS_BASE + '/emr/doctornote/search'
+# Fixed valuecode used by ArcusAir's own summary call (note-entry type).
+ARCUS_SUMMARY_NOTENTYPEUID = '5b3c67b88c9df34c3e943525'
+
+def fetch_arcus_vitals(ctx):
+    """POST getlatestemrbannervitalsigns → latest banner vital signs for the visit.
+    Body: {patientuid, patientvisituid}. Returns JSON."""
+    return _arcus_post_json(ARCUS_VITALS_URL, ctx, {
+        'patientuid': ctx.get('patientuid', ''),
+        'patientvisituid': ctx.get('patientvisituid', ''),
+    })
+
+def fetch_arcus_visit_summary(ctx):
+    """POST getemrsummaryvisit → the patient's recent visits w/ careprovider +
+    chief-complaint. Body keyed by patientuid (matches ArcusAir's own call)."""
+    return _arcus_post_json(ARCUS_SUMMARY_URL, ctx, {
+        'patientuid': ctx.get('patientuid', ''),
+        'pagenumber': 1,
+        'notentypeuid': ARCUS_SUMMARY_NOTENTYPEUID,
+        'isnotipd': True,
+    })
+
+def fetch_arcus_doctor_notes(ctx, departmentuid=''):
+    """POST doctornote/search → doctor notes for the current visit. departmentuid
+    should be the VISIT's department (from the summary) — falls back to ctx."""
+    dept = departmentuid or ctx.get('departmentuid') or ctx.get('logindepartmentuid', '')
+    return _arcus_post_json(ARCUS_DOCTORNOTE_URL, ctx, {
+        'patientuid': ctx.get('patientuid', ''),
+        'patientvisituid': ctx.get('patientvisituid', ''),
+        'departmentuid': dept,
+    })
+
+# Vital-sign display order + which readings to flag as a BP pair.
+_VITALS_ORDER = ['WT', 'HT', 'BMI', 'BSA', 'T', 'PR', 'RR', 'SBP', 'DBP', 'MAP', 'O2', 'HC', 'CC']
+
+def build_vitals_from_arcus(data):
+    """getlatestemrbannervitalsigns JSON → ordered list of readings:
+    [{key, name, value, unit, flag, range, at}] (flag: 'H'|'L'|'' from HLN)."""
+    obs = ((data or {}).get('result') or {}).get('observationbyvisit') or []
+    by_key = {}
+    for o in obs:
+        r = (o or {}).get('result') or {}
+        key = _hm_norm(r.get('shorttext') or '')
+        if not key:
+            continue
+        item = (r.get('orderresultitemuid') or {})
+        by_key[key] = {
+            'key': key,
+            'name': _hm_norm(item.get('name') or key),
+            'value': _hm_norm(str(r.get('resultvalue') if r.get('resultvalue') is not None else '')),
+            'unit': _hm_norm((r.get('uomuid') or {}).get('valuedescription') or ''),
+            'flag': (_hm_norm(r.get('HLN') or '') if _hm_norm(r.get('HLN') or '') in ('H', 'L') else ''),
+            'range': _hm_norm(r.get('normalrange') or ''),
+            'at': r.get('observationdate') or r.get('createdat') or '',
+        }
+    ordered = [by_key[k] for k in _VITALS_ORDER if k in by_key]
+    ordered += [v for k, v in by_key.items() if k not in _VITALS_ORDER]  # any extras last
+    return ordered
+
+def build_visit_summary_rows(data, current_visit_uid=''):
+    """getemrsummaryvisit JSON → [{visitId, date, department, provider, complaint}].
+    Prefer the current visit; keep others as context (newest first)."""
+    rows = []
+    for v in ((data or {}).get('emrpatientvisits') or []):
+        vcp = (v.get('visitcareproviders') or {})
+        rows.append({
+            'visitUid': v.get('_id') or '',
+            'visitId': _hm_norm(v.get('visitid') or ''),
+            'date': vcp.get('startdate') or v.get('startdate') or '',
+            'department': _hm_norm((vcp.get('departmentuid') or {}).get('name') or ''),
+            'departmentUid': (vcp.get('departmentuid') or {}).get('_id') or '',
+            'provider': _hm_norm((vcp.get('careprovideruid') or {}).get('name') or ''),
+            'complaint': _hm_norm(vcp.get('comments') or ''),
+            'isCurrent': (v.get('_id') or '') == current_visit_uid,
+        })
+    # Current visit first, then newest→oldest by date.
+    rows.sort(key=lambda r: (0 if r['isCurrent'] else 1, _neg_iso(r['date'])))
+    return rows
+
+def _neg_iso(s):
+    """Sort key that puts newer ISO dates first."""
+    return ''.join(chr(255 - ord(c)) for c in str(s or ''))[:32]
+
+def build_doctor_notes(data, provider_by_uid=None):
+    """doctornote/search JSON → [{provider, at, html}] newest first. notetext is
+    curated ArcusAir HTML — sanitised to a safe subset before returning."""
+    prov = provider_by_uid or {}
+    out = []
+    for n in ((data or {}).get('doctornote') or []):
+        out.append({
+            'provider': prov.get(n.get('careprovideruid') or '', ''),
+            'at': n.get('modifiedat') or n.get('createdat') or '',
+            'html': _sanitize_note_html(n.get('notetext') or ''),
+        })
+    out.sort(key=lambda r: _neg_iso(r['at']))
+    return out
+
+# Formatting tags kept from doctornote HTML; everything else (and ALL attributes)
+# is stripped, so no onclick/style/href etc. survives.
+_NOTE_ALLOWED = {'p', 'br', 'b', 'strong', 'i', 'em', 'u', 'ul', 'ol', 'li'}
+_NOTE_TAG_RE = re.compile(r'<\s*(/?)\s*([a-zA-Z0-9]+)[^>]*?(/?)\s*>')
+def _sanitize_note_html(html):
+    """Reduce the note HTML to a safe whitelist of formatting tags, with NO
+    attributes (drops scripts/styles/event handlers). Non-whitelisted tags are
+    removed but their text is kept."""
+    if not html:
+        return ''
+    s = str(html)
+    s = re.sub(r'<\s*(script|style)[^>]*>.*?<\s*/\s*\1\s*>', '', s, flags=re.I | re.S)
+    def _clean(m):
+        closing, tag, selfclose = m.group(1), m.group(2).lower(), m.group(3)
+        if tag not in _NOTE_ALLOWED:
+            return ''                       # drop the tag, keep surrounding text
+        if closing:
+            return f'</{tag}>'
+        if tag == 'br' or selfclose:
+            return '<br>' if tag == 'br' else f'<{tag}>'
+        return f'<{tag}>'                   # re-emit with no attributes
+    s = _NOTE_TAG_RE.sub(_clean, s)
+    return s.strip()
+
+def build_opd_visit_summary(ctx):
+    """Assemble the OPD current-visit summary panel: {vitals, visits, doctorNotes}.
+    Each part best-effort; the visit summary supplies the visit's department for a
+    correctly-scoped doctornote fetch and the careprovider names for the notes."""
+    out = {'vitals': [], 'visits': [], 'doctorNotes': []}
+    cur_uid = ctx.get('patientvisituid', '')
+    # 1) Vitals.
+    try:
+        out['vitals'] = build_vitals_from_arcus(fetch_arcus_vitals(ctx))
+    except Exception:
+        pass
+    # 2) Visit summary (also gives us the visit department + provider names).
+    dept_uid = ''
+    prov_by_uid = {}
+    try:
+        sdata = fetch_arcus_visit_summary(ctx)
+        out['visits'] = build_visit_summary_rows(sdata, cur_uid)
+        for v in ((sdata or {}).get('emrpatientvisits') or []):
+            vcp = (v.get('visitcareproviders') or {})
+            cp = (vcp.get('careprovideruid') or {})
+            if cp.get('_id'):
+                prov_by_uid[cp['_id']] = _hm_norm(cp.get('name') or '')
+            if (v.get('_id') or '') == cur_uid and (vcp.get('departmentuid') or {}).get('_id'):
+                dept_uid = vcp['departmentuid']['_id']
+        if not dept_uid:  # any visit's dept as a fallback
+            for r in out['visits']:
+                if r.get('departmentUid'):
+                    dept_uid = r['departmentUid']; break
+    except Exception:
+        pass
+    # 3) Doctor notes (scoped to the visit's department when known).
+    try:
+        out['doctorNotes'] = build_doctor_notes(
+            fetch_arcus_doctor_notes(ctx, dept_uid), prov_by_uid)
+    except Exception:
+        pass
+    return out
+
+
 def _cmp_key(s):
     """Normalise a dosage/frequency token for comparison: lowercase, collapse
     whitespace, strip punctuation-ish noise so '1 Tablet' == '1 tablet'."""
@@ -3479,6 +3642,9 @@ class Handler(BaseHTTPRequestHandler):
                 result['appointmentText'] = format_appointments_th(fetch_arcus_future_appointments(ctx))
             except Exception as e:
                 result['appointmentText'] = f'(ไม่สามารถโหลดนัดหมายได้: {e})'
+            # Current-visit summary panel: vital signs + visit summary + doctor
+            # notes. All best-effort — a failure just leaves that section empty.
+            result['visitSummary'] = build_opd_visit_summary(ctx)
             # OPD sheets carry no discharge reconciliation.
             result['reconcileMeds'] = []
             result['hasReconcile'] = False
