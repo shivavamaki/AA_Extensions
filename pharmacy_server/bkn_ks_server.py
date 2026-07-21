@@ -1522,6 +1522,10 @@ def _arcus_item_to_med(it):
         'oral': bool(re.search(r'oral|\btake\b|รับประทาน', route + ' ' + verb, re.I)),
         'ordertype': ordertype, 'ordertypecode': ordertypecode, 'status': status, 'ordercat': ordercat,
         'priority': priority, 'isStat': is_stat, 'store': store,
+        # Administration Instruction (label print) + free-text Comments, as shown
+        # in the ArcusAir order-item table.
+        'adminInstruction': admin_instr,
+        'comments': _hm_norm(poi.get('comments') or it.get('comments') or ''),
         'orderdate': it.get('orderdate') or poi.get('startdate') or '',
         'startdate': poi.get('startdate') or '',
     }

@@ -573,6 +573,9 @@ function _medFromReport(m) {
     continuity: norm(m.continuity || ""),
     // Dispensing store / location (for sub-grouping), from ArcusAir.
     store: norm(m.store || ""),
+    // Administration Instruction (label) + free-text Comments (ArcusAir order item).
+    adminInstruction: norm(m.adminInstruction || ""),
+    comments: norm(m.comments || ""),
     // OPD dispensing group (Checking mode): "home" (default) | "stat".
     // Auto-STAT when the order is "Stat" OR it comes from a used-at-hospital
     // store (Central Supply) — those are consumed in the department, not taken home.
@@ -1311,6 +1314,8 @@ function bindSendDispense() {
         instruction: norm(m.instruction || ""), quantity: norm(m.quantity || ""),
         continuity: norm(m.continuity || ""), group: _medGroup(m),
         store: norm(m.store || ""),
+        adminInstruction: norm(m.adminInstruction || ""),
+        comments: norm(m.comments || ""),
       })),
     };
     if (!payload.hn) { if (status) status.textContent = "⚠️ ไม่พบ HN ผู้ป่วย"; return; }

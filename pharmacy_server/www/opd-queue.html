@@ -181,13 +181,16 @@
     .rx-clin { padding:8px 16px; border-bottom:1px solid #111; display:flex; flex-direction:column; gap:3px; font-size:13px; }
     .rx-alg { color:#b91c1c; font-weight:700; }
     /* Table */
-    .rx-table { width:100%; border-collapse:collapse; font-size:13.5px; }
+    .rx-table { width:100%; border-collapse:collapse; font-size:13.5px; display:block; overflow-x:auto; }
+    .rx-table thead, .rx-table tbody { display:table; width:100%; table-layout:fixed; }
     .rx-table th { background:#f3f4f6; text-align:left; font-size:12px; color:#374151; padding:6px 10px; border-bottom:1.5px solid #111; }
     .rx-table td { padding:8px 10px; border-bottom:1px solid #e5e7eb; vertical-align:top; }
-    .rx-table .rx-no { width:34px; text-align:center; color:#6b7280; }
-    .rx-table .rx-qty { width:96px; }
-    .rx-table .rx-store { width:150px; color:#374151; }
-    .rx-table .rx-cat { width:120px; }
+    .rx-table .rx-no { width:32px; text-align:center; color:#6b7280; }
+    .rx-table .rx-qty { width:80px; }
+    .rx-table .rx-admin { width:150px; color:#374151; }
+    .rx-table .rx-cmt { width:120px; color:#6b7280; }
+    .rx-table .rx-store { width:140px; color:#374151; }
+    .rx-table .rx-cat { width:110px; }
     .rx-item-in { display:flex; gap:10px; align-items:flex-start; }
     .rx-thumb-img { width:46px; height:46px; object-fit:cover; border-radius:6px; border:1px solid #e5e7eb; flex:0 0 auto; }
     .rx-item b { font-size:14.5px; }
@@ -366,6 +369,8 @@
         <td class="rx-item"><div class="rx-item-in">${photo}<div><b>${esc(m.drug)}</b>${m.code?`<div class="rx-code">${esc(m.code)}</div>`:""}${rm}</div></div></td>
         <td class="rx-how">${esc(m.instruction||"-")}</td>
         <td class="rx-qty">${esc(m.quantity||"-")}</td>
+        <td class="rx-admin">${esc(m.adminInstruction||"-")}</td>
+        <td class="rx-cmt">${esc(m.comments||"-")}</td>
         <td class="rx-store">${esc(m.store||"-")}</td>
         <td class="rx-cat">${stat}</td>
       </tr>`;
@@ -426,9 +431,10 @@
           <thead><tr>
             <th class="rx-no">NO</th><th class="rx-item">รายการ / Item</th>
             <th class="rx-how">วิธีใช้ / How to use</th><th class="rx-qty">จำนวน</th>
+            <th class="rx-admin">Administration Instruction</th><th class="rx-cmt">Comments</th>
             <th class="rx-store">คลัง / Store</th><th class="rx-cat">ประเภท</th>
           </tr></thead>
-          <tbody>${rows || `<tr><td colspan="6" class="rx-empty">— ไม่มีรายการยา —</td></tr>`}</tbody>
+          <tbody>${rows || `<tr><td colspan="8" class="rx-empty">— ไม่มีรายการยา —</td></tr>`}</tbody>
         </table>
 
         ${dn.length ? `<div class="rx-drnotes"><span class="l">🩺 บันทึกแพทย์ :</span> ${dn.map((n)=>`<div class="rx-drnote"><b>${esc(n.provider||"แพทย์")}</b> — ${sanitizeNote(n.html||"")}</div>`).join("")}</div>` : ""}
