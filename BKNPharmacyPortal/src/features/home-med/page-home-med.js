@@ -744,9 +744,16 @@ function renderReviewMeds() {
     // Short labels so move + ลบ fit on one line.
     const btnLabel = group === "home" ? "STAT →" : "← บ้าน";
     const btnTitle = group === "home" ? "ย้ายไป ใช้ที่ รพ./STAT" : "ย้ายกลับ ยากลับบ้าน";
+    // Drug photo thumbnail (by code) — hides itself if the server has no image.
+    const imgUrl = (_medImagesBase && m.code)
+      ? `${_medImagesBase}/med-image/${encodeURIComponent(norm(m.code))}` : "";
+    const photo = imgUrl
+      ? `<img class="rev-photo" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" onerror="this.closest('.rev-med').classList.add('no-photo')">`
+      : `<span class="rev-photo-ph">${_medicineIcon(m)}</span>`;
     return `<div class="rev-med" data-index="${i}" data-drugkey="${escapeHtml(k)}" data-medidx="${i}"
                  style="--hc-bar:${c.bar};--hc-dot:${c.dot};--hc-soft:${c.soft};--hc-edge:${c.edge};">
       <div class="rev-idx">${i + 1}</div>
+      <div class="rev-photo-slot">${photo}</div>
       <div>
         <div class="rev-name" contenteditable="true" data-field="drug" data-no-translate translate="no">${escapeHtml(m.drug || "")}</div>
         ${m.code ? `<div class="rev-code">Code: ${escapeHtml(m.code)}</div>` : ""}

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.35.1",
-  "version_name": "2026.07.20 — OPD meds: Central Supply auto-STAT, RM first, compact actions",
+  "version": "3.36.0",
+  "version_name": "2026.07.21 — OPD: drug photo thumbnails on review cards + queue detail",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",

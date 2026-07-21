@@ -634,11 +634,23 @@
     /* Editable medicine cards (mirror the sheet's fields, card layout). */
     .rev-med {
       display: grid;
-      grid-template-columns: auto 1fr 2fr 76px auto;
+      grid-template-columns: auto 44px 1fr 2fr 76px auto;
       gap: 10px; align-items: start;
       background: #fff; border: 1px solid #e5e7eb; border-left: 4px solid var(--hc-edge, #86efac);
       border-radius: 10px; padding: 9px 12px;
     }
+    /* Drug photo thumbnail. */
+    .rev-med .rev-photo-slot {
+      width: 44px; height: 44px; border-radius: 8px; overflow: hidden;
+      background: #f8fafc; border: 1px solid #eef2f6;
+      display: flex; align-items: center; justify-content: center;
+      align-self: center;
+    }
+    .rev-med .rev-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .rev-med .rev-photo-ph { font-size: 20px; opacity: .55; }
+    /* When the image 404s, show the icon placeholder instead. */
+    .rev-med.no-photo .rev-photo { display: none; }
+    .rev-med.no-photo .rev-photo-slot::after { content: "💊"; font-size: 20px; opacity: .5; }
     /* Actions on ONE line (compact). */
     .rev-med .rev-actions { display: flex; flex-direction: row; gap: 4px; align-self: center; }
     .rev-med .rev-idx { font-weight: 800; color: #9ca3af; font-size: 13px; padding-top: 2px; }
