@@ -161,9 +161,55 @@
     .search-wrap button:hover { background:#e2e8f0; }
 
     /* Floating enlarged drug image on hover. */
-    .med-photo, .med .med-photo { cursor:zoom-in; }
+    .med-photo, .med .med-photo, .rx-thumb-img { cursor:zoom-in; }
     .zoom { position:fixed; z-index:1000; pointer-events:none; display:none; }
     .zoom img { max-width:340px; max-height:340px; border:3px solid #fff; border-radius:12px; box-shadow:0 10px 30px rgba(15,23,42,.35); background:#fff; display:block; }
+
+    /* ── Prescription-form detail (mirrors the ArcusAir print layout) ──────── */
+    .rx { background:#fff; border:1px solid #d1d5db; border-radius:8px; color:#111; font-size:13.5px; overflow:hidden; box-shadow:0 2px 10px rgba(15,23,42,.06); }
+    .rx .l { color:#374151; font-weight:600; }
+    /* Header */
+    .rx-head { display:grid; grid-template-columns:170px 1fr auto; gap:14px; align-items:start; padding:12px 16px; border-bottom:2px solid #111; }
+    .rx-brand { display:flex; flex-direction:column; gap:8px; }
+    .rx-logo { font-weight:900; color:#c1121f; font-size:15px; line-height:1.1; }
+    .rx-logo small { color:#111; font-weight:800; font-size:10px; letter-spacing:.05em; }
+    .rx-optag { border:1px solid #111; border-radius:6px; text-align:center; font-size:11px; padding:4px 6px; align-self:flex-start; }
+    .rx-optag b { font-size:13px; }
+    .rx-pt-grid { display:grid; grid-template-columns:1fr 1fr; gap:3px 18px; font-size:13px; }
+    .rx-badge { align-self:flex-start; }
+    /* Clinical bar */
+    .rx-clin { padding:8px 16px; border-bottom:1px solid #111; display:flex; flex-direction:column; gap:3px; font-size:13px; }
+    .rx-alg { color:#b91c1c; font-weight:700; }
+    /* Table */
+    .rx-table { width:100%; border-collapse:collapse; font-size:13.5px; }
+    .rx-table th { background:#f3f4f6; text-align:left; font-size:12px; color:#374151; padding:6px 10px; border-bottom:1.5px solid #111; }
+    .rx-table td { padding:8px 10px; border-bottom:1px solid #e5e7eb; vertical-align:top; }
+    .rx-table .rx-no { width:34px; text-align:center; color:#6b7280; }
+    .rx-table .rx-qty { width:96px; }
+    .rx-table .rx-store { width:150px; color:#374151; }
+    .rx-table .rx-cat { width:120px; }
+    .rx-item-in { display:flex; gap:10px; align-items:flex-start; }
+    .rx-thumb-img { width:46px; height:46px; object-fit:cover; border-radius:6px; border:1px solid #e5e7eb; flex:0 0 auto; }
+    .rx-item b { font-size:14.5px; }
+    .rx-code { font-size:11px; color:#6b7280; }
+    .rx-how { color:#111; }
+    .rx-rm { display:inline-block; margin-top:3px; font-size:11px; font-weight:800; color:#065f46; background:#d1fae5; border:1px solid #a7f3d0; border-radius:5px; padding:1px 6px; }
+    .rx-rm.adj { color:#92400e; background:#fef3c7; border-color:#fcd34d; }
+    .rx-tag { display:inline-block; font-size:11px; font-weight:800; padding:2px 8px; border-radius:5px; }
+    .rx-tag.home { color:#166534; background:#dcfce7; }
+    .rx-tag.stat { color:#9a3412; background:#ffedd5; }
+    .rx-empty { text-align:center; color:#9ca3af; font-style:italic; padding:16px; }
+    /* Doctor notes + footer */
+    .rx-drnotes { padding:8px 16px; border-top:1px solid #e5e7eb; font-size:13px; }
+    .rx-drnote { margin-top:3px; }
+    .rx-drnote p { margin:0 0 2px; }
+    .rx-foot { padding:10px 16px; border-top:2px solid #111; font-size:12.5px; color:#374151; }
+    .rx-ack { margin-bottom:8px; }
+    .rx-sign { display:flex; gap:22px; flex-wrap:wrap; }
+    .rx-sign u { color:#111; }
+    .rx-meta { margin-top:8px; color:#9ca3af; font-size:11.5px; }
+    .rx-actions { padding:12px 16px; border-top:1px solid #e5e7eb; background:#fafafa; }
+    .rx-done { color:var(--green-d); font-weight:800; font-size:15px; }
   </style>
 </head>
 <body>
@@ -306,25 +352,103 @@
       return t.innerHTML;
     }
 
+    /* One med row for the prescription-style table. */
+    function rxRow(m, no) {
+      const photo = m.code
+        ? `<img class="rx-thumb-img med-photo" src="/med-image/${encodeURIComponent(m.code)}" alt="" loading="lazy" data-code="${esc(m.code)}" onerror="this.style.display='none'">`
+        : "";
+      const stat = m.group === "stat"
+        ? `<span class="rx-tag stat">STAT / ใช้ที่ รพ.</span>` : `<span class="rx-tag home">ยากลับบ้าน</span>`;
+      const rm = m.continuity === "continued" ? `<span class="rx-rm">รับยาต่อเนื่อง</span>`
+               : m.continuity === "adjusted" ? `<span class="rx-rm adj">ปรับขนาดยา</span>` : "";
+      return `<tr>
+        <td class="rx-no">${no}</td>
+        <td class="rx-item"><div class="rx-item-in">${photo}<div><b>${esc(m.drug)}</b>${m.code?`<div class="rx-code">${esc(m.code)}</div>`:""}${rm}</div></div></td>
+        <td class="rx-how">${esc(m.instruction||"-")}</td>
+        <td class="rx-qty">${esc(m.quantity||"-")}</td>
+        <td class="rx-store">${esc(m.store||"-")}</td>
+        <td class="rx-cat">${stat}</td>
+      </tr>`;
+    }
+    /* Prescription-form-style detail panel (mirrors the ArcusAir print layout). */
     function renderDetail() {
       const col = $("detailCol");
       const c = _cases.find((x)=>x.id===_sel);
       if (!c) { col.innerHTML = `<div class="placeholder"><div class="big">👈</div>เลือกเคสจากรายการเพื่อดูรายละเอียด</div>`; return; }
       const meds = Array.isArray(c.meds)?c.meds:[];
-      const cls = c.status==="completed" ? "done" : waitLvl(waitMin(c));
-      col.innerHTML = `<div class="dcase ${cls}">
-        <div class="dcase-hd">
-          <span class="dcase-id">${esc(c.id)}</span>
-          <span class="dcase-pt">${esc(c.name||"-")}</span>
-          <span class="dcase-meta">HN ${esc(c.hn)}${c.visitId?" · "+esc(c.visitId):""}${c.room&&c.room!=="-"?" · ห้อง "+esc(c.room):""}</span>
-          ${badge(c)}
-          <span class="dcase-at">ส่ง ${esc(fmt(c.createdAt))}${c.sentBy?" · "+esc(c.sentBy):""}</span>
+      const ctx = c.context || {};
+      const v = ctx.visit || {};
+      // Allergy text
+      const alg = ctx.allergies || {};
+      let algTxt = "No Known Drug Allergies";
+      if (!alg.nkda && Array.isArray(alg.items) && alg.items.length)
+        algTxt = alg.items.map((a)=>esc(a.allergen||a.name||a.drug||"")+(a.reaction?` (${esc(a.reaction)})`:"")).join(", ");
+      // Doctor notes as the "Pharmacy Note" free text
+      const dn = Array.isArray(ctx.doctorNotes)?ctx.doctorNotes:[];
+      const noteTxt = c.pharmacistNote ? esc(c.pharmacistNote) : "";
+      // Home first, then STAT — numbered continuously.
+      const ordered = [...meds.filter((m)=>(m.group||"home")!=="stat"), ...meds.filter((m)=>(m.group||"home")==="stat")];
+      const rows = ordered.map((m,i)=>rxRow(m,i+1)).join("");
+
+      col.innerHTML = `
+      <div class="rx">
+        <!-- Header -->
+        <div class="rx-head">
+          <div class="rx-brand">
+            <div class="rx-logo">＋ BANGKOK HOSPITAL<br><small>KHON KAEN</small></div>
+            <div class="rx-optag">ใบสั่งยา<br><b>ผู้ป่วยนอก</b></div>
+          </div>
+          <div class="rx-pt">
+            <div class="rx-pt-grid">
+              <div><span class="l">HN :</span> <b>${esc(c.hn||"-")}</b></div>
+              <div><span class="l">ชื่อ :</span> <b>${esc(c.name||"-")}</b></div>
+              <div><span class="l">Visit :</span> ${esc(c.visitId||"-")}</div>
+              <div><span class="l">ห้อง :</span> ${esc(c.room&&c.room!=="-"?c.room:"-")}</div>
+              <div><span class="l">แพทย์ :</span> ${esc(v.provider||"-")}</div>
+              <div><span class="l">Location :</span> ${esc(v.department||"-")}</div>
+              <div><span class="l">ประเภท :</span> DAILY ORDER</div>
+              <div><span class="l">วันที่ :</span> ${esc(fmt(c.createdAt))}</div>
+            </div>
+          </div>
+          <div class="rx-badge">${badge(c)}</div>
         </div>
-        ${ctxBlock(c.context)}
-        ${group(meds,"home","🏠 ยากลับบ้าน","grp-home")}
-        ${group(meds,"stat","⚡ ใช้ที่ รพ./STAT","grp-stat")}
-        ${c.pharmacistNote ? `<div class="note"><b>📝 บันทึกเภสัชกร:</b> ${esc(c.pharmacistNote)}</div>` : ""}
-        ${c.status !== "completed" ? `<div class="dcase-actions"><button class="btn-complete" data-id="${esc(c.id)}" type="button">✅ Complete (จ่ายยาเสร็จ)</button></div>` : `<div class="dcase-actions" style="color:var(--green-d);font-weight:800">✅ จ่ายยาเสร็จแล้ว${c.completedBy?" · โดย "+esc(c.completedBy):""}</div>`}
+
+        <!-- Clinical bar -->
+        <div class="rx-clin">
+          <div><span class="l">Diagnosis :</span> ${esc(ctx.diagnosis||"-")}</div>
+          <div><span class="l">Drug Allergy :</span> <span class="${(!alg.nkda&&(alg.items||[]).length)?"rx-alg":""}">${algTxt}</span></div>
+          <div><span class="l">CC :</span> ${esc(v.complaint||"-")}</div>
+          <div><span class="l">Pharmacy Note :</span> ${noteTxt||"-"}</div>
+        </div>
+
+        <!-- Med table -->
+        <table class="rx-table">
+          <thead><tr>
+            <th class="rx-no">NO</th><th class="rx-item">รายการ / Item</th>
+            <th class="rx-how">วิธีใช้ / How to use</th><th class="rx-qty">จำนวน</th>
+            <th class="rx-store">คลัง / Store</th><th class="rx-cat">ประเภท</th>
+          </tr></thead>
+          <tbody>${rows || `<tr><td colspan="6" class="rx-empty">— ไม่มีรายการยา —</td></tr>`}</tbody>
+        </table>
+
+        ${dn.length ? `<div class="rx-drnotes"><span class="l">🩺 บันทึกแพทย์ :</span> ${dn.map((n)=>`<div class="rx-drnote"><b>${esc(n.provider||"แพทย์")}</b> — ${sanitizeNote(n.html||"")}</div>`).join("")}</div>` : ""}
+
+        <!-- Footer -->
+        <div class="rx-foot">
+          <div class="rx-ack">ข้าพเจ้ารับยาพร้อมคำแนะนำการใช้ยาแล้ว ยาที่ได้รับนั้นใช้ตามแพทย์สั่งเท่านั้น ลงนาม ..............................</div>
+          <div class="rx-sign">
+            <div>ผู้จัด <u>&nbsp;Check1&nbsp;</u> <u>&nbsp;Check2&nbsp;</u></div>
+            <div>ผู้จ่าย <u>&nbsp;${esc(c.completedBy||"")}&nbsp;&nbsp;&nbsp;&nbsp;</u></div>
+            <div>ผู้สั่ง <u>&nbsp;${esc(v.provider||"")}&nbsp;</u></div>
+          </div>
+          <div class="rx-meta">${esc(c.id)} · ส่ง ${esc(fmt(c.createdAt))}${c.sentBy?" · โดย "+esc(c.sentBy):""}</div>
+        </div>
+
+        <div class="rx-actions">
+          ${c.status !== "completed"
+            ? `<button class="btn-complete" data-id="${esc(c.id)}" type="button">✅ Complete (จ่ายยาเสร็จ)</button>`
+            : `<span class="rx-done">✅ จ่ายยาเสร็จแล้ว${c.completedBy?" · โดย "+esc(c.completedBy):""} · ${esc(fmt(c.completedAt))}</span>`}
+        </div>
       </div>`;
       col.querySelectorAll(".btn-complete").forEach((btn)=>btn.addEventListener("click",()=>complete(btn)));
     }
