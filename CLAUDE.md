@@ -76,7 +76,10 @@ python -c "p='pharmacy_server/bkn_ks_server.py'; compile(open(p, encoding='utf-8
 Protected by `.gitignore` + `.gitattributes merge=ours` + `--skip-worktree`. Data files are server-written.
 
 ### `background.js` is the only message hub
-All cross-context messaging routes through it. `openOrReuseTab` writes payload to `chrome.storage.session` **before** creating/focusing the tab. Don't add paths that can call `sendResponse` twice.
+All cross-context messaging routes through it. `openOrReuseTab` writes payload to `chrome.storage.session` **before** creating/focusing the tab, reuses an existing tab via `tabRegistry`, and falls back to `chrome.tabs.query({url})` when the MV3 worker restarted and lost the registry — so a feature page never opens twice. Don't add paths that can call `sendResponse` twice.
+
+### No inline event handlers in extension pages (MV3 CSP)
+The extension CSP (`script-src 'self'`) **blocks inline handlers** — `onerror=`, `onclick=`, `onload=` etc. written into template-string HTML throw *"Refused to execute inline event handler"* at runtime. Build the markup without them and attach listeners in JS after injecting (e.g. `_bindReviewMeds` binds the drug-photo `error` fallback). Same for inline `<script>`, `javascript:` URLs, and `eval`. Server-hosted pages under `pharmacy_server/www/` are a normal origin and aren't bound by this.
 
 ### Content-script load order is load-bearing (`manifest.json`)
 Load order: core utils → `shared-data-client.js` → features → legacy `content_script.js` last. Feature scripts assume `window.BKNData` exists. All injected scripts use `document[Symbol.for(...)]` guard (not `window`), a **debounced** `MutationObserver`, and SPA route patches.

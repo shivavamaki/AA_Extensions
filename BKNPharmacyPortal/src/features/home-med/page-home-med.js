@@ -751,7 +751,7 @@ function renderReviewMeds() {
     const imgUrl = (_medImagesBase && m.code)
       ? `${_medImagesBase}/med-image/${encodeURIComponent(norm(m.code))}` : "";
     const photo = imgUrl
-      ? `<img class="rev-photo" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" onerror="this.closest('.rev-med').classList.add('no-photo')">`
+      ? `<img class="rev-photo" src="${escapeHtml(imgUrl)}" alt="" loading="lazy">`
       : `<span class="rev-photo-ph">${_medicineIcon(m)}</span>`;
     return `<div class="rev-med" data-index="${i}" data-drugkey="${escapeHtml(k)}" data-medidx="${i}"
                  style="--hc-bar:${c.bar};--hc-dot:${c.dot};--hc-soft:${c.soft};--hc-edge:${c.edge};">
@@ -809,6 +809,14 @@ function renderReviewMeds() {
 }
 
 function _bindReviewMeds(host) {
+  // Photo fallback — bound here (not an inline onerror, which the extension CSP
+  // forbids): a missing image flips the card to its 💊 placeholder.
+  host.querySelectorAll("img.rev-photo").forEach((img) => {
+    img.addEventListener("error", () => {
+      const card = img.closest(".rev-med");
+      if (card) card.classList.add("no-photo");
+    }, { once: true });
+  });
   host.querySelectorAll(".rev-med [contenteditable][data-field]").forEach((el) => {
     el.addEventListener("blur", () => {
       const card = el.closest(".rev-med");
