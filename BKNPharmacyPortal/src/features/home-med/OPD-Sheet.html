@@ -646,7 +646,11 @@
       display: flex; align-items: center; justify-content: center;
       align-self: center;
     }
-    .rev-med .rev-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .rev-med .rev-photo { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
+    /* Floating enlarged drug image on hover. */
+    #revZoom { position: fixed; z-index: 3000; display: none; pointer-events: none; }
+    #revZoom img { max-width: 340px; max-height: 340px; border: 3px solid #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(15,23,42,.35); background: #fff; display: block; }
+    @media print { #revZoom { display: none !important; } }
     .rev-med .rev-photo-ph { font-size: 20px; opacity: .55; }
     /* When the image 404s, show the icon placeholder instead. */
     .rev-med.no-photo .rev-photo { display: none; }

@@ -147,11 +147,35 @@
       .dcase .grp-hd { font-size:16px; }
       .vital .vv { font-size:18px; }
     }
+
+    /* Store sub-groups inside a home/stat group. */
+    .med-store { margin:6px 0 4px; }
+    .med-store-hd { font-weight:700; font-size:12.5px; color:#475569; padding:2px 2px 4px; border-bottom:1px dashed #cbd5e1; display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+    .med-store-ct { margin-left:auto; font-weight:800; font-size:11px; color:#475569; background:#e2e8f0; border-radius:999px; padding:0 7px; }
+
+    /* Search box in the header. */
+    .search-wrap { display:flex; align-items:center; gap:6px; background:#fff; border-radius:8px; padding:4px 8px; min-width:280px; }
+    .search-wrap .search-ico { font-size:15px; }
+    .search-wrap input { border:none; outline:none; font:inherit; font-size:14px; flex:1; min-width:0; background:transparent; }
+    .search-wrap button { border:none; background:#eef2f6; color:#6b7280; border-radius:6px; cursor:pointer; font-weight:800; padding:2px 8px; }
+    .search-wrap button:hover { background:#e2e8f0; }
+
+    /* Floating enlarged drug image on hover. */
+    .med-photo, .med .med-photo { cursor:zoom-in; }
+    .zoom { position:fixed; z-index:1000; pointer-events:none; display:none; }
+    .zoom img { max-width:340px; max-height:340px; border:3px solid #fff; border-radius:12px; box-shadow:0 10px 30px rgba(15,23,42,.35); background:#fff; display:block; }
   </style>
 </head>
 <body>
+  <div id="zoom" class="zoom"><img id="zoomImg" alt="" /></div>
   <header>
     <h1>🚀 OPD Dispensing Queue</h1>
+    <div class="search-wrap">
+      <span class="search-ico">🔎</span>
+      <input id="search" type="search" autocomplete="off" spellcheck="false"
+             placeholder="สแกนบาร์โค้ด / ค้นหา HN (เต็มหรือ 4 ตัวท้าย)…" />
+      <button id="searchClear" type="button" title="ล้าง">✕</button>
+    </div>
     <div class="links">
       <a href="/opd-dashboard" target="_blank">📊 Dashboard</a>
       <button id="refresh" type="button">↻ Refresh</button>
@@ -196,7 +220,7 @@
 
     function medRow(m) {
       const photo = m.code
-        ? `<img class="med-photo" src="/med-image/${encodeURIComponent(m.code)}" alt="" loading="lazy" onerror="this.closest('.med').classList.add('no-photo')">`
+        ? `<img class="med-photo" src="/med-image/${encodeURIComponent(m.code)}" alt="" loading="lazy" data-code="${esc(m.code)}" onerror="this.closest('.med').classList.add('no-photo')">`
         : "";
       return `<div class="med${m.code?"":" no-photo"}"><span class="med-thumb">${photo}</span>
         <span class="med-text"><b>${esc(m.drug)}</b>${m.code?` <span class="instr">(${esc(m.code)})</span>`:""}${m.instruction?` — <span class="instr">${esc(m.instruction)}</span>`:""}${m.quantity?` <span class="qty">· ${esc(m.quantity)}</span>`:""}</span></div>`;
@@ -204,7 +228,14 @@
     function group(meds, g, label, cls) {
       const rows = meds.filter((m)=>(m.group||"home")===g);
       if (!rows.length) return "";
-      return `<div class="grp ${cls}"><span class="grp-hd">${label} (${rows.length})</span>${rows.map(medRow).join("")}</div>`;
+      // Sub-group by dispensing store (like the OPD sheet). Store order = first-seen.
+      const byStore = new Map();
+      rows.forEach((m)=>{ const s = (m.store||"").trim() || "อื่นๆ (ไม่ระบุคลัง)"; if(!byStore.has(s)) byStore.set(s,[]); byStore.get(s).push(m); });
+      let body;
+      if (byStore.size <= 1) body = rows.map(medRow).join("");
+      else body = [...byStore.entries()].map(([store,ms])=>
+        `<div class="med-store"><div class="med-store-hd">🏬 ${esc(store)} <span class="med-store-ct">${ms.length}</span></div>${ms.map(medRow).join("")}</div>`).join("");
+      return `<div class="grp ${cls}"><span class="grp-hd">${label} (${rows.length})</span>${body}</div>`;
     }
     function badge(c) {
       if (c.status === "completed") return `<span class="wb done">✅ เสร็จ ${esc(fmt(c.completedAt))}</span>`;
@@ -297,10 +328,21 @@
       </div>`;
       col.querySelectorAll(".btn-complete").forEach((btn)=>btn.addEventListener("click",()=>complete(btn)));
     }
+    /* Match a case against the HN search term. Digits-only compare so a barcode
+       scan (which may include separators) still matches; partial (e.g. last 4). */
+    function matchSearch(c, q) {
+      if (!q) return true;
+      const qd = q.replace(/\D/g, "");
+      const hn = String(c.hn||"").replace(/\D/g, "");
+      if (qd) return hn.includes(qd);
+      return String(c.hn||"").toLowerCase().includes(q.toLowerCase())
+          || String(c.name||"").toLowerCase().includes(q.toLowerCase());
+    }
     function render() {
+      const q = ($("search").value||"").trim();
       // Waiting sorted by sent time (oldest first → longest waiting on top).
-      const waiting = _cases.filter((c)=>c.status!=="completed").sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt)));
-      const done = _cases.filter((c)=>c.status==="completed").sort((a,b)=>String(b.completedAt||b.createdAt).localeCompare(String(a.completedAt||a.createdAt)));
+      const waiting = _cases.filter((c)=>c.status!=="completed" && matchSearch(c,q)).sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt)));
+      const done = _cases.filter((c)=>c.status==="completed" && matchSearch(c,q)).sort((a,b)=>String(b.completedAt||b.createdAt).localeCompare(String(a.completedAt||a.createdAt)));
       $("waitCount").textContent = waiting.length;
       $("doneCount").textContent = done.length;
       $("waitList").innerHTML = waiting.length ? waiting.map(listCard).join("") : `<div class="empty">ไม่มีเคสรอจ่าย</div>`;
@@ -346,10 +388,46 @@
       } catch (e) { $("status").textContent = "โหลดไม่สำเร็จ: "+e; }
     }
     $("doneToggle").addEventListener("click", ()=>{ _doneOpen=!_doneOpen; $("doneSec").classList.toggle("collapsed",!_doneOpen); });
+
+    // Search (HN / barcode). Filter live; on Enter (scanner sends Enter) or a
+    // single match, auto-open that case.
+    function applySearch(pickSingle) {
+      render();
+      if (pickSingle) {
+        const q = ($("search").value||"").trim();
+        const hits = _cases.filter((c)=>matchSearch(c,q));
+        if (q && hits.length === 1) { _sel = hits[0].id; render(); renderDetail(); }
+      }
+    }
+    $("search").addEventListener("input", ()=>applySearch(false));
+    $("search").addEventListener("keydown", (e)=>{ if (e.key==="Enter") { e.preventDefault(); applySearch(true); } });
+    $("searchClear").addEventListener("click", ()=>{ $("search").value=""; render(); $("search").focus(); });
+
+    // Hover a drug photo → floating enlarged image.
+    const zoom = $("zoom"), zoomImg = $("zoomImg");
+    document.addEventListener("mouseover", (e)=>{
+      const img = e.target.closest && e.target.closest("img.med-photo");
+      if (!img || !img.getAttribute("src")) return;
+      zoomImg.src = img.src; zoom.style.display = "block"; moveZoom(e);
+    });
+    document.addEventListener("mousemove", (e)=>{ if (zoom.style.display==="block") moveZoom(e); });
+    document.addEventListener("mouseout", (e)=>{
+      if (e.target.closest && e.target.closest("img.med-photo")) zoom.style.display = "none";
+    });
+    function moveZoom(e){
+      const pad=16, w=360, h=360;
+      let x=e.clientX+pad, y=e.clientY+pad;
+      if (x+w>innerWidth) x=e.clientX-w-pad;
+      if (y+h>innerHeight) y=Math.max(8, innerHeight-h-8);
+      zoom.style.left=x+"px"; zoom.style.top=y+"px";
+    }
+
     $("from").value = todayStr(); $("to").value = todayStr();
     $("refresh").addEventListener("click", load);
     $("from").addEventListener("change", load);
     $("to").addEventListener("change", load);
+    // Keep the barcode-scanner focus ready.
+    setTimeout(()=>$("search").focus(), 300);
     load();
     setInterval(load, 15000);
   </script>

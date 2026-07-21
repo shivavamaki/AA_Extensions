@@ -1376,6 +1376,33 @@ function bindPharmNote() {
   });
 }
 
+/** Hover a review-card drug photo → floating enlarged image that follows the
+ * mouse. Delegated on document so it covers re-rendered cards. */
+function bindRevPhotoZoom() {
+  if (document.getElementById("revZoom")) return;   // once
+  const box = document.createElement("div");
+  box.id = "revZoom";
+  box.innerHTML = `<img alt="">`;
+  document.body.appendChild(box);
+  const img = box.firstChild;
+  const move = (e) => {
+    const pad = 16, w = 340, h = 340;
+    let x = e.clientX + pad, y = e.clientY + pad;
+    if (x + w > innerWidth) x = e.clientX - w - pad;
+    if (y + h > innerHeight) y = Math.max(8, innerHeight - h - 8);
+    box.style.left = x + "px"; box.style.top = y + "px";
+  };
+  document.addEventListener("mouseover", (e) => {
+    const el = e.target.closest && e.target.closest("img.rev-photo");
+    if (!el || !el.getAttribute("src")) return;
+    img.src = el.src; box.style.display = "block"; move(e);
+  });
+  document.addEventListener("mousemove", (e) => { if (box.style.display === "block") move(e); });
+  document.addEventListener("mouseout", (e) => {
+    if (e.target.closest && e.target.closest("img.rev-photo")) box.style.display = "none";
+  });
+}
+
 /** Voice dictation for the pharmacist note via the Web Speech API (Chrome's
  * built-in webkitSpeechRecognition). Toggles on the 🎤 button; appends final
  * results to the textarea (Thai locale), shows interim text live. */
@@ -2513,6 +2540,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindPharmNote();
   bindPharmMic();
   bindSendDispense();
+  bindRevPhotoZoom();
   bindLangControl();
   _bindReconPanel();
 
