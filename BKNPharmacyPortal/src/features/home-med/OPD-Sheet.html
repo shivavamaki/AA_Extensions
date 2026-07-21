@@ -672,6 +672,64 @@
     }
     .review-note:focus { outline: none; border-color: #4ade80; box-shadow: 0 0 0 2px #bbf7d0; }
     .review-note-status { font-size: 10.5px; color: #92400e; margin-top: 4px; min-height: 13px; }
+
+    /* ── Larger fonts for Checking mode (iPad / touch readability) ────────────
+       Scoped to body.toolbar-collapsed so the printed A4 sheet is unaffected.
+       Bumps the many small labels up to comfortable tap/read sizes. */
+    body.toolbar-collapsed .review-title { font-size: 22px; }
+    body.toolbar-collapsed .review-hint { font-size: 13px; }
+    body.toolbar-collapsed .review-sec-hd,
+    body.toolbar-collapsed .vs-sec-hd,
+    body.toolbar-collapsed .rev-group-hd,
+    body.toolbar-collapsed .hist-note-hd { font-size: 15px; }
+    /* Patient / Dx / allergy */
+    body.toolbar-collapsed .vs-pt-name { font-size: 16px; }
+    body.toolbar-collapsed .vs-pt-meta { font-size: 13px; }
+    body.toolbar-collapsed .vs-dx { font-size: 14px; }
+    body.toolbar-collapsed .vs-alg-nkda,
+    body.toolbar-collapsed .vs-alg-item { font-size: 14px; }
+    /* Vitals — bigger numbers + labels */
+    body.toolbar-collapsed .review-status .vs-vital { min-width: 62px; padding: 5px 7px; }
+    body.toolbar-collapsed .review-status .vs-vital .vs-vk { font-size: 10px; }
+    body.toolbar-collapsed .review-status .vs-vital .vs-vv { font-size: 17px; }
+    body.toolbar-collapsed .review-status .vs-vital .vs-vu { font-size: 10px; }
+    /* Doctor notes / visit summary */
+    body.toolbar-collapsed .vs-note-hd,
+    body.toolbar-collapsed .vs-visit-hd { font-size: 14px; }
+    body.toolbar-collapsed .vs-note-at,
+    body.toolbar-collapsed .vs-visit-at { font-size: 11.5px; }
+    body.toolbar-collapsed .vs-note-body,
+    body.toolbar-collapsed .vs-visit-meta,
+    body.toolbar-collapsed .vs-visit-cc { font-size: 13.5px; }
+    /* Medicine cards */
+    body.toolbar-collapsed .rev-med .rev-idx { font-size: 16px; }
+    body.toolbar-collapsed .rev-med .rev-name { font-size: 16px; }
+    body.toolbar-collapsed .rev-med .rev-code { font-size: 12px; }
+    body.toolbar-collapsed .rev-med .rev-instr,
+    body.toolbar-collapsed .rev-med .rev-qty { font-size: 15px; }
+    body.toolbar-collapsed .rev-med .rev-move,
+    body.toolbar-collapsed .rev-med .rev-del { font-size: 12.5px; padding: 6px 10px; }
+    body.toolbar-collapsed .rev-med .hist-rm,
+    body.toolbar-collapsed .rev-med .med-continuity { font-size: 12px; }
+    body.toolbar-collapsed .rev-store-hd { font-size: 13px; }
+    body.toolbar-collapsed .rev-group-count,
+    body.toolbar-collapsed .rev-store-count { font-size: 13px; }
+    /* History panel (right) */
+    body.toolbar-collapsed .recon-title { font-size: 15px; }
+    body.toolbar-collapsed .hist-visit-hd { font-size: 13px; }
+    body.toolbar-collapsed .hist-visit-sum { font-size: 12px; }
+    body.toolbar-collapsed .hist-drug { font-size: 13px; }
+    body.toolbar-collapsed .hist-info { font-size: 12px; }
+    body.toolbar-collapsed .review-note { font-size: 15px; }
+    body.toolbar-collapsed .btn-send-dispense { font-size: 15px; padding: 12px; }
+    /* On true iPad-width and up, go a touch larger still. */
+    @media (min-width: 810px) {
+      body.toolbar-collapsed .rev-med .rev-name { font-size: 17px; }
+      body.toolbar-collapsed .rev-med .rev-instr,
+      body.toolbar-collapsed .rev-med .rev-qty { font-size: 15.5px; }
+      body.toolbar-collapsed .review-status .vs-vital .vs-vv { font-size: 18px; }
+    }
+
     @media print { .review-area { display: none !important; } }
 
     .sheet {

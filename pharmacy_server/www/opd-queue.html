@@ -27,7 +27,7 @@
 
     .layout { display:flex; align-items:flex-start; }
     /* Left list is ALWAYS narrow + compact. */
-    .list-col { flex:0 0 360px; padding:14px 14px 40px; }
+    .list-col { flex:0 0 400px; padding:14px 14px 40px; }
     .detail-col { flex:1 1 auto; padding:16px 20px 40px; border-left:1px solid #e5e7eb; background:#fbfdff; min-width:0; min-height:60vh; }
 
     .controls { display:flex; gap:8px; align-items:center; margin-bottom:10px; font-size:12.5px; flex-wrap:wrap; }
@@ -115,6 +115,28 @@
     .btn-complete { background:var(--green); color:#fff; border:none; border-radius:8px; padding:9px 18px; font-weight:800; cursor:pointer; font-size:14px; }
     .btn-complete:hover { background:var(--green-d); }
     .btn-complete:disabled { opacity:.5; cursor:default; }
+
+    /* Larger fonts for iPad / touch readability. */
+    header h1 { font-size:22px; }
+    header a, header button { font-size:15px; padding:8px 14px; }
+    .stat .k { font-size:12.5px; } .stat .v { font-size:26px; } .stat.avg .v { font-size:20px; }
+    .controls { font-size:14px; }
+    .sec-hd { font-size:14px; } .sec-count, .lcard .lid, .lcard .lhn { font-size:12.5px; }
+    .lcard .lpt { font-size:15px; } .wb { font-size:12px; padding:2px 8px; }
+    .done-toggle { font-size:14px; padding:9px 12px; }
+    .dcase-id { font-size:16px; } .dcase-pt { font-size:19px; } .dcase-meta { font-size:14px; }
+    .dcase-at { font-size:12.5px; }
+    .ctx-hd { font-size:13px; } .ctx-dx { font-size:14px; }
+    .alg-nkda, .alg-item { font-size:13.5px; }
+    .vital { min-width:66px; } .vital .vk { font-size:10px; } .vital .vv { font-size:16px; } .vital .vu { font-size:9.5px; }
+    .ctx-visit, .ctx-note-body { font-size:14px; } .ctx-note-hd { font-size:12.5px; } .ctx-note-hd span { font-size:11px; }
+    .grp-hd { font-size:13.5px; }
+    .med { font-size:14px; }
+    .note { font-size:14px; }
+    .btn-complete { font-size:16px; padding:11px 22px; }
+    @media (min-width:810px) {
+      .lcard .lpt { font-size:16px; } .med { font-size:14.5px; } .dcase-pt { font-size:21px; }
+    }
   </style>
 </head>
 <body>
