@@ -2396,8 +2396,7 @@ function renderVisitSummary(data) {
   const statusHtml =
     `<div class="vs-pt-row">
        <section class="vs-sec vs-pt-col">
-         <div class="vs-sec-hd">👤 ผู้ป่วย</div>
-         <div class="vs-pt-name">${pName}</div>
+         <div class="vs-sec-hd vs-pt-name">👤 ${pName || "ผู้ป่วย"}</div>
          ${pMeta ? `<div class="vs-pt-meta">${pMeta}</div>` : ""}
          ${dx}
        </section>

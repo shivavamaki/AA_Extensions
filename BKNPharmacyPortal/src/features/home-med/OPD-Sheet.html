@@ -95,6 +95,8 @@
     .vs-none { color: #8fae9d; font-size: 11.5px; font-style: italic; }
 
     .vs-pt-name { font-weight: 800; font-size: 14px; color: #14532d; }
+    /* Patient-name header (replaces the "👤 ผู้ป่วย" label). */
+    .vs-sec-hd.vs-pt-name { font-size: 15px; color: #14532d; margin-bottom: 4px; }
     .vs-pt-meta { font-size: 11px; color: #6b8f7a; margin-top: 2px; }
     .vs-dx { margin-top: 5px; font-size: 11.5px; color: #14532d; background: #dcfce7; padding: 5px 8px; border-radius: 6px; }
 
@@ -704,11 +706,12 @@
     body.toolbar-collapsed .vs-dx { font-size: 14px; }
     body.toolbar-collapsed .vs-alg-nkda,
     body.toolbar-collapsed .vs-alg-item { font-size: 14px; }
-    /* Vitals — bigger numbers + labels */
-    body.toolbar-collapsed .review-status .vs-vital { min-width: 62px; padding: 5px 7px; }
-    body.toolbar-collapsed .review-status .vs-vital .vs-vk { font-size: 10px; }
-    body.toolbar-collapsed .review-status .vs-vital .vs-vv { font-size: 17px; }
-    body.toolbar-collapsed .review-status .vs-vital .vs-vu { font-size: 10px; }
+    /* Vitals — compact cards. */
+    body.toolbar-collapsed .review-status .vs-vitals { gap: 3px; }
+    body.toolbar-collapsed .review-status .vs-vital { min-width: 46px; padding: 2px 5px; }
+    body.toolbar-collapsed .review-status .vs-vital .vs-vk { font-size: 8.5px; }
+    body.toolbar-collapsed .review-status .vs-vital .vs-vv { font-size: 13px; }
+    body.toolbar-collapsed .review-status .vs-vital .vs-vu { font-size: 8px; }
     /* Doctor notes / visit summary */
     body.toolbar-collapsed .vs-note-hd,
     body.toolbar-collapsed .vs-visit-hd { font-size: 14px; }
@@ -743,7 +746,7 @@
       body.toolbar-collapsed .rev-med .rev-name { font-size: 17px; }
       body.toolbar-collapsed .rev-med .rev-instr,
       body.toolbar-collapsed .rev-med .rev-qty { font-size: 15.5px; }
-      body.toolbar-collapsed .review-status .vs-vital .vs-vv { font-size: 18px; }
+      body.toolbar-collapsed .review-status .vs-vital .vs-vv { font-size: 14px; }
     }
 
     @media print { .review-area { display: none !important; } }
@@ -1866,10 +1869,6 @@
        3-column layout: left = Visit Summary, center = patient/vitals/allergy/
        notes + editable med list, right = history panel (fixed) + pharmacist note. -->
   <div class="review-area no-print" id="reviewArea">
-    <div class="review-head">
-      <h2 class="review-title">📋 สรุปการรักษาครั้งนี้</h2>
-      <div class="review-hint">โหมดตรวจสอบ · ชี้เมาส์ที่ยาเพื่อเทียบกับประวัติ →</div>
-    </div>
 
     <!-- Center column (full width): patient/vitals/allergy + [doctor notes |
          current-visit summary], then med list. Past visits' summaries are merged

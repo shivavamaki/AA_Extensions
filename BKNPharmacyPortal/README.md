@@ -54,7 +54,10 @@ popup.html / popup.js
 
 background.js  ← sole message hub (MV3 service worker)
   ├── BKN_SERVER_PROXY  — all server fetches (bypasses CORS)
-  ├── openOrReuseTab    — writes payload to chrome.storage.session BEFORE tab open
+  ├── openOrReuseTab    — writes payload to chrome.storage.session BEFORE tab open;
+  │                       reuses an existing tab via tabRegistry, and (if the MV3
+  │                       worker restarted and lost it) by chrome.tabs.query({url})
+  │                       so a feature page never opens twice
   ├── ROUTE_MAP         — feature-tab openers
   ├── MJ_FETCH_XLS      — Jasper XLS fetch (single-response guard)
   ├── MJ_EXTRACT_ANGULAR_CTX  — MAIN-world Angular DI extraction

@@ -89,6 +89,20 @@ function openOrReuseTab(key, relativeUrl, payload) {
       tabRegistry[key] = tab.id;
     });
   }
+  // Fallback for when tabRegistry was lost (MV3 service-worker restart): find an
+  // already-open tab pointing at this feature page and reuse it instead of
+  // spawning a duplicate.
+  function reuseByUrlOrCreate() {
+    chrome.tabs.query({ url: fullUrl }, tabs => {
+      const existing = (!chrome.runtime.lastError && tabs && tabs[0]) || null;
+      if (existing) {
+        tabRegistry[key] = existing.id;
+        chrome.tabs.update(existing.id, { active: true }, () => sendPayload(existing.id));
+      } else {
+        createNewTab();
+      }
+    });
+  }
 
   function openAfterPayloadStored() {
     const currentId = tabRegistry[key];
@@ -96,13 +110,13 @@ function openOrReuseTab(key, relativeUrl, payload) {
       chrome.tabs.get(currentId, tab => {
         if (chrome.runtime.lastError || !tab) {
           tabRegistry[key] = null;
-          createNewTab();
+          reuseByUrlOrCreate();
         } else {
           chrome.tabs.update(currentId, { active: true }, () => sendPayload(currentId));
         }
       });
     } else {
-      createNewTab();
+      reuseByUrlOrCreate();
     }
   }
 
