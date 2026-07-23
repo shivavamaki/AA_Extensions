@@ -1441,6 +1441,8 @@
     /* Hidden unless the "แนบหน้า จัดตามมื้อ" toggle adds .hm-with-mealcard. */
     .mealcard-section { display: none; margin-top: 18px; }
     body.hm-with-mealcard .mealcard-section { display: block; }
+    /* Page-break spacer: never visible; only carries the forced break in print. */
+    .mealcard-break { display: none; }
     .mealcard-section .timeline-head { display: grid; grid-template-columns: 26mm 1fr 50mm; align-items: center; gap: 8px; border-bottom: 3px solid #111827; padding-bottom: 5px; margin-bottom: 10px; }
     .mealcard-section .tt-logo { display: flex; align-items: center; }
     .mealcard-section .tt-logo img { max-width: 24mm; max-height: 11mm; width: auto; display: block; object-fit: contain; }
@@ -1553,8 +1555,16 @@
          measures the remaining space and adds .mealcard-force-break so the whole
          card starts on a fresh page instead of splitting. break-inside:avoid
          alone is unreliable here because the grid uses CSS multi-column. */
-      body.hm-with-mealcard.mealcard-force-break .mealcard-section {
+      /* The forced break is carried by the empty spacer (no text to paint),
+         NOT the section's centered <h2> — that <h2>'s first glyph otherwise
+         bleeds as a sliver ("ย") onto the previous page. */
+      body.hm-with-mealcard.mealcard-force-break .mealcard-break {
+        display: block;
         break-before: page; page-break-before: always;
+        height: 0; margin: 0; padding: 0; border: 0;
+      }
+      body.hm-with-mealcard.mealcard-force-break .mealcard-section {
+        break-before: avoid; page-break-before: avoid;
         margin-top: 0 !important;   /* no margin bleeding a sliver onto the prior page */
       }
       body.hm-with-mealcard .mealcard-section .timeline-head { orphans: 3; widows: 3; }
@@ -1854,6 +1864,10 @@
         </div>
       </div>
     </section>
+
+    <!-- Empty page-break spacer (carries the forced break so the section's
+         centered <h2> first glyph can't sliver onto the previous page). -->
+    <div class="mealcard-break" id="mealcardBreak" aria-hidden="true"></div>
 
     <!-- Daily Pill Journey Card: discharge meds grouped by meal slot. Optional
          (toggled by "แนบหน้า จัดตามมื้อ"); prints on its own page. -->

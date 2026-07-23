@@ -2527,9 +2527,13 @@ function updatePageCounterTotal() {
     if (everythingFitsOnePage) {
       totalPages = 1;
     } else {
-      const mainPages = Math.max(1, Math.ceil(mealTop / pageContentPx));
-      const mealPages = Math.max(1, Math.ceil(mealPx / pageContentPx));
-      totalPages = mainPages + mealPages;
+      // Count meds/card pages independently (the card is on its own page(s)).
+      // A ~1-page block can measure a few px over pageContentPx due to line-box
+      // rounding and the sheet's own padding vs. the @page margin; a small
+      // tolerance stops that from inflating "1 page" into "2".
+      const ROUND_TOL_PX = 6 * MM_TO_PX;
+      const pagesOf = (px) => Math.max(1, Math.ceil((px - ROUND_TOL_PX) / pageContentPx));
+      totalPages = pagesOf(mealTop) + pagesOf(mealPx);
     }
   } else {
     document.body.classList.remove("mealcard-force-break");
