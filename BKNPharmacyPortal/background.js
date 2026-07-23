@@ -701,10 +701,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg && msg.action === 'drugDeliveryResult') {
-    chrome.runtime.sendMessage({
-      action: 'drugDeliveryResult',
-      visitId: msg.visitId, ok: !!msg.ok, errorText: msg.errorText || '',
-    }).catch && chrome.runtime.sendMessage({}).catch(() => {});
+    // Relay to any listener (e.g. the popup). If nothing is listening the
+    // promise rejects with "No SW"/"Could not establish connection" — swallow it
+    // so it doesn't surface as an uncaught error in the extension console.
+    try {
+      const p = chrome.runtime.sendMessage({
+        action: 'drugDeliveryResult',
+        visitId: msg.visitId, ok: !!msg.ok, errorText: msg.errorText || '',
+      });
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+    } catch (_) { /* ignore */ }
     sendResponse && sendResponse({ ok: true });
     return false;
   }
