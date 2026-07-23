@@ -1066,12 +1066,13 @@
       tfoot { display: table-footer-group; }
       tr { break-inside: avoid; page-break-inside: avoid; }
       .footer-note { break-inside: avoid; break-before: avoid; }
-      /* By-meal card ("แนบหน้า จัดตามมื้อ"): keep the WHOLE card together as one
-         block — it stays on the current page if it fits, and moves to the next
-         page as a unit only when it doesn't (no forced break, no orphan/split). */
-      body.hm-with-mealcard .mealcard-section {
-        break-inside: avoid; page-break-inside: avoid;
-        break-before: auto; page-break-before: auto;
+      /* By-meal card ("แนบหน้า จัดตามมื้อ"): stays inline on the current page when
+         it fits; when it doesn't, JS (updatePageCounterTotal, on beforeprint)
+         measures the remaining space and adds .mealcard-force-break so the whole
+         card starts on a fresh page instead of splitting. break-inside:avoid
+         alone is unreliable here because the grid uses CSS multi-column. */
+      body.hm-with-mealcard.mealcard-force-break .mealcard-section {
+        break-before: page; page-break-before: always;
       }
       body.hm-with-mealcard .mealcard-section .timeline-head,
       body.hm-with-mealcard .mealcard-section .mc-info,

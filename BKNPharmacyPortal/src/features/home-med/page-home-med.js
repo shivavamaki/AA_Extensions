@@ -2500,10 +2500,21 @@ function updatePageCounterTotal() {
   if (mealCardShown && mealEl) {
     const mealPx = mealEl.scrollHeight;
     const mainPx = sheetEl.scrollHeight - mealPx;
+    // Decide whether the meal card fits in the room left on the current page.
+    // If it doesn't (and isn't taller than a whole page), force it to a fresh
+    // page so it prints whole instead of splitting; if it fits, leave it inline.
+    const usedOnLastPage = mainPx % pageContentPx;            // 0..pageContentPx
+    const remainingOnPage = pageContentPx - usedOnLastPage;
+    const fitsInRemaining = mealPx <= remainingOnPage + 1;    // +1px slack
+    const tallerThanPage  = mealPx > pageContentPx;
+    document.body.classList.toggle("mealcard-force-break", !fitsInRemaining && !tallerThanPage);
+
     const mainPages = Math.max(1, Math.ceil(mainPx / pageContentPx));
     const mealPages = Math.max(1, Math.ceil(mealPx / pageContentPx));
-    totalPages = mainPages + mealPages;
+    totalPages = fitsInRemaining ? Math.max(mainPages, Math.ceil(sheetEl.scrollHeight / pageContentPx))
+                                 : mainPages + mealPages;
   } else {
+    document.body.classList.remove("mealcard-force-break");
     const totalPx = sheetEl.scrollHeight;
     totalPages = Math.max(1, Math.ceil(totalPx / pageContentPx));
   }
