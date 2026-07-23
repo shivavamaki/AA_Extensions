@@ -2483,10 +2483,14 @@ function updatePageCounterTotal() {
   const counterEl = document.getElementById("pageCounter");
   const sheetEl = document.querySelector(".sheet");
   if (!counterEl || !sheetEl) return;
-  const c = _getPrintControls();
-  const marginMm = Number(c.printMargin?.value) || PRINT_CONTROL_DEFAULTS.marginMm;
   const MM_TO_PX = 96 / 25.4;
-  const pageContentPx = (297 - marginMm * 2) * MM_TO_PX;
+  // Printable content height per A4 page. Must match the CSS @page margins
+  // (8mm top + 12mm bottom — the extra bottom band reserves room for the page
+  // counter), NOT the screen-preview margin control, so pagination math lines
+  // up with what actually prints.
+  const PAGE_MARGIN_TOP_MM = 8;
+  const PAGE_MARGIN_BOTTOM_MM = 12;
+  const pageContentPx = (297 - PAGE_MARGIN_TOP_MM - PAGE_MARGIN_BOTTOM_MM) * MM_TO_PX;
 
   // The Daily Pill Journey Card (meal card) auto-breaks onto a fresh page when
   // it doesn't fit in the room left on the current page (its header + intro +
@@ -2498,33 +2502,33 @@ function updatePageCounterTotal() {
 
   let totalPages;
   if (mealCardShown && mealEl) {
-    // Clear any prior decision first, then measure the *natural* layout so the
-    // numbers reflect the card flowing inline (not a stale forced break).
+    // Clear any prior decision first, then measure the *natural* layout.
     document.body.classList.remove("mealcard-force-break");
 
     const mealPx = mealEl.scrollHeight;
+    const sheetPx = sheetEl.scrollHeight;
     // Height of everything before the meal card. The card is the LAST flow child
-    // of the sheet, so (sheet - card) is exactly the content above it. We use
+    // of the sheet, so (sheet - card) is exactly the content above it. Uses
     // scrollHeight (layout pixels) — not getBoundingClientRect, which is scaled
     // by .sheet-wrap's screen transform and would corrupt the math on screen.
-    const mealTop  = Math.max(0, sheetEl.scrollHeight - mealPx);
+    const mealTop = Math.max(0, sheetPx - mealPx);
 
-    const usedOnLastPage = mealTop % pageContentPx;          // room already used on the card's page
-    const remainingOnPage = pageContentPx - usedOnLastPage;
-    const tallerThanPage  = mealPx > pageContentPx;
-    // Require a real safety margin (~6mm ≈ 23px) so a card that lands *exactly*
-    // at the page edge is pushed to a fresh page instead of leaving a 1-line
-    // sliver (the "จัดตามมื้อ" header bleeding onto the previous page).
-    const SLIVER_GUARD_PX = 6 * MM_TO_PX;
-    const fitsInRemaining = mealPx <= remainingOnPage - SLIVER_GUARD_PX;
-    document.body.classList.toggle("mealcard-force-break", !fitsInRemaining && !tallerThanPage);
+    // Rule (robust, no fragile modulo math): keep the meal card inline ONLY when
+    // the WHOLE sheet — meds + card — fits on a single printed page. Otherwise
+    // the card gets its own page. This is the common real case (short discharge
+    // = 1 page; anything longer = a clean card page) and, crucially, it never
+    // leaves the "จัดตามมื้อ" header as a sliver at the bottom of the med page,
+    // because the card only ever shares a page when nothing else spills over.
+    // Add a safety margin so a sheet that *just* fills the page still breaks.
+    const FIT_GUARD_PX = 8 * MM_TO_PX;
+    const everythingFitsOnePage = sheetPx <= pageContentPx - FIT_GUARD_PX;
+    document.body.classList.toggle("mealcard-force-break", !everythingFitsOnePage);
 
-    // Count pages from the final decision: if broken, the card starts a new page.
-    const mealPages = Math.max(1, Math.ceil(mealPx / pageContentPx));
-    if (fitsInRemaining || tallerThanPage) {
-      totalPages = Math.max(1, Math.ceil(sheetEl.scrollHeight / pageContentPx));
+    if (everythingFitsOnePage) {
+      totalPages = 1;
     } else {
       const mainPages = Math.max(1, Math.ceil(mealTop / pageContentPx));
+      const mealPages = Math.max(1, Math.ceil(mealPx / pageContentPx));
       totalPages = mainPages + mealPages;
     }
   } else {

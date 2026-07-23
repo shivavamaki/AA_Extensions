@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.39.6",
-  "version_name": "2026.07.23 — by-meal card: no sliver on prior page + correct print page counter",
+  "version": "3.39.7",
+  "version_name": "2026.07.23 — by-meal card breaks to its own page (no sliver); page counter in reserved footer band",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",

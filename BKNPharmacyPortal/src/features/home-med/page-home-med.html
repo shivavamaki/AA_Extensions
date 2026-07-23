@@ -841,17 +841,25 @@
     /* ── Page number footer (current page / estimated total) ───────────── */
     .page-counter { display: none; }
     @media print {
-      body { counter-reset: page; }
+      /* Reset the page counter on the print root (html), not body — a fixed
+         element's counter(page) is fragile when the reset is scoped lower. */
+      html { counter-reset: page; }
       .page-counter {
         display: block;
         position: fixed;
-        bottom: 4mm;
-        right: var(--sheet-padding-x);
+        /* Sit just above the page's bottom margin. bottom:0 aligns to the edge
+           of the printable area (inside @page margins), then nudge up 2mm so
+           the text isn't clipped by the margin box. */
+        bottom: 0;
+        right: 0;
+        left: 0;
+        padding: 0 var(--sheet-padding-x) 2mm 0;
+        text-align: right;
         font-size: 9px;
         color: #6b7280;
+        counter-increment: page;
       }
       .page-counter::before {
-        counter-increment: page;
         content: "Page " counter(page) " / " attr(data-total);
       }
     }
@@ -1042,7 +1050,9 @@
 
     @page {
       size: A4 portrait;
-      margin: 8mm;
+      /* Extra bottom margin reserves a footer band for the page counter so it
+         never overlaps sheet content. */
+      margin: 8mm 8mm 12mm 8mm;
     }
 
     @media print {
