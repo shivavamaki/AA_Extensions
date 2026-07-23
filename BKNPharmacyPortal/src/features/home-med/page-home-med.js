@@ -2498,21 +2498,35 @@ function updatePageCounterTotal() {
 
   let totalPages;
   if (mealCardShown && mealEl) {
+    // Clear any prior decision first, then measure the *natural* layout so the
+    // numbers reflect the card flowing inline (not a stale forced break).
+    document.body.classList.remove("mealcard-force-break");
+
     const mealPx = mealEl.scrollHeight;
-    const mainPx = sheetEl.scrollHeight - mealPx;
-    // Decide whether the meal card fits in the room left on the current page.
-    // If it doesn't (and isn't taller than a whole page), force it to a fresh
-    // page so it prints whole instead of splitting; if it fits, leave it inline.
-    const usedOnLastPage = mainPx % pageContentPx;            // 0..pageContentPx
+    // Height of everything before the meal card. The card is the LAST flow child
+    // of the sheet, so (sheet - card) is exactly the content above it. We use
+    // scrollHeight (layout pixels) — not getBoundingClientRect, which is scaled
+    // by .sheet-wrap's screen transform and would corrupt the math on screen.
+    const mealTop  = Math.max(0, sheetEl.scrollHeight - mealPx);
+
+    const usedOnLastPage = mealTop % pageContentPx;          // room already used on the card's page
     const remainingOnPage = pageContentPx - usedOnLastPage;
-    const fitsInRemaining = mealPx <= remainingOnPage + 1;    // +1px slack
     const tallerThanPage  = mealPx > pageContentPx;
+    // Require a real safety margin (~6mm ≈ 23px) so a card that lands *exactly*
+    // at the page edge is pushed to a fresh page instead of leaving a 1-line
+    // sliver (the "จัดตามมื้อ" header bleeding onto the previous page).
+    const SLIVER_GUARD_PX = 6 * MM_TO_PX;
+    const fitsInRemaining = mealPx <= remainingOnPage - SLIVER_GUARD_PX;
     document.body.classList.toggle("mealcard-force-break", !fitsInRemaining && !tallerThanPage);
 
-    const mainPages = Math.max(1, Math.ceil(mainPx / pageContentPx));
+    // Count pages from the final decision: if broken, the card starts a new page.
     const mealPages = Math.max(1, Math.ceil(mealPx / pageContentPx));
-    totalPages = fitsInRemaining ? Math.max(mainPages, Math.ceil(sheetEl.scrollHeight / pageContentPx))
-                                 : mainPages + mealPages;
+    if (fitsInRemaining || tallerThanPage) {
+      totalPages = Math.max(1, Math.ceil(sheetEl.scrollHeight / pageContentPx));
+    } else {
+      const mainPages = Math.max(1, Math.ceil(mealTop / pageContentPx));
+      totalPages = mainPages + mealPages;
+    }
   } else {
     document.body.classList.remove("mealcard-force-break");
     const totalPx = sheetEl.scrollHeight;

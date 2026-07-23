@@ -1546,7 +1546,9 @@
          alone is unreliable here because the grid uses CSS multi-column. */
       body.hm-with-mealcard.mealcard-force-break .mealcard-section {
         break-before: page; page-break-before: always;
+        margin-top: 0 !important;   /* no margin bleeding a sliver onto the prior page */
       }
+      body.hm-with-mealcard .mealcard-section .timeline-head { orphans: 3; widows: 3; }
       body.hm-with-mealcard .mealcard-section .timeline-head,
       body.hm-with-mealcard .mealcard-section .mc-info,
       body.hm-with-mealcard .mealcard-section .mc-continue-host {
@@ -1862,8 +1864,13 @@
       <div class="mc-grid" id="mealcardGrid"><!-- slots injected by JS --></div>
     </section>
   </main>
-  <div class="page-counter" id="pageCounter" data-total="1"></div>
   </div>
+  <!-- Page counter lives OUTSIDE .sheet-wrap: that wrapper carries a screen
+       transform, and a transformed ancestor makes position:fixed resolve
+       against it instead of the page — which stops counter(page) repeating
+       per printed page (page 2 showed "1 / 2"). As a direct child of <body>
+       it repeats correctly on every page. -->
+  <div class="page-counter" id="pageCounter" data-total="1"></div>
 
   <!-- Checking mode (shown when the print toolbar is minimized). Screen-only.
        3-column layout: left = Visit Summary, center = patient/vitals/allergy/
