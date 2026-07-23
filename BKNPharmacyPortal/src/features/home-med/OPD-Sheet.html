@@ -1539,12 +1539,12 @@
       tfoot { display: table-footer-group; }
       tr { break-inside: avoid; page-break-inside: avoid; }
       .footer-note { break-inside: avoid; break-before: avoid; }
-      /* By-meal card ("แนบหน้า จัดตามมื้อ") is its own page: always start it on a
-         fresh page so its BKH header + intro + grid never get orphaned/split at
-         the bottom of the sheet when there isn't enough room. */
+      /* By-meal card ("แนบหน้า จัดตามมื้อ"): keep the WHOLE card together as one
+         block — it stays on the current page if it fits, and moves to the next
+         page as a unit only when it doesn't (no forced break, no orphan/split). */
       body.hm-with-mealcard .mealcard-section {
-        break-before: page; page-break-before: always;
-        margin-top: 0;
+        break-inside: avoid; page-break-inside: avoid;
+        break-before: auto; page-break-before: auto;
       }
       body.hm-with-mealcard .mealcard-section .timeline-head,
       body.hm-with-mealcard .mealcard-section .mc-info,
