@@ -1539,19 +1539,18 @@
       tfoot { display: table-footer-group; }
       tr { break-inside: avoid; page-break-inside: avoid; }
       .footer-note { break-inside: avoid; break-before: avoid; }
-      /* By-meal card: auto page-break — the card only moves to a new page when
-         it doesn't fit in the room left on the current one (no forced break).
-         Don't split the card's header + intro + continued block across a page
-         boundary — if they can't fit, the whole group moves together (the
-         by-meal grid below still flows/breaks per slot). */
+      /* By-meal card ("แนบหน้า จัดตามมื้อ") is its own page: always start it on a
+         fresh page so its BKH header + intro + grid never get orphaned/split at
+         the bottom of the sheet when there isn't enough room. */
+      body.hm-with-mealcard .mealcard-section {
+        break-before: page; page-break-before: always;
+        margin-top: 0;
+      }
       body.hm-with-mealcard .mealcard-section .timeline-head,
       body.hm-with-mealcard .mealcard-section .mc-info,
       body.hm-with-mealcard .mealcard-section .mc-continue-host {
         break-inside: avoid; page-break-inside: avoid;
       }
-      /* Glue the BKH header + intro into one unit with what follows: each block
-         forbids a break AFTER it, so the header never prints alone at the bottom
-         with its content orphaned onto the next page. */
       body.hm-with-mealcard .mealcard-section .timeline-head,
       body.hm-with-mealcard .mealcard-section .mc-info {
         break-after: avoid; page-break-after: avoid;

@@ -57,7 +57,7 @@ The on-screen controls live in a fixed **left sidebar** (`.toolbar`, pastel-gree
 | Margin · Preview scale | `@page` margin · on-screen `--screen-scale` |
 | Font · Picture | `--base-font-size` · `--medicine-image-size` |
 | Compact rows (`compactMode`) | `body.compact-mode`. **On by default.** |
-| แนบหน้า จัดตามมื้อ (`includeMealCard`) | Show the by-meal page (`body.hm-with-mealcard`). **On by default.** The by-meal card **auto page-breaks**: its header + intro + continued block avoid splitting, so the whole card moves to a new page only when it doesn't fit — no manual break toggle. |
+| แนบหน้า จัดตามมื้อ (`includeMealCard`) | Show the by-meal page (`body.hm-with-mealcard`). **On by default.** The by-meal card **always starts on a fresh page** (`.mealcard-section { break-before: page }` in `@media print`) so its BKH header + intro + grid are never orphaned/split at the bottom of the discharge sheet. |
 
 The toolbar **slides off the left edge**: the header's `‹` button collapses it (`body.toolbar-collapsed` → `transform: translateX(-100%)`, and the sheet reclaims the left padding), and a fixed vertical **ribbon tab** (`#toolbarRibbon`) on the left edge reopens it. State persists in `localStorage["hm:toolbarCollapsed"]` (`bindToolbarCollapse`). Screen-only; the ribbon is hidden on print.
 
@@ -213,7 +213,7 @@ Falls back to the simple sum-then-divide estimate when the meal card is off.
 
 ## Daily Pill Journey Card (optional by-meal page)
 
-An optional second page (`.mealcard-section` / `#mealcardGrid`) groups the discharge meds **by meal slot** (before/after × breakfast/lunch/dinner, then bedtime and PRN). It's gated behind the toolbar toggle **"แนบหน้า จัดตามมื้อ"** (`#includeMealCard` → `body.hm-with-mealcard`), which persists with the other print settings. The card **auto page-breaks**: its header + intro + continued block carry `break-inside/after: avoid`, so the whole card moves to a fresh page only when it doesn't fit in the room left on the current page — there's no manual "new page" toggle.
+An optional second page (`.mealcard-section` / `#mealcardGrid`) groups the discharge meds **by meal slot** (before/after × breakfast/lunch/dinner, then bedtime and PRN). It's gated behind the toolbar toggle **"แนบหน้า จัดตามมื้อ"** (`#includeMealCard` → `body.hm-with-mealcard`), which persists with the other print settings. The card **always starts on its own printed page** (`.mealcard-section { break-before: page }` under `@media print`) so its BKH header + intro never orphan at the bottom of the discharge sheet with the grid pushed to the next page; within the page the header/intro/continued block still carry `break-inside/after: avoid`.
 
 `renderMealCard()` runs at the end of `renderMeds()` (so it tracks add/remove/edit) and delegates bucketing + markup to the shared **`window.BKNMealSlots`** engine (`../../shared/meal-slots.js`) — the same one the Medication Journey card uses. Matching runs on `instruction + frequencyTh`, so a meal time supplied only by the authoritative Thai frequency phrase still buckets. The `.mc-*` CSS lives in this page's `<style>` (2-column masonry for portrait); empty slots are dropped so the card stays compact.
 
