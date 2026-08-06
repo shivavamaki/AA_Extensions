@@ -1577,7 +1577,20 @@
       body.hm-with-mealcard .mealcard-section .mc-info {
         break-after: avoid; page-break-after: avoid;
       }
-      .mc-slot { break-inside: avoid; page-break-inside: avoid; }
+      /* PRINT PAGINATION FIX: on screen the by-meal grid is CSS multi-column
+         (column-count:2), which Chrome fragments column-by-column across pages
+         and slices the card mid-slot when it's taller than one page. For print
+         we switch to a real 2-col CSS grid so each whole slot moves to the next
+         page (with break-inside:avoid) instead of being cut. */
+      .mc-grid {
+        column-count: auto !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        grid-auto-flow: row;
+        gap: 8px;
+        align-items: start;
+      }
+      .mc-slot { break-inside: avoid; page-break-inside: avoid; margin: 0 !important; }
       .mc-slot-head, .mc-info, .mc-continue-section .continue-head { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       /* Date range prints as plain text, not date-input boxes: hide the
          editable inputs and reveal the text form ("เริ่ม 16-07-2026 …"). */

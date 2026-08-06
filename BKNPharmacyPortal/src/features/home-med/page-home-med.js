@@ -2224,7 +2224,12 @@ function _ensurePrintStyleTag() {
 function _loadPrintSettings() {
   try {
     const raw = localStorage.getItem("hm:homeMedPrintSettings");
-    return raw ? { ...PRINT_CONTROL_DEFAULTS, ...JSON.parse(raw) } : { ...PRINT_CONTROL_DEFAULTS };
+    const merged = raw ? { ...PRINT_CONTROL_DEFAULTS, ...JSON.parse(raw) } : { ...PRINT_CONTROL_DEFAULTS };
+    // Compact rows are always on by default — force it on regardless of any
+    // previously-saved preference (existing users who had turned it off get it
+    // back). It can still be toggled off per session via the checkbox.
+    merged.compactMode = true;
+    return merged;
   } catch (_e) { return { ...PRINT_CONTROL_DEFAULTS }; }
 }
 
