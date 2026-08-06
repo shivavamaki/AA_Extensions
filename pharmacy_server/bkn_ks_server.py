@@ -102,6 +102,7 @@ Data layout:
 """
 
 import hashlib
+import hmac
 import json
 import mimetypes
 import os
@@ -158,10 +159,23 @@ KS_COLS       = {'faqs', 'items', 'vdos'}
 RX_COLS       = {'premix-drugs', 'mixing-protocols', 'medication-db', 'iv-drugs', 'iv-staff', 'pattern-overrides', 'chemo-drugs', 'pending-code'}
 # Requests from these Chrome extensions may read/write data without login.
 # Multiple IDs supported during the rx_menu → BKN Pharmacy Portal migration.
+#
+# RIS_RA_2026_03 — Restrict the write allowlist to KNOWN extension IDs instead
+# of trusting every chrome-extension:// origin. The BKN Pharmacy Portal build
+# has no fixed manifest "key", so its install ID is machine-specific: add it
+# here, or (preferred, no code edit) set the BKN_EXTENSION_IDS env var to a
+# comma-separated list of IDs before starting the server.
 TRUSTED_EXTENSION_ORIGINS = {
     'chrome-extension://eeglifkmgelepjmnnldknacamedmckbj',  # rx_menu (legacy)
     'chrome-extension://nffpegfadeflicpjedmhlgpgpjhkgmgg',  # AAOverlay (legacy)
+    # 'chrome-extension://<your BKN Pharmacy Portal install id>',  # ← add on deploy
 }
+for _eid in (os.environ.get('BKN_EXTENSION_IDS', '') or '').split(','):
+    _eid = _eid.strip()
+    if _eid:
+        if not _eid.startswith('chrome-extension://'):
+            _eid = 'chrome-extension://' + _eid
+        TRUSTED_EXTENSION_ORIGINS.add(_eid)
 # Backward-compat single-origin variable (still referenced by older code paths)
 EXTENSION_ORIGIN = 'chrome-extension://eeglifkmgelepjmnnldknacamedmckbj'
 # medication-db and pattern-overrides are dicts; all other rx cols are arrays
@@ -2702,8 +2716,38 @@ _sessions = {}
 
 ROLES = ('super_admin', 'admin', 'editor', 'user')
 
+# ── Password hashing (RIS_RA_2026_07 — salted slow KDF) ─────────
+# Passwords are stored as  "pbkdf2$<iterations>$<salt_hex>$<hash_hex>".
+# Legacy accounts hold a bare 64-char SHA-256 hex digest; those are still
+# accepted at login and transparently re-hashed to PBKDF2 on the next
+# successful login (see the login handler), so no forced reset is needed.
+PBKDF2_ITERATIONS = 240_000
+_LEGACY_SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
+
 def _hash_pw(pw):
-    return hashlib.sha256(pw.encode('utf-8')).hexdigest()
+    """Hash a password with PBKDF2-HMAC-SHA256 and a fresh per-user salt."""
+    salt = secrets.token_bytes(16)
+    dk = hashlib.pbkdf2_hmac('sha256', pw.encode('utf-8'), salt, PBKDF2_ITERATIONS)
+    return f'pbkdf2${PBKDF2_ITERATIONS}${salt.hex()}${dk.hex()}'
+
+def _is_legacy_hash(stored):
+    return bool(_LEGACY_SHA256_RE.match(stored or ''))
+
+def _verify_pw(pw, stored):
+    """Constant-time verify against either a PBKDF2 or a legacy SHA-256 hash."""
+    stored = stored or ''
+    if stored.startswith('pbkdf2$'):
+        try:
+            _, iters, salt_hex, hash_hex = stored.split('$', 3)
+            dk = hashlib.pbkdf2_hmac('sha256', pw.encode('utf-8'),
+                                     bytes.fromhex(salt_hex), int(iters))
+            return hmac.compare_digest(dk.hex(), hash_hex)
+        except Exception:
+            return False
+    if _is_legacy_hash(stored):
+        legacy = hashlib.sha256(pw.encode('utf-8')).hexdigest()
+        return hmac.compare_digest(legacy, stored)
+    return False
 
 def _load_users():
     if not AUTH_FILE.exists():
@@ -2716,16 +2760,37 @@ def _load_users():
 def _save_users(users):
     _atomic_write_json(AUTH_FILE, users)
 
+def _seed_password(env_var, label):
+    """Return the seed password for a default account.
+
+    RIS_RA_2026_08 — Default credential hygiene: never ship a reusable
+    hard-coded password. Take it from an env var if the operator set one,
+    otherwise generate a random one-time password and print it ONCE with a
+    change-now notice. Accounts seeded this way carry must_change_pw=True.
+    """
+    pw = os.environ.get(env_var)
+    if pw:
+        print(f'  {label} created from {env_var} (change after first login)')
+        return pw
+    pw = secrets.token_urlsafe(12)
+    print(f'  {label} created  →  one-time password: {pw}')
+    print(f'     ⚠  Log in and change it immediately (or set {env_var} before first run).')
+    return pw
+
 def _ensure_default_users():
     users = _load_users()
     changed = False
     if not users:
-        users['admin'] = {'password_hash': _hash_pw('admin1234'), 'role': 'admin'}
-        print('  Default admin created  →  username: admin  password: admin1234')
+        users['admin'] = {
+            'password_hash': _hash_pw(_seed_password('BKN_ADMIN_PW', 'Default admin')),
+            'role': 'admin', 'must_change_pw': True,
+        }
         changed = True
     if 'Makin' not in users:
-        users['Makin'] = {'password_hash': _hash_pw('0128662'), 'role': 'super_admin'}
-        print('  Super-admin created   →  username: Makin  password: 0128662')
+        users['Makin'] = {
+            'password_hash': _hash_pw(_seed_password('BKN_SUPERADMIN_PW', 'Super-admin')),
+            'role': 'super_admin', 'must_change_pw': True,
+        }
         changed = True
     if changed:
         _save_users(users)
@@ -2964,15 +3029,13 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Max-Age',       '86400')
 
     def _is_trusted_extension(self):
+        # RIS_RA_2026_03 — Only allowlisted extension IDs are trusted for
+        # login-less writes. Chrome sets the Origin header itself (web pages
+        # cannot spoof a chrome-extension:// origin), but we no longer trust
+        # *every* extension — the ID must be in TRUSTED_EXTENSION_ORIGINS
+        # (seed constant + BKN_EXTENSION_IDS env var).
         origin = self.headers.get('Origin', '')
-        # Known-legacy IDs match exactly (defence in depth)
         if origin in TRUSTED_EXTENSION_ORIGINS:
-            return True
-        # Trust any Chrome extension origin — Chrome guarantees this header is
-        # set by the browser and cannot be spoofed by web pages. New extension
-        # installs (e.g. the merged BKN Pharmacy Portal) work without manual
-        # allowlisting.
-        if origin.startswith('chrome-extension://'):
             return True
         # Local-machine fallback (when Origin header is absent)
         client_ip = self.client_address[0]
@@ -3745,6 +3808,7 @@ class Handler(BaseHTTPRequestHandler):
             pw = body.get('password')
             if pw:
                 users[key]['password_hash'] = _hash_pw(pw)
+                users[key].pop('must_change_pw', None)  # RIS_RA_2026_08
             _save_users(users)
             self.send_json(200, {'ok': True, 'username': key, 'role': users[key]['role']})
 
@@ -3765,10 +3829,18 @@ class Handler(BaseHTTPRequestHandler):
             password = body.get('password', '')
             users = _load_users()
             u = users.get(username)
-            if not u or u.get('password_hash') != _hash_pw(password):
+            if not u or not _verify_pw(password, u.get('password_hash')):
                 self.send_json(401, {'error': 'Invalid credentials'}); return
+            # RIS_RA_2026_07 — transparently upgrade legacy SHA-256 hashes to
+            # PBKDF2 on the next successful login (no forced reset).
+            if _is_legacy_hash(u.get('password_hash')):
+                u['password_hash'] = _hash_pw(password)
+                _save_users(users)
             token = _create_session(username, u['role'])
-            self.send_json(200, {'token': token, 'username': username, 'role': u['role']}); return
+            self.send_json(200, {
+                'token': token, 'username': username, 'role': u['role'],
+                'mustChangePw': bool(u.get('must_change_pw')),
+            }); return
 
         # ── Auth: logout ──────────────────────────────────────
         if rtype == 'auth' and key == 'logout':

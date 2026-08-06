@@ -18,6 +18,10 @@ Two standalone, self-contained label printers opened from the popup toolbar — 
 | `iv_sticker.html/js/css` | IV sticker UI, state, rendering, print, CRUD, navigation |
 | `aux_sticker.html/js/css` | Premix/mixing label UI — mirrors `iv_sticker.js`'s print-popup pattern (see comments in `aux_sticker.js`) |
 
+## Fonts (offline)
+
+Thai text uses the bundled **Sarabun-Regular** (`src/assets/fonts/`, a web-accessible resource) — **no `fonts.googleapis.com` request** (RIS_RA_2026_09). The CSS files declare a relative `@font-face`; the print popups are `about:blank`, so they inject `@font-face` from `_bknPrintFontFace()`, which resolves the font by its absolute `chrome-extension://` URL. If the extension context is unavailable the label falls back to the system Thai font. Don't reintroduce a Google Fonts `@import` here.
+
 ## Gotchas
 
 - These are **not** part of the ArcusAir content-script load order — they're independent extension pages, so the CLAUDE.md load-order invariant doesn't apply here.

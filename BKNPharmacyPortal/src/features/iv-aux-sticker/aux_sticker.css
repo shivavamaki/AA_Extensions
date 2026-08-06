@@ -3,7 +3,14 @@
    Premix + Mixing Label · BKN Pharmacy
    ═══════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+/* RIS_RA_2026_09 — self-hosted font, no external CDN request. */
+@font-face {
+  font-family: 'Sarabun';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('../../assets/fonts/Sarabun-Regular.ttf') format('truetype');
+}
 
 /* ── CSS VARIABLES ──────────────────────────────────────── */
 :root {

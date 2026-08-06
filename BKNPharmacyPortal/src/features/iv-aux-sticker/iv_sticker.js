@@ -29,6 +29,21 @@ async function _putRx(endpoint, data) {
   return r.json();
 }
 
+// ── SELF-HOSTED PRINT FONT (RIS_RA_2026_09) ────────────────────────────────
+// Print popups are about:blank windows, so a relative font URL cannot resolve
+// and we must NOT reach out to fonts.googleapis.com. Sarabun-Regular ships as a
+// web-accessible resource; reference it by its absolute chrome-extension:// URL,
+// which resolves from any origin (incl. the popup). Fallback: system fonts.
+function _bknPrintFontFace() {
+  try {
+    const url = chrome.runtime.getURL('src/assets/fonts/Sarabun-Regular.ttf');
+    return `@font-face{font-family:'Sarabun';font-style:normal;font-weight:300 700;`
+         + `font-display:swap;src:url('${url}') format('truetype');}`;
+  } catch (_) {
+    return ''; // outside extension context → rely on system Thai font
+  }
+}
+
 // ── EMBEDDED DEFAULT DATA (fallback when server is unavailable) ───────────
 const DEFAULT_DRUGS = [
   {"codeName":"KCl","generic":"KCl","type":"HAD","exp":7,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":""},
@@ -536,7 +551,7 @@ function printLabel(type) {
     }
     openPrintWindow(previewInner, `
       @page { size: 8cm 3.5cm; margin: 0; }
-      @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
+      ${_bknPrintFontFace()}
       * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       html, body { margin: 0; padding: 0; width: 8cm; height: 3.5cm; font-family: 'Sarabun', sans-serif; }
       .label-ipd {
@@ -598,7 +613,7 @@ function printLabel(type) {
       </div>`;
 
     openPrintWindow(bodyHTML, `
-      @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+      ${_bknPrintFontFace()}
       @page { size: A4 portrait; margin: 6mm; }
       * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       html, body { margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; }
@@ -685,7 +700,7 @@ function printLabel(type) {
       rows += `</div>`;
     }
     openPrintWindow(rows, `
-      @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+      ${_bknPrintFontFace()}
       @page { size: A4 portrait; margin: 10mm; }
       * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       html, body { margin: 0; padding: 0; width: 210mm; font-family: 'Sarabun', sans-serif; }

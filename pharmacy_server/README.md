@@ -99,6 +99,39 @@ All `GET`s on these are public; `PUT`/`POST` requires `editor`/`admin`/`super_ad
 | `POST` | `/api/users` | Create a user (`super_admin` only) |
 | `PUT` | `/api/users/{username}` | Update role/password (`super_admin` only) |
 
+#### Password storage & default credentials (security)
+
+Passwords in `data/auth/users.json` are stored as **salted PBKDF2-HMAC-SHA256**
+(`pbkdf2$<iterations>$<salt>$<hash>`, per-user salt). Accounts created before this
+change hold a legacy unsalted SHA-256 digest; those still log in and are
+**transparently re-hashed to PBKDF2 on the next successful login** — no manual
+reset needed. *(RIS_RA_2026_07)*
+
+Default accounts are seeded **only when `users.json` is absent**. There is no
+hard-coded reusable password: *(RIS_RA_2026_08)*
+
+- Set `BKN_ADMIN_PW` / `BKN_SUPERADMIN_PW` before the first run to choose them, **or**
+- leave them unset and the server generates a random one-time password and prints
+  it **once** with a "change it now" notice.
+
+Seeded accounts carry `must_change_pw: true`; the login response echoes
+`mustChangePw` so the client can prompt. Changing the password clears the flag.
+Restrict filesystem access to `users.json` to the server host and keep it out of
+any backup that leaves the pharmacy VLAN.
+
+#### Trusted extension origins (security)
+
+Login-less writes are accepted **only** from allow-listed Chrome extension IDs
+(no longer "any `chrome-extension://` origin"). *(RIS_RA_2026_03)* The BKN Pharmacy
+Portal build has no fixed manifest key, so its install ID is machine-specific —
+register it one of two ways:
+
+- **Env var (preferred, no code edit):** `BKN_EXTENSION_IDS=abcd…,efgh…`
+  (comma-separated IDs, with or without the `chrome-extension://` prefix), **or**
+- add it to `TRUSTED_EXTENSION_ORIGINS` in `bkn_ks_server.py`.
+
+`localhost`/`127.0.0.1` requests (no Origin header) remain trusted for same-machine use.
+
 ### Patients (`data/patients/`)
 
 | Method | Path | Description |

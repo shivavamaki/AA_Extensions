@@ -7,6 +7,23 @@
 'use strict';
 
 /* ──────────────────────────────────────────────────────────────
+   SELF-HOSTED PRINT FONT (RIS_RA_2026_09)
+   Print popups are about:blank windows and must not reach out to
+   fonts.googleapis.com. Sarabun-Regular ships as a web-accessible
+   resource; reference it by absolute chrome-extension:// URL, which
+   resolves from any origin (incl. the popup). Fallback: system fonts.
+────────────────────────────────────────────────────────────── */
+function _bknPrintFontFace() {
+  try {
+    const url = chrome.runtime.getURL('src/assets/fonts/Sarabun-Regular.ttf');
+    return `@font-face{font-family:'Sarabun';font-style:normal;font-weight:300 800;`
+         + `font-display:swap;src:url('${url}') format('truetype');}`;
+  } catch (_) {
+    return '';
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
    SERVER CONFIG
    Override URL via localStorage key 'pharmacyServerUrl'.
 ────────────────────────────────────────────────────────────── */
@@ -625,9 +642,9 @@ function escHTML(s) {
    Content grid: 3 cols × 2 rows of 30mm × 15mm mini blocks     */
 const PREMIX_CSS = `
 @page { size: 10cm 5cm; margin: 0; }
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@600;700;800&display=swap');
+${_bknPrintFontFace()}
 * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-html, body { margin: 0; padding: 0; width: 10cm; font-family: 'Noto Sans Thai', sans-serif; }
+html, body { margin: 0; padding: 0; width: 10cm; font-family: 'Sarabun', 'Noto Sans Thai', sans-serif; }
 .sheet { width: 10cm; height: 5cm; display: flex; flex-direction: column; page-break-after: always; break-after: page; overflow: hidden; }
 .sheet-logo { height: 15mm; flex-shrink: 0; border-bottom: 0.6pt solid #000; }
 .sheet-grid { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); padding: 1mm; gap: 0; border: 0.4pt solid #000; }
@@ -644,10 +661,10 @@ html, body { margin: 0; padding: 0; width: 10cm; font-family: 'Noto Sans Thai', 
 
 const PREMIX_FULL_CSS = `
 @page { size: 10cm 5cm; margin: 0; }
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@600;700;800&display=swap');
+${_bknPrintFontFace()}
 
 * {box-sizing: border-box;-webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;}
-html, body {  margin: 0;  padding: 0;  width: 10cm;  height: 5cm;  font-family: 'Noto Sans Thai', sans-serif;}
+html, body {  margin: 0;  padding: 0;  width: 10cm;  height: 5cm;  font-family: 'Sarabun', 'Noto Sans Thai', sans-serif;}
 .sheet-full {  width: 10cm;  height: 5cm;  display: flex;  flex-direction: column;  page-break-after: always;  break-after: page;}
 .sheet-logo {  height: 15mm;  border-bottom: 0.6pt solid #000;  flex-shrink: 0;}
 .full-body {  flex: 1;  padding: 3mm 4mm;  display: flex;  flex-direction: column;  justify-content: flex-start;}
@@ -660,7 +677,7 @@ html, body {  margin: 0;  padding: 0;  width: 10cm;  height: 5cm;  font-family: 
 
 const MIXING_CSS = `
 @page { size: 10cm 5cm; margin: 0; }
-@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@600;700;800&display=swap');
+${_bknPrintFontFace()}
 * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 html, body { margin: 0; padding: 0; width: 10cm; height: 5cm; font-family: 'Sarabun', 'Noto Sans Thai', sans-serif; }
 .stk { width: 10cm; height: 5cm; display: flex; flex-direction: column; overflow: hidden; page-break-after: always; break-after: page; }
@@ -680,7 +697,7 @@ html, body { margin: 0; padding: 0; width: 10cm; height: 5cm; font-family: 'Sara
 /**
  * Open a self-contained print popup — exactly like iv_sticker.js.
  * bodyHTML : the sticker markup
- * css      : full CSS string (including @page and @import)
+ * css      : full CSS string (including @page and @font-face)
  */
 function openPrintWindow(bodyHTML, css) {
   const w = window.open('', '_blank', 'width=900,height=600');

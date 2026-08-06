@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.39.8",
+  "version": "3.40.0",
   "version_name": "2026.07.23 — by-meal break carried by empty spacer (kills header-glyph sliver); page-count tolerance",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
