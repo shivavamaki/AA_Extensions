@@ -2,7 +2,7 @@
 
 Unified Chrome MV3 extension for BKN Hospital Pharmacy. Combines the former **BKN Pharmacy** (`rx_menu`) and **Discharge Process Checklist** (`AAOverlay`) extensions into one portal backed by a shared pharmacy server.
 
-**Version:** 3.40.1 · **Manifest:** MV3 · **Target:** ArcusAir (`arcusair.bdms.co.th`, AngularJS 1.x SPA)
+**Version:** 3.41.0 · **Manifest:** MV3 · **Target:** ArcusAir (`arcusair.bdms.co.th`, AngularJS 1.x SPA)
 
 Full project context: [/README.md](../README.md)
 
@@ -27,6 +27,7 @@ The portal injects pharmacy action buttons directly into ArcusAir pages. Patient
 | Patient Sticker | Patient EMR banner | Patient ID / address / allergy / unreceivable labels | [src/features/patient-sticker/README.md](src/features/patient-sticker/README.md) |
 | ADR Drug Timeline | Order-profile page | Drug Gantt with ADR events, editable, server-persisted | [src/features/adrtimeline/README.md](src/features/adrtimeline/README.md) |
 | Medication Journey | (opened from ADR Timeline context) | Per-drug continuity grid across care phases | [src/features/med-journey/README.md](src/features/med-journey/README.md) |
+| Med Reconcile Comments | Med Reconcile page (`emr/medreconcile`) | Turns the Comments input into an editable dropdown (3 presets + free text) | [src/features/medrecon-comment/README.md](src/features/medrecon-comment/README.md) |
 
 Shared infrastructure (translation engine, data bus): [src/shared/README.md](src/shared/README.md)
 

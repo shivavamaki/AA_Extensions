@@ -30,6 +30,7 @@ ArcusAir-injected features (`BKNPharmacyPortal/src/features/`):
 | hmr (HM Process) | [src/features/hmr/README.md](BKNPharmacyPortal/src/features/hmr/README.md) |
 | hmq (HM Process Queue) | [src/features/hmq/README.md](BKNPharmacyPortal/src/features/hmq/README.md) |
 | pattern-editor | [src/features/pattern-editor/README.md](BKNPharmacyPortal/src/features/pattern-editor/README.md) |
+| medrecon-comment | [src/features/medrecon-comment/README.md](BKNPharmacyPortal/src/features/medrecon-comment/README.md) |
 | shared | [src/shared/README.md](BKNPharmacyPortal/src/shared/README.md) |
 
 Extension pages:
