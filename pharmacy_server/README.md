@@ -122,12 +122,19 @@ any backup that leaves the pharmacy VLAN.
 #### Trusted extension origins (security)
 
 Login-less writes are accepted **only** from allow-listed Chrome extension IDs
-(no longer "any `chrome-extension://` origin"). *(RIS_RA_2026_03)* The BKN Pharmacy
-Portal build has no fixed manifest key, so its install ID is machine-specific —
-register it one of two ways:
+(no longer "any `chrome-extension://` origin"). *(RIS_RA_2026_03)*
 
-- **Env var (preferred, no code edit):** `BKN_EXTENSION_IDS=abcd…,efgh…`
-  (comma-separated IDs, with or without the `chrome-extension://` prefix), **or**
+The BKN Pharmacy Portal manifest now carries a fixed **`key`**, so its extension
+ID is **deterministic and identical on every workstation**:
+`bmnbffgenocfinghgjbfblkmggmaejpp` — already in `TRUSTED_EXTENSION_ORIGINS`. A
+brand-new install needs **no** per-machine registration. (The pre-`key`
+transitional id `goocpmfd…` is also listed and can be removed once all
+workstations have reloaded the keyed build.)
+
+For any *additional* extension (or to add an id without editing code):
+
+- **Env var:** `BKN_EXTENSION_IDS=abcd…,efgh…` (comma-separated, with or without
+  the `chrome-extension://` prefix), **or**
 - add it to `TRUSTED_EXTENSION_ORIGINS` in `bkn_ks_server.py`.
 
 `localhost`/`127.0.0.1` requests (no Origin header) remain trusted for same-machine use.

@@ -38,8 +38,14 @@ Seeded accounts get `must_change_pw: true`; login response returns `mustChangePw
 ### RIS_RT_2026_03 (partial) — Extension-ID allowlist
 `_is_trusted_extension` no longer trusts every `chrome-extension://` origin; only
 IDs in `TRUSTED_EXTENSION_ORIGINS` (seed constant + `BKN_EXTENSION_IDS` env var).
-**Deploy step:** after loading the unpacked extension, copy its ID and add it via
-`BKN_EXTENSION_IDS` before starting the server.
+The BKN Pharmacy Portal manifest carries a fixed **`key`**, so its ID is
+deterministic on every machine (`bmnbffgenocfinghgjbfblkmggmaejpp`) and is
+allow-listed by default — **no per-install registration needed**. Only *other*
+extensions need `BKN_EXTENSION_IDS` / a `TRUSTED_EXTENSION_ORIGINS` entry.
+**Key custody:** the RSA private key that produced the manifest `key` is **not**
+in the repo (and must never be committed or placed in the extension folder). Keep
+it in secure ops storage — it's only needed to re-derive the same ID or publish
+to the Web Store, not at runtime.
 
 ### RIS_RT_2026_09 — Self-host print fonts
 `iv-aux-sticker`: removed all `fonts.googleapis.com` `@import`s from

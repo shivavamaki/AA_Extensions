@@ -168,7 +168,12 @@ RX_COLS       = {'premix-drugs', 'mixing-protocols', 'medication-db', 'iv-drugs'
 TRUSTED_EXTENSION_ORIGINS = {
     'chrome-extension://eeglifkmgelepjmnnldknacamedmckbj',  # rx_menu (legacy)
     'chrome-extension://nffpegfadeflicpjedmhlgpgpjhkgmgg',  # AAOverlay (legacy)
-    # 'chrome-extension://<your BKN Pharmacy Portal install id>',  # ← add on deploy
+    # BKN Pharmacy Portal — DETERMINISTIC id from the manifest "key", so it is the
+    # SAME on every workstation (no per-install id churn). This is the one that
+    # matters going forward.
+    'chrome-extension://bmnbffgenocfinghgjbfblkmggmaejpp',  # BKN Pharmacy Portal (manifest key)
+    'chrome-extension://goocpmfdgnmcambpngdkdiphkihimcdn',  # pre-key install (transition; safe to remove later)
+    # Add any further install ids here, or via the BKN_EXTENSION_IDS env var.
 }
 for _eid in (os.environ.get('BKN_EXTENSION_IDS', '') or '').split(','):
     _eid = _eid.strip()
