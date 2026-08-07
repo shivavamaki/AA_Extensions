@@ -607,28 +607,46 @@ function _applyVerb(t, lang) {
   return "";
 }
 
-// Find a curated topical verb phrase that is a PREFIX of the (lowercased,
-// space-normalized) instruction `t`, in the requested language. Longest matching
-// key wins so "apply to the ulcer in mouth" beats a shorter "apply to". Only
-// applies to apply/ทา-type verbs so it never hijacks a normal oral instruction.
-function _matchApplyVerbOverride(t, lang) {
+// Find a curated verb phrase that is a PREFIX of the (lowercased, space-
+// normalized) instruction `t`, in the requested language. Longest matching key
+// wins so "dissolve in mouth" beats a shorter "dissolve". The caller appends the
+// Thai frequency, so a pharmacist can localise ANY leading verb phrase the
+// built-in engine doesn't recognise (e.g. "dissolve in mouth" → "อม") WITHOUT a
+// code deploy — not just apply/ทา topicals.
+//
+// Safety against hijacking a normal instruction: the remainder after the key
+// must be empty OR start with a dose/frequency token (a digit, a fraction word,
+// or a frequency keyword). This means a curated key only matches when it truly
+// sits in front of a dosing tail — "take" would never swallow "take 1 tablet"
+// unless "take" itself were curated, and even then only the leading verb is
+// replaced while the dose/freq tail is rebuilt by the engine.
+const _DOSE_TAIL_RE = /^(?:\d|quarter\b|half\b|three-quarter\b|once\b|twice\b|every\b|as\b|before\b|after\b|at\b|when\b|if\b|[1-9])/i;
+function _matchCuratedVerbPrefix(t, lang) {
   const overrides = (typeof window !== "undefined" && window.PATTERN_OVERRIDES) || null;
   if (!overrides) return null;
   const norm = String(t || "").toLowerCase().replace(/\s+/g, " ").trim();
-  if (!/^(apply|ทา)\b/i.test(norm)) return null;   // topical verbs only
+  const isTopical = /^(apply|ทา)\b/i.test(norm);
   let best = null, bestLen = 0;
   for (const key of Object.keys(overrides)) {
+    const ov = overrides[key];
+    if (!ov || ov.mode === "replace") continue;   // replace-mode is a substring rule, not a prefix verb
     const k = String(key || "").toLowerCase().replace(/\s+/g, " ").trim();
     if (!k || k.length <= bestLen) continue;
-    // Prefix match: the instruction starts with the whole curated key, at a word
-    // boundary (so "apply to the ulcer" doesn't match "apply to the ulcere...").
-    if (norm === k || norm.startsWith(k + " ")) {
-      const val = overrides[key] && overrides[key][lang];
-      if (val) { best = val; bestLen = k.length; }
+    if (norm !== k && !norm.startsWith(k + " ")) continue;   // must be a whole-word prefix
+    // For non-topical verbs, require the remainder to look like a dose/freq tail
+    // so a curated phrase can't hijack an unrelated instruction. Topical
+    // apply/ทา phrases keep the original permissive behaviour.
+    if (!isTopical && norm !== k) {
+      const rest = norm.slice(k.length).trim();
+      if (rest && !_DOSE_TAIL_RE.test(rest)) continue;
     }
+    const val = ov[lang];
+    if (val) { best = val; bestLen = k.length; }
   }
   return best;
 }
+// Back-compat alias — older call sites referenced the apply-only name.
+const _matchApplyVerbOverride = _matchCuratedVerbPrefix;
 
 // Oral-rehydration / fluid instructions with no quantity+unit, e.g.
 // "Drink Instead of Water Every 2-3 Hours When have Symptom" (ORS sachets).
@@ -707,6 +725,12 @@ function matchPattern(text, lang, opts = {}) {
     // dose verb from the loose pattern and append the Thai frequency — so the
     // line is fully Thai instead of mixed (the unparsed English tail is dropped).
     if (freqOverrideRaw) {
+      // A pharmacist-CURATED verb prefix wins first (any verb, not just apply/ทา):
+      // e.g. "Dissolve in mouth 1 Tablet …" with a curated "dissolve in mouth" →
+      // "อม" becomes "อม <thai-freq>" instead of the generic "รับประทาน …" that
+      // TAKE_QTY_RE would otherwise produce (which would drop the curated verb).
+      const cvp = _matchCuratedVerbPrefix(text, lang);
+      if (cvp) return [cvp, freqOverrideRaw].filter(Boolean).join(" ");
       const lm = t.match(TAKE_QTY_RE);
       if (lm) {
         let unit = lm[2] || "tablet";
@@ -1144,6 +1168,10 @@ function applyTextReplacements(text, lang) {
   return out;
 }
 if (typeof window !== "undefined") window.applyTextReplacements = applyTextReplacements;
+// Exposed so the Pattern Editor can display the built-in phrases as read-only
+// rows (editing one writes a PATTERN_OVERRIDES entry that shadows it). This is
+// a reference to the shipped defaults — the editor must NOT mutate it in place.
+if (typeof window !== "undefined") window.AUXILIARY_PHRASES = AUXILIARY_PHRASES;
 
 /* ═══════════════════════════════════════════════════════════════
  * INJECTION SUB-PATTERN

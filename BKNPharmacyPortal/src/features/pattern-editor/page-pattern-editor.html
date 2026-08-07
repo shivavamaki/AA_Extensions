@@ -21,6 +21,13 @@
   td input { width: 100%; border: 1px solid transparent; border-radius: 4px; padding: 5px 6px; font-size: 13px; }
   td input:focus { border-color: var(--accent); outline: none; background: #eff6ff; }
   td.actions { white-space: nowrap; width: 1%; }
+  tr.builtin td input:not(:focus) { background: #f9fafb; color: #6b7280; }
+  .src-badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+  .src-badge.builtin  { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+  .src-badge.override { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .src-badge.custom   { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  button.linklike { border: none; background: none; color: var(--accent); font-size: 12px; cursor: pointer; padding: 2px 4px; }
+  button.linklike:hover { text-decoration: underline; }
   #status { margin-top: 10px; font-size: 13px; color: #6b7280; min-height: 18px; }
   #status.ok { color: #15803d; }
   #status.error { color: #b91c1c; }
@@ -56,7 +63,7 @@
   <!-- ── Phrase Overrides ─────────────────────────────────────── -->
   <div class="panel active" id="panel-phrases">
     <div class="help">
-      Each row is an English phrase with its Thai translation. <strong>Mode</strong>: <em>Exact/verb</em> matches a whole instruction line (or a topical <code>apply…</code> verb prefix); <em>Replace</em> substitutes the phrase anywhere in the line (e.g. <em>"before breakfast" → "ก่อนอาหารเช้า"</em>). For qty/frequency shapes, edit the regex in <code>medical-glossary.js</code> instead.
+      Each row is an English phrase with its Thai translation. <strong>Source</strong>: <em>Built-in</em> rows are the phrases shipped in <code>medical-glossary.js</code> — editing one creates an <em>Override</em> that shadows it (use <strong>Reset</strong> to drop the override and fall back to the built-in). <em>Custom</em> rows are phrases you added. <strong>Mode</strong>: <em>Exact/verb</em> matches a whole instruction line (or a topical <code>apply…</code> verb prefix); <em>Replace</em> substitutes the phrase anywhere in the line (e.g. <em>"before breakfast" → "ก่อนอาหารเช้า"</em>). For qty/frequency shapes, edit the regex in <code>medical-glossary.js</code> instead.
     </div>
     <div class="toolbar">
       <input type="text" id="search" placeholder="Filter phrases…" style="flex:1; max-width:320px;">
@@ -66,7 +73,7 @@
     </div>
     <table>
       <thead>
-        <tr><th style="width:38%">English phrase (key)</th><th style="width:38%">Thai translation</th><th style="width:12%">Mode</th><th style="width:1%"></th></tr>
+        <tr><th style="width:34%">English phrase (key)</th><th style="width:34%">Thai translation</th><th style="width:11%">Source</th><th style="width:11%">Mode</th><th style="width:1%"></th></tr>
       </thead>
       <tbody id="rows"></tbody>
     </table>
@@ -88,6 +95,9 @@
     <div id="drug-status"></div>
   </div>
 
+  <!-- Loaded so the editor can list the built-in AUXILIARY_PHRASES
+       (exposed as window.AUXILIARY_PHRASES) as read-only rows. -->
+  <script src="../../shared/medical-glossary.js"></script>
   <script src="page-pattern-editor.js"></script>
 </body>
 </html>

@@ -6,7 +6,10 @@ curating the offline translation data used by the [`home-med`](../home-med/READM
 sheet — **no code deploy, no external API**. Two tabs:
 
 1. **Phrase Overrides** — English→Thai phrase translations (exact / verb-prefix /
-   substring-replace; see *Scope* below).
+   substring-replace; see *Scope* below). The table **shows the built-in
+   `AUXILIARY_PHRASES` as read-only rows** (badge **Built-in**) alongside saved
+   overrides (**Override**) and pharmacist-added phrases (**Custom**) — so the
+   list is never empty and every built-in phrase is discoverable/editable.
 2. **Drug Instructions** — CRUD on a drug's **Patient Instruction** in
    `medication-db.json` (the note-line source): search by name/code, edit the
    TH/EN instruction, save (curated) or remove.
@@ -31,6 +34,21 @@ sheet — **no code deploy, no external API**. Two tabs:
   (`page-home-med.js`'s `_loadPatternOverrides()` fetches it alongside the
   medication-DB load).
 
+### Built-in merge (fallback model, not a copy)
+
+The editor page loads `../../shared/medical-glossary.js`, which now exposes
+`window.AUXILIARY_PHRASES`. `load()` snapshots those built-in phrases (Thai value
+only) and lists them as **read-only** rows. **Editing a built-in row creates an
+override** (seeded from the built-in value) — the row flips to **Override** and
+gains a **↩ Reset** action that drops the override so the shipped default applies
+again. `save()` persists **only the delta**: custom phrases + built-in overrides
+whose Thai/mode actually differ from the shipped default; untouched built-ins and
+empty rows are never written. This keeps `pattern-overrides.json` a minimal
+pharmacist-layer file and **avoids drift** — the built-in phrases stay
+authoritative in code, and a future code update to a built-in reaches everyone
+who hasn't explicitly overridden it. Renaming/removing is restricted to Custom
+rows (built-in keys are load-bearing for the engine and are read-only).
+
 ## Scope, by design
 
 Since the translation engine is **fully offline** (no Google/external API), the
@@ -40,11 +58,16 @@ malformed regex edit could break parsing for every instruction on every sheet.
 
 Each override row has a **Mode**:
 
-- **Exact / verb** (default) — matches only when the override equals the whole
-  instruction line, via `matchAuxiliaryPhrase()`; and, for `apply`/`ทา`-type
-  instructions, as a **verb prefix** (`_applyVerb()` → `_matchApplyVerbOverride()`)
-  so you can add just the verb phrase and let the engine append the frequency:
+- **Exact / verb** (default) — matches when the override equals the whole
+  instruction line (`matchAuxiliaryPhrase()`), **or** when it is a leading
+  **verb prefix** of the line (`_matchCuratedVerbPrefix()`), so you can add just
+  the verb phrase and let the engine append the Thai frequency. The prefix path
+  works for **any** verb, not only topical `apply`/`ทา`:
    - `apply to the ulcer in mouth` → `ทาแผลในปาก`
+   - `dissolve in mouth` → `อม` — so `Dissolve in mouth 1 Tablet Every 6 Hours If Needed For Cough` renders as `อม ทุก 6 ชั่วโมง เวลาไอ`
+  Hijack guard: for non-topical verbs the text after the curated key must be
+  empty or start with a dose/frequency token (a digit, `once/twice/every/before/
+  after/at/when/if …`), so a curated phrase never swallows an unrelated line.
 - **Replace (substring)** — `applyTextReplacements()` (in the engine, run before
   pattern/glossary) does a find→replace of the English phrase **anywhere** in the
   text, so you can pre-translate arbitrary fragments:
@@ -59,8 +82,9 @@ Each override row has a **Mode**:
    as `ทาแผลในปาก วันละ 3 ครั้ง เช้า กลางวัน เย็น` — the frequency comes from the
    BKN frequency master automatically, so **don't** add a separate frequency
    entry. Longest matching key wins (`apply to the ulcer in mouth` beats a
-   shorter `apply to`); the prefix path only fires for topical verbs, never oral
-   `take …` instructions.
+   shorter `apply to`). The prefix path fires for any curated verb (topical or
+   oral), gated by the dose/frequency-tail guard described above so it never
+   hijacks an unrelated `take …` line that wasn't curated.
 
    > The verb match runs against the **original** instruction text, not the
    > route-stripped copy. `matchPattern`'s route-strip regex has a `(?=\d)`
