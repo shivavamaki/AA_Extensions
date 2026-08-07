@@ -136,6 +136,11 @@ The overlay's final button ("→ Discharge List") saves `steps.allocateDispensed
 = 'done'` and calls `navigateToWardViewAndSearchHN(hn)` to return to and
 re-search the same patient (via the "Ward Board" side-menu link — setting
 `location.hash` directly trips ArcusAir's "back button navigation" guard).
+After filling the MRN and dispatching Enter, it **waits for the first result row
+(`[id*="MgsGridOneRow0"]`, with fallbacks) and clicks it** — Enter alone filled
+the field but didn't resolve the board to the patient, leaving the pharmacist to
+click manually ("stuck at the discharge list, needs an extra click"). This mirrors
+the dispense-workbench search, which already auto-clicks its result row.
 
 ## HM Process Queue integration
 

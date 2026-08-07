@@ -50,6 +50,18 @@ so every workstation's popup shows the same queue.
   - New Case → **▶ Start**
   - On Process → **↺** (revert to New Case) + **✓ Complete**
   - Completed → **↺** (revert to On Process) + checkmark/time
+- **Name is Thai-only in the row (display-only).** Names are stored
+  "ENGLISH - ไทย"; `displayName()` shows just the Thai part (falls back to the
+  full string when there's no " - "). The stored entry and the log modal keep
+  the **full** name, so search/records/reports are unaffected.
+- **New-Case age alerts.** New-Case rows are timed against `createdAt`
+  (`ageMinutes()`): **> 15 min** → row turns light orange with a `⚠ {age}`
+  badge (`.hmq-age-warn`); **> 1 hr** → light red with a pulsing `⏰ {age}`
+  badge (`.hmq-age-late`). A light `renderPopup` tick (`AGE_TICK_MS`, 30 s)
+  updates the colour/badge between the slower server polls. Thresholds:
+  `AGE_WARN_MIN` / `AGE_LATE_MIN` in `content-hmq.js`.
+- **Fit-to-content height.** The body grows to show all rows and only scrolls
+  once it would exceed the viewport (`.hmq-body { max-height: calc(95vh - 40px) }`).
 
 ## Shared API — `window.BKN_HMQ`
 
@@ -118,6 +130,12 @@ never loses the queue. (Only the popup's *position/width* is per-browser
 - **Revert transitions** clear the timestamp of the stage being undone
   (`completedAt`/`startedAt` → `null`) and append an audit-log entry, same as
   forward transitions.
+- **Transition failures are surfaced, not swallowed.** `putTransition()` returns
+  the `serverFetch` result (or a synthetic `{ok:false,error}`) and logs a
+  `[BKN-HMQ]` warning on any non-ok/thrown response. The delegated click handler
+  disables the button, runs the transition, and on failure **re-enables it and
+  `alert()`s the reason** so a Start/Complete that hits a server/worker hiccup
+  can simply be retried (rather than silently doing nothing / staying disabled).
 
 ## Report viewer
 

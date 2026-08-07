@@ -499,6 +499,21 @@
     input.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Enter', keyCode: 13, bubbles: true }));
     await dismissAlerts();
     L('Enter dispatched on wardview MRN search');
+
+    // Enter alone fills+submits the filter but the ward board doesn't always
+    // resolve to the single patient — the pharmacist otherwise has to click the
+    // result row manually ("stuck, need more click"). So wait for the first
+    // result row and click it, same as the dispense-workbench search does.
+    const row = await _waitForEl(() =>
+      document.querySelector('[id*="MgsGridOneRow0"]') ||
+      document.querySelector('.mgs-grid-row, tr.mgs-row, .patient-search-result'),
+      6000, 200);
+    L(`wardview result row: ${row ? '#' + (row.id || row.className) : 'NOT FOUND after 6s'}`);
+    if (row) {
+      row.click();
+      await dismissAlerts();
+      L('clicked wardview result row');
+    }
     return true;
   }
 

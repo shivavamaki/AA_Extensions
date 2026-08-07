@@ -12,6 +12,41 @@
   const { norm, escapeHtml } = window.CoreDom;
 
   const POLL_MS = 8000;
+  // Re-render cadence for the New-Case age alerts, so the row colour/badge
+  // updates as time passes without waiting for the (slower) server poll.
+  const AGE_TICK_MS = 30000;
+  // New-Case age thresholds (minutes): warn (light orange) then overdue (light red).
+  const AGE_WARN_MIN = 15;
+  const AGE_LATE_MIN = 60;
+
+  // ── Display-only name (keep stored data intact) ──────────────────────────
+  // Names are stored "ENGLISH NAME - ไทย" (e.g. "MRS. A - วรัญญา"). The queue
+  // row shows only the Thai part; the stored entry + the log modal keep the
+  // full name. If there's no " - " separator, show the name unchanged.
+  function displayName(full) {
+    const s = norm(full || '');
+    const i = s.indexOf(' - ');
+    if (i >= 0) {
+      const thai = s.slice(i + 3).trim();
+      if (thai) return thai;
+    }
+    return s;
+  }
+
+  // Minutes elapsed since an ISO timestamp (UTC). null if unparseable.
+  function ageMinutes(iso) {
+    if (!iso) return null;
+    const t = Date.parse(iso);
+    if (Number.isNaN(t)) return null;
+    return Math.max(0, Math.floor((Date.now() - t) / 60000));
+  }
+
+  // Human-friendly age label: "42m" or "1h 12m".
+  function ageLabel(min) {
+    if (min == null) return '';
+    if (min < 60) return `${min}m`;
+    return `${Math.floor(min / 60)}h ${min % 60}m`;
+  }
 
   // Bangkok-local date (UTC+7, no DST). The server keys the queue by Bangkok
   // day, so the client must query the same day — using the UTC date instead
@@ -60,14 +95,28 @@
 
   // `extra` carries additional fields for non-status actions (e.g. update-loc
   // passes { ward, room }); status transitions pass no extra.
+  // Returns the serverFetch result ({ok, status, json}) or, on a thrown
+  // error / missing BKNData, a synthetic { ok:false, error } so callers can
+  // surface WHY a transition did nothing instead of failing silently.
   async function putTransition(id, action, extra) {
+    if (!window.BKNData || typeof window.BKNData.serverFetch !== 'function') {
+      console.warn('[BKN-HMQ] putTransition: window.BKNData.serverFetch unavailable');
+      return { ok: false, error: 'BKNData unavailable' };
+    }
     try {
-      return await window.BKNData.serverFetch(`/api/hmq/${encodeURIComponent(id)}`, {
+      const r = await window.BKNData.serverFetch(`/api/hmq/${encodeURIComponent(id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, user: detectUsername(), ...(extra || {}) }),
       });
-    } catch (_) { return null; }
+      if (!r || !r.ok) {
+        console.warn(`[BKN-HMQ] putTransition ${action} #${id} → HTTP ${r ? r.status : '?'}`, r && r.json);
+      }
+      return r || { ok: false, error: 'no response' };
+    } catch (e) {
+      console.warn(`[BKN-HMQ] putTransition ${action} #${id} threw:`, e);
+      return { ok: false, error: String(e && e.message || e) };
+    }
   }
 
   // ── Position + width persistence (per browser/workstation) ─────────────
@@ -167,6 +216,7 @@
   // ── Popup DOM ────────────────────────────────────────────────────────────
   let _queue      = [];
   let _pollTimer  = null;
+  let _ageTimer   = null;
 
   const SECTIONS = [
     { status: 'process', key: 'proc', label: '🔵 กำลังดำเนินการ · On Process' },
@@ -188,9 +238,25 @@
 
   function rowHtml(entry) {
     const hn   = escapeHtml(entry.hn || '');
-    const name = escapeHtml(entry.name || '');
+    const name = escapeHtml(displayName(entry.name));
     const room = escapeHtml(cleanRoom(entry.room));
     const ward = escapeHtml(entry.ward || '');
+
+    // ── New-Case age alert ──────────────────────────────────────────────
+    // Only New-Case rows are timed against createdAt: >15m → warn (orange),
+    // >1h → late (red). The small popup badge shows the elapsed time.
+    let ageClass = '';
+    let alertHtml = '';
+    if (entry.status === 'new') {
+      const min = ageMinutes(entry.createdAt);
+      if (min != null && min >= AGE_LATE_MIN) {
+        ageClass = ' hmq-age-late';
+        alertHtml = `<span class="hmq-age-alert late" title="Waiting over 1 hour">⏰ ${escapeHtml(ageLabel(min))}</span>`;
+      } else if (min != null && min >= AGE_WARN_MIN) {
+        ageClass = ' hmq-age-warn';
+        alertHtml = `<span class="hmq-age-alert warn" title="Waiting over 15 minutes">⚠ ${escapeHtml(ageLabel(min))}</span>`;
+      }
+    }
     // Room is shown as a standout badge next to the queue number so it's easy to
     // spot at a glance; the ward stays in the info line. A missing room shows a
     // muted placeholder badge rather than nothing.
@@ -208,12 +274,12 @@
       actionHtml = `<button class="hmq-revert-btn" data-id="${entry.id}" data-revert="revert-process" title="Revert to On Process">↺</button>
         <span class="hmq-done-check">✓</span><span class="hmq-done-time">${t}</span>`;
     }
-    return `<div class="hmq-row" data-id="${entry.id}">
+    return `<div class="hmq-row${ageClass}" data-id="${entry.id}">
       <span class="hmq-qnum">Q${entry.queueNum != null ? entry.queueNum : '?'}</span>
       ${roomBadge}
       <div class="hmq-row-info">
         <div class="hmq-row-name">${name}<span class="hmq-hn">HN ${hn}</span></div>
-        <div class="hmq-row-loc">${ward || '&mdash;'}</div>
+        <div class="hmq-row-loc">${ward || '&mdash;'}${alertHtml}</div>
       </div>
       <button class="hmq-log-btn" data-id="${entry.id}" title="View log">🕒</button>
       ${actionHtml}
@@ -299,21 +365,29 @@
       const doneBtn   = e.target.closest('.hmq-action-done');
       const logBtn    = e.target.closest('.hmq-log-btn');
       const revertBtn = e.target.closest('.hmq-revert-btn');
-      if (startBtn) {
-        startBtn.disabled = true;
-        await putTransition(startBtn.dataset.id, 'start');
+
+      // Shared runner: disable the button, run the transition, and ONLY on
+      // failure re-enable it + tell the user why (on success the row re-renders
+      // into the next section, replacing the button). Prevents the "click does
+      // nothing, button stuck disabled" symptom on a server/transition error.
+      const runTransition = async (btn, action) => {
+        const id = btn.dataset.id;
+        console.log(`[BKN-HMQ] ${action} clicked for #${id}`);
+        btn.disabled = true;
+        const r = await putTransition(id, action);
+        if (!r || !r.ok) {
+          btn.disabled = false;   // let the pharmacist retry
+          const why = (r && (r.error || (r.json && r.json.error))) || `HTTP ${r ? r.status : '?'}`;
+          alert(`[HM Process Queue] Could not ${action} this case — ${why}\n\nCheck the pharmacy server connection and try again.`);
+          return;
+        }
         await refreshQueue();
-      } else if (doneBtn) {
-        doneBtn.disabled = true;
-        await putTransition(doneBtn.dataset.id, 'complete');
-        await refreshQueue();
-      } else if (revertBtn) {
-        revertBtn.disabled = true;
-        await putTransition(revertBtn.dataset.id, revertBtn.dataset.revert);
-        await refreshQueue();
-      } else if (logBtn) {
-        showLog(logBtn.dataset.id);
-      }
+      };
+
+      if (startBtn)       await runTransition(startBtn, 'start');
+      else if (doneBtn)   await runTransition(doneBtn, 'complete');
+      else if (revertBtn) await runTransition(revertBtn, revertBtn.dataset.revert);
+      else if (logBtn)    showLog(logBtn.dataset.id);
     });
   }
 
@@ -363,6 +437,9 @@
     buildPopup();
     refreshQueue();
     if (!_pollTimer) _pollTimer = setInterval(refreshQueue, POLL_MS);
+    // Lighter re-render (no server fetch) so New-Case age colours/badges tick
+    // up between polls using the already-loaded _queue.
+    if (!_ageTimer) _ageTimer = setInterval(renderPopup, AGE_TICK_MS);
   }
 
   function teardownPopupIfIrrelevant() {
@@ -372,6 +449,7 @@
     document.getElementById('hmq-card')?.remove();
     document.getElementById('hmq-modal-overlay')?.remove();
     if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+    if (_ageTimer) { clearInterval(_ageTimer); _ageTimer = null; }
   }
 
   // ── "Add new case" button (Return workbench only) ───────────────────────

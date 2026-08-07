@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.41.0",
-  "version_name": "2026.07.23 — by-meal break carried by empty spacer (kills header-glyph sliver); page-count tolerance",
+  "version": "3.44.3",
+  "version_name": "3.44.3 — by-meal rows justified (name left / qty right); topic heading stays with its meal container",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzP9KPTBvryIH7rdPZ9RDvBKHZI1DzJHiOCfKJUWlupAlSZ1UiIZKIHWLww6kEXdACU1phvahaG6+2aLgzCToNv5YuKmBAoNlDu4Lm7xYUm62gEok3Y21jbZ/NUZJUh1Clz9ruMtQo95QNHoFx4aOHuLdMPJ9HXHlOA7DGVkaxtNbCeaOxkntUvJMtOk3771RD2Dxfl9Ad8kgOOa+cjYrZwDYJ187LZyk3CU/57xqtACPVCaYfj/xVcWOZwdulCd0IUXqLuhKDnp1Y/DNL40o9O5hEvOBJbOZmCqFPvlulpffjybE1xO/hkxPc+/yZRQ3r2Y4Iopjm1eYM9idygLHdwIDAQAB",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
     "activeTab",

@@ -100,7 +100,10 @@
 .hmq-body {
   display: flex;
   flex-direction: column;
-  max-height: 70vh;
+  /* Fit to content when maximized: the panel grows to show all rows and only
+     starts scrolling once it would run past the viewport. The header (~38px)
+     is accounted for so the whole card stays on screen. */
+  max-height: calc(95vh - 40px);
   overflow-y: auto;
 }
 .hmq-section + .hmq-section { border-top: 1px solid #eef2f8; }
@@ -148,6 +151,32 @@
   border-bottom: 1px solid #f1f3f6;
 }
 .hmq-rows .hmq-row:last-child { border-bottom: none; }
+
+/* ── New-Case age alerts ─────────────────────────────────────────────────
+   >15 min waiting → light orange; >1 hr → light red (with a gentle pulse to
+   draw the eye "again"). The small popup badge sits on the location line. */
+.hmq-row.hmq-age-warn { background: #fff3e0; }         /* light orange */
+.hmq-row.hmq-age-late { background: #ffebee; animation: hmq-late-pulse 2s ease-in-out infinite; } /* light red */
+@keyframes hmq-late-pulse {
+  0%, 100% { background: #ffebee; }
+  50%      { background: #ffcdd2; }
+}
+.hmq-age-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 0 6px;
+  height: 15px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.hmq-age-alert.warn { background: #ffb74d; color: #7a3e00; }
+.hmq-age-alert.late { background: #ef5350; color: #fff; box-shadow: 0 0 0 2px rgba(239,83,80,.25); }
 .hmq-qnum {
   flex: 0 0 auto;
   width: 26px;
