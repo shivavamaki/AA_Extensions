@@ -663,7 +663,9 @@ async function renderMeds() {
   if (!tbody) return;
   if (!_medImagesBase) _medImagesBase = await _serverBase();
 
-  tbody.innerHTML = "";
+  // Clear only the med rows — KEEP the column-header row (.col-head-row), which
+  // now lives at the top of <tbody> (so it prints once, not per page).
+  tbody.querySelectorAll("tr:not(.col-head-row)").forEach((tr) => tr.remove());
 
   // Display order (keys, in priority):
   //   1) "take until finished" meds first
@@ -2497,54 +2499,16 @@ function updatePageCounterTotal() {
   const PAGE_MARGIN_BOTTOM_MM = 12;
   const pageContentPx = (297 - PAGE_MARGIN_TOP_MM - PAGE_MARGIN_BOTTOM_MM) * MM_TO_PX;
 
-  // The Daily Pill Journey Card (meal card) auto-breaks onto a fresh page when
-  // it doesn't fit in the room left on the current page (its header + intro +
-  // continued block avoid splitting). We can't know the exact remaining space
-  // here, so conservatively count it as its own page group when shown — matching
-  // the common case where it lands on a new page rather than understating.
-  const mealEl = document.getElementById("mealcardSection");
-  const mealCardShown = document.body.classList.contains("hm-with-mealcard");
-
-  let totalPages;
-  if (mealCardShown && mealEl) {
-    // Clear any prior decision first, then measure the *natural* layout.
-    document.body.classList.remove("mealcard-force-break");
-
-    const mealPx = mealEl.scrollHeight;
-    const sheetPx = sheetEl.scrollHeight;
-    // Height of everything before the meal card. The card is the LAST flow child
-    // of the sheet, so (sheet - card) is exactly the content above it. Uses
-    // scrollHeight (layout pixels) — not getBoundingClientRect, which is scaled
-    // by .sheet-wrap's screen transform and would corrupt the math on screen.
-    const mealTop = Math.max(0, sheetPx - mealPx);
-
-    // Rule (robust, no fragile modulo math): keep the meal card inline ONLY when
-    // the WHOLE sheet — meds + card — fits on a single printed page. Otherwise
-    // the card gets its own page. This is the common real case (short discharge
-    // = 1 page; anything longer = a clean card page) and, crucially, it never
-    // leaves the "จัดตามมื้อ" header as a sliver at the bottom of the med page,
-    // because the card only ever shares a page when nothing else spills over.
-    // Add a safety margin so a sheet that *just* fills the page still breaks.
-    const FIT_GUARD_PX = 8 * MM_TO_PX;
-    const everythingFitsOnePage = sheetPx <= pageContentPx - FIT_GUARD_PX;
-    document.body.classList.toggle("mealcard-force-break", !everythingFitsOnePage);
-
-    if (everythingFitsOnePage) {
-      totalPages = 1;
-    } else {
-      // Count meds/card pages independently (the card is on its own page(s)).
-      // A ~1-page block can measure a few px over pageContentPx due to line-box
-      // rounding and the sheet's own padding vs. the @page margin; a small
-      // tolerance stops that from inflating "1 page" into "2".
-      const ROUND_TOL_PX = 6 * MM_TO_PX;
-      const pagesOf = (px) => Math.max(1, Math.ceil((px - ROUND_TOL_PX) / pageContentPx));
-      totalPages = pagesOf(mealTop) + pagesOf(mealPx);
-    }
-  } else {
-    document.body.classList.remove("mealcard-force-break");
-    const totalPx = sheetEl.scrollHeight;
-    totalPages = Math.max(1, Math.ceil(totalPx / pageContentPx));
-  }
+  // The whole sheet — medicines and the by-meal card — is now ONE continuous
+  // table that flows and paginates naturally (the meal card is a tbody inside
+  // #medTable, so the header repeats over it). No force-break to account for:
+  // page count is just total content height / printable page height. A small
+  // rounding tolerance stops a block that measures a few px over one page
+  // (line-box rounding + sheet padding vs. @page margin) from inflating the
+  // count by one.
+  const ROUND_TOL_PX = 6 * MM_TO_PX;
+  const totalPx = sheetEl.scrollHeight;
+  const totalPages = Math.max(1, Math.ceil((totalPx - ROUND_TOL_PX) / pageContentPx));
   counterEl.dataset.total = String(totalPages);
 }
 

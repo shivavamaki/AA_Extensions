@@ -911,13 +911,14 @@
       color: #1e3a8a;
     }
 
-    thead tr:last-child th { border-top: 1px solid #111827; }
+    /* Column-header row (now the first <tbody> row, .col-head-row). */
+    .col-head-row th { border-top: 1px solid #111827; }
     th:first-child, td:first-child { border-left: 1px solid #111827; }
 
     /* Round the medicine table's own corners (column-header row + last data
        row) to match the 8px radius used on the other containers. */
-    thead tr:last-child th:first-child { border-top-left-radius: 8px; }
-    thead tr:last-child th:last-child { border-top-right-radius: 8px; }
+    .col-head-row th:first-child { border-top-left-radius: 8px; }
+    .col-head-row th:last-child { border-top-right-radius: 8px; }
     tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
     tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
 
@@ -1437,18 +1438,17 @@
     .add-opt:hover { background: #eff6ff; }
     .add-opt:last-child { border-bottom: 0; }
 
-    /* ── Daily Pill Journey Card (optional second page) ──────────────────── */
-    /* Hidden unless the "แนบหน้า จัดตามมื้อ" toggle adds .hm-with-mealcard. */
-    .mealcard-section { display: none; margin-top: 18px; }
-    body.hm-with-mealcard .mealcard-section { display: block; }
-    /* Page-break spacer: never visible; only carries the forced break in print. */
-    .mealcard-break { display: none; }
-    .mealcard-section .timeline-head { display: grid; grid-template-columns: 26mm 1fr 50mm; align-items: center; gap: 8px; border-bottom: 3px solid #111827; padding-bottom: 5px; margin-bottom: 10px; }
-    .mealcard-section .tt-logo { display: flex; align-items: center; }
-    .mealcard-section .tt-logo img { max-width: 24mm; max-height: 11mm; width: auto; display: block; object-fit: contain; }
-    .mealcard-section .th-titles { text-align: center; }
-    .mealcard-section h2 { margin: 0; font-size: 18px; line-height: 1.1; }
-    .mealcard-section .sub { font-size: 11px; color: #4b5563; margin-top: 1px; }
+    /* ── Daily Pill Journey Card (now a tbody inside the med table) ───────── */
+    /* Hidden unless "แนบหน้า จัดตามมื้อ" adds .hm-with-mealcard. Lives inside
+       #medTable so the page header (thead) repeats above it and it flows
+       row-by-row — no forced break, no separate logo header. */
+    .mealcard-tbody { display: none; }
+    body.hm-with-mealcard .mealcard-tbody { display: table-row-group; }
+    .mc-topic-row td { padding: 14px 0 8px; border: none; }
+    .mc-topic { border-bottom: 3px solid #111827; padding-bottom: 5px; text-align: center; }
+    .mc-topic h2 { margin: 0; font-size: 18px; line-height: 1.1; }
+    .mc-topic .sub { font-size: 11px; color: #4b5563; margin-top: 1px; }
+    .mc-info-row td { padding: 9px 0 0; border: none; }
     .mc-info { background: #eff6ff; color: #1e3a8a; border: 1px solid #dbeafe; border-radius: 8px; padding: 6px 12px; font-size: 12px; margin-bottom: 9px; }
     .mc-info-detail { margin-top: 6px; font-size: 12px; color: #1f2937; }
     /* Continued ("take until finished") block — full width, always above the
@@ -1519,7 +1519,8 @@
     .mc-item { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; border-bottom: 1px dashed #e5e7eb; font-size: 12px; }
     .mc-item:last-child { border-bottom: 0; }
     .mc-item .mc-drug { font-weight: 700; }
-    .mc-item .mc-dose { color: #475569; }
+    /* Drug name left-aligned, quantity pushed to the right edge (justified). */
+    .mc-item .mc-dose { color: #475569; margin-left: auto; white-space: nowrap; padding-left: 8px; }
     .mc-emptyall { color: #6b7280; font-style: italic; padding: 10px 2px; }
 
     @page {
@@ -1550,33 +1551,19 @@
       tfoot { display: table-footer-group; }
       tr { break-inside: avoid; page-break-inside: avoid; }
       .footer-note { break-inside: avoid; break-before: avoid; }
-      /* By-meal card ("แนบหน้า จัดตามมื้อ"): stays inline on the current page when
-         it fits; when it doesn't, JS (updatePageCounterTotal, on beforeprint)
-         measures the remaining space and adds .mealcard-force-break so the whole
-         card starts on a fresh page instead of splitting. break-inside:avoid
-         alone is unreliable here because the grid uses CSS multi-column. */
-      /* The forced break is carried by the empty spacer (no text to paint),
-         NOT the section's centered <h2> — that <h2>'s first glyph otherwise
-         bleeds as a sliver ("ย") onto the previous page. */
-      body.hm-with-mealcard.mealcard-force-break .mealcard-break {
-        display: block;
-        break-before: page; page-break-before: always;
-        height: 0; margin: 0; padding: 0; border: 0;
-      }
-      body.hm-with-mealcard.mealcard-force-break .mealcard-section {
-        break-before: avoid; page-break-before: avoid;
-        margin-top: 0 !important;   /* no margin bleeding a sliver onto the prior page */
-      }
-      body.hm-with-mealcard .mealcard-section .timeline-head { orphans: 3; widows: 3; }
-      body.hm-with-mealcard .mealcard-section .timeline-head,
-      body.hm-with-mealcard .mealcard-section .mc-info,
-      body.hm-with-mealcard .mealcard-section .mc-continue-host {
-        break-inside: avoid; page-break-inside: avoid;
-      }
-      body.hm-with-mealcard .mealcard-section .timeline-head,
-      body.hm-with-mealcard .mealcard-section .mc-info {
-        break-after: avoid; page-break-after: avoid;
-      }
+      /* By-meal card is now a tbody INSIDE #medTable — the page header (thead)
+         repeats above it and it flows continuously after the medicines. Keep the
+         topic heading with what follows; the info row must be ALLOWED to break
+         (override the global `tr { break-inside: avoid }`) so a long by-meal grid
+         paginates — the individual .mc-slot cards avoid splitting. */
+      /* Keep the topic heading GLUED to the meal container (see page-home-med.html). */
+      .mc-topic-row { break-after: avoid; page-break-after: avoid; break-inside: avoid; }
+      .mc-topic-row td { break-inside: avoid; page-break-inside: avoid; }
+      .mealcard-tbody .mc-info-row { break-before: avoid; page-break-before: avoid; }
+      .mealcard-tbody .mc-info-row,
+      .mealcard-tbody .mc-info-row td { break-inside: auto !important; page-break-inside: auto !important; }
+      .mealcard-tbody .mc-info { break-after: avoid; page-break-after: avoid; }
+      .mealcard-tbody .mc-slot:first-child { break-before: avoid; page-break-before: avoid; }
       /* PRINT PAGINATION FIX: on screen the by-meal grid is CSS multi-column
          (column-count:2), which Chrome fragments column-by-column across pages
          and slices the card mid-slot when it's taller than one page. For print
@@ -1633,11 +1620,14 @@
          left border + rounded left corners need to move to the "#" column,
          which becomes the visually-first one. */
       th:first-child, td:first-child { border-left: none; }
-      thead tr:last-child th:first-child,
+      .col-head-row th:first-child,
       tbody tr:last-child td:first-child { border-radius: 0; }
       th:nth-child(2), td:nth-child(2) { border-left: 1px solid #111827; }
-      thead tr:last-child th:nth-child(2) { border-top-left-radius: 8px; }
+      .col-head-row th:nth-child(2) { border-top-left-radius: 8px; }
       tbody tr:last-child td:nth-child(2) { border-bottom-left-radius: 8px; }
+      /* Keep the column-header row glued to the first medicine row; it lives in
+         <tbody> so it does NOT repeat per page. */
+      .col-head-row { break-after: avoid; page-break-after: avoid; break-inside: avoid; }
     }
   </style>
 </head>
@@ -1842,16 +1832,40 @@
             </div>
           </td>
         </tr>
-        <tr>
+      </thead>
+      <tbody>
+        <!-- Column-header row at the TOP OF <tbody> (not <thead>) so it prints
+             only ONCE on page 1 — a <thead> row repeats on every page and would
+             leave an empty header bar above the meal card. Only the patient
+             banner (still in <thead>) repeats per page. -->
+        <tr class="col-head-row">
           <th class="col-act no-print"></th>
           <th class="col-no">#</th>
           <th class="col-med">Medicine / Picture<br><span class="th-sub">ชื่อยา / รูปยา</span></th>
           <th class="col-how">How to take<br><span class="th-sub">วิธีใช้ยา</span></th>
           <th class="col-qty">Qty<br><span class="th-sub">จำนวน</span></th>
         </tr>
-      </thead>
-      <tbody>
         <!-- page-home-med.js appends rows here -->
+      </tbody>
+      <!-- Daily Pill Journey Card — a tbody INSIDE the med table so it inherits
+           the repeating page header (thead) and paginates row-by-row. Toggled by
+           "แนบหน้า จัดตามมื้อ" (body.hm-with-mealcard). No separate logo header. -->
+      <tbody class="mealcard-tbody" id="mealcardTbody" data-no-translate translate="no">
+        <tr class="mc-topic-row">
+          <td colspan="5">
+            <div class="mc-topic">
+              <h2>ยากลับบ้าน — จัดตามเวลาในการรับประทาน</h2>
+              <span class="sub">Daily Pill Journey Card · เวลาในการรับประทานยาที่บ้าน</span>
+            </div>
+          </td>
+        </tr>
+        <tr class="mc-info-row">
+          <td colspan="5">
+            <div class="mc-info" id="mealCardInfo">ℹ️ มียาหลายตัวในมื้อเดียวกัน โปรดสังเกตว่าตัวใดกินก่อนอาหาร และตัวใดกินหลังอาหาร</div>
+            <div class="mc-continue-host" id="mealcardContinue"><!-- continued block injected by JS --></div>
+            <div class="mc-grid" id="mealcardGrid"><!-- slots injected by JS --></div>
+          </td>
+        </tr>
       </tbody>
     </table>
 
@@ -1878,27 +1892,6 @@
       </div>
     </section>
 
-    <!-- Empty page-break spacer (carries the forced break so the section's
-         centered <h2> first glyph can't sliver onto the previous page). -->
-    <div class="mealcard-break" id="mealcardBreak" aria-hidden="true"></div>
-
-    <!-- Daily Pill Journey Card: discharge meds grouped by meal slot. Optional
-         (toggled by "แนบหน้า จัดตามมื้อ"); prints on its own page. -->
-    <section class="mealcard-section" id="mealcardSection" data-no-translate translate="no">
-      <div class="timeline-head">
-        <div class="tt-logo"><img src="../patient-sticker/bkh-logo.png" alt="BKH" /></div>
-        <div class="th-titles">
-          <h2>ยากลับบ้าน — จัดตามมื้อ</h2>
-          <span class="sub">Daily Pill Journey Card · เวลาในการรับประทานยาที่บ้าน</span>
-        </div>
-        <div></div>
-      </div>
-      <div class="mc-info" id="mealCardInfo">ℹ️ มียาหลายตัวในมื้อเดียวกัน โปรดสังเกตว่าตัวใดกินก่อนอาหาร และตัวใดกินหลังอาหาร</div>
-      <!-- Continued ("take until finished") meds: full-width block, always at
-           the top, above the by-meal grid. -->
-      <div class="mc-continue-host" id="mealcardContinue"><!-- continued block injected by JS --></div>
-      <div class="mc-grid" id="mealcardGrid"><!-- slots injected by JS --></div>
-    </section>
   </main>
   </div>
   <!-- Page counter lives OUTSIDE .sheet-wrap: that wrapper carries a screen
