@@ -305,13 +305,16 @@ load();
 /* ══════════════════════════════════════════════════════════════════════════
    Tabs
 ════════════════════════════════════════════════════════════════════════════ */
-document.querySelectorAll(".tab").forEach((tab) => {
+// Top-level tabs only (`.tabs > .tab`) — the IV DB sub-tabs (.ivdb-sub) also
+// carry .tab but are handled separately below.
+document.querySelectorAll(".tabs > .tab").forEach((tab) => {
   tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+    document.querySelectorAll(".tabs > .tab").forEach((t) => t.classList.remove("active"));
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     tab.classList.add("active");
     document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
     if (tab.dataset.tab === "drugs" && !_drugDb) loadDrugDb();
+    if (tab.dataset.tab === "ivdb" && !_ivdbLoaded) ivdbLoad();
   });
 });
 
@@ -471,3 +474,224 @@ function _applyLocalInstruction(code, th, en) {
 
 drugSearchEl.addEventListener("input", renderDrugResults);
 document.getElementById("drug-reload").addEventListener("click", loadDrugDb);
+
+/* ══════════════════════════════════════════════════════════════════════════
+   IV Sticker DB (iv-drugs / iv-staff) — admin-only editor
+   GET  /api/iv-drugs | /api/iv-staff   → array (open read)
+   PUT  /api/iv-drugs | /api/iv-staff   → replace (needs Bearer admin/editor)
+════════════════════════════════════════════════════════════════════════════ */
+let _ivdbLoaded = false;
+let _ivToken    = null;      // in-memory session token (not persisted)
+let _ivUser     = null;
+let _ivDrugs    = [];        // [{codeName,generic,type,exp,storage,had,conc,rate}]
+let _ivStaff    = [];        // [{name,role}]
+
+const IV_DRUG_TYPES = ["HAD", "PFS", "ATB", "Cytotoxic", "EYE", ""];
+const IV_STAFF_ROLES = ["Pharmacist", "Phar.Assist"];
+const IV_DRUG_FIELDS = ["codeName", "generic", "type", "exp", "storage", "had", "conc", "rate"];
+
+function ivStatus(msg, cls) {
+  const el = document.getElementById("ivdb-status");
+  if (el) { el.textContent = msg || ""; el.className = cls || ""; }
+}
+
+function ivAuthed() { return !!_ivToken; }
+
+function ivApplyAuthUI() {
+  const authed = ivAuthed();
+  document.getElementById("ivdb-auth-state").textContent = authed
+    ? `Signed in as ${_ivUser} — you can edit.`
+    : "Not signed in — sign in to edit.";
+  document.getElementById("ivdb-login").hidden  = authed;
+  document.getElementById("ivdb-user").hidden   = authed;
+  document.getElementById("ivdb-pass").hidden   = authed;
+  document.getElementById("ivdb-logout").hidden = !authed;
+  // Save buttons only enabled when signed in.
+  document.getElementById("ivdb-drug-save").disabled  = !authed;
+  document.getElementById("ivdb-staff-save").disabled = !authed;
+  // Lock/unlock the row inputs.
+  document.getElementById("ivdb-panel-drugs").classList.toggle("ivdb-locked", !authed);
+  document.getElementById("ivdb-panel-staff").classList.toggle("ivdb-locked", !authed);
+}
+
+async function ivLogin() {
+  const u = document.getElementById("ivdb-user").value.trim();
+  const p = document.getElementById("ivdb-pass").value;
+  if (!u || !p) { ivStatus("Enter username and password.", "error"); return; }
+  ivStatus("Signing in…");
+  try {
+    const r = await fetch(`${SERVER_URL}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: u, password: p }),
+    });
+    const j = await r.json();
+    if (!r.ok) { ivStatus(j.error || "Invalid credentials.", "error"); return; }
+    if (!["super_admin", "admin", "editor"].includes(j.role)) {
+      ivStatus(`Role "${j.role}" cannot edit the IV DB (need admin/editor).`, "error");
+      return;
+    }
+    _ivToken = j.token; _ivUser = j.username;
+    document.getElementById("ivdb-pass").value = "";
+    ivApplyAuthUI();
+    ivStatus(`Signed in as ${j.username} (${j.role}).`, "ok");
+  } catch (e) {
+    ivStatus(`Could not reach the server — ${e.message}`, "error");
+  }
+}
+
+async function ivLogout() {
+  if (_ivToken) {
+    fetch(`${SERVER_URL}/api/auth/logout`, {
+      method: "POST", headers: { Authorization: `Bearer ${_ivToken}` },
+    }).catch(() => {});
+  }
+  _ivToken = null; _ivUser = null;
+  ivApplyAuthUI();
+  ivStatus("Signed out.", "ok");
+}
+
+async function ivFetch(col) {
+  const r = await fetch(`${SERVER_URL}/api/${col}`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const j = await r.json();
+  return Array.isArray(j) ? j : [];
+}
+
+async function ivdbLoad() {
+  ivStatus("Loading…");
+  try {
+    [_ivDrugs, _ivStaff] = await Promise.all([ivFetch("iv-drugs"), ivFetch("iv-staff")]);
+    _ivdbLoaded = true;
+    ivRenderDrugs(); ivRenderStaff();
+    ivApplyAuthUI();
+    ivStatus(`Loaded ${_ivDrugs.length} drug(s), ${_ivStaff.length} staff.`, "ok");
+  } catch (e) {
+    ivStatus(`Could not reach the pharmacy server (${SERVER_URL}) — ${e.message}`, "error");
+  }
+}
+
+// ── Drugs table ──────────────────────────────────────────────────────────
+function ivRenderDrugs() {
+  const filter = document.getElementById("ivdb-drug-filter").value.trim().toLowerCase();
+  const tb = document.getElementById("ivdb-drug-rows");
+  tb.innerHTML = "";
+  _ivDrugs.forEach((d, idx) => {
+    const hay = `${d.codeName || ""} ${d.generic || ""} ${d.type || ""}`.toLowerCase();
+    if (filter && !hay.includes(filter)) return;
+    const tr = document.createElement("tr");
+    tr.appendChild(_ivTextCell(d, "codeName", idx, _ivDrugs));
+    tr.appendChild(_ivTextCell(d, "generic", idx, _ivDrugs));
+    tr.appendChild(_ivSelectCell(d, "type", IV_DRUG_TYPES, idx, _ivDrugs));
+    tr.appendChild(_ivNumCell(d, "exp", idx, _ivDrugs));
+    tr.appendChild(_ivTextCell(d, "storage", idx, _ivDrugs));
+    tr.appendChild(_ivSelectCell(d, "had", ["", "High Alert Drugs"], idx, _ivDrugs));
+    tr.appendChild(_ivTextCell(d, "conc", idx, _ivDrugs));
+    tr.appendChild(_ivTextCell(d, "rate", idx, _ivDrugs));
+    tr.appendChild(_ivDelCell(idx, _ivDrugs, ivRenderDrugs));
+    tb.appendChild(tr);
+  });
+}
+
+function ivRenderStaff() {
+  const filter = document.getElementById("ivdb-staff-filter").value.trim().toLowerCase();
+  const tb = document.getElementById("ivdb-staff-rows");
+  tb.innerHTML = "";
+  _ivStaff.forEach((s, idx) => {
+    if (filter && !(`${s.name || ""} ${s.role || ""}`.toLowerCase().includes(filter))) return;
+    const tr = document.createElement("tr");
+    tr.appendChild(_ivTextCell(s, "name", idx, _ivStaff));
+    tr.appendChild(_ivSelectCell(s, "role", IV_STAFF_ROLES, idx, _ivStaff));
+    tr.appendChild(_ivDelCell(idx, _ivStaff, ivRenderStaff));
+    tb.appendChild(tr);
+  });
+}
+
+function _ivTextCell(obj, field, idx, arr) {
+  const td = document.createElement("td");
+  const inp = document.createElement("input");
+  inp.type = "text"; inp.value = obj[field] || "";
+  inp.addEventListener("input", () => { arr[idx][field] = inp.value; });
+  td.appendChild(inp); return td;
+}
+function _ivNumCell(obj, field, idx, arr) {
+  const td = document.createElement("td");
+  const inp = document.createElement("input");
+  inp.type = "number"; inp.min = "0"; inp.value = obj[field] != null ? obj[field] : "";
+  inp.addEventListener("input", () => {
+    const n = parseInt(inp.value, 10);
+    arr[idx][field] = Number.isNaN(n) ? "" : n;
+  });
+  td.appendChild(inp); return td;
+}
+function _ivSelectCell(obj, field, options, idx, arr) {
+  const td = document.createElement("td");
+  const sel = document.createElement("select");
+  options.forEach((o) => {
+    const opt = document.createElement("option");
+    opt.value = o; opt.textContent = o === "" ? "—" : o;
+    sel.appendChild(opt);
+  });
+  sel.value = obj[field] || "";
+  sel.addEventListener("change", () => { arr[idx][field] = sel.value; });
+  td.appendChild(sel); return td;
+}
+function _ivDelCell(idx, arr, rerender) {
+  const td = document.createElement("td"); td.className = "actions";
+  const btn = document.createElement("button");
+  btn.className = "danger"; btn.textContent = "✕"; btn.title = "Remove row";
+  btn.addEventListener("click", () => { arr.splice(idx, 1); rerender(); });
+  td.appendChild(btn); return td;
+}
+
+async function ivSave(col, arr) {
+  if (!ivAuthed()) { ivStatus("Sign in first.", "error"); return; }
+  // Drop blank rows (drugs need a codeName; staff need a name).
+  const keyField = col === "iv-drugs" ? "codeName" : "name";
+  const clean = arr.filter((x) => x && (x[keyField] || "").trim());
+  ivStatus("Saving…");
+  try {
+    const r = await fetch(`${SERVER_URL}/api/${col}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${_ivToken}` },
+      body: JSON.stringify(clean),
+    });
+    if (r.status === 401 || r.status === 403) {
+      _ivToken = null; ivApplyAuthUI();
+      ivStatus("Session expired or not authorised — sign in again.", "error");
+      return;
+    }
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    ivStatus(`✅ Saved ${clean.length} ${col === "iv-drugs" ? "drug(s)" : "staff"}.`, "ok");
+  } catch (e) {
+    ivStatus(`Save failed — ${e.message}`, "error");
+  }
+}
+
+// ── Wiring ───────────────────────────────────────────────────────────────
+document.getElementById("ivdb-login").addEventListener("click", ivLogin);
+document.getElementById("ivdb-pass").addEventListener("keydown", (e) => { if (e.key === "Enter") ivLogin(); });
+document.getElementById("ivdb-logout").addEventListener("click", ivLogout);
+document.getElementById("ivdb-drug-filter").addEventListener("input", ivRenderDrugs);
+document.getElementById("ivdb-staff-filter").addEventListener("input", ivRenderStaff);
+document.getElementById("ivdb-drug-reload").addEventListener("click", ivdbLoad);
+document.getElementById("ivdb-staff-reload").addEventListener("click", ivdbLoad);
+document.getElementById("ivdb-drug-add").addEventListener("click", () => {
+  _ivDrugs.unshift({ codeName: "", generic: "", type: "", exp: "", storage: "Keep in Room Temp.", had: "", conc: "", rate: "" });
+  ivRenderDrugs();
+});
+document.getElementById("ivdb-staff-add").addEventListener("click", () => {
+  _ivStaff.unshift({ name: "", role: "Pharmacist" });
+  ivRenderStaff();
+});
+document.getElementById("ivdb-drug-save").addEventListener("click", () => ivSave("iv-drugs", _ivDrugs));
+document.getElementById("ivdb-staff-save").addEventListener("click", () => ivSave("iv-staff", _ivStaff));
+document.querySelectorAll(".ivdb-sub").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".ivdb-sub").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    const sub = btn.dataset.sub;
+    document.getElementById("ivdb-panel-drugs").hidden = sub !== "drugs";
+    document.getElementById("ivdb-panel-staff").hidden = sub !== "staff";
+  });
+});

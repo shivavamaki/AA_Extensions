@@ -11,6 +11,14 @@ Two standalone, self-contained label printers opened from the popup toolbar — 
 - `content_script.js`'s Dispense Workbench scraper also opens `iv_sticker.html` directly (`window.open(chrome.runtime.getURL(...))`) after pushing scraped patient/order data to storage.
 - Both pages talk directly to the pharmacy server (`_serverUrl()`, default `http://10.134.110.81:8765`, override via `localStorage['pharmacyServerUrl']`) rather than through `window.BKNData` — these predate the shared `shared-data-client.js` layer.
 
+## Drug + staff database (server-owned, admin-edited)
+
+The IV drug master list and staff list are **server data**, not hard-coded:
+
+- `loadData()` reads `GET /api/iv-drugs` + `GET /api/iv-staff` (both open reads). The server seeds `data/rx/iv-drugs.json` / `iv-staff.json` once from the built-in defaults on first startup, so the **server is the source of truth**.
+- `DEFAULT_DRUGS` / `DEFAULT_STAFF` in `iv_sticker.js` remain **only as an offline fallback** used when the server is unreachable.
+- **The sticker page is read-only w.r.t. this data.** It no longer PUTs the lists back (`_syncToServer()` was removed) — pushing its in-memory copy would overwrite admin edits with the (possibly fallback) list. All editing happens in the admin **Pattern Editor → "IV Sticker DB"** tab, whose `PUT /api/iv-drugs|iv-staff` requires a logged-in admin/editor (Bearer token). See [`../pattern-editor/README.md`](../pattern-editor/README.md#iv-sticker-db-admin-only).
+
 ## Files
 
 | File | Role |

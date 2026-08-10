@@ -37,6 +37,13 @@
   .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
   .panel { display: none; }
   .panel.active { display: block; }
+  /* IV DB sub-tabs (Drugs / Staff) */
+  .ivdb-sub-tabs { display: flex; gap: 4px; }
+  .ivdb-sub { padding: 6px 14px; font-size: 13px; border-bottom: 2px solid transparent; }
+  .ivdb-sub.active { color: var(--accent); border-bottom-color: var(--accent); }
+  #panel-ivdb td input, #panel-ivdb td select { width: 100%; border: 1px solid var(--bd); border-radius: 4px; padding: 4px 6px; font-size: 13px; }
+  #panel-ivdb td { padding: 4px 6px; }
+  .ivdb-locked input, .ivdb-locked select, .ivdb-locked button.linklike { pointer-events: none; opacity: .6; }
   textarea { width: 100%; border: 1px solid var(--bd); border-radius: 4px; padding: 6px; font-size: 13px; font-family: inherit; resize: vertical; }
   .drug-card { background: #fff; border: 1px solid var(--bd); border-radius: 8px; padding: 14px; margin-top: 12px; }
   .drug-hd { font-weight: 700; font-size: 15px; }
@@ -58,6 +65,7 @@
   <div class="tabs">
     <button class="tab active" data-tab="phrases">Phrase Overrides</button>
     <button class="tab" data-tab="drugs">Drug Instructions</button>
+    <button class="tab" data-tab="ivdb">IV Sticker DB</button>
   </div>
 
   <!-- ── Phrase Overrides ─────────────────────────────────────── -->
@@ -93,6 +101,73 @@
     <div class="drug-results" id="drug-results"></div>
     <div id="drug-editor"></div>
     <div id="drug-status"></div>
+  </div>
+
+  <!-- ── IV Sticker DB (iv-drugs / iv-staff) — admin only ─────────── -->
+  <div class="panel" id="panel-ivdb">
+    <div class="help">
+      The IV / Auxiliary Sticker's <strong>drug master list</strong> and <strong>staff list</strong> live on the pharmacy server (<code>iv-drugs</code> / <code>iv-staff</code>). The sticker page reads them; editing here is <strong>admin/editor only</strong> and requires login. Changes apply on the sticker page's next load.
+    </div>
+
+    <!-- Login bar: writes need a Bearer token (admin/editor). Reads are open. -->
+    <div class="toolbar" id="ivdb-login-bar">
+      <span id="ivdb-auth-state" style="font-size:13px;color:#6b7280;">Not signed in — sign in to edit.</span>
+      <input type="text" id="ivdb-user" placeholder="Username" style="max-width:160px;">
+      <input type="password" id="ivdb-pass" placeholder="Password" style="max-width:160px;">
+      <button class="primary" id="ivdb-login">Sign in</button>
+      <button id="ivdb-logout" hidden>Sign out</button>
+    </div>
+
+    <div class="ivdb-sub-tabs" style="margin:10px 0;">
+      <button class="ivdb-sub tab active" data-sub="drugs">Drugs</button>
+      <button class="ivdb-sub tab" data-sub="staff">Staff</button>
+    </div>
+
+    <!-- Drugs -->
+    <div class="ivdb-sub-panel" id="ivdb-panel-drugs">
+      <div class="toolbar">
+        <input type="text" id="ivdb-drug-filter" placeholder="Filter drugs…" style="flex:1;max-width:320px;">
+        <button id="ivdb-drug-add">+ Add drug</button>
+        <button class="primary" id="ivdb-drug-save" disabled>💾 Save drugs</button>
+        <button id="ivdb-drug-reload">↻ Reload</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="min-width:150px">Code name</th>
+              <th style="min-width:120px">Generic</th>
+              <th style="width:90px">Type</th>
+              <th style="width:60px">Exp (d)</th>
+              <th style="min-width:120px">Storage</th>
+              <th style="width:90px">HAD</th>
+              <th style="min-width:90px">Conc</th>
+              <th style="min-width:110px">Rate</th>
+              <th style="width:1%"></th>
+            </tr>
+          </thead>
+          <tbody id="ivdb-drug-rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Staff -->
+    <div class="ivdb-sub-panel" id="ivdb-panel-staff" hidden>
+      <div class="toolbar">
+        <input type="text" id="ivdb-staff-filter" placeholder="Filter staff…" style="flex:1;max-width:320px;">
+        <button id="ivdb-staff-add">+ Add staff</button>
+        <button class="primary" id="ivdb-staff-save" disabled>💾 Save staff</button>
+        <button id="ivdb-staff-reload">↻ Reload</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th style="min-width:200px">Name</th><th style="min-width:160px">Role</th><th style="width:1%"></th></tr>
+        </thead>
+        <tbody id="ivdb-staff-rows"></tbody>
+      </table>
+    </div>
+
+    <div id="ivdb-status"></div>
   </div>
 
   <!-- Loaded so the editor can list the built-in AUXILIARY_PHRASES

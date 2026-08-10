@@ -3,7 +3,7 @@
 A standalone admin page (🧩 **Pattern Editor**, opened from the popup via
 `btnPatternEditor` → `chrome.tabs.create` to `page-pattern-editor.html`) for
 curating the offline translation data used by the [`home-med`](../home-med/README.md)
-sheet — **no code deploy, no external API**. Two tabs:
+sheet — **no code deploy, no external API**. Three tabs:
 
 1. **Phrase Overrides** — English→Thai phrase translations (exact / verb-prefix /
    substring-replace; see *Scope* below). The table **shows the built-in
@@ -13,6 +13,26 @@ sheet — **no code deploy, no external API**. Two tabs:
 2. **Drug Instructions** — CRUD on a drug's **Patient Instruction** in
    `medication-db.json` (the note-line source): search by name/code, edit the
    TH/EN instruction, save (curated) or remove.
+3. **IV Sticker DB** — admin editor for the IV/Aux Sticker's **drug master list**
+   (`iv-drugs`) and **staff list** (`iv-staff`). See *IV Sticker DB* below.
+
+## IV Sticker DB (admin-only)
+
+The [`iv-aux-sticker`](../iv-aux-sticker/README.md) drug + staff lists are
+**server-owned** (`data/rx/iv-drugs.json` / `iv-staff.json`, seeded once from the
+former hard-coded defaults). This tab edits them:
+
+- **Sub-tabs Drugs / Staff.** Drugs are a table of
+  `codeName · generic · type · exp · storage · had · conc · rate` (add/edit/delete
+  rows); Staff is `name · role`. `type` and `role` are dropdowns.
+- **Login required to save.** `GET /api/iv-drugs|iv-staff` is open (so the tab can
+  load), but `PUT` needs a **logged-in admin/editor** — the tab has its own
+  username/password sign-in (`POST /api/auth/login`) and sends the returned
+  Bearer token on save (`_ivToken`, in-memory only). Non-admin/editor roles are
+  rejected client- and server-side. Rows stay locked (greyed) until signed in.
+- **Blank rows dropped on save** (a drug needs a `codeName`, staff a `name`).
+- The sticker page is **read-only** w.r.t. this data — it no longer syncs its
+  in-memory list back (that would clobber admin edits); see the iv-aux README.
 
 ## Data flow
 

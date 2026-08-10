@@ -170,24 +170,15 @@ async function loadData() {
 }
 
 function saveState() {
-  // Persist history locally (user-specific)
+  // Persist history locally (user-specific). The drug + staff master lists are
+  // now server-owned and edited ONLY through the admin editor (Pattern Editor →
+  // "IV Sticker DB"), so the sticker no longer pushes them back — doing so would
+  // overwrite the admin's edits with this page's in-memory (possibly offline
+  // fallback) copy. This page is read-only w.r.t. iv-drugs / iv-staff.
   try {
     localStorage.setItem('iv_history', JSON.stringify(history.slice(0, 200)));
   } catch (e) {
     showToast('ไม่สามารถบันทึก history: ' + e.message, 'error');
-  }
-  // Sync drugs & staff to server in background
-  _syncToServer();
-}
-
-async function _syncToServer() {
-  try {
-    await Promise.all([
-      _putRx('/api/iv-drugs', drugs),
-      _putRx('/api/iv-staff', staff),
-    ]);
-  } catch (e) {
-    showToast('Server sync failed: ' + e.message, 'error');
   }
 }
 
