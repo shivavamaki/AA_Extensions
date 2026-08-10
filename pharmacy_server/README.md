@@ -290,6 +290,7 @@ local path**, so Chrome's registered path never changes and an update becomes
 | `GET` | `/api/ext-version` | `{version, name}` currently published — lets a client skip the download when already current |
 | `GET` | `/ext-download` | The packaged extension ZIP (`Content-Disposition` names it by version) |
 | `GET` | `/ext-sync.bat` | The client sync script, **with this server's URL already filled in** (taken from the request's `Host`, so it is correct on any address/port) |
+| `GET` | `/update-extension` | `BKN-Update-Extension.bat` — the one-click updater staff keep on the Desktop; a thin bootstrap that re-fetches `/ext-sync.bat` each run, also URL-injected |
 
 **Source.** The ZIP is built from `EXT_SRC_DIR` — by default the
 `BKNPharmacyPortal/` folder beside `pharmacy_server/` (the server runs on the
@@ -298,17 +299,32 @@ same machine as the repo). Override with `BKN_EXT_SRC`. Dev noise (`.git`,
 build is **cached per manifest version** in `data/ext-pkg/` — so **bump the
 manifest version to publish**, which the normal release flow does anyway.
 
-**On each workstation** (one-time):
+### For pharmacy staff — one file, double-click
 
-```bat
-curl -o C:\bkn-ext-sync.bat http://10.134.110.81:8765/ext-sync.bat
-C:\bkn-ext-sync.bat
-```
+Give each workstation **one** file: `BKN-Update-Extension.bat`. Download it once
+from `http://10.134.110.81:8765/update-extension` (or copy it from
+`pharmacy_server/www/`) and leave it on the Desktop.
 
-Then `chrome://extensions` → Developer mode → **Load unpacked** →
-`D:\pharmacy\BKNPharmacyPortal`. From then on a pharmacist re-runs the `.bat`
-when a new version is announced and clicks the reload arrow — the path, and
-therefore the extension ID, never changes.
+To update, the staff member **double-clicks it** — no typing, no arguments. It
+re-downloads the sync logic from the server each run, so the Desktop copy never
+goes stale; only the one `SERVER=` line would ever need editing, and only if the
+server moves.
+
+First time on a PC, after running it once: `chrome://extensions` → Developer
+mode → **Load unpacked** → `D:\pharmacy\BKNPharmacyPortal`. After that it is
+double-click, then click the reload arrow — the path, and therefore the
+extension ID, never changes.
+
+### For the maintainer — publishing a version
+
+On the server machine, after bumping the manifest version, double-click
+`pharmacy_server/publish_extension.bat`. It reports the version, forces the
+package build so the first workstation doesn't wait, and reminds you that **an
+edit without a version bump will not reach the workstations** (the ZIP is cached
+per manifest version).
+
+Both scripts fail safely and say what to do: if the server is unreachable they
+explain which address they tried and leave any existing install untouched.
 
 The script is deliberately conservative: it compares versions and exits early
 when current, verifies the downloaded package contains a `manifest.json`

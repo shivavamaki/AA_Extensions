@@ -3666,6 +3666,28 @@ class Handler(BaseHTTPRequestHandler):
             with zip_path.open('rb') as f:
                 shutil.copyfileobj(f, self.wfile)
             return
+        # /update-extension → the one-click updater a workstation keeps on its
+        # Desktop. It is a tiny bootstrap that re-downloads /ext-sync.bat each
+        # run, so the copy on the PC never goes stale. Served with this server's
+        # own address baked in, so the staff member never edits anything.
+        if clean in ('/update-extension', '/update-extension.bat',
+                     '/BKN-Update-Extension.bat'):
+            src = WWW_DIR / 'BKN-Update-Extension.bat'
+            if not src.exists():
+                self.send_json(404, {'error': 'updater not installed on server'}); return
+            host = (self.headers.get('Host', '') or '').strip() \
+                   or f'{getattr(Handler, "_ip", "127.0.0.1")}:{getattr(Handler, "_port", DEFAULT_PORT)}'
+            text = src.read_text(encoding='utf-8')
+            text = re.sub(r'(?m)^set "SERVER=.*"$', f'set "SERVER=http://{host}"', text, count=1)
+            body = text.encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/octet-stream')
+            self.send_header('Content-Length', str(len(body)))
+            self.send_header('Content-Disposition',
+                             'attachment; filename="BKN-Update-Extension.bat"')
+            self._cors()
+            self.end_headers()
+            self.wfile.write(body); return
         # /ext-sync.bat → the client sync script, pre-filled with this server's
         # own URL so a workstation needs no hand-editing.
         if clean in ('/ext-sync.bat', '/ext-sync'):
