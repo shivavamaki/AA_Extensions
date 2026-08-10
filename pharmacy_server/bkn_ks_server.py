@@ -103,6 +103,7 @@ Data layout:
 
 import hashlib
 import hmac
+import ipaddress
 import json
 import mimetypes
 import os
@@ -157,30 +158,75 @@ WWW_DIR           = Path(__file__).parent / 'www'
 KS_COLS       = {'faqs', 'items', 'vdos'}
 # All rx collections — GET is public; PUT requires editor/admin auth
 RX_COLS       = {'premix-drugs', 'mixing-protocols', 'medication-db', 'iv-drugs', 'iv-staff', 'pattern-overrides', 'chemo-drugs', 'pending-code'}
-# Requests from these Chrome extensions may read/write data without login.
-# Multiple IDs supported during the rx_menu → BKN Pharmacy Portal migration.
+# RX collections whose PUT requires an authenticated admin/editor (Bearer token),
+# NOT just a trusted extension origin. The IV-Sticker master data is edited only
+# through the admin editor (Pattern Editor → "IV Sticker DB" tab); the sticker
+# page itself is read-only. Reads (GET) stay open so the sticker can load them.
+RX_ADMIN_WRITE_COLS = {'iv-drugs', 'iv-staff'}
+# One-time seed for the IV-Sticker master data: written on first startup only
+# (if data/rx/iv-drugs.json / iv-staff.json is absent), so the server — not the
+# extension's hard-coded list — is the source of truth. Extracted from the
+# extension's former DEFAULT_DRUGS / DEFAULT_STAFF (kept there only as an offline
+# fallback). Existing files are never overwritten (data-protection invariant).
+IV_DRUGS_SEED = [{"codeName":"KCl","generic":"KCl","type":"HAD","exp":7,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":""},{"codeName":"50%MgSO4","generic":"50%MgSO4","type":"HAD","exp":30,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":""},{"codeName":"KCl+MgSO4","generic":"KCl+MgSO4","type":"HAD","exp":2,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":""},{"codeName":"3%NaCl (inhale with nebulizer)","generic":"3%NaCl (inhale with nebulizer)","type":"HAD","exp":1,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":""},{"codeName":"KCl 10 mEq + K2PO4 40 mEq","generic":"KCl 10 mEq + K2PO4 40 mEq","type":"HAD","exp":90,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":""},{"codeName":"Dipotassium Phosphate","generic":"Dipotassium Phosphate","type":"HAD","exp":7,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":""},{"codeName":"3%NaCl","generic":"3%NaCl","type":"HAD","exp":1,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":""},{"codeName":"Fentanyl","generic":"Fentanyl","type":"HAD","exp":30,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":""},{"codeName":"Morphine","generic":"Morphine","type":"HAD","exp":60,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":""},{"codeName":"Morphine 30 mg in NSS 30 mL","generic":"Morphine","type":"HAD","exp":60,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":"ฉีดตามแพทย์สั่ง"},{"codeName":"PCEA (Bupivacaine)","generic":"PCEA (Bupivacaine)","type":"HAD","exp":30,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":""},{"codeName":"PCEA (Chirocaine)","generic":"PCEA (Chirocaine)","type":"HAD","exp":2,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":""},{"codeName":"FENtanyl (5 mL)","generic":"FENtanyl (5 mL)","type":"PFS","exp":30,"storage":"Keep in Room Temp.","had":"","conc":"10 mcg/mL","rate":""},{"codeName":"MORphine (3 mL)","generic":"MORphine (3 mL)","type":"PFS","exp":60,"storage":"Keep in Room Temp.","had":"","conc":"1 mg/mL","rate":""},{"codeName":"PEThidine (2.5 mL)","generic":"PEThidine (2.5 mL)","type":"PFS","exp":28,"storage":"Keep in Room Temp.","had":"","conc":"10 mg/mL","rate":""},{"codeName":"Succinyl (2 mL)","generic":"Succinyl (2 mL)","type":"PFS","exp":7,"storage":"Keep in Room Temp.","had":"","conc":"50 mg/mL","rate":""},{"codeName":"Adrenaline","generic":"Adrenaline","type":"PFS","exp":90,"storage":"Keep in Room Temp.","had":"","conc":"","rate":""},{"codeName":"Fentanyl 50 mcg/mL PFS","generic":"Fentanyl","type":"PFS","exp":7,"storage":"Keep in Room Temp.","had":"","conc":"50 mcg/mL","rate":""},{"codeName":"Midazolam 1 mg/mL PFS","generic":"Midazolam","type":"PFS","exp":7,"storage":"Keep in Room Temp.","had":"","conc":"1 mg/mL","rate":""},{"codeName":"Norepinephrine 0.1 mg/mL","generic":"Norepinephrine","type":"PFS","exp":2,"storage":"Keep in Room Temp.","had":"","conc":"0.1 mg/mL","rate":""},{"codeName":"Cefazolin (ceFAZolin 1 Gm)","generic":"Cefazolin","type":"ATB","exp":7,"storage":"Keep in Refrigerator","had":"","conc":"","rate":"IV drip 60 ml/hr"},{"codeName":"Ceftriaxone 1 g","generic":"Ceftriaxone","type":"ATB","exp":7,"storage":"Keep in Refrigerator","had":"","conc":"","rate":"IV drip 10 ml/hr"},{"codeName":"Vancomycin 500 mg","generic":"Vancomycin","type":"ATB","exp":14,"storage":"Keep in Refrigerator","had":"","conc":"","rate":"IV drip in 30 min"},{"codeName":"Pip/Tazo 4.5 g","generic":"Piperacillin/Tazobactam","type":"ATB","exp":2,"storage":"Keep in Refrigerator","had":"","conc":"","rate":"IV drip every 8 hr"},{"codeName":"Rocephin 2 g","generic":"Rocephin","type":"ATB","exp":7,"storage":"Keep in Refrigerator","had":"","conc":"","rate":"IV drip 1 Gm/hr"},{"codeName":"Dalacin-C 600 mg","generic":"Dalacin-C","type":"ATB","exp":7,"storage":"Keep in Refrigerator","had":"","conc":"","rate":"IV drip 30 mL/hr"},{"codeName":"Meropenem 1 g","generic":"Meropenem","type":"ATB","exp":2,"storage":"Keep in Refrigerator","had":"","conc":"","rate":"IV drip every 24 hr"},{"codeName":"Invanz 1 g","generic":"Invanz","type":"ATB","exp":3,"storage":"Keep in Refrigerator","had":"","conc":"","rate":"IV drip in 1 hr"},{"codeName":"Amikacin 500 mg","generic":"Amikacin","type":"ATB","exp":5,"storage":"Keep in Refrigerator","had":"","conc":"","rate":""},{"codeName":"Levofloxacin 750 mg","generic":"Levofloxacin","type":"ATB","exp":2,"storage":"Keep in Refrigerator","had":"","conc":"","rate":"IV drip every 5 hr"},{"codeName":"Ceftazidime 1 g","generic":"Ceftazidime","type":"ATB","exp":7,"storage":"Keep in Refrigerator","had":"","conc":"","rate":"IV drip 1 Gm/hr"},{"codeName":"5-FU","generic":"5-FU","type":"Cytotoxic","exp":28,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":""},{"codeName":"Methotrexate","generic":"Methotrexate","type":"Cytotoxic","exp":7,"storage":"Keep in Room Temp.","had":"High Alert Drugs","conc":"","rate":""},{"codeName":"Gemcitabine 200 mg","generic":"Gemcitabine","type":"Cytotoxic","exp":7,"storage":"Keep in Room Temp.","had":"","conc":"","rate":""},{"codeName":"Vancomycin Eye","generic":"Vancomycin","type":"EYE","exp":14,"storage":"Keep in Refrigerator","had":"","conc":"","rate":"IV drip in 30 min"},{"codeName":"Ceftazidime Eye","generic":"Ceftazidime","type":"EYE","exp":7,"storage":"Keep in Refrigerator","had":"","conc":"","rate":""}]
+IV_STAFF_SEED = [{"name":"Akira","role":"Pharmacist"},{"name":"Apsorn","role":"Pharmacist"},{"name":"Cha","role":"Pharmacist"},{"name":"Ket","role":"Pharmacist"},{"name":"JOHN","role":"Pharmacist"},{"name":"Waram","role":"Pharmacist"},{"name":"Nattaya","role":"Pharmacist"},{"name":"Narudee","role":"Phar.Assist"},{"name":"Chayaporn","role":"Pharmacist"},{"name":"Oum","role":"Pharmacist"},{"name":"Phatt","role":"Pharmacist"},{"name":"Piyathida","role":"Pharmacist"},{"name":"Tunyaporn","role":"Pharmacist"},{"name":"Metawee","role":"Pharmacist"},{"name":"Siwawoot","role":"Pharmacist"},{"name":"Sucheera","role":"Pharmacist"},{"name":"Wannaporn","role":"Pharmacist"},{"name":"Ananya","role":"Pharmacist"},{"name":"Chanapa","role":"Pharmacist"},{"name":"Nongnapas","role":"Pharmacist"},{"name":"Paraporn","role":"Pharmacist"},{"name":"Rattiyakorn","role":"Phar.Assist"},{"name":"Thantita","role":"Pharmacist"},{"name":"Onamon","role":"Phar.Assist"},{"name":"Tussanee","role":"Phar.Assist"},{"name":"Punyaporn","role":"Pharmacist"},{"name":"Arunya","role":"Phar.Assist"},{"name":"Patcharee","role":"Pharmacist"},{"name":"Pijarin","role":"Pharmacist"},{"name":"Tanit","role":"Pharmacist"},{"name":"Arisara","role":"Phar.Assist"},{"name":"Rattanan","role":"Phar.Assist"},{"name":"Wanika","role":"Phar.Assist"},{"name":"Pornsiri","role":"Phar.Assist"},{"name":"Pitsanu","role":"Phar.Assist"},{"name":"DUSADEE","role":"Phar.Assist"},{"name":"Siriporn","role":"Phar.Assist"},{"name":"Paninee","role":"Pharmacist"}]
+# Requests from a Chrome extension running on a pharmacy workstation may
+# read/write data without login.
 #
-# RIS_RA_2026_03 — Restrict the write allowlist to KNOWN extension IDs instead
-# of trusting every chrome-extension:// origin. The BKN Pharmacy Portal build
-# has no fixed manifest "key", so its install ID is machine-specific: add it
-# here, or (preferred, no code edit) set the BKN_EXTENSION_IDS env var to a
-# comma-separated list of IDs before starting the server.
-TRUSTED_EXTENSION_ORIGINS = {
-    'chrome-extension://eeglifkmgelepjmnnldknacamedmckbj',  # rx_menu (legacy)
-    'chrome-extension://nffpegfadeflicpjedmhlgpgpjhkgmgg',  # AAOverlay (legacy)
-    # BKN Pharmacy Portal — DETERMINISTIC id from the manifest "key", so it is the
-    # SAME on every workstation (no per-install id churn). This is the one that
-    # matters going forward.
-    'chrome-extension://bmnbffgenocfinghgjbfblkmggmaejpp',  # BKN Pharmacy Portal (manifest key)
-    'chrome-extension://goocpmfdgnmcambpngdkdiphkihimcdn',  # pre-key install (transition; safe to remove later)
-    # Add any further install ids here, or via the BKN_EXTENSION_IDS env var.
-}
-for _eid in (os.environ.get('BKN_EXTENSION_IDS', '') or '').split(','):
-    _eid = _eid.strip()
-    if _eid:
-        if not _eid.startswith('chrome-extension://'):
-            _eid = 'chrome-extension://' + _eid
-        TRUSTED_EXTENSION_ORIGINS.add(_eid)
+# RIS_RA_2026_03 — TRUST MODEL: network location, not extension ID.
+#
+# The previous treatment allow-listed specific extension IDs. That proved
+# operationally brittle: Chrome only derives the deterministic ID from the
+# manifest "key" when the extension is loaded from the folder carrying that
+# key, so an unpacked install from a different path — or any copy predating
+# the key — gets a fresh random ID and is silently refused. Writes then fail
+# with a bare 401 while reads keep working, which presents to staff as "the
+# extension is missing" rather than as an auth error. Re-registering IDs per
+# machine is not sustainable across the ward's workstations.
+#
+# We therefore trust *any* chrome-extension:// origin, but only when the
+# request comes from an approved network. Chrome sets the Origin header
+# itself (a web page cannot forge a chrome-extension:// origin), so this
+# still excludes ordinary websites; the remaining exposure is another
+# extension installed on a pharmacy PC, which is accepted deliberately and
+# bounded by the subnet. The compensating controls are the infra half of
+# RIS_RT_2026_03 (HTTPS + firewall to the pharmacy VLAN), which carry more
+# of the weight under this model — see RISK-TREATMENT.md.
+#
+# Configure with BKN_TRUSTED_SUBNETS (comma-separated CIDRs) to match the
+# site's addressing. Loopback is always trusted.
+TRUSTED_SUBNETS_DEFAULT = '10.134.0.0/16'
+def _parse_subnets(spec):
+    """Parse a comma-separated CIDR list into ip_network objects (bad entries skipped)."""
+    nets = []
+    for part in (spec or '').split(','):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            nets.append(ipaddress.ip_network(part, strict=False))
+        except ValueError:
+            print(f'[trust] ignoring invalid subnet: {part!r}', file=sys.stderr)
+    return nets
+
+TRUSTED_SUBNETS = _parse_subnets(
+    os.environ.get('BKN_TRUSTED_SUBNETS') or TRUSTED_SUBNETS_DEFAULT
+)
+
+def _ip_is_trusted(client_ip):
+    """True if client_ip is loopback or inside a configured trusted subnet."""
+    try:
+        ip = ipaddress.ip_address(client_ip)
+    except ValueError:
+        return False
+    if ip.is_loopback:
+        return True
+    # IPv4-mapped IPv6 (::ffff:10.134.x.x) — compare on the embedded v4 address.
+    mapped = getattr(ip, 'ipv4_mapped', None)
+    if mapped is not None:
+        ip = mapped
+    return any(ip in net for net in TRUSTED_SUBNETS)
+
 # Backward-compat single-origin variable (still referenced by older code paths)
 EXTENSION_ORIGIN = 'chrome-extension://eeglifkmgelepjmnnldknacamedmckbj'
 # medication-db and pattern-overrides are dicts; all other rx cols are arrays
@@ -934,6 +980,33 @@ def complete_opd_queue_case(case_id, user=''):
                         pass
                 return c
     return None
+
+def _log_untrusted_write(method, path, origin, client_ip, reason):
+    """Append one refused login-less write to data/logs/untrusted-write-YYYY-MM-DD.jsonl.
+
+    RIS_RA_2026_03. A refused write returns a bare 401, which is indistinguishable
+    from an ordinary auth failure in the UI — reads still succeed, so staff see a
+    populated page that silently fails to save. Logging every rejection makes the
+    next trust miss diagnosable instead of being reported as "the extension is
+    missing". Also echoed to stderr so it shows up without opening the log file.
+    """
+    try:
+        LOGS_DIR.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now()
+        rec = {
+            'at': ts.isoformat(),
+            'method': method,
+            'path': path,
+            'origin': origin or '',
+            'ip': client_ip or '',
+            'reason': reason,
+        }
+        with open(LOGS_DIR / f'untrusted-write-{ts:%Y-%m-%d}.jsonl', 'a', encoding='utf-8') as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + '\n')
+        print(f'[untrusted-write] {reason}: {method} {path} '
+              f'origin={origin or "-"} ip={client_ip or "-"}', file=sys.stderr)
+    except Exception as e:
+        print(f'[untrusted-write-log] failed: {e}', file=sys.stderr)
 
 def _log_opd_queue(event, case, user=''):
     """Append one queue event to data/logs/opd-queue-YYYY-MM-DD.jsonl.
@@ -3034,17 +3107,61 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Max-Age',       '86400')
 
     def _is_trusted_extension(self):
-        # RIS_RA_2026_03 — Only allowlisted extension IDs are trusted for
-        # login-less writes. Chrome sets the Origin header itself (web pages
-        # cannot spoof a chrome-extension:// origin), but we no longer trust
-        # *every* extension — the ID must be in TRUSTED_EXTENSION_ORIGINS
-        # (seed constant + BKN_EXTENSION_IDS env var).
-        origin = self.headers.get('Origin', '')
-        if origin in TRUSTED_EXTENSION_ORIGINS:
-            return True
-        # Local-machine fallback (when Origin header is absent)
+        """True if this request may write data without a login.
+
+        RIS_RA_2026_03 — trust is decided by NETWORK LOCATION, not extension ID:
+        any `chrome-extension://` origin is accepted, but only from loopback or a
+        configured trusted subnet (BKN_TRUSTED_SUBNETS). Chrome sets the Origin
+        header itself, so a web page cannot forge a chrome-extension:// origin.
+        This removes the per-install ID registration that kept breaking whenever
+        an unpacked extension was reloaded from a different path.
+
+        Sets `self._trust_deny` to a short reason when refusing, so the caller can
+        log why (see _log_untrusted_write).
+        """
         client_ip = self.client_address[0]
-        return client_ip in ('127.0.0.1', '::1', 'localhost')
+        origin = self.headers.get('Origin', '')
+        ip_ok = _ip_is_trusted(client_ip)
+        if origin.startswith('chrome-extension://'):
+            if ip_ok:
+                return True
+            self._trust_deny = 'extension origin from untrusted network'
+            return False
+        # A cross-origin *website* is never trusted, even from the server's own
+        # machine — a page open in a browser on the host must not inherit write
+        # access just by being local.
+        if origin:
+            self._trust_deny = 'non-extension origin'
+            return False
+        # No Origin header: same-origin first-party pages (e.g. /opd-queue-view)
+        # and local tooling like curl. Loopback only — not the whole subnet.
+        try:
+            if ipaddress.ip_address(client_ip).is_loopback:
+                return True
+        except ValueError:
+            pass
+        self._trust_deny = 'no Origin header (non-local)'
+        return False
+
+    def _allow_write(self, ext_data_write):
+        """Gate a login-less data write: allow it, else fall back to a role check.
+
+        Returns True if the request may proceed. When the trusted-client check
+        failed we log the rejection (RIS_RA_2026_03) before falling back, so an
+        untrusted workstation is visible in data/logs/ instead of silently
+        surfacing as a bare 401 that looks like an ordinary auth failure.
+        Requests carrying a valid session are NOT logged — those are normal
+        logged-in admin writes, not trust misses.
+        """
+        if ext_data_write:
+            return True
+        if not self._session():
+            _log_untrusted_write(
+                self.command, self.path,
+                self.headers.get('Origin', ''), self.client_address[0],
+                getattr(self, '_trust_deny', 'not a trusted client'),
+            )
+        return self._require('super_admin', 'admin', 'editor')
 
     def _session(self):
         """Return session dict {username, role} or None."""
@@ -3531,13 +3648,18 @@ class Handler(BaseHTTPRequestHandler):
             'patient', 'patient-context', 'patient-adr', 'patient-medcache',
             'patient-captures', 'report-cache', 'hmr', 'hmq', 'opd-queue',
         )
+        # IV-Sticker master data (iv-drugs / iv-staff) is admin-only: editable
+        # solely through the Pattern Editor's "IV Sticker DB" tab by a logged-in
+        # admin/editor. A trusted extension alone is NOT enough — force the
+        # role check even though the collection rides the generic 'rx' route.
+        if rtype == 'rx' and key in RX_ADMIN_WRITE_COLS:
+            ext_data_write = False
         # The OPD queue viewer (/opd-queue-view) is a first-party server page, not
         # the extension — allow its Complete action (opd-queue PUT) without login,
         # like the workflow queue it drives. Cross-origin is still blocked by CORS.
         if rtype == 'opd-queue':
             ext_data_write = True
-        if not ext_data_write:
-            if not self._require('super_admin', 'admin', 'editor'): return
+        if not self._allow_write(ext_data_write): return
 
         if rtype == 'med-image-upload':
             safe_name = _safe_filename(key)
@@ -4153,8 +4275,7 @@ class Handler(BaseHTTPRequestHandler):
         # the trusted extension to append a med-error record without a session.
         # Anyone else must be editor/admin/super_admin.
         ext_data_write = self._is_trusted_extension() and rtype == 'kpi-med-errors'
-        if not ext_data_write:
-            if not self._require('super_admin', 'admin', 'editor'): return
+        if not self._allow_write(ext_data_write): return
         if rtype == 'kpi-med-errors':
             if not isinstance(body, dict):
                 self.send_json(400, {'error': 'Body must be a JSON object'}); return
@@ -4191,8 +4312,7 @@ class Handler(BaseHTTPRequestHandler):
         # origin) may remove a med-error record or a drug's Patient Instruction
         # without logging in; anyone else needs editor/admin/super_admin.
         ext_data_write = self._is_trusted_extension() and rtype in ('kpi-med-error-item', 'rx-note')
-        if not ext_data_write:
-            if not self._require('super_admin', 'admin', 'editor'): return
+        if not self._allow_write(ext_data_write): return
 
         # DELETE /api/rx-note/:code — remove a drug's Patient Instruction(s).
         if rtype == 'rx-note':
@@ -4325,7 +4445,14 @@ def _init_data_dirs():
     for col in RX_COLS:
         p = rx_file(col)
         if not p.exists():
-            p.write_text('{}' if col in RX_DICT_COLS else '[]', encoding='utf-8')
+            # Seed the IV-Sticker master data from the built-in defaults on first
+            # run so the server is the source of truth; all others start empty.
+            if col == 'iv-drugs':
+                _atomic_write_json(p, IV_DRUGS_SEED)
+            elif col == 'iv-staff':
+                _atomic_write_json(p, IV_STAFF_SEED)
+            else:
+                p.write_text('{}' if col in RX_DICT_COLS else '[]', encoding='utf-8')
     _ensure_default_users()
 
 
@@ -4365,6 +4492,12 @@ def main():
 
     # Init sub-folders (KPI files created on demand per day)
     _init_data_dirs()
+
+    # Make the write-trust boundary visible at startup — a mistyped
+    # BKN_TRUSTED_SUBNETS otherwise only shows up as workstations failing to save.
+    print('[trust] login-less writes allowed from chrome-extension:// origins on: '
+          + (', '.join(str(n) for n in TRUSTED_SUBNETS) or '(loopback only)'),
+          file=sys.stderr)
 
     global _SERVER_START
     ip = get_local_ip()

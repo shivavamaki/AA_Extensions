@@ -9,8 +9,9 @@
 
 | Folder | Extension / App | Version | Description |
 |---|---|---|---|
-| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.13.0 | Primary extension — unified portal with all pharmacy tools |
+| [`BKNPharmacyPortal/`](BKNPharmacyPortal/) | BKN Pharmacy Portal | v3.45.0 | Primary extension — unified portal with all pharmacy tools |
 | [`Automate/`](Automate/) | Arcus Toolkit | v4.2.0 | Separate utility — Auto Dispense / IP Fill automation panel |
+| [`chemo_sticker/`](chemo_sticker/) | Chemo Sticker (standalone) | — | Chemo label web app — open `index.html` directly, no build step |
 | [`pharmacy_server/`](pharmacy_server/) | Knowledge Sharing Server | — | Python stdlib backend for all persistent pharmacy data |
 
 > Legacy rollback copies (`rx_menu/`, `AAOverlay/`) have been removed. All their functionality lives in `BKNPharmacyPortal/`.
@@ -42,14 +43,15 @@ Unified MV3 Chrome extension merging two predecessor extensions (`rx_menu` + `AA
 
 | Feature | What it does | README |
 |---|---|---|
-| Home Med Sheet | Printable A4 discharge medication sheet (Thai, photos, editable, Checklist card, Medication Reconciliation/POM panel) | [home-med/README.md](BKNPharmacyPortal/src/features/home-med/README.md) |
+| Home Med Sheet | Printable A4 medication sheet — **IPD discharge** (`page-home-med.html`: Thai, photos, editable, Checklist card, Med Reconciliation/POM panel, by-meal card) and **OPD** (`OPD-Sheet.html`: Checking mode, last-5-visits history, vitals/doctor notes, review cards → OPD dispensing queue) | [home-med/README.md](BKNPharmacyPortal/src/features/home-med/README.md) |
 | Med Sticker | Medication label stickers from dispense workbench / POM list | [med-sticker/README.md](BKNPharmacyPortal/src/features/med-sticker/README.md) |
 | Patient Sticker | Patient ID / address / med-reconcile / allergy / unreceivable labels | [patient-sticker/README.md](BKNPharmacyPortal/src/features/patient-sticker/README.md) |
 | ADR Drug Timeline | Drug Gantt chart with ADR events, multi-range editing, print-to-one-page | [adrtimeline/README.md](BKNPharmacyPortal/src/features/adrtimeline/README.md) |
 | Medication Journey | Per-drug continuity grid across care phases | [med-journey/README.md](BKNPharmacyPortal/src/features/med-journey/README.md) |
 | HM Process | Ward-view discharge workflow card — Med Reconcile capture, checks, Allocate/Dispense automation, HM Process Queue integration | [hmr/README.md](BKNPharmacyPortal/src/features/hmr/README.md) |
 | HM Process Queue | Cross-workstation floating popup tracking New Case → On Process → Completed, plus a read-only history Dashboard in the extension popup | [hmq/README.md](BKNPharmacyPortal/src/features/hmq/README.md) |
-| Pattern Editor | Admin page for curated EN→TH phrase overrides (Home Med translation) | [pattern-editor/README.md](BKNPharmacyPortal/src/features/pattern-editor/README.md) |
+| Pattern Editor | Admin page — curated EN→TH phrase overrides, drug Patient Instructions, and the **IV Sticker DB** (drug + staff master lists) | [pattern-editor/README.md](BKNPharmacyPortal/src/features/pattern-editor/README.md) |
+| Med Reconcile Comment | Editable dropdown of canned comments on ArcusAir's Med Reconcile screen | [medrecon-comment/README.md](BKNPharmacyPortal/src/features/medrecon-comment/README.md) |
 
 Shared infrastructure: [src/shared/README.md](BKNPharmacyPortal/src/shared/README.md)
 
@@ -57,9 +59,12 @@ Shared infrastructure: [src/shared/README.md](BKNPharmacyPortal/src/shared/READM
 
 | Page | Description | README |
 |---|---|---|
-| IV / Aux Sticker | IV bag, HAD, PFS, premix, and mixing labels | — |
-| IPD Queue | Active inpatient list → push to Drug Delivery | — |
-| Reports | RT_COMMON_257 dispensing, RT_COMMON_917 stock picking, Beedee report | — |
+| IV / Aux Sticker | IV bag, HAD, PFS, premix, and mixing labels — drug/staff lists are server-owned, edited in Pattern Editor | [iv-aux-sticker/README.md](BKNPharmacyPortal/src/features/iv-aux-sticker/README.md) |
+| IPD Queue | Active inpatient list → push to Drug Delivery; discharge-stage highlight (`RT_COMMON_896`) | — |
+| Reports | RT_COMMON_257 dispensing, RT_COMMON_917 stock picking | [report-print/README.md](BKNPharmacyPortal/src/features/report-print/README.md) |
+| Beedee PDF | Beedee report PDF viewer / cost calculation | [beedee-pdf/README.md](BKNPharmacyPortal/src/features/beedee-pdf/README.md) |
+| Chemo Sticker | Chemo label printer (extension-page clone of the standalone app); drug DB via `/api/chemo-drugs` | [`chemo-sticker/`](BKNPharmacyPortal/chemo-sticker/) |
+| OPD Queue | Link to the server-hosted live dispensing queue (`/opd-queue-view`) fed by the OPD sheet | [pharmacy_server/README.md](pharmacy_server/README.md) |
 | Formulary | Drug formulary browser | [formulary/README.md](BKNPharmacyPortal/formulary/README.md) |
 | Knowledge Hub | Pharmacy FAQs, items, videos, shared references | [knowledge/README.md](BKNPharmacyPortal/knowledge/README.md) |
 | KPI | Daily OPD/IPD/med-error KPI records | [kpi/README.md](BKNPharmacyPortal/kpi/README.md) |
@@ -93,11 +98,12 @@ Single-file Python (stdlib only, 3.6+) `ThreadingHTTPServer`. All cross-workstat
 |---|---|
 | `data/kpi/` | Daily KPI records, OPD/IPD summaries, medication-error log |
 | `data/ks/` | Knowledge system: FAQs, items, videos, attachments |
-| `data/rx/` | Medication DB, IV drugs, premix drugs, pattern overrides, chemo drugs |
+| `data/rx/` | Medication DB, IV drugs + staff, premix drugs, pattern overrides, chemo drugs, pending codes |
 | `data/schedule/` | Shift schedule state, bookings, booking rules |
 | `data/patients/` | Per-patient context, ADR timeline, medication cache |
 | `data/hmr/` | HM Process records (one per visit; nightly-merged daily archives) |
 | `data/hmq/` | HM Process Queue entries (one per case; nightly-merged daily archives) |
+| `data/opd_queue/` | OPD dispensing queue cases (day-archived `ddmmyyyy_opd_queue.json`) |
 | `data/auth/`, `data/med-images/`, `data/logs/`, `data/temp-reports/` | Users, medication photos, request/fetch logs, downloaded Jasper XLS |
 
 **Start the server:**
@@ -128,16 +134,18 @@ BKNPharmacyPortal Chrome extension
   │     ArcusAir + drug-delivery page integration (legacy handlers, IPD queue)
   │
   ├── src/features/
-  │     home-med, med-sticker, patient-sticker, adrtimeline, med-journey,
-  │     hmr (HM Process), hmq (HM Process Queue), pattern-editor
+  │     home-med (IPD + OPD sheets), med-sticker, patient-sticker, adrtimeline,
+  │     med-journey, hmr (HM Process), hmq (HM Process Queue), pattern-editor,
+  │     medrecon-comment, iv-aux-sticker, beedee-pdf, report-print
   │     (each injects buttons + opens print/tool pages via background.js;
   │      hmr and hmq talk to each other directly via window.BKN_HMQ)
   │
-  ├── iv_sticker, aux_sticker, welcome, pdf, report_print
-  │     (extension pages — web accessible resources)
+  ├── src/main-world/
+  │     arcus-xhr-tap.js, early-sec-relay.js (world:"MAIN", document_start —
+  │     capture incus-token + cache medhistory/medreconcile responses)
   │
-  └── formulary/, knowledge/, kpi/, schedule/, vaccine/
-        (standalone extension-page apps)
+  └── formulary/, knowledge/, kpi/, pending-code/, schedule/, vaccine/,
+      chemo-sticker/   (standalone extension-page apps)
             │
             │  BKN_SERVER_PROXY (via background.js, bypasses CORS)
             ▼
@@ -145,12 +153,16 @@ Pharmacy Server  http://10.134.110.81:8765
   ├── /api/kpi/{date}
   ├── /api/faqs, /api/items, /api/vdos, /api/ks-files
   ├── /api/medication-db, /med-image/{code}
-  ├── /api/iv-drugs, /api/premix-drugs, /api/mixing-protocols, /api/pattern-overrides, /api/chemo-drugs
-  ├── /api/schedule/state, /api/schedule/bookings
+  ├── /api/iv-drugs, /api/iv-staff        — IV Sticker DB (GET open, PUT admin-only)
+  ├── /api/premix-drugs, /api/mixing-protocols, /api/pattern-overrides, /api/chemo-drugs
+  ├── /api/pending-code, /api/schedule/state, /api/schedule/bookings
   ├── /api/patients/{puid}/context, /adr-timeline, /medication-cache/{vuid}
   ├── /api/hmr, /api/hmr/{visitid}         — HM Process
   ├── /api/hmq, /api/hmq/{id}              — HM Process Queue
-  └── /api/report/home-med-api, /api/report/med-journey, /api/report/reconcile-api
+  ├── /api/opd-queue, /api/opd-queue/{id}  — OPD dispensing queue
+  ├── /api/auth/login                      — PBKDF2 login → Bearer token
+  ├── /api/report/home-med-api, /api/report/med-journey, /api/report/reconcile-api
+  └── www/ static pages: /opd-queue-view, /opd-dashboard, /hmr-report, /hmq-report, /dashboard
 
 ArcusAir  https://arcusair.bdms.co.th
   (Angular 1.x SPA — read via API calls proxied through pharmacy server)
@@ -187,12 +199,75 @@ Flow:
 
 1. Open Chrome → `chrome://extensions` → turn on **Developer mode**.
 2. Click **Load unpacked** → select `BKNPharmacyPortal/` (or `Automate/` for the automation tool).
-3. After loading, copy the extension ID and ensure it appears in `TRUSTED_EXTENSION_ORIGINS` inside `pharmacy_server/bkn_ks_server.py` for server write access.
+3. No per-machine registration is needed — the server grants write access to any `chrome-extension://` origin on a trusted subnet (`BKN_TRUSTED_SUBNETS`, default `10.134.0.0/16`). If a workstation is on another subnet, add it to that env var.
 4. Start the pharmacy server: `python pharmacy_server/bkn_ks_server.py`.
 
 ---
 
 ## Version History
+
+### Unreleased — server write-trust rework
+- **Login-less write trust moved from extension ID to network location.** The
+  v3.42.0 allowlist pinned specific extension IDs; Chrome only derives the
+  deterministic ID from the manifest `key` when the extension is loaded from the
+  folder carrying that key, so unpacked installs from another path got a random
+  ID and were refused. Because reads are ungated and only writes are checked,
+  this looked like *"the extension is missing"* rather than an auth error, and
+  recurred after reloads. `TRUSTED_EXTENSION_ORIGINS` / `BKN_EXTENSION_IDS` are
+  **removed**; `_is_trusted_extension()` now accepts any `chrome-extension://`
+  origin from loopback or a trusted subnet (`BKN_TRUSTED_SUBNETS`, default
+  `10.134.0.0/16`). No per-workstation registration ever again
+- Accepted trade-off: any extension on a pharmacy PC can write, so the HTTPS +
+  firewall treatment (RIS_RT_2026_03 infra) is now the primary control
+- Refused writes are logged to `data/logs/untrusted-write-YYYY-MM-DD.jsonl`
+  (method, path, origin, IP, reason) so a trust miss is diagnosable instead of a
+  bare 401; the effective subnet list prints at startup
+
+### v3.45.0 — 2026-08-10
+- **IV Sticker DB is now server-owned and admin-editable.** The IV/Aux Sticker's
+  drug master list and staff list moved out of the extension's hard-coded
+  `DEFAULT_DRUGS` / `DEFAULT_STAFF` and into the server (`data/rx/iv-drugs.json`,
+  `iv-staff.json`), **seeded once** on first startup from those former defaults —
+  existing files are never overwritten. The in-extension constants remain **only
+  as an offline fallback** when the server is unreachable
+- The sticker page is now **read-only** w.r.t. this data — `_syncToServer()` was
+  removed, because pushing its in-memory copy back would silently overwrite an
+  admin's edits with the (possibly fallback) list
+- New **Pattern Editor → "IV Sticker DB"** tab (Drugs / Staff sub-tabs) is the
+  only editor. `GET` stays open so the sticker can load, but `PUT` now requires a
+  logged-in `admin`/`editor`/`super_admin` (`RX_ADMIN_WRITE_COLS`) — a trusted
+  extension origin alone is deliberately **not** sufficient for these two
+  collections, unlike every other `rx` collection
+
+### v3.44.3 — 2026-08
+- HM Process Queue UX + Start hardening; discharge-search auto-click
+- Home Med Sheet: meal card flows under the repeating header; layout polish
+- Pattern Editor: shows/edits the **built-in** phrases (not just overrides);
+  generalized verb-prefix overrides
+
+### v3.42.0 — 2026-08 · Server security hardening
+- Passwords migrated to **PBKDF2** hashing; default-credential hygiene;
+  extension-ID allowlist tightened (`TRUSTED_EXTENSION_ORIGINS`)
+- Implemented the RIS-FM-01-ISS-001 risk-assessment treatments (v3.40.0)
+
+### v3.41.0 — 2026-08
+- **New: Med Reconcile Comment** (`src/features/medrecon-comment/`) — an editable
+  dropdown of canned comments injected into ArcusAir's Med Reconcile screen
+
+### v3.20.0–v3.39.0 — 2026-07 → 2026-08 · OPD workflow
+- **New: OPD Home Med Sheet** (`OPD-Sheet.html`, sharing `page-home-med.js` with
+  the IPD sheet) — current-visit summary (vitals, doctor notes, visit info), a
+  last-5-visits medical-history panel replacing the IPD Med Reconciliation panel,
+  and a 3-column **Checking mode** with pinned patient/vitals/allergy status
+- **New: OPD dispensing queue** — review cards send meds (Home/STAT groups, RM
+  meds first, Central Supply auto-STAT, sub-grouped by dispensing store) to
+  `/api/opd-queue`, with a duplicate-send guard. Server-hosted **`/opd-queue-view`**
+  renders the detail panel as a hospital prescription form with hover-zoom drug
+  photos and HN/barcode search; **`/opd-dashboard`** adds stats + activity feed
+- Home Med Sheet: slide-out print toolbar, compact/by-meal defaults, by-meal card
+  page-break fixes (measured in JS, forced only when it doesn't fit), print page
+  counter corrections, and a CSP fix replacing an inline `onerror` on the drug
+  photo with a bound listener
 
 ### v3.13.0 — 2026-07-09
 - **IPD Queue — discharge-stage highlight**: a new "🏷 Check Discharge Status"

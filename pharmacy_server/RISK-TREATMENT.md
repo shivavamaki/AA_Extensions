@@ -11,7 +11,7 @@ to perform at deploy time — they are intentionally **not** code.
 |---|---|---|---|
 | RIS_RA_2026_01 | ArcusAir integration resilience | Process | Runbook (smoke-test) |
 | RIS_RA_2026_02 | Session-token handling | Code + review | Verified — no change needed |
-| RIS_RA_2026_03 | Server transport & access | Code (allowlist) + infra (HTTPS/FW) | Allowlist **done**; HTTPS/FW = runbook |
+| RIS_RA_2026_03 | Server transport & access | Code (subnet trust) + infra (HTTPS/FW) | Subnet trust **done**; HTTPS/FW = runbook — **now load-bearing** |
 | RIS_RA_2026_04 | Translation fallback removal | Code | **Done** (prior release) |
 | RIS_RA_2026_05 | Server backup & continuity | Infra | Runbook |
 | RIS_RA_2026_06 | Knowledge continuity & cross-training | Docs/Process | Runbook |
@@ -35,17 +35,35 @@ SHA-256 accounts are accepted and transparently re-hashed on next login. See the
 Seeded accounts get `must_change_pw: true`; login response returns `mustChangePw`.
 **Deploy step:** change the seeded password(s) immediately after first run.
 
-### RIS_RT_2026_03 (partial) — Extension-ID allowlist
-`_is_trusted_extension` no longer trusts every `chrome-extension://` origin; only
-IDs in `TRUSTED_EXTENSION_ORIGINS` (seed constant + `BKN_EXTENSION_IDS` env var).
-The BKN Pharmacy Portal manifest carries a fixed **`key`**, so its ID is
-deterministic on every machine (`bmnbffgenocfinghgjbfblkmggmaejpp`) and is
-allow-listed by default — **no per-install registration needed**. Only *other*
-extensions need `BKN_EXTENSION_IDS` / a `TRUSTED_EXTENSION_ORIGINS` entry.
-**Key custody:** the RSA private key that produced the manifest `key` is **not**
-in the repo (and must never be committed or placed in the extension folder). Keep
-it in secure ops storage — it's only needed to re-derive the same ID or publish
-to the Web Store, not at runtime.
+### RIS_RT_2026_03 (partial) — Subnet-scoped write trust
+**Supersedes the extension-ID allowlist** (see *Revision* below).
+`_is_trusted_extension` accepts login-less writes when the `Origin` is **any**
+`chrome-extension://` origin **and** the client IP is loopback or within
+`TRUSTED_SUBNETS` (`BKN_TRUSTED_SUBNETS` env var, default `10.134.0.0/16`).
+Chrome sets the `Origin` header itself, so web pages cannot forge an extension
+origin; the subnet check confines the rest. Refused writes are logged to
+`data/logs/untrusted-write-YYYY-MM-DD.jsonl` via `_log_untrusted_write`.
+
+**Residual risk (accepted):** any extension installed on a pharmacy workstation
+can write. Mitigation now leans on the infra half below (HTTPS + firewall to the
+pharmacy VLAN) — keep `BKN_TRUSTED_SUBNETS` as narrow as the addressing allows.
+`iv-drugs`/`iv-staff` remain admin-login-only (`RX_ADMIN_WRITE_COLS`).
+
+#### Revision — why ID pinning was withdrawn
+The original treatment allow-listed extension IDs, relying on the manifest `key`
+for a deterministic ID. In practice Chrome only derives that ID when the
+extension is loaded from the folder carrying the key; an unpacked install from a
+different path — or a copy predating the key — receives a **random ID** and is
+refused. As reads are unauthenticated and only writes are gated, this presented
+as a working-but-not-saving extension ("the extension is missing"), and recurred
+on the same machine after reloads. Per-workstation ID registration was judged
+operationally unsustainable, so `TRUSTED_EXTENSION_ORIGINS` / `BKN_EXTENSION_IDS`
+were removed in favour of the network-scoped check.
+
+**Key custody:** the manifest `key` is retained (it still gives a stable ID and
+Web Store identity), but is **no longer a security control**. The RSA private key
+that produced it is **not** in the repo and must never be committed or placed in
+the extension folder — keep it in secure ops storage.
 
 ### RIS_RT_2026_09 — Self-host print fonts
 `iv-aux-sticker`: removed all `fonts.googleapis.com` `@import`s from
@@ -77,6 +95,9 @@ Run after every ArcusAir update:
    feature's README before editing.
 
 ### RIS_RT_2026_03 (infra) — HTTPS & firewall
+> **Priority raised.** With write trust now scoped by subnet rather than
+> extension ID, these firewall rules are the primary control on who can write —
+> they are no longer just defence in depth.
 - Front `pharmacy_server` with HTTPS (internal CA or self-signed cert).
 - Restrict server reachability to the pharmacy VLAN / approved workstations via
   firewall rules.
@@ -94,7 +115,8 @@ Run after every ArcusAir update:
 
 ### RIS_RT_2026_06 — Knowledge continuity & cross-training
 - Keep each feature `README.md` + `CLAUDE.md` current every release.
-- Maintain a short deployment runbook: register extension ID (`BKN_EXTENSION_IDS`),
+- Maintain a short deployment runbook: confirm the workstation subnet is in
+  `BKN_TRUSTED_SUBNETS` (no per-machine extension ID registration),
   start server (`start_server.bat`), change default passwords, backup/restore.
 - Cross-train at least one more IT/pharmacy-IT staff member.
 - Keep non-secret configuration in version control.

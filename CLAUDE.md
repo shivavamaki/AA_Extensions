@@ -8,7 +8,7 @@ Internal tooling monorepo for the **BKN Hospital Pharmacy Department**. Chrome e
 
 ```text
 EXT/
-├── BKNPharmacyPortal/   ← primary extension (ACTIVE — v3.10.0)
+├── BKNPharmacyPortal/   ← primary extension (ACTIVE — v3.45.0)
 ├── Automate/            ← separate utility extension (Auto Dispense / IP Fill)
 ├── chemo_sticker/       ← standalone chemo label web app (no build step)
 └── pharmacy_server/     ← Python stdlib HTTP server (data backend)
@@ -103,8 +103,17 @@ The **Home Medication Sheet** (`/api/report/home-med-api`) and **Medication Jour
 ### Medication reconciliation data is client-captured, not server-fetched
 ArcusAir has two relevant calls: `emr/medicationhistory/getdetails` auto-fires on page load with no reusable ID in the request, so `arcus-xhr-tap.js` passively caches that **response** (`window.__arcus_medhistory__`, keyed by `patientvisituid`) as a fallback. But `ordermanagement/medreconcile/getdetail` — fired by clicking "View" (`viewMedReconcileN`) on a record in ArcusAir's own Med Reconcile list — carries `{"medreconcileuid": "..."}` in its **request body**, which the same tap grabs into `window.__arcus_medrecon__`. `hmr`'s Step 5 auto-clicks the newest record's View button (`viewMedReconcile0`) to force that call, then persists whichever of `medreconcileuid`/`medreconcileSnapshot` it got onto the HMR record. `bkn_ks_server.py`'s `_resolve_reconcile_meds()` prefers a live `fetch_arcus_medreconcile()` call using the stored `medreconcileuid` (confirmed shape, works across sessions/days as long as a fresh `incusToken` is supplied) and only falls back to the shape-guessed `medreconcileSnapshot` if no uid is available. See [`BKNPharmacyPortal/src/features/hmr/README.md`](BKNPharmacyPortal/src/features/hmr/README.md#step-5--med-reconcile-semi-automated).
 
+### Master data is server-owned; seed once, never re-push from a client
+The IV Sticker's drug + staff lists (`rx/iv-drugs`, `rx/iv-staff`) live on the server and are **seeded once** at first startup from `IV_DRUGS_SEED` / `IV_STAFF_SEED` in `bkn_ks_server.py` — `_init_data_dirs()` only writes when the file is absent, so existing data is never overwritten. The extension's `DEFAULT_DRUGS` / `DEFAULT_STAFF` in `iv_sticker.js` are an **offline fallback only**. A consumer page must never PUT its in-memory copy back: if the server was unreachable, that copy is the fallback list, and pushing it would silently overwrite admin edits. Editing happens in exactly one place — the admin editor. Apply this shape to any future master list.
+
+### Write trust is by NETWORK, not extension ID
+`_is_trusted_extension()` allows a login-less write when the `Origin` is **any** `chrome-extension://` origin **and** the client IP is loopback or inside `TRUSTED_SUBNETS` (`BKN_TRUSTED_SUBNETS`, default `10.134.0.0/16`). Do **not** reintroduce an extension-ID allowlist: Chrome only derives the deterministic ID from the manifest `key` when the extension is loaded from the folder carrying that key, so unpacked installs from other paths get random IDs and silently lose the ability to save — reads are ungated, so it looks like "the extension is missing", not an auth error. The manifest `key` is kept for a stable ID but is no longer a security control. Refused writes are logged by `_log_untrusted_write` to `data/logs/untrusted-write-*.jsonl`; requests with a valid session are not logged there.
+
+### `RX_ADMIN_WRITE_COLS` — the exception to "trusted client may write"
+A trusted client normally writes rx collections without a login. Collections listed in `RX_ADMIN_WRITE_COLS` (`iv-drugs`, `iv-staff`) are deliberately **exempt**: their PUT clears `ext_data_write` and forces a real `admin`/`editor`/`super_admin` Bearer-token check, even though they ride the generic `rx` route. GET stays open so the sticker can still load. Don't "fix" this asymmetry — it's what keeps the read-only sticker page from being able to clobber the master list.
+
 ### Server safety
-Single-file stdlib server. JSON writes use `_atomic_write_json` (temp + `os.replace`). Static files served via `_serve_file_under` / `_path_within`. `TRUSTED_EXTENSION_ORIGINS` trusts any `chrome-extension://` origin for writes.
+Single-file stdlib server. JSON writes use `_atomic_write_json` (temp + `os.replace`). Static files served via `_serve_file_under` / `_path_within`. Login-less writes are gated by `_is_trusted_extension()` (see *Write trust is by NETWORK* above).
 
 ### Environment
 Windows over UNC path (`\\10.134.10.70\Pharmacy`). Prefer PowerShell for filesystem ops; quote paths with spaces.

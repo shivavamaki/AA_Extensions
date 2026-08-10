@@ -77,17 +77,25 @@ The server prints its URL on startup. The extension connects to it automatically
 |---|---|---|
 | `GET` | `/api/premix-drugs` | Premix drug list |
 | `GET` | `/api/mixing-protocols` | Mixing label protocols |
-| `GET` | `/api/iv-drugs` | IV drug master list |
-| `PUT` | `/api/iv-drugs` | Replace IV drug master list |
-| `GET` | `/api/iv-staff` | Pharmacy staff list |
-| `PUT` | `/api/iv-staff` | Replace pharmacy staff list |
+| `GET` | `/api/iv-drugs` | IV drug master list (open read) |
+| `PUT` | `/api/iv-drugs` | Replace IV drug master list — **admin/editor login required** |
+| `GET` | `/api/iv-staff` | Pharmacy staff list (open read) |
+| `PUT` | `/api/iv-staff` | Replace pharmacy staff list — **admin/editor login required** |
+
+> **IV Sticker DB.** `iv-drugs` / `iv-staff` are the source of truth for the
+> IV/Aux Sticker; they're **seeded once** from the built-in defaults on first
+> startup (only if the file is absent — existing data is never overwritten).
+> Unlike other `rx` collections, their `PUT` is **not** allowed by a trusted
+> extension alone — it requires a logged-in `admin`/`editor`/`super_admin`
+> (`RX_ADMIN_WRITE_COLS`). Editing is done in the extension's **Pattern Editor →
+> IV Sticker DB** tab; the sticker page only reads them.
 | `GET` | `/api/medication-db` | BKN medication database keyed by item code |
 | `POST` | `/api/medication-db/recheck` | Recompute each entry's `has_image` flag against `data/med-images/` |
 | `GET`/`PUT` | `/api/pattern-overrides` | Pharmacist-curated EN→TH phrase overrides (see [`pattern-editor`](../BKNPharmacyPortal/src/features/pattern-editor/README.md)) |
 | `GET`/`PUT` | `/api/chemo-drugs` | Chemo label drug DB (chemo-sticker) |
 | `POST` | `/api/rx-note/{code}` | Persist a client-translated note back into `medication-db.json` |
 
-All `GET`s on these are public; `PUT`/`POST` requires `editor`/`admin`/`super_admin` **unless** the request comes from a trusted `chrome-extension://` origin (`TRUSTED_EXTENSION_ORIGINS` / any `chrome-extension://` origin — see Server Safety below).
+All `GET`s on these are public; `PUT`/`POST` requires `editor`/`admin`/`super_admin` **unless** the request comes from a `chrome-extension://` origin on a trusted subnet (see *Trusted clients for login-less writes* below).
 
 ### Auth & Users (`data/auth/`)
 
@@ -119,25 +127,47 @@ Seeded accounts carry `must_change_pw: true`; the login response echoes
 Restrict filesystem access to `users.json` to the server host and keep it out of
 any backup that leaves the pharmacy VLAN.
 
-#### Trusted extension origins (security)
+#### Trusted clients for login-less writes (security)
 
-Login-less writes are accepted **only** from allow-listed Chrome extension IDs
-(no longer "any `chrome-extension://` origin"). *(RIS_RA_2026_03)*
+Trust is decided by **network location, not extension ID** *(RIS_RA_2026_03)*. A
+write without a login is accepted when **both** hold:
 
-The BKN Pharmacy Portal manifest now carries a fixed **`key`**, so its extension
-ID is **deterministic and identical on every workstation**:
-`bmnbffgenocfinghgjbfblkmggmaejpp` — already in `TRUSTED_EXTENSION_ORIGINS`. A
-brand-new install needs **no** per-machine registration. (The pre-`key`
-transitional id `goocpmfd…` is also listed and can be removed once all
-workstations have reloaded the keyed build.)
+1. the `Origin` is a `chrome-extension://` origin — **any** ID, and
+2. the client IP is loopback or inside a **trusted subnet**.
 
-For any *additional* extension (or to add an id without editing code):
+Chrome sets the `Origin` header itself, so an ordinary web page cannot forge a
+`chrome-extension://` origin; rule 2 confines the remaining exposure to
+extensions running on pharmacy workstations.
 
-- **Env var:** `BKN_EXTENSION_IDS=abcd…,efgh…` (comma-separated, with or without
-  the `chrome-extension://` prefix), **or**
-- add it to `TRUSTED_EXTENSION_ORIGINS` in `bkn_ks_server.py`.
+```bash
+# default: 10.134.0.0/16
+BKN_TRUSTED_SUBNETS=10.134.0.0/16,192.168.20.0/24 python bkn_ks_server.py
+```
 
-`localhost`/`127.0.0.1` requests (no Origin header) remain trusted for same-machine use.
+Invalid CIDRs are skipped with a warning, and the effective list is printed at
+startup (`[trust] login-less writes allowed from …`).
+
+> **Why not an extension-ID allowlist?** The previous treatment pinned specific
+> IDs. Chrome only derives the deterministic ID from the manifest `key` when the
+> extension is loaded from the folder carrying that key — an unpacked install
+> from a different path, or any copy predating the key, gets a **fresh random
+> ID** and is refused. Because reads are unauthenticated and only writes are
+> gated, that surfaced as a populated page that silently failed to save, and was
+> reported as *"the extension is missing"*. Per-machine ID registration was not
+> sustainable across the ward's workstations, so `BKN_EXTENSION_IDS` and
+> `TRUSTED_EXTENSION_ORIGINS` are **removed**.
+
+**Trade-off, stated plainly:** any extension installed on a pharmacy PC can now
+write. This is a deliberate exchange of ID-pinning for operational reliability,
+which shifts weight onto the infra half of RIS_RT_2026_03 — **HTTPS + firewall
+restricting the server to the pharmacy VLAN**. Keep the subnet list as narrow as
+the addressing allows. Non-extension origins and remote hosts with no `Origin`
+are still refused; `iv-drugs`/`iv-staff` still require a real admin login.
+
+**Refused writes are logged** to `data/logs/untrusted-write-YYYY-MM-DD.jsonl`
+(method, path, origin, IP, reason) and echoed to stderr, so a trust miss is
+diagnosable instead of appearing as a generic 401. Requests carrying a valid
+session are not logged there — those are normal logged-in writes.
 
 ### Patients (`data/patients/`)
 
@@ -276,7 +306,7 @@ pharmacy_server/
 | Port | `8765` | `--port` CLI argument |
 | Data directory | `./data/` | Hardcoded relative to script location |
 | CORS | `*` (all origins) | Modify `_cors()` in the script |
-| Trusted extension origins | any `chrome-extension://` origin | `TRUSTED_EXTENSION_ORIGINS` (legacy IDs also listed explicitly) |
+| Login-less write trust | any `chrome-extension://` origin from `10.134.0.0/16` or loopback | `BKN_TRUSTED_SUBNETS` env var (comma-separated CIDRs) |
 
 ---
 

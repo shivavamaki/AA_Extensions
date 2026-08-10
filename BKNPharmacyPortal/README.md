@@ -121,7 +121,7 @@ Key methods: `getServerUrl / setServerUrl / serverFetch / getPatientContext / se
 
 1. `chrome://extensions` → Developer mode ON
 2. **Load unpacked** → select `BKNPharmacyPortal/`
-3. The manifest ships a fixed `key`, so the extension ID is the **same on every machine** (`bmnbffgenocfinghgjbfblkmggmaejpp`) and is already allow-listed in the server — no per-install registration needed. (Extra/other extensions: add via `BKN_EXTENSION_IDS` or `TRUSTED_EXTENSION_ORIGINS`; see `pharmacy_server/RISK-TREATMENT.md`.)
+3. **No per-install registration needed.** The server grants login-less writes to any `chrome-extension://` origin coming from a trusted subnet (`BKN_TRUSTED_SUBNETS`, default `10.134.0.0/16`) — the extension ID is not checked, so reloading from any folder works. If a workstation sits on a different subnet, add it to that env var. See `pharmacy_server/RISK-TREATMENT.md`.
 4. Start the pharmacy server: `python pharmacy_server/bkn_ks_server.py`
 
 ---
