@@ -277,6 +277,50 @@ All files under `www/` are served as static content from the root path, includin
 
 ---
 
+## Extension sync (deploying the extension to workstations)
+
+Chrome **cannot install an unpacked extension from a URL** — "Load unpacked"
+reads a local folder only, so the server can never push an install. What it can
+do is publish the extension as a ZIP that each workstation unpacks to a **fixed
+local path**, so Chrome's registered path never changes and an update becomes
+*sync + reload* instead of remove-and-re-add.
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/ext-version` | `{version, name}` currently published — lets a client skip the download when already current |
+| `GET` | `/ext-download` | The packaged extension ZIP (`Content-Disposition` names it by version) |
+| `GET` | `/ext-sync.bat` | The client sync script, **with this server's URL already filled in** (taken from the request's `Host`, so it is correct on any address/port) |
+
+**Source.** The ZIP is built from `EXT_SRC_DIR` — by default the
+`BKNPharmacyPortal/` folder beside `pharmacy_server/` (the server runs on the
+same machine as the repo). Override with `BKN_EXT_SRC`. Dev noise (`.git`,
+`node_modules`, `test`, `screenshots`, `*.pem`, `*.crx`) is excluded, and the
+build is **cached per manifest version** in `data/ext-pkg/` — so **bump the
+manifest version to publish**, which the normal release flow does anyway.
+
+**On each workstation** (one-time):
+
+```bat
+curl -o C:\bkn-ext-sync.bat http://10.134.110.81:8765/ext-sync.bat
+C:\bkn-ext-sync.bat
+```
+
+Then `chrome://extensions` → Developer mode → **Load unpacked** →
+`D:\pharmacy\BKNPharmacyPortal`. From then on a pharmacist re-runs the `.bat`
+when a new version is announced and clicks the reload arrow — the path, and
+therefore the extension ID, never changes.
+
+The script is deliberately conservative: it compares versions and exits early
+when current, verifies the downloaded package contains a `manifest.json`
+*before* touching the live folder, and leaves the existing install untouched if
+the server is unreachable or the download is corrupt.
+
+> **Chrome still requires a manual reload.** Nothing short of a policy-managed
+> CRX (`update_url` + `ExtensionInstallAllowlist` via Group Policy) makes Chrome
+> update by itself; this removes the re-registration, not the reload.
+
+---
+
 ## Data Layout
 
 ```

@@ -118,6 +118,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import zipfile
 import http.cookiejar
 import struct
 import threading
@@ -155,6 +156,191 @@ HMQ_DIR           = DATA_DIR / 'hmq'
 OPD_QUEUE_DIR     = DATA_DIR / 'opd-queue'
 LOGS_DIR          = DATA_DIR / 'logs'
 WWW_DIR           = Path(__file__).parent / 'www'
+
+# ── Extension sync ────────────────────────────────────────────────
+# Chrome cannot install an unpacked extension from a URL, so the server can't
+# "push" an install. What it CAN do is publish the extension folder as a ZIP
+# that each workstation unpacks to a FIXED local path; Chrome then loads
+# unpacked from that stable path, so an update is a sync + a reload instead of
+# removing and re-adding the extension. See "Extension sync" in README.md.
+#
+# Source: the repo checkout that sits beside pharmacy_server/ (the server runs
+# on the same machine as the repo). Override with BKN_EXT_SRC if it moves.
+EXT_SRC_DIR  = Path(os.environ.get('BKN_EXT_SRC')
+                    or (Path(__file__).parent.parent / 'BKNPharmacyPortal'))
+EXT_PKG_DIR  = DATA_DIR / 'ext-pkg'          # built ZIPs (server-written cache)
+# Never ship developer/VCS noise to a workstation.
+EXT_SKIP_DIRS  = {'.git', '__pycache__', 'node_modules', 'test', 'screenshots'}
+EXT_SKIP_EXT   = {'.pem', '.crx', '.zip', '.log'}
+
+def _ext_manifest_version():
+    """Version string from the source manifest, or '' if unreadable."""
+    try:
+        with open(EXT_SRC_DIR / 'manifest.json', encoding='utf-8') as f:
+            return str(json.load(f).get('version') or '')
+    except Exception:
+        return ''
+
+def _ext_pkg_info():
+    """{version, name} the server is currently publishing."""
+    return {'version': _ext_manifest_version(), 'name': 'BKNPharmacyPortal'}
+
+def _ext_build_zip():
+    """Build (or reuse) the packaged extension ZIP; returns its Path.
+
+    Cached per manifest version — rebuilt only when the version changes, so a
+    ward PC polling for updates doesn't re-zip 5 MB on every request. Bump the
+    manifest version to publish (which the release flow does anyway).
+    """
+    version = _ext_manifest_version()
+    if not version:
+        raise RuntimeError(f'no manifest at {EXT_SRC_DIR}')
+    EXT_PKG_DIR.mkdir(parents=True, exist_ok=True)
+    out = EXT_PKG_DIR / f'BKNPharmacyPortal-{version}.zip'
+    if out.exists():
+        return out
+    tmp = out.with_suffix('.zip.tmp')
+    with zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED) as z:
+        for p in EXT_SRC_DIR.rglob('*'):
+            if not p.is_file():
+                continue
+            rel = p.relative_to(EXT_SRC_DIR)
+            if any(part in EXT_SKIP_DIRS for part in rel.parts):
+                continue
+            if p.suffix.lower() in EXT_SKIP_EXT:
+                continue
+            z.write(p, rel.as_posix())
+    os.replace(tmp, out)          # atomic publish, like _atomic_write_json
+    # Keep only the current version's ZIP — old builds are dead weight.
+    for old in EXT_PKG_DIR.glob('BKNPharmacyPortal-*.zip'):
+        if old != out:
+            try: old.unlink()
+            except OSError: pass
+    return out
+
+# Kept as a template rather than a static file under www/ so the server URL can
+# be filled in per request — see _ext_sync_bat().
+_EXT_SYNC_BAT_TEMPLATE = r'''@echo off
+setlocal EnableDelayedExpansion
+:: BKN Pharmacy Portal - extension sync
+:: Downloads the current extension from the pharmacy server and unpacks it to a
+:: FIXED local folder, so Chrome's "Load unpacked" path never changes.
+:: Re-run this whenever a new version is announced, then reload the extension.
+
+set "SERVER=@@SERVER@@"
+set "TARGET=D:\pharmacy\BKNPharmacyPortal"
+set "TMP=%TEMP%\bkn-ext-sync"
+
+echo.
+echo  BKN Pharmacy Portal - extension sync
+echo  ====================================
+echo  Server: %SERVER%
+echo  Target: %TARGET%
+echo.
+
+:: --- check what the server is publishing -------------------------------
+for /f "usebackq delims=" %%V in (`
+  powershell -NoProfile -Command ^
+    "try{(Invoke-RestMethod -TimeoutSec 10 '%SERVER%/api/ext-version').version}catch{''}"
+`) do set "REMOTE=%%V"
+
+if "%REMOTE%"=="" (
+  echo  *** Cannot reach the pharmacy server, or it has no package.
+  echo      Check that the server is running at %SERVER%.
+  goto :fail
+)
+echo  Available version: %REMOTE%
+
+if exist "%TARGET%\manifest.json" (
+  for /f "usebackq delims=" %%L in (`
+    powershell -NoProfile -Command ^
+      "try{(Get-Content -Raw '%TARGET%\manifest.json' | ConvertFrom-Json).version}catch{''}"
+  `) do set "LOCAL=%%L"
+  echo  Installed version: !LOCAL!
+  if "!LOCAL!"=="%REMOTE%" (
+    echo.
+    echo  Already up to date - nothing to do.
+    goto :done
+  )
+)
+
+:: --- download + unpack --------------------------------------------------
+echo.
+echo  Downloading...
+if exist "%TMP%" rmdir /s /q "%TMP%"
+mkdir "%TMP%" 2>nul
+powershell -NoProfile -Command ^
+  "try{Invoke-WebRequest -TimeoutSec 120 -Uri '%SERVER%/ext-download' -OutFile '%TMP%\ext.zip'}catch{exit 1}"
+if errorlevel 1 (
+  echo  *** Download failed.
+  goto :fail
+)
+
+echo  Unpacking...
+powershell -NoProfile -Command ^
+  "try{Expand-Archive -Force -Path '%TMP%\ext.zip' -DestinationPath '%TMP%\new'}catch{exit 1}"
+if errorlevel 1 (
+  echo  *** Could not unpack the download ^(file may be corrupt^).
+  goto :fail
+)
+if not exist "%TMP%\new\manifest.json" (
+  echo  *** Downloaded package looks wrong ^(no manifest.json^) - keeping the
+  echo      existing install untouched.
+  goto :fail
+)
+
+:: Only now touch the live folder: the new copy is verified, so a failed
+:: download can never leave a half-updated extension behind.
+echo  Installing...
+if not exist "D:\pharmacy" mkdir "D:\pharmacy"
+if exist "%TARGET%" rmdir /s /q "%TARGET%"
+if not exist "%TARGET%" mkdir "%TARGET%"
+:: robocopy, not move: TEMP is usually on C: and the target on D:, and "move"
+:: across volumes is unreliable. robocopy exit codes 0-7 are success (8+ real
+:: errors), so the check cannot use plain errorlevel.
+robocopy "%TMP%\new" "%TARGET%" /E /NFL /NDL /NJH /NJS /NP >nul
+if %ERRORLEVEL% GEQ 8 (
+  echo  *** Could not write to %TARGET%
+  echo      Close Chrome and try again.
+  goto :fail
+)
+if not exist "%TARGET%\manifest.json" (
+  echo  *** Install did not complete - manifest.json missing in the target.
+  goto :fail
+)
+
+echo.
+echo  Updated to version %REMOTE%.
+echo.
+echo  NEXT STEP - Chrome does not reload on its own:
+echo    First time on this PC:
+echo      1. chrome://extensions  ^> Developer mode ON
+echo      2. Load unpacked ^> select  %TARGET%
+echo    After that, just click the reload arrow on the extension card.
+
+:done
+if exist "%TMP%" rmdir /s /q "%TMP%" 2>nul
+echo.
+pause
+exit /b 0
+
+:fail
+if exist "%TMP%" rmdir /s /q "%TMP%" 2>nul
+echo.
+pause
+exit /b 1
+'''
+
+def _ext_sync_bat(host_header=''):
+    """The client sync script, with this server's own URL baked in.
+
+    Served from /ext-sync.bat so a workstation curls it once and never has to
+    hand-edit an address. Uses the Host the client actually reached us on, so
+    it stays correct whatever address/port the server is published under.
+    """
+    host = (host_header or '').strip() or f'{getattr(Handler, "_ip", "127.0.0.1")}:{getattr(Handler, "_port", DEFAULT_PORT)}'
+    return _EXT_SYNC_BAT_TEMPLATE.replace('@@SERVER@@', f'http://{host}')
+
 KS_COLS       = {'faqs', 'items', 'vdos'}
 # All rx collections — GET is public; PUT requires editor/admin auth
 RX_COLS       = {'premix-drugs', 'mixing-protocols', 'medication-db', 'iv-drugs', 'iv-staff', 'pattern-overrides', 'chemo-drugs', 'pending-code'}
@@ -3455,6 +3641,43 @@ class Handler(BaseHTTPRequestHandler):
         if clean.startswith('/static/'):
             self._serve_file_under(WWW_DIR, urllib.parse.unquote(clean.lstrip('/')), None); return
 
+        # ── Extension sync (see "Extension sync" in README) ────
+        # /api/ext-version → the version the server is publishing, so a client
+        # can skip the download when it is already current.
+        if clean == '/api/ext-version':
+            self.send_json(200, _ext_pkg_info()); return
+        # /ext-download → the packaged extension ZIP. Built on demand from
+        # EXT_SRC_DIR and cached until the source manifest version changes.
+        if clean == '/ext-download':
+            info = _ext_pkg_info()
+            if not info.get('version'):
+                self.send_json(503, {'error': 'No extension package available'}); return
+            try:
+                zip_path = _ext_build_zip()
+            except Exception as e:
+                self.send_json(500, {'error': f'Package build failed: {e}'}); return
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/zip')
+            self.send_header('Content-Length', str(zip_path.stat().st_size))
+            self.send_header('Content-Disposition',
+                             f'attachment; filename="BKNPharmacyPortal-{info["version"]}.zip"')
+            self._cors()
+            self.end_headers()
+            with zip_path.open('rb') as f:
+                shutil.copyfileobj(f, self.wfile)
+            return
+        # /ext-sync.bat → the client sync script, pre-filled with this server's
+        # own URL so a workstation needs no hand-editing.
+        if clean in ('/ext-sync.bat', '/ext-sync'):
+            body = _ext_sync_bat(self.headers.get('Host', '')).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/octet-stream')
+            self.send_header('Content-Length', str(len(body)))
+            self.send_header('Content-Disposition', 'attachment; filename="bkn-ext-sync.bat"')
+            self._cors()
+            self.end_headers()
+            self.wfile.write(body); return
+
         # ── Med image by code (any extension) ──────────────────
         # /med-image/:code — serve whatever file has this stem, so the client
         # need not guess the extension (covers jpg/jpeg/png/jfif/webp/gif/jxl…).
@@ -4482,6 +4705,7 @@ def _init_data_dirs():
     HMR_DIR.mkdir(parents=True, exist_ok=True)
     HMQ_DIR.mkdir(parents=True, exist_ok=True)
     OPD_QUEUE_DIR.mkdir(parents=True, exist_ok=True)
+    EXT_PKG_DIR.mkdir(parents=True, exist_ok=True)
     WWW_DIR.mkdir(parents=True, exist_ok=True)
     for col in KS_COLS:
         p = ks_file(col)
