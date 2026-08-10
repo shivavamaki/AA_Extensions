@@ -150,8 +150,15 @@
      Client-captured ArcusAir parameters that any PC can reuse without
      re-capturing (medreconcileuid, snapshot, incusToken, …). The server merges
      non-empty fields and enforces the TTL, so a stale entry reads back empty. */
+  /* A truthiness check is not enough: a non-string id (an object, an array)
+     passes `if (id)` and then stringifies into the URL as "[object Object]",
+     which the server rejects as a malformed route. Require a real 24-hex uid so
+     the bad value is dropped at the source instead of becoming a failed PUT. */
+  const HEX24 = /^[a-f0-9]{24}$/i;
+  function _validUid(v) { return typeof v === "string" && HEX24.test(v); }
+
   async function loadCapture(patientuid, patientvisituid) {
-    if (!patientuid || !patientvisituid) return null;
+    if (!_validUid(patientuid) || !_validUid(patientvisituid)) return null;
     const r = await serverFetch(
       `/api/patients/${encodeURIComponent(patientuid)}/captures/${encodeURIComponent(patientvisituid)}`
     );
@@ -159,7 +166,8 @@
   }
 
   async function saveCapture(patientuid, patientvisituid, data) {
-    if (!patientuid || !patientvisituid || !data || typeof data !== "object") return false;
+    if (!_validUid(patientuid) || !_validUid(patientvisituid)) return false;
+    if (!data || typeof data !== "object") return false;
     const r = await serverFetch(
       `/api/patients/${encodeURIComponent(patientuid)}/captures/${encodeURIComponent(patientvisituid)}`,
       {

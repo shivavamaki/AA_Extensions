@@ -142,10 +142,16 @@ extensions running on pharmacy workstations.
 ```bash
 # default: 10.134.0.0/16
 BKN_TRUSTED_SUBNETS=10.134.0.0/16,192.168.20.0/24 python bkn_ks_server.py
+
+# prefix shorthand — "starts with 10.134" (same thing, expands to 10.134.0.0/16)
+BKN_TRUSTED_SUBNETS=10.134 python bkn_ks_server.py
+BKN_TRUSTED_SUBNETS=10.134,192.168.20 python bkn_ks_server.py
 ```
 
-Invalid CIDRs are skipped with a warning, and the effective list is printed at
-startup (`[trust] login-less writes allowed from …`).
+Both full CIDR and the prefix shorthand are accepted; the mask follows the
+number of octets given (`10.134` → `/16`, `10` → `/8`). Invalid entries are
+skipped with a warning rather than aborting startup, and the effective list is
+printed at startup (`[trust] login-less writes allowed from …`).
 
 > **Why not an extension-ID allowlist?** The previous treatment pinned specific
 > IDs. Chrome only derives the deterministic ID from the manifest `key` when the
@@ -168,6 +174,14 @@ are still refused; `iv-drugs`/`iv-staff` still require a real admin login.
 (method, path, origin, IP, reason) and echoed to stderr, so a trust miss is
 diagnosable instead of appearing as a generic 401. Requests carrying a valid
 session are not logged there — those are normal logged-in writes.
+
+**Malformed routes are logged separately** to `data/logs/bad-route-*.jsonl`. A
+URL carrying an unparseable identifier (classically a JS value stringified into
+the path as `[object Object]`) cannot match a route, so `rtype` is `None`. A
+*trusted* client hitting that case now gets a **400 "Malformed route"** instead
+of falling through to a misleading 401 — the caller is trusted, so it is a
+client bug, and keeping it out of the untrusted-write log stops real trust
+misses being buried under client-side noise.
 
 ### Patients (`data/patients/`)
 

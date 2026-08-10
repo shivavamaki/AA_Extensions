@@ -197,16 +197,28 @@ IV_STAFF_SEED = [{"name":"Akira","role":"Pharmacist"},{"name":"Apsorn","role":"P
 # site's addressing. Loopback is always trusted.
 TRUSTED_SUBNETS_DEFAULT = '10.134.0.0/16'
 def _parse_subnets(spec):
-    """Parse a comma-separated CIDR list into ip_network objects (bad entries skipped)."""
+    """Parse a comma-separated trusted-network list into ip_network objects.
+
+    Accepts full CIDR ('10.134.0.0/16') and the shorthand prefix form people
+    actually think in: '10.134' / '10.134.' both mean "any IP starting with
+    10.134", i.e. 10.134.0.0/16. Bad entries are skipped with a warning rather
+    than aborting startup — a typo must not take the pharmacy server down.
+    """
     nets = []
     for part in (spec or '').split(','):
-        part = part.strip()
+        part = part.strip().rstrip('.')
         if not part:
             continue
         try:
+            if '/' not in part:
+                # Prefix shorthand: pad the missing octets and derive the mask
+                # from how many octets were actually given (10.134 → /16).
+                octets = part.split('.')
+                if len(octets) < 4 and all(o.isdigit() for o in octets):
+                    part = '.'.join(octets + ['0'] * (4 - len(octets))) + f'/{len(octets) * 8}'
             nets.append(ipaddress.ip_network(part, strict=False))
         except ValueError:
-            print(f'[trust] ignoring invalid subnet: {part!r}', file=sys.stderr)
+            print(f'[trust] ignoring invalid trusted network: {part!r}', file=sys.stderr)
     return nets
 
 TRUSTED_SUBNETS = _parse_subnets(
@@ -1007,6 +1019,28 @@ def _log_untrusted_write(method, path, origin, client_ip, reason):
               f'origin={origin or "-"} ip={client_ip or "-"}', file=sys.stderr)
     except Exception as e:
         print(f'[untrusted-write-log] failed: {e}', file=sys.stderr)
+
+def _log_bad_route(method, path, origin, client_ip):
+    """Log a trusted client hitting an unparseable route → data/logs/bad-route-*.jsonl.
+
+    Distinct from _log_untrusted_write: the caller IS trusted, so this is a
+    CLIENT bug (a malformed identifier in the URL, e.g. a JS object stringified
+    to "[object Object]"), not an access-control problem. Kept separate so a
+    genuine trust miss is never buried under client-side noise.
+    """
+    try:
+        LOGS_DIR.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now()
+        rec = {
+            'at': ts.isoformat(), 'method': method, 'path': path,
+            'origin': origin or '', 'ip': client_ip or '',
+        }
+        with open(LOGS_DIR / f'bad-route-{ts:%Y-%m-%d}.jsonl', 'a', encoding='utf-8') as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + '\n')
+        print(f'[bad-route] client sent a malformed path: {method} {path} '
+              f'ip={client_ip or "-"}', file=sys.stderr)
+    except Exception as e:
+        print(f'[bad-route-log] failed: {e}', file=sys.stderr)
 
 def _log_opd_queue(event, case, user=''):
     """Append one queue event to data/logs/opd-queue-YYYY-MM-DD.jsonl.
@@ -3640,6 +3674,17 @@ class Handler(BaseHTTPRequestHandler):
     # PUT — full day doc OR single section OR rx collection OR user
     def do_PUT(self):
         rtype, key, extra = self.parse_route()
+        # An unparseable route yields rtype None, which would otherwise fall
+        # through the trust gate below and surface as a misleading 401 ("not a
+        # trusted client") even for a perfectly trusted workstation — that is
+        # what a malformed puid such as the literal string "[object Object]"
+        # produces. Answer 400 so the client bug is visible as a client bug.
+        if rtype is None:
+            if self._is_trusted_extension():
+                _log_bad_route(self.command, self.path,
+                               self.headers.get('Origin', ''), self.client_address[0])
+                self.send_json(400, {'error': 'Malformed route (bad identifier in path)'})
+                return
         # Allow the trusted Chrome extension to write data routes without login.
         # User-management routes always require explicit auth.
         ext_data_write = self._is_trusted_extension() and rtype in (

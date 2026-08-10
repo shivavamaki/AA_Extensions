@@ -40,7 +40,10 @@
         if (typeof fv === 'string' && VISIT_HRE.test(fv)) {
           var vm = window.__arcus_pctx__.visitMap;
           vm[fv] = { patientvisituid: pvid };
-          if (puid) vm[fv].patientuid = puid;
+          // puid is only a validated 24-hex STRING here (set to null above when
+          // it failed HEX24) — never store a raw object, or it reaches a URL as
+          // the literal "[object Object]" and the write is rejected.
+          if (puid && HEX24.test(String(puid))) vm[fv].patientuid = String(puid);
         }
       }
     }
