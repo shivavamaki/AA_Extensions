@@ -349,8 +349,42 @@ echo.
 :: Open Chrome straight at THIS extension's card. Chrome blocks scripted
 :: clicks on chrome://extensions by design, so the reload itself stays
 :: manual — but landing on the right page removes all the navigating.
-start "" chrome.exe "chrome://extensions/?id=%EXTID%" 2>nul
-if errorlevel 1 start "" "chrome://extensions/?id=%EXTID%" 2>nul
+::
+:: Resolve chrome.exe by PATH, then the two standard install locations.
+:: `start "" chrome.exe` is NOT safe here: chrome.exe is usually not on PATH,
+:: and the shell then hands the unknown name to Windows, which offers to find
+:: it in the Microsoft Store. Never let that happen on a ward PC.
+:: Order: the standard install paths first (fast, no parsing), then the
+:: App Paths registry entry as a fallback for a non-standard install.
+set "CHROME="
+if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
+if not defined CHROME if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"
+if not defined CHROME if exist "%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe" set "CHROME=%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"
+:: Non-standard install: ask the App Paths registry entry. tokens=2,* keeps the
+:: path intact even though it contains spaces.
+if not defined CHROME for /f "usebackq skip=2 tokens=2,*" %%A in (
+  `reg query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe" /ve 2^>nul`
+) do if not defined CHROME set "CHROME=%%B"
+
+:: Which Chrome profile? These PCs have MANY profiles (Default, Profile 10,
+:: Profile 19, …) and Chrome shows the "Who's using Chrome?" picker when it
+:: can't tell — a dead end for a staff member who just wants the reload arrow.
+:: Read the profile Chrome itself last used from Local State, so we open the
+:: one the pharmacist actually works in (where the extension is installed).
+:: Hardcoding "Default" would be wrong on exactly these machines.
+set "CHPROFILE="
+for /f "usebackq delims=" %%A in (`
+  powershell -NoProfile -Command ^
+    "try{(Get-Content -Raw '%LOCALAPPDATA%\Google\Chrome\User Data\Local State' | ConvertFrom-Json).profile.last_used}catch{''}"
+`) do set "CHPROFILE=%%A"
+if not defined CHPROFILE set "CHPROFILE=Default"
+
+if defined CHROME (
+  start "" "%CHROME%" --profile-directory="%CHPROFILE%" --new-tab "chrome://extensions/?id=%EXTID%"
+) else (
+  echo   NOTE: Chrome was not found automatically - open Chrome yourself and go to
+  echo         chrome://extensions   then click the reload arrow.
+)
 
 :done
 if exist "%TMP%" rmdir /s /q "%TMP%" 2>nul

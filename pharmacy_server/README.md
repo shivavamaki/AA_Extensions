@@ -353,6 +353,22 @@ page** (`chrome://extensions/?id=<deterministic id>`), so the reload arrow is
 right there instead of being hunted for. It does this **only when something
 actually changed** — an up-to-date run exits without opening anything.
 
+Two things the launch has to get right on a ward PC, both learned the hard way:
+
+- **Never `start "" chrome.exe`.** `chrome.exe` is usually *not* on `PATH`, so
+  the shell hands the unknown name to Windows, which offers to find it in the
+  **Microsoft Store**. The script resolves the real binary instead — the two
+  `Program Files` locations, `%LOCALAPPDATA%`, then the
+  `App Paths\chrome.exe` registry entry — and prints a plain "open Chrome
+  yourself" note if none matches.
+- **Pass the profile Chrome last used.** These workstations have many Chrome
+  profiles, so a bare launch shows the *"Who's using Chrome?"* picker — a dead
+  end for a staff member who just wants the reload arrow. The profile is read
+  from `User Data/Local State` → `profile.last_used`, falling back to
+  `Default`. Hardcoding `Default` would be **wrong** here: on the pharmacy PC
+  the profile in use is `Profile 10`, and `Default` is a different, empty
+  profile with no extension installed.
+
 > **Chrome still requires a manual reload — this is by design and cannot be
 > scripted.** Chrome deliberately blocks synthetic clicks on
 > `chrome://extensions` (automating extension install/reload is a known malware
