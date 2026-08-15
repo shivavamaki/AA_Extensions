@@ -130,6 +130,16 @@ never loses the queue. (Only the popup's *position/width* is per-browser
 - **Revert transitions** clear the timestamp of the stage being undone
   (`completedAt`/`startedAt` → `null`) and append an audit-log entry, same as
   forward transitions.
+- **`startedBy` — who is working the case.** Set from the `start` transition's
+  `user` and shown as a 👤 chip beside the HN on **On Process** rows (both the
+  floating popup and the Dashboard); `revert-new` clears it along with
+  `startedAt`, so a returned case doesn't keep showing its previous owner.
+  Stored as its own field rather than only in `auditLog` so a row can render it
+  without scanning the log. Entries created before the field existed are
+  **backfilled on read** in `load_all_hmq()` from the log's "Started…" line —
+  done at read time so no stored file (and no archive) is rewritten.
+  The chip drops ArcusAir's title suffix (`ชื่อ สกุล, ภก.` → `ชื่อ สกุล`) to
+  stay short in a 300 px popup; the full value remains in the log modal.
 - **Transition failures are surfaced, not swallowed.** `putTransition()` returns
   the `serverFetch` result (or a synthetic `{ok:false,error}`) and logs a
   `[BKN-HMQ]` warning on any non-ok/thrown response. The delegated click handler

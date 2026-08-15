@@ -66,6 +66,14 @@
     return s;
   }
 
+  /* "ตัวอย่าง มงคล, ภก." → "ตัวอย่าง มงคล" — drop ArcusAir's title suffix so
+     the chip stays short. The full value remains in the log modal. */
+  function shortUser(u) {
+    const s = String(u || "").trim();
+    if (!s || s === "Unknown") return "";
+    return s.split(",")[0].trim() || s;
+  }
+
   function rowHtml(entry, col) {
     const hn   = escapeHtml(entry.hn || "");
     const name = escapeHtml(thaiName(entry.name));
@@ -80,12 +88,17 @@
     const roomBadge = room
       ? `<span class="hmqd-room" title="Room / Bed">${room}</span>`
       : `<span class="hmqd-room hmqd-room-none" title="Room not detected">&mdash;</span>`;
+    // Pharmacist working the case — On Process column only (mirrors the popup).
+    const startedBy = escapeHtml(shortUser(entry.startedBy));
+    const byHtml = (entry.status === "process" && startedBy)
+      ? `<span class="hmqd-by" title="Started by">👤 ${startedBy}</span>`
+      : "";
     return `<div class="hmqd-row" data-id="${escapeHtml(entry.id || "")}">
       <span class="hmqd-qnum">Q${entry.queueNum != null ? entry.queueNum : "?"}</span>
       ${roomBadge}
       <div class="hmqd-row-info">
         <div class="hmqd-row-name">${name}</div>
-        <div class="hmqd-row-meta">${ward || "&mdash;"}<span class="hmqd-hn">HN ${hn}</span></div>
+        <div class="hmqd-row-meta">${ward || "&mdash;"}<span class="hmqd-hn">HN ${hn}</span>${byHtml}</div>
       </div>
       <div class="hmqd-row-date">${dateHtml}</div>
       <button class="hmqd-log-btn" data-id="${escapeHtml(entry.id || "")}" title="View log">🕒</button>

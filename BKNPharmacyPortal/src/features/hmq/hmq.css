@@ -213,15 +213,48 @@
   font-weight: 700;
 }
 .hmq-row-info { flex: 1; min-width: 0; }
+/* Flex row so the pharmacist chip and HN keep their space and it is the long
+   PATIENT NAME that ellipsises — the popup is user-resizable down to 260px,
+   and with plain nowrap+overflow the trailing chip was the first thing clipped. */
 .hmq-row-name {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
   font-weight: 600;
   font-size: 11px;
   color: #1a2027;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.hmq-row-name > .hmq-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.hmq-hn {
+  flex: 0 0 auto;            /* keep the HN intact; the name ellipsises instead */
+  font-weight: 400; color: #78909c; font-size: 9.5px; margin-left: 4px;
+}
+/* Pharmacist who pressed Start — On Process rows only. Tinted chip so it reads
+   as a person, not more patient data, and never competes with the name. */
+.hmq-by {
+  flex: 0 1 auto;            /* may shrink, but only after the name has */
+  display: inline-block;
+  margin-left: 5px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: #e3f2fd;
+  color: #1565c0;
+  font-weight: 600;
+  font-size: 9.5px;
+  line-height: 14px;
+  vertical-align: middle;
+  max-width: 96px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.hmq-hn { font-weight: 400; color: #78909c; font-size: 9.5px; margin-left: 4px; }
 .hmq-row-loc {
   font-size: 9.5px;
   color: #90a4ae;

@@ -179,6 +179,19 @@ body {
   white-space: nowrap;
 }
 .hmqd-hn { font-weight: 400; color: #78909c; font-size: 10px; margin-left: 6px; }
+/* Pharmacist who started the case — On Process column only. */
+.hmqd-by {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: #e3f2fd;
+  color: #1565c0;
+  font-weight: 600;
+  font-size: 10px;
+  line-height: 15px;
+  vertical-align: middle;
+}
 .hmqd-row-meta {
   font-size: 10px;
   color: #90a4ae;

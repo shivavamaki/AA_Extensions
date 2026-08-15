@@ -2885,6 +2885,15 @@ def load_all_hmq(from_date=None, to_date=None):
         except Exception:
             pass
     result = list(seen.values())
+    # Backfill startedBy for entries created before the field existed: recover
+    # it from the audit log's "Started" line. Done on READ so no stored file is
+    # rewritten (and archives, which are never rewritten, benefit too).
+    for d in result:
+        if not d.get('startedBy') and d.get('startedAt'):
+            for entry in reversed(d.get('auditLog') or []):
+                if str(entry.get('action', '')).startswith('Started'):
+                    d['startedBy'] = entry.get('user') or None
+                    break
     if from_date or to_date:
         # Filter by each entry's BANGKOK calendar day (createdAt is UTC), so the
         # window matches the client's Bangkok-day query and the entry's own
@@ -2939,6 +2948,7 @@ def create_hmq_entry(hn, name, ward, room, added_by):
         'status':      'new',
         'createdAt':   now,
         'startedAt':   None,
+        'startedBy':   None,   # set on 'start', cleared on 'revert-new'
         'completedAt': None,
         'addedBy':     added_by,
         'auditLog':    [{'ts': now, 'user': added_by, 'action': 'Added to queue (New Case)'}],
@@ -2958,6 +2968,10 @@ def transition_hmq_entry(entry_id, action, user):
     if action == 'start' and doc.get('status') == 'new':
         doc['status']    = 'process'
         doc['startedAt'] = now
+        # Who is working this case. Stored as its own field (not only in the
+        # audit log) so the queue row can show it without scanning the log —
+        # and so it survives even if the log is ever trimmed.
+        doc['startedBy'] = user
         doc.setdefault('auditLog', []).append({'ts': now, 'user': user, 'action': 'Started — moved to On Process'})
     elif action == 'complete' and doc.get('status') == 'process':
         doc['status']      = 'done'
@@ -2970,6 +2984,9 @@ def transition_hmq_entry(entry_id, action, user):
     elif action == 'revert-new' and doc.get('status') == 'process':
         doc['status']    = 'new'
         doc['startedAt'] = None
+        # Nobody is working it any more — clear the owner with the timestamp,
+        # or the row would keep showing whoever started the previous attempt.
+        doc['startedBy'] = None
         doc.setdefault('auditLog', []).append({'ts': now, 'user': user, 'action': 'Reverted — On Process back to New Case'})
     else:
         return doc  # invalid transition — return unchanged, caller decides how to respond

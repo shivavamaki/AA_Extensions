@@ -236,6 +236,14 @@
     return m ? m[0] : r;
   }
 
+  /* "ตัวอย่าง มงคล, ภก." → "ตัวอย่าง มงคล". Keeps the queue chip short; the
+     full stored value is still shown in the per-case log modal. */
+  function shortUser(u) {
+    const s = String(u || '').trim();
+    if (!s || s === 'Unknown') return '';
+    return s.split(',')[0].trim() || s;
+  }
+
   function rowHtml(entry) {
     const hn   = escapeHtml(entry.hn || '');
     const name = escapeHtml(displayName(entry.name));
@@ -274,11 +282,21 @@
       actionHtml = `<button class="hmq-revert-btn" data-id="${entry.id}" data-revert="revert-process" title="Revert to On Process">↺</button>
         <span class="hmq-done-check">✓</span><span class="hmq-done-time">${t}</span>`;
     }
+    // Who is working this case — shown only on On Process rows, right after the
+    // HN, so the ward can see at a glance who picked it up. 'new' rows have no
+    // owner yet and 'done' rows already show a completion time.
+    // detectUsername() captures ArcusAir's banner form "ชื่อ สกุล, ภก." —
+    // drop the ", ภก./ภญ." title so the chip stays short in a 300px popup.
+    const startedBy = escapeHtml(shortUser(entry.startedBy));
+    const byHtml = (entry.status === 'process' && startedBy)
+      ? `<span class="hmq-by" title="Started by">👤 ${startedBy}</span>`
+      : '';
+
     return `<div class="hmq-row${ageClass}" data-id="${entry.id}">
       <span class="hmq-qnum">Q${entry.queueNum != null ? entry.queueNum : '?'}</span>
       ${roomBadge}
       <div class="hmq-row-info">
-        <div class="hmq-row-name">${name}<span class="hmq-hn">HN ${hn}</span></div>
+        <div class="hmq-row-name"><span class="hmq-name-text">${name}</span><span class="hmq-hn">HN ${hn}</span>${byHtml}</div>
         <div class="hmq-row-loc">${ward || '&mdash;'}${alertHtml}</div>
       </div>
       <button class="hmq-log-btn" data-id="${entry.id}" title="View log">🕒</button>
