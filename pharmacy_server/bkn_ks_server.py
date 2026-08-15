@@ -101,6 +101,7 @@ Data layout:
                                        downloaded Jasper XLS, home-med fetch logs
 """
 
+import base64
 import hashlib
 import hmac
 import ipaddress
@@ -181,9 +182,28 @@ def _ext_manifest_version():
     except Exception:
         return ''
 
+def _ext_id_from_key():
+    """Chrome's deterministic extension id, derived from the manifest "key".
+
+    Chrome takes SHA-256 of the DER public key, keeps the first 16 bytes, and
+    maps each hex nibble 0-f onto a-p. Computing it here means the sync script
+    can deep-link to chrome://extensions/?id=... without anyone hand-copying an
+    id that could silently drift from the published build. '' if unavailable.
+    """
+    try:
+        with open(EXT_SRC_DIR / 'manifest.json', encoding='utf-8') as f:
+            key = (json.load(f).get('key') or '').strip()
+        if not key:
+            return ''
+        digest = hashlib.sha256(base64.b64decode(key)).hexdigest()[:32]
+        return ''.join(chr(ord('a') + int(c, 16)) for c in digest)
+    except Exception:
+        return ''
+
 def _ext_pkg_info():
-    """{version, name} the server is currently publishing."""
-    return {'version': _ext_manifest_version(), 'name': 'BKNPharmacyPortal'}
+    """{version, name, id} the server is currently publishing."""
+    return {'version': _ext_manifest_version(), 'name': 'BKNPharmacyPortal',
+            'id': _ext_id_from_key()}
 
 def _ext_build_zip():
     """Build (or reuse) the packaged extension ZIP; returns its Path.
@@ -228,6 +248,9 @@ setlocal EnableDelayedExpansion
 :: Re-run this whenever a new version is announced, then reload the extension.
 
 set "SERVER=@@SERVER@@"
+:: Deterministic extension id, derived from the manifest "key" by the server —
+:: never hand-typed, so it cannot drift from the published build.
+set "EXTID=@@EXTID@@"
 set "TARGET=D:\pharmacy\BKNPharmacyPortal"
 set "TMP=%TEMP%\bkn-ext-sync"
 
@@ -312,11 +335,22 @@ if not exist "%TARGET%\manifest.json" (
 echo.
 echo  Updated to version %REMOTE%.
 echo.
-echo  NEXT STEP - Chrome does not reload on its own:
-echo    First time on this PC:
-echo      1. chrome://extensions  ^> Developer mode ON
-echo      2. Load unpacked ^> select  %TARGET%
-echo    After that, just click the reload arrow on the extension card.
+echo  ================================================================
+echo    LAST STEP - click the RELOAD arrow, then close that tab.
+echo  ================================================================
+echo.
+echo    Chrome is opening at the extension's own page, so the reload
+echo    button is right there - no need to search for it.
+echo.
+echo    (First time on this PC only: turn Developer mode ON, click
+echo     "Load unpacked" and select  %TARGET% )
+echo.
+
+:: Open Chrome straight at THIS extension's card. Chrome blocks scripted
+:: clicks on chrome://extensions by design, so the reload itself stays
+:: manual — but landing on the right page removes all the navigating.
+start "" chrome.exe "chrome://extensions/?id=%EXTID%" 2>nul
+if errorlevel 1 start "" "chrome://extensions/?id=%EXTID%" 2>nul
 
 :done
 if exist "%TMP%" rmdir /s /q "%TMP%" 2>nul
@@ -339,7 +373,9 @@ def _ext_sync_bat(host_header=''):
     it stays correct whatever address/port the server is published under.
     """
     host = (host_header or '').strip() or f'{getattr(Handler, "_ip", "127.0.0.1")}:{getattr(Handler, "_port", DEFAULT_PORT)}'
-    return _EXT_SYNC_BAT_TEMPLATE.replace('@@SERVER@@', f'http://{host}')
+    return (_EXT_SYNC_BAT_TEMPLATE
+            .replace('@@SERVER@@', f'http://{host}')
+            .replace('@@EXTID@@', _ext_id_from_key()))
 
 KS_COLS       = {'faqs', 'items', 'vdos'}
 # All rx collections — GET is public; PUT requires editor/admin auth

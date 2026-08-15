@@ -304,7 +304,7 @@ local path**, so Chrome's registered path never changes and an update becomes
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/ext-version` | `{version, name}` currently published — lets a client skip the download when already current |
+| `GET` | `/api/ext-version` | `{version, name, id}` currently published — lets a client skip the download when already current. `id` is Chrome's deterministic extension id, computed from the manifest `key` (`_ext_id_from_key`), never hand-copied |
 | `GET` | `/ext-download` | The packaged extension ZIP (`Content-Disposition` names it by version) |
 | `GET` | `/ext-sync.bat` | The client sync script, **with this server's URL already filled in** (taken from the request's `Host`, so it is correct on any address/port) |
 | `GET` | `/update-extension` | `BKN-Update-Extension.bat` — the one-click updater staff keep on the Desktop; a thin bootstrap that re-fetches `/ext-sync.bat` each run, also URL-injected |
@@ -348,9 +348,23 @@ when current, verifies the downloaded package contains a `manifest.json`
 *before* touching the live folder, and leaves the existing install untouched if
 the server is unreachable or the download is corrupt.
 
-> **Chrome still requires a manual reload.** Nothing short of a policy-managed
-> CRX (`update_url` + `ExtensionInstallAllowlist` via Group Policy) makes Chrome
-> update by itself; this removes the re-registration, not the reload.
+**After a successful update the script opens Chrome at the extension's own
+page** (`chrome://extensions/?id=<deterministic id>`), so the reload arrow is
+right there instead of being hunted for. It does this **only when something
+actually changed** — an up-to-date run exits without opening anything.
+
+> **Chrome still requires a manual reload — this is by design and cannot be
+> scripted.** Chrome deliberately blocks synthetic clicks on
+> `chrome://extensions` (automating extension install/reload is a known malware
+> technique), so `SendKeys`/AutoIt/AutoHotkey will not work there either.
+> Deep-linking to the right page is as far as a script can go.
+>
+> The only way to remove the reload entirely is a **policy-managed CRX**
+> (`update_url` + `ExtensionInstallForcelist`/`ExtensionInstallSources` via
+> Group Policy). That needs hospital IT: these workstations are centrally
+> managed (`SyncDisabled`, `URLAllowlist` etc. are already pushed) and local
+> `gpedit.msc`/`HKLM` policy edits are denied to pharmacy staff. **IT has
+> declined this**, so the `.bat` + manual reload is the supported flow.
 
 ---
 
