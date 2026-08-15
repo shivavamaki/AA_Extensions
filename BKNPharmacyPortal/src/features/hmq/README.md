@@ -159,8 +159,16 @@ noise, since the nightly merge (above) only ever archives `done` entries.
 - **Date range**: From/To date inputs + Today/Last 7 days/Last 30 days quick
   buttons, all reading `GET /api/hmq?from=&to=` directly via
   `window.BKNData.serverFetch` (`src/shared/shared-data-client.js`).
-- **Search** by HN or name, filtered client-side against the already-fetched
-  range.
+- **Search** by HN, name (searches the **full** stored name, English *and*
+  Thai), ward or bed — filtered client-side against the already-fetched range.
+- **Row layout** mirrors the floating popup: `Q<n>` then a bold blue **room/bed
+  badge**, since the bed is what staff scan the board for. A missing room shows
+  a muted `—` badge rather than nothing.
+- **Thai name only.** Names are stored as `"ENGLISH NAME - ชื่อไทย"`
+  (ArcusAir's banner format); the board shows just the Thai half via
+  `thaiName()`, which splits on the **last** `" - "` (English surnames contain
+  hyphens — `SAE-LEE`, `MACHA-ALE`) and only accepts the tail when it really
+  contains Thai characters, so a purely English name is left intact.
 - Same per-case 🕒 log modal as the floating popup, but log timestamps show
   date + time (not just time) since entries can span many days.
 - Deliberately **no Start/Complete/Revert buttons** — this page is for

@@ -125,7 +125,7 @@ body {
 .hmqd-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;                 /* tightened: the row now carries a room badge too */
   padding: 9px 14px;
   border-bottom: 1px solid #f1f3f6;
 }
@@ -145,15 +145,40 @@ body {
   justify-content: center;
 }
 .hmqd-row-info { flex: 1; min-width: 0; }
+/* Room / bed badge — the field staff scan the board for, so it gets the
+   strongest visual weight after the queue number. Mirrors .hmq-room in the
+   floating Ward-View popup (hmq.css) so both views read the same. */
+.hmqd-room {
+  flex: 0 0 auto;
+  min-width: 42px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 6px;
+  background: #1565c0;
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: .02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.hmqd-room-none {
+  background: #eceff1;
+  color: #b0bec5;
+  font-weight: 700;
+}
+/* Thai name — larger than before, since the English half is no longer shown. */
 .hmqd-row-name {
   font-weight: 600;
-  font-size: 12px;
+  font-size: 14px;
   color: #1a2027;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.hmqd-hn { font-weight: 400; color: #78909c; font-size: 10px; margin-left: 5px; }
+.hmqd-hn { font-weight: 400; color: #78909c; font-size: 10px; margin-left: 6px; }
 .hmqd-row-meta {
   font-size: 10px;
   color: #90a4ae;

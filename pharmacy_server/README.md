@@ -237,6 +237,18 @@ Dashboard) until an admin manually cleans them up. Older `DAY_YYYY-MM-DD.json`
 files written before this naming change are still read transparently, just
 never written again.
 
+> **Archives are date-filtered by FILENAME before being read**
+> (`_archive_in_range`). Because archives are kept forever — one file per day —
+> a query that read every archive and *then* filtered got slower every day the
+> feature ran (at ~1 file/day, ~365 parses/request after a year). The archive
+> name already encodes its date, so a narrow query ("Today") now touches 2 files
+> instead of all of them: measured **52× faster** on a synthetic year of
+> archives (4281 ms → 83 ms). Entries store `createdAt` in **UTC** but are
+> filtered by **Bangkok** day, so the filename window is widened by ±1 day and
+> the exact `_bangkok_date_of()` check still decides — the prefilter only ever
+> skips files that cannot match. `load_all_hmr()` uses the same helper.
+> An **unfiltered** call (no `from`/`to`) still reads everything by design.
+
 ### ArcusAir call monitoring
 
 Every server-side ArcusAir fetch goes through the single `_arcus_post_json()` chokepoint, which records each call (success or final failure) into an in-memory, thread-safe monitor (`_record_arcus_call` → `_ARCUS_STATS` / `_ARCUS_RECENT`). Keyed by the **endpoint path only** — never the request body or patient ids, so no PHI is retained. `arcus_stats()` aggregates it: per-endpoint `calls / ok / err / errorRate / retries / avgMs / minMs / maxMs / lastMs / lastAt / lastError`, a totals row, and a rolling `recent` window. Exposed at **`GET /api/arcus-stats`** and embedded in `/api/server-status` under `.arcus`; the dashboard's **ARCUS MONITOR** panel renders it live (per-endpoint call count, avg latency — amber when >3 s — and an error dot). Only covers server-side calls; the `hmr` discharge fetch runs browser→ArcusAir via `background.js` and isn't seen here.

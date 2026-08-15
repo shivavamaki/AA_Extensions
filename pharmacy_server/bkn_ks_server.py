@@ -2624,8 +2624,12 @@ def load_all_hmr(from_date=None, to_date=None):
                 seen[vid] = doc
         except Exception:
             pass
-    # Daily archive files fill in records no longer live
+    # Daily archive files fill in records no longer live. Skipped by filename
+    # when outside the requested window (see _archive_in_range) — these are kept
+    # forever, so an unfiltered scan grows by one file per day.
     for mp in sorted(HMR_DIR.glob('HM_*.json')):
+        if not _archive_in_range(mp, from_date, to_date):
+            continue
         try:
             records = json.loads(mp.read_text(encoding='utf-8'))
             if isinstance(records, list):
@@ -2763,12 +2767,63 @@ def save_hmq_entry(doc):
     doc['updatedAt'] = _now_iso()
     _atomic_write_json(hmq_file(doc['id']), doc)
 
+def _archive_date_of(path):
+    """The YYYY-MM-DD a daily archive filename encodes, or '' if unrecognised.
+
+    Handles both namings kept by this server:
+      ddmmyyyy_HM_queue.json / ddmmyyyy_HM_process.json  (current)
+      DAY_YYYY-MM-DD.json                                (legacy)
+    """
+    n = path.name
+    m = re.match(r'^(\d{2})(\d{2})(\d{4})_', n)
+    if m:
+        d, mo, y = m.groups()
+        return f'{y}-{mo}-{d}'
+    # DAY_YYYY-MM-DD.json (legacy HMQ) and HM_YYYY-MM-DD.json (HMR archives)
+    m = re.match(r'^(?:DAY|HM)_(\d{4}-\d{2}-\d{2})\.json$', n)
+    return m.group(1) if m else ''
+
+def _archive_in_range(path, from_date, to_date):
+    """Can this archive file hold an entry inside [from_date, to_date]?
+
+    Filename-level prefilter so a narrow query ("Today") doesn't read and parse
+    every archive ever written — these files are kept forever, so an unfiltered
+    scan grows without bound (one file per day) and the dashboard gets slower
+    every day it runs.
+
+    Entries store createdAt in UTC but are filtered by BANGKOK day, so a file
+    can legitimately contain entries belonging to the adjacent day. Widen the
+    filename window by ±1 day and let the existing precise _bangkok_date_of()
+    check below do the exact filtering — this only ever skips files that cannot
+    possibly match.
+    """
+    if not from_date and not to_date:
+        return True
+    fdate = _archive_date_of(path)
+    if not fdate:
+        return True          # unrecognised name — never skip, read it
+    try:
+        d = datetime.strptime(fdate, '%Y-%m-%d')
+    except ValueError:
+        return True
+    lo = (d - timedelta(days=1)).strftime('%Y-%m-%d')
+    hi = (d + timedelta(days=1)).strftime('%Y-%m-%d')
+    if from_date and hi < from_date:
+        return False
+    if to_date and lo > to_date:
+        return False
+    return True
+
 def load_all_hmq(from_date=None, to_date=None):
     """Return all HMQ entries (live + daily archives), newest first, optionally
     filtered by createdAt date (YYYY-MM-DD, inclusive). Reads both the current
     ddmmyyyy_HM_queue.json archive naming and the legacy DAY_YYYY-MM-DD.json
     files from before that naming change — both are kept forever, never
-    deleted by this server."""
+    deleted by this server.
+
+    Archives outside the requested window are skipped by FILENAME before being
+    read (_archive_in_range); live HMQ-*.json files are always read since an
+    unfinished case is never archived and its name carries no date."""
     if not HMQ_DIR.exists():
         return []
     seen = {}
@@ -2782,6 +2837,8 @@ def load_all_hmq(from_date=None, to_date=None):
             pass
     archive_paths = sorted(HMQ_DIR.glob('*_HM_queue.json')) + sorted(HMQ_DIR.glob('DAY_*.json'))
     for mp in archive_paths:
+        if not _archive_in_range(mp, from_date, to_date):
+            continue
         try:
             records = json.loads(mp.read_text(encoding='utf-8'))
             if isinstance(records, list):

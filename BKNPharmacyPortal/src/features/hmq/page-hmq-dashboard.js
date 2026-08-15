@@ -42,24 +42,50 @@
 
   function matchesSearch(entry, q) {
     if (!q) return true;
-    const hay = `${entry.hn || ""} ${entry.name || ""}`.toLowerCase();
+    // Search the FULL stored name (English + Thai) even though only the Thai
+    // half is displayed, plus ward/room — so an English-name or bed search
+    // still finds the case.
+    const hay = `${entry.hn || ""} ${entry.name || ""} ${entry.ward || ""} ${entry.room || ""}`.toLowerCase();
     return hay.includes(q.toLowerCase());
   }
 
   // ── Rendering ────────────────────────────────────────────────────────
+  /* Names are stored as "ENGLISH NAME - ชื่อไทย" (ArcusAir's banner format).
+     Pharmacy staff read the Thai half, so show that and drop the English.
+     Split on the LAST " - " because English names legitimately contain a
+     hyphen (SAE-LEE, MACHA-ALE); only accept the tail if it really is Thai,
+     so a purely English name (JOHN DANIEL MC CORD) is left intact. */
+  const THAI_RE = /[฀-๿]/;
+  function thaiName(full) {
+    const s = String(full || "").trim();
+    const i = s.lastIndexOf(" - ");
+    if (i > 0) {
+      const tail = s.slice(i + 3).trim();
+      if (THAI_RE.test(tail)) return tail;
+    }
+    return s;
+  }
+
   function rowHtml(entry, col) {
     const hn   = escapeHtml(entry.hn || "");
-    const name = escapeHtml(entry.name || "");
-    const loc  = [entry.ward, entry.room].filter(Boolean).map(escapeHtml).join(" · ");
+    const name = escapeHtml(thaiName(entry.name));
+    const room = escapeHtml(String(entry.room || "").trim());
+    const ward = escapeHtml(String(entry.ward || "").trim());
     const dt   = fmtDateTime(entry[col.dateField] || entry.createdAt);
     const dateHtml = dt === "—"
       ? "—"
       : `<b>${dt.time}</b>${dt.date}`;
+    // Room/bed gets a standout badge next to the queue number (same treatment as
+    // the floating Ward-View popup) — it is what staff scan the board for.
+    const roomBadge = room
+      ? `<span class="hmqd-room" title="Room / Bed">${room}</span>`
+      : `<span class="hmqd-room hmqd-room-none" title="Room not detected">&mdash;</span>`;
     return `<div class="hmqd-row" data-id="${escapeHtml(entry.id || "")}">
       <span class="hmqd-qnum">Q${entry.queueNum != null ? entry.queueNum : "?"}</span>
+      ${roomBadge}
       <div class="hmqd-row-info">
-        <div class="hmqd-row-name">${name}<span class="hmqd-hn">HN ${hn}</span></div>
-        <div class="hmqd-row-meta">${loc || "&mdash;"}</div>
+        <div class="hmqd-row-name">${name}</div>
+        <div class="hmqd-row-meta">${ward || "&mdash;"}<span class="hmqd-hn">HN ${hn}</span></div>
       </div>
       <div class="hmqd-row-date">${dateHtml}</div>
       <button class="hmqd-log-btn" data-id="${escapeHtml(entry.id || "")}" title="View log">🕒</button>
@@ -98,9 +124,14 @@
   function showLog(id) {
     const entry = _entries.find((e) => e.id === id);
     if (!entry) return;
-    document.getElementById("hmqd-modal-title").textContent = entry.name || "Patient";
+    // Modal shows the Thai name (matching the board) but keeps ward/bed and the
+    // full stored name available — the audit view is where the English name is
+    // still useful for cross-checking against ArcusAir.
+    document.getElementById("hmqd-modal-title").textContent = thaiName(entry.name) || "Patient";
+    const bed = [entry.ward, entry.room].filter(Boolean).join(" · ");
     document.getElementById("hmqd-modal-sub").textContent =
-      `HN ${entry.hn || "—"} · Q${entry.queueNum != null ? entry.queueNum : "?"}`;
+      `HN ${entry.hn || "—"} · Q${entry.queueNum != null ? entry.queueNum : "?"}`
+      + (bed ? ` · ${bed}` : "");
     const logs = entry.auditLog || [];
     document.getElementById("hmqd-modal-body").innerHTML = logs.length
       ? logs.map((l) => {
