@@ -359,8 +359,16 @@ Three things the launch has to get right on a ward PC, all learned the hard way:
   deliberate security restriction) and opens the New Tab page instead. So the
   script opens an ordinary **`GET /reload-extension?id=…&ver=…`** page on the
   pharmacy server (`www/reload-extension.html`), which shows the remaining step
-  in EN/TH and copies `chrome://extensions/?id=…` to the clipboard on click — a
-  user gesture, which Chrome does honour. In the `.bat`, the URL is
+  in EN/TH and **copies** `chrome://extensions/?id=…` to the clipboard on click.
+  A web page **cannot navigate to `chrome://` at all** — Chrome blocks it from
+  an `<a href>`, `window.open()` and `location.assign()` alike, and a user
+  gesture makes no difference — so copy-and-paste is the furthest this can go.
+  The page validates the `id` against `^[a-p]{32}$` and falls back to plain
+  `chrome://extensions` for anything else, so a truncated or unsubstituted
+  value can never produce a broken address. Clipboard writes need a secure
+  context and this page is plain http, so it falls back to a hidden-textarea
+  `execCommand('copy')`, and the address is rendered on the page and
+  auto-selected for a manual Ctrl+C. In the `.bat`, the URL is
   double-quoted so `&` needs **no** `^` escape, and comments inside the
   `if defined CHROME ( … ) else ( … )` block must use `rem`, not `::` — a `::`
   breaks block parsing and both branches run.

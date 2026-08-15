@@ -29,9 +29,13 @@
   .go {
     display: inline-block; margin: 18px 0 6px; padding: 13px 22px;
     background: #1565c0; color: #fff; text-decoration: none;
-    border-radius: 9px; font-weight: 700; font-size: 15px;
+    border: 0; border-radius: 9px; font-weight: 700; font-size: 15px;
+    font-family: inherit; cursor: pointer;
   }
   .go:hover { background: #0d47a1; }
+  .go.copied { background: #2e7d32; }
+  .addr { margin: 4px 0 18px; font-size: 13px; color: #78909c; }
+  .addr code { user-select: all; }
   .hint {
     margin-top: 18px; padding: 13px 15px; background: #fff8e1;
     border-left: 4px solid #ffb300; border-radius: 0 8px 8px 0;
@@ -49,10 +53,13 @@
     <p><strong>One last step</strong> — Chrome needs to reload the extension.</p>
     <p class="thai">เหลืออีกขั้นตอนเดียว — กด <b>Reload</b> ที่ Chrome</p>
 
-    <a class="go" id="go" href="#">เปิดหน้า Extensions →</a>
+    <button class="go" id="go" type="button">📋 คัดลอกที่อยู่หน้า Extensions</button>
+
+    <p class="addr">แล้ววางในช่อง address ด้านบน · <code id="target"></code></p>
 
     <ol>
-      <li>Click the blue button above (or copy <code>chrome://extensions</code> into the address bar).</li>
+      <li>Click the blue button, then <strong>paste into the address bar</strong> and press Enter.
+        <div class="thai">กดปุ่มสีน้ำเงิน → วางในช่อง address ด้านบน → กด Enter</div></li>
       <li>Find <strong>BKN Pharmacy Portal</strong> and click the reload arrow <strong>↻</strong>.</li>
       <li>Close this tab. Done.</li>
     </ol>
@@ -69,22 +76,53 @@
   // opens THIS ordinary http page instead and the user clicks through from
   // here — a link click is a user gesture, which Chrome does allow.
   const params = new URLSearchParams(location.search);
-  const id  = params.get('id')  || '';
-  const ver = params.get('ver') || '';
-  document.getElementById('ver').textContent = ver ? 'v' + ver : '';
-  const url = id ? 'chrome://extensions/?id=' + encodeURIComponent(id)
-                 : 'chrome://extensions';
+  // A Chrome extension id is exactly 32 chars, a-p. Anything else (a truncated
+  // "…", a stray placeholder) must NOT be pasted into the URL — fall back to the
+  // plain extensions page, which still gets the user where they need to go.
+  const rawId = (params.get('id') || '').trim();
+  const id    = /^[a-p]{32}$/.test(rawId) ? rawId : '';
+  const ver   = (params.get('ver') || '').trim();
+  document.getElementById('ver').textContent = /^[\d.]{1,12}$/.test(ver) ? 'v' + ver : '';
+  const url = id ? 'chrome://extensions/?id=' + id : 'chrome://extensions';
+  // A web page CANNOT navigate to chrome:// — Chrome blocks it from an <a>,
+  // window.open() and location.assign() alike, with no exception for a user
+  // gesture. So the button copies the address instead and tells the user to
+  // paste it; the URL is also shown below, selected on click, so it works even
+  // if the clipboard API is unavailable (it needs a secure context, and this
+  // page is served over plain http).
+  document.getElementById('target').textContent = url;
   const go = document.getElementById('go');
-  go.href = url;
-  // Anchors to chrome:// are blocked from navigating directly; put the target
-  // on the clipboard and tell the user, so the click is never a dead end.
-  go.addEventListener('click', (e) => {
-    e.preventDefault();
-    navigator.clipboard.writeText(url).then(() => {
-      go.textContent = '📋 คัดลอกแล้ว — วางในช่อง address แล้วกด Enter';
-    }).catch(() => {
-      go.textContent = 'พิมพ์  chrome://extensions  ในช่อง address';
-    });
+  go.addEventListener('click', () => {
+    const done = (msg, ok) => {
+      go.textContent = msg;
+      go.classList.toggle('copied', !!ok);
+      const t = document.getElementById('target');
+      // Select the address so Ctrl+C works as a manual fallback.
+      const r = document.createRange(); r.selectNodeContents(t);
+      const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    };
+    const legacyCopy = () => {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = url; ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch (_) { return false; }
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(url)
+        .then(() => done('📋 คัดลอกแล้ว — วางในช่อง address ด้านบน แล้วกด Enter', true))
+        .catch(() => done(legacyCopy()
+          ? '📋 คัดลอกแล้ว — วางในช่อง address ด้านบน แล้วกด Enter'
+          : '⌨ กด Ctrl+C เพื่อคัดลอก แล้ววางในช่อง address', legacyCopy()));
+    } else {
+      done(legacyCopy()
+        ? '📋 คัดลอกแล้ว — วางในช่อง address ด้านบน แล้วกด Enter'
+        : '⌨ กด Ctrl+C เพื่อคัดลอก แล้ววางในช่อง address', true);
+    }
   });
 </script>
 </body>
