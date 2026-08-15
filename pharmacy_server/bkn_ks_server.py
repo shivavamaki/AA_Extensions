@@ -3918,6 +3918,10 @@ class Handler(BaseHTTPRequestHandler):
             qs        = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
             from_date = (qs.get('from') or [None])[0]
             to_date   = (qs.get('to')   or [None])[0]
+            # Same bounded default as hmq-list above: no window means today, not
+            # "every archive ever written". Explicit all=1 opts back in.
+            if not from_date and not to_date and not (qs.get('all') or [''])[0]:
+                from_date = to_date = _hmq_today()
             self.send_json(200, load_all_hmr(from_date, to_date))
         elif rtype == 'hmq':
             doc = load_hmq_entry(key)
@@ -3926,6 +3930,12 @@ class Handler(BaseHTTPRequestHandler):
             qs        = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
             from_date = (qs.get('from') or [None])[0]
             to_date   = (qs.get('to')   or [None])[0]
+            # Default to TODAY when the caller gives no window. Without this an
+            # omitted (or cleared) date input reads every archive ever written —
+            # unbounded work that grows by one file per day. A caller that really
+            # wants everything must ask for it explicitly with all=1.
+            if not from_date and not to_date and not (qs.get('all') or [''])[0]:
+                from_date = to_date = _hmq_today()
             self.send_json(200, load_all_hmq(from_date, to_date))
         elif rtype == 'opd-queue':
             qs        = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)

@@ -147,13 +147,29 @@
   }
 
   // ── Load / refresh ───────────────────────────────────────────────────
-  async function load() {
+  /* Only ever fetch the range the user is actually looking at.
+
+     The page opens on TODAY and asks the server for today alone; the wider
+     windows are fetched only when the pharmacist clicks "Last 7 days" /
+     "Last 30 days" (or picks dates). Older days are never loaded speculatively
+     — the archives are kept forever, so a default-wide query would grow
+     unbounded.
+
+     _lastKey additionally skips a re-fetch when the requested window has not
+     changed (e.g. clicking "Today" while already on Today). The Refresh button
+     passes force=true so an explicit refresh always re-queries. */
+  let _lastKey = "";
+
+  async function load(force) {
     const from = document.getElementById("hmqd-from").value;
     const to   = document.getElementById("hmqd-to").value;
     if (!from || !to) return;
+    const key = `${from}|${to}`;
+    if (!force && key === _lastKey) return;   // same window already on screen
     document.getElementById("hmqd-body").innerHTML = `<div class="hmqd-loading">Loading queue…</div>`;
     const r = await fetchQueue(from, to);
-    if (!r.ok) { showError(r.reason); return; }
+    if (!r.ok) { _lastKey = ""; showError(r.reason); return; }
+    _lastKey = key;
     _entries = r.list;
     renderBoard();
     document.getElementById("hmqd-updated").textContent = `Updated ${new Date().toLocaleTimeString("en-GB")}`;
@@ -168,7 +184,8 @@
   }
 
   function wire() {
-    document.getElementById("hmqd-refresh").addEventListener("click", load);
+    // Refresh forces a re-query even when the window is unchanged.
+    document.getElementById("hmqd-refresh").addEventListener("click", () => load(true));
     document.getElementById("hmqd-search").addEventListener("input", renderBoard);
 
     document.querySelectorAll(".hmqd-quick-ranges .hmqd-btn").forEach((btn) => {
@@ -180,8 +197,9 @@
       });
     });
 
-    document.getElementById("hmqd-from").addEventListener("change", load);
-    document.getElementById("hmqd-to").addEventListener("change", load);
+    // Wrap: a listener would otherwise pass the Event object as `force`.
+    document.getElementById("hmqd-from").addEventListener("change", () => load());
+    document.getElementById("hmqd-to").addEventListener("change", () => load());
 
     document.getElementById("hmqd-body").addEventListener("click", (e) => {
       const btn = e.target.closest(".hmqd-log-btn");

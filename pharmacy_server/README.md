@@ -222,7 +222,7 @@ Floating popup on Ward View + the Pharmacy Return workbench — see
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/hmq?from=&to=` | Entries in a date range (newest first) |
+| `GET` | `/api/hmq?from=&to=` | Entries in a date range (newest first). **No range → today**; `?all=1` for the full history |
 | `POST` | `/api/hmq` | Add a case — `{hn, name, ward, room, addedBy}`; `409` if that HN is already `new`/`process` today |
 | `PUT` | `/api/hmq/{id}` | Transition — `{action: 'start'\|'complete'\|'revert-process'\|'revert-new', user}` |
 
@@ -247,7 +247,12 @@ never written again.
 > filtered by **Bangkok** day, so the filename window is widened by ±1 day and
 > the exact `_bangkok_date_of()` check still decides — the prefilter only ever
 > skips files that cannot match. `load_all_hmr()` uses the same helper.
-> An **unfiltered** call (no `from`/`to`) still reads everything by design.
+> A call with **no `from`/`to` now defaults to TODAY**, not "everything" — an
+> omitted or cleared date input would otherwise trigger the same unbounded scan
+> the filename filter exists to avoid. A caller that genuinely wants the whole
+> history must opt in explicitly with **`?all=1`**. Same default on
+> `/api/hmr`. Measured against 200 archives × 25 cases: a bare `/api/hmq`
+> returns today's 25 entries instead of scanning all 5000.
 
 ### ArcusAir call monitoring
 

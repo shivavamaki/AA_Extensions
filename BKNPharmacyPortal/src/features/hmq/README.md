@@ -159,6 +159,13 @@ noise, since the nightly merge (above) only ever archives `done` entries.
 - **Date range**: From/To date inputs + Today/Last 7 days/Last 30 days quick
   buttons, all reading `GET /api/hmq?from=&to=` directly via
   `window.BKNData.serverFetch` (`src/shared/shared-data-client.js`).
+  **Only the visible window is ever fetched** — the page opens on *today* and
+  asks for today alone; the 7/30-day windows are requested only when the
+  pharmacist clicks them. Older days are never loaded speculatively, since the
+  archives are kept forever. `_lastKey` also skips a re-fetch when the window
+  hasn't changed (clicking "Today" while already on Today); **Refresh** passes
+  `force` so an explicit refresh always re-queries. The server applies the same
+  bound: no `from`/`to` means *today*, not everything (`?all=1` opts in).
 - **Search** by HN, name (searches the **full** stored name, English *and*
   Thai), ward or bed — filtered client-side against the already-fetched range.
 - **Row layout** mirrors the floating popup: `Q<n>` then a bold blue **room/bed
