@@ -22,6 +22,21 @@
   var VISIT_HRE = /^I48-\d{2}-\d{6}$/;   // human-readable visit ID (BKN format)
   var HEX24 = /^[a-f0-9]{24}$/i;
 
+  /* Single validated writer for the two ids that end up in a URL path.
+     ArcusAir sometimes carries an OBJECT in a patientuid/PatientUID field;
+     String()-ing that yields the literal "[object Object]", which was then
+     stored as if it were a real id and sent as
+     PUT /api/patients/[object Object]/captures/... — a route the server
+     cannot parse. Never assign these fields directly; go through here. */
+  function _setPctxId(field, val) {
+    if (val === null || val === undefined) return false;
+    if (typeof val === 'object') return false;      // the actual bug
+    var s = String(val);
+    if (!HEX24.test(s)) return false;
+    window.__arcus_pctx__[field] = s;
+    return true;
+  }
+
   function _deepPatients(obj, d) {
     if (!obj || typeof obj !== 'object' || d > 5) return;
     // Check this object for a patient visit UID (multiple field name variants)
@@ -177,10 +192,10 @@
     if (!body || typeof body !== 'string') return;
     try {
       var b = JSON.parse(body);
-      if (b.patientuid)      window.__arcus_pctx__.patientuid      = String(b.patientuid);
-      if (b.patientvisituid) window.__arcus_pctx__.patientvisituid = String(b.patientvisituid);
-      if (b.PatientUID && !window.__arcus_pctx__.patientuid)      window.__arcus_pctx__.patientuid      = String(b.PatientUID);
-      if (b.PatientVisitUID && !window.__arcus_pctx__.patientvisituid) window.__arcus_pctx__.patientvisituid = String(b.PatientVisitUID);
+      _setPctxId('patientuid', b.patientuid);
+      _setPctxId('patientvisituid', b.patientvisituid);
+      if (!window.__arcus_pctx__.patientuid)      _setPctxId('patientuid', b.PatientUID);
+      if (!window.__arcus_pctx__.patientvisituid) _setPctxId('patientvisituid', b.PatientVisitUID);
       _scanObjSession(b);
     } catch (_) {
       /* Not JSON — scan raw text for the 24-hex ids. */
@@ -353,9 +368,9 @@
       if (init && typeof init.body === 'string') {
         try {
           var b = JSON.parse(init.body);
-          if (b.patientuid)      window.__arcus_pctx__.patientuid      = String(b.patientuid);
-          if (b.patientvisituid) window.__arcus_pctx__.patientvisituid = String(b.patientvisituid);
-          if (b.PatientUID && !window.__arcus_pctx__.patientuid) window.__arcus_pctx__.patientuid = String(b.PatientUID);
+          _setPctxId('patientuid', b.patientuid);
+          _setPctxId('patientvisituid', b.patientvisituid);
+          if (!window.__arcus_pctx__.patientuid) _setPctxId('patientuid', b.PatientUID);
         } catch (_) {}
       }
     } catch (_) {}

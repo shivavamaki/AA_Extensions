@@ -425,8 +425,8 @@ def _ip_is_trusted(client_ip):
         ip = mapped
     return any(ip in net for net in TRUSTED_SUBNETS)
 
-# Backward-compat single-origin variable (still referenced by older code paths)
-EXTENSION_ORIGIN = 'chrome-extension://eeglifkmgelepjmnnldknacamedmckbj'
+# (The legacy EXTENSION_ORIGIN constant was removed with the extension-ID
+# allowlist — nothing reads an extension ID any more; see _is_trusted_extension.)
 # medication-db and pattern-overrides are dicts; all other rx cols are arrays
 RX_DICT_COLS  = {'medication-db', 'pattern-overrides'}
 DATE_RE       = re.compile(r'^\d{4}-\d{2}-\d{2}$')
