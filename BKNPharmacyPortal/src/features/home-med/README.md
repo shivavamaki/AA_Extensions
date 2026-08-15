@@ -15,6 +15,23 @@ Printable A4 **เอกสารแนะนำการใช้ยากล�
 ## Two sheets, one JS
 `page-home-med.html` (IPD discharge) and **`OPD-Sheet.html`** (OPD) both load `page-home-med.js`. The JS distinguishes them at boot by the presence of `#histPanel` (OPD only): IPD uses `LOAD_MED_TABLE` / `payload_sheet`, OPD uses `LOAD_MED_TABLE_OPD` / `payload_sheetOpd`. OPD-Sheet.html **replaces** the IPD Med Reconciliation panel with a **last-5-visits medical-history** panel (`#histList`) and **omits** the HM Process Checklist card. Panel-specific binds (`_bindReconPanel`, checklist) are null-guarded so they no-op on the OPD sheet.
 
+### One sheet, one build (`_lastRenderKey`)
+
+`background.js`'s `openOrReuseTab` **always** does both: it writes the payload to
+`chrome.storage.session` *and* sends the `LOAD_MED_TABLE` message. Both are
+load-bearing — storage covers a freshly-created tab whose listener isn't attached
+yet, the message covers a **reused** tab that is already open. On a reused tab
+both arrive, so `_applyContextAndRender` used to run `fetchAndRender()` **twice**
+and every ArcusAir call was issued twice (~900 ms wasted per open, and double
+load upstream; visible in `/api/arcus-stats` as each endpoint appearing exactly
+twice within one second).
+
+`_applyContextAndRender` now dedupes on `_lastRenderKey` —
+`patientuid|patientvisituid` from the payload, not a bare "already rendered"
+flag — so re-opening the same tab for a **different patient or visit** still
+rebuilds. The Revert button uses `location.reload()`, which resets the module
+state, so a forced refresh is unaffected.
+
 ## Data flow
 
 1. Page receives `{ context }` — both modes carry **patientuid + patientvisituid + incusToken**; OPD additionally sets `mode:"opd"`.

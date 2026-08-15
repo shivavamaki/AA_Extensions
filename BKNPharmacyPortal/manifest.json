@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.45.1",
-  "version_name": "3.45.1 — fix: never store a non-24-hex patientuid (stopped PUT /api/patients/[object Object]/captures)",
+  "version": "3.45.2",
+  "version_name": "3.45.2 — perf: Home Med Sheet built twice on a reused tab (double ArcusAir fetch); ~900ms saved per open",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzP9KPTBvryIH7rdPZ9RDvBKHZI1DzJHiOCfKJUWlupAlSZ1UiIZKIHWLww6kEXdACU1phvahaG6+2aLgzCToNv5YuKmBAoNlDu4Lm7xYUm62gEok3Y21jbZ/NUZJUh1Clz9ruMtQo95QNHoFx4aOHuLdMPJ9HXHlOA7DGVkaxtNbCeaOxkntUvJMtOk3771RD2Dxfl9Ad8kgOOa+cjYrZwDYJ187LZyk3CU/57xqtACPVCaYfj/xVcWOZwdulCd0IUXqLuhKDnp1Y/DNL40o9O5hEvOBJbOZmCqFPvlulpffjybE1xO/hkxPc+/yZRQ3r2Y4Iopjm1eYM9idygLHdwIDAQAB",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [

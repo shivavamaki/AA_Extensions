@@ -2540,8 +2540,34 @@ const _IS_OPD_SHEET = !!document.getElementById("histPanel");
 const _MSG_TYPE     = _IS_OPD_SHEET ? MSG.LOAD_MED_TABLE_OPD : MSG.LOAD_MED_TABLE;
 const _PAYLOAD_KEY  = _IS_OPD_SHEET ? "payload_sheetOpd" : "payload_sheet";
 
+/* Guard against building the same sheet twice.
+
+   background.js's openOrReuseTab ALWAYS writes the payload to
+   chrome.storage.session AND sends a LOAD_MED_TABLE message — both are
+   load-bearing (storage covers a newly-created tab whose listener isn't
+   attached yet; the message covers a REUSED tab that is already open). When the
+   tab is reused, both arrive: the listener is live and storage still holds the
+   payload, so fetchAndRender() ran twice and every ArcusAir call was issued
+   twice (~900ms of pure waste per open, plus double load upstream).
+
+   Dedupe on the payload itself rather than on a "have we rendered once" flag,
+   so that re-opening the SAME tab for a DIFFERENT patient still rebuilds. */
+let _lastRenderKey = "";
+
+function _payloadKeyOf(msg) {
+  const c = (msg && msg.context) || {};
+  // patientvisituid identifies the sheet; fall back to patientuid, then to the
+  // whole context, so a payload missing the uids can never collide with another.
+  return c.patientvisituid || c.patientuid
+    ? `${c.patientuid || ""}|${c.patientvisituid || ""}`
+    : JSON.stringify(c);
+}
+
 function _applyContextAndRender(msg) {
   if (!msg || msg.type !== _MSG_TYPE) return;
+  const key = _payloadKeyOf(msg);
+  if (key && key === _lastRenderKey) return;   // same sheet already building/built
+  _lastRenderKey = key;
   _context = msg.context || null;
   populateHeader(null, _context);
   fetchAndRender();
