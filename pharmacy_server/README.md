@@ -353,7 +353,17 @@ page** (`chrome://extensions/?id=<deterministic id>`), so the reload arrow is
 right there instead of being hunted for. It does this **only when something
 actually changed** — an up-to-date run exits without opening anything.
 
-Two things the launch has to get right on a ward PC, both learned the hard way:
+Three things the launch has to get right on a ward PC, all learned the hard way:
+
+- **Chrome silently drops a `chrome://` URL given on the command line** (a
+  deliberate security restriction) and opens the New Tab page instead. So the
+  script opens an ordinary **`GET /reload-extension?id=…&ver=…`** page on the
+  pharmacy server (`www/reload-extension.html`), which shows the remaining step
+  in EN/TH and copies `chrome://extensions/?id=…` to the clipboard on click — a
+  user gesture, which Chrome does honour. In the `.bat`, the URL is
+  double-quoted so `&` needs **no** `^` escape, and comments inside the
+  `if defined CHROME ( … ) else ( … )` block must use `rem`, not `::` — a `::`
+  breaks block parsing and both branches run.
 
 - **Never `start "" chrome.exe`.** `chrome.exe` is usually *not* on `PATH`, so
   the shell hands the unknown name to Windows, which offers to find it in the

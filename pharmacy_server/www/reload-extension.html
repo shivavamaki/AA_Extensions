@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BKN Pharmacy Portal — finish the update</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background: #eef2f7;
+    font-family: "Segoe UI", Tahoma, "Leelawadee UI", sans-serif;
+    color: #1a2027; padding: 24px;
+  }
+  .card {
+    background: #fff; border-radius: 14px; padding: 32px 36px;
+    box-shadow: 0 8px 30px rgba(16,42,67,.12); max-width: 620px; width: 100%;
+  }
+  h1 { margin: 0 0 4px; font-size: 21px; color: #1565c0; }
+  .sub { margin: 0 0 22px; color: #78909c; font-size: 13px; }
+  .ver { font-weight: 700; color: #2e7d32; }
+  ol { margin: 0; padding-left: 22px; line-height: 1.85; font-size: 15px; }
+  li { margin-bottom: 6px; }
+  code {
+    background: #eceff1; border-radius: 5px; padding: 2px 7px;
+    font-family: Consolas, monospace; font-size: 13px; user-select: all;
+  }
+  .go {
+    display: inline-block; margin: 18px 0 6px; padding: 13px 22px;
+    background: #1565c0; color: #fff; text-decoration: none;
+    border-radius: 9px; font-weight: 700; font-size: 15px;
+  }
+  .go:hover { background: #0d47a1; }
+  .hint {
+    margin-top: 18px; padding: 13px 15px; background: #fff8e1;
+    border-left: 4px solid #ffb300; border-radius: 0 8px 8px 0;
+    font-size: 13px; line-height: 1.7; color: #5d4037;
+  }
+  .thai { font-size: 14px; color: #37474f; margin-top: 2px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>✅ Update installed</h1>
+    <p class="sub">BKN Pharmacy Portal <span class="ver" id="ver"></span> is now in
+      <code>D:\pharmacy\BKNPharmacyPortal</code></p>
+
+    <p><strong>One last step</strong> — Chrome needs to reload the extension.</p>
+    <p class="thai">เหลืออีกขั้นตอนเดียว — กด <b>Reload</b> ที่ Chrome</p>
+
+    <a class="go" id="go" href="#">เปิดหน้า Extensions →</a>
+
+    <ol>
+      <li>Click the blue button above (or copy <code>chrome://extensions</code> into the address bar).</li>
+      <li>Find <strong>BKN Pharmacy Portal</strong> and click the reload arrow <strong>↻</strong>.</li>
+      <li>Close this tab. Done.</li>
+    </ol>
+
+    <div class="hint">
+      <strong>First time on this PC only:</strong> turn on <em>Developer mode</em>
+      (top-right), click <em>Load unpacked</em>, and select
+      <code>D:\pharmacy\BKNPharmacyPortal</code>.
+    </div>
+  </div>
+
+<script>
+  // Chrome refuses a chrome:// URL passed on the command line, so the updater
+  // opens THIS ordinary http page instead and the user clicks through from
+  // here — a link click is a user gesture, which Chrome does allow.
+  const params = new URLSearchParams(location.search);
+  const id  = params.get('id')  || '';
+  const ver = params.get('ver') || '';
+  document.getElementById('ver').textContent = ver ? 'v' + ver : '';
+  const url = id ? 'chrome://extensions/?id=' + encodeURIComponent(id)
+                 : 'chrome://extensions';
+  const go = document.getElementById('go');
+  go.href = url;
+  // Anchors to chrome:// are blocked from navigating directly; put the target
+  // on the clipboard and tell the user, so the click is never a dead end.
+  go.addEventListener('click', (e) => {
+    e.preventDefault();
+    navigator.clipboard.writeText(url).then(() => {
+      go.textContent = '📋 คัดลอกแล้ว — วางในช่อง address แล้วกด Enter';
+    }).catch(() => {
+      go.textContent = 'พิมพ์  chrome://extensions  ในช่อง address';
+    });
+  });
+</script>
+</body>
+</html>

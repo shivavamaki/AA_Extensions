@@ -379,8 +379,17 @@ for /f "usebackq delims=" %%A in (`
 `) do set "CHPROFILE=%%A"
 if not defined CHPROFILE set "CHPROFILE=Default"
 
+:: Open an ordinary http:// page on the pharmacy server, NOT chrome://extensions
+:: directly. Chrome silently DROPS a chrome:// URL given on the command line
+:: (a deliberate security restriction) and lands on the New Tab page instead —
+:: which is what happened in 3.47.1. The served page carries the instructions
+:: and a click-through, and a user click is a gesture Chrome does honour.
+rem The URL is double-quoted, so '&' needs NO caret escape - a '^' would be
+rem passed through literally and corrupt the query string. Note: use REM, not
+rem '::', inside a parenthesised block - '::' breaks block parsing so BOTH
+rem branches run.
 if defined CHROME (
-  start "" "%CHROME%" --profile-directory="%CHPROFILE%" --new-tab "chrome://extensions/?id=%EXTID%"
+  start "" "%CHROME%" --profile-directory="%CHPROFILE%" "%SERVER%/reload-extension?id=%EXTID%&ver=%REMOTE%"
 ) else (
   echo   NOTE: Chrome was not found automatically - open Chrome yourself and go to
   echo         chrome://extensions   then click the reload arrow.
@@ -3810,6 +3819,13 @@ class Handler(BaseHTTPRequestHandler):
             with zip_path.open('rb') as f:
                 shutil.copyfileobj(f, self.wfile)
             return
+        # /reload-extension → the "finish the update" page the sync script opens
+        # after a successful install. Served over plain http because Chrome drops
+        # a chrome:// URL passed on the command line; the user clicks through
+        # from here.
+        if clean in ('/reload-extension', '/reload-extension.html'):
+            self._serve_file(WWW_DIR / 'reload-extension.html',
+                             'text/html; charset=utf-8'); return
         # /update-extension → the one-click updater a workstation keeps on its
         # Desktop. It is a tiny bootstrap that re-downloads /ext-sync.bat each
         # run, so the copy on the PC never goes stale. Served with this server's
