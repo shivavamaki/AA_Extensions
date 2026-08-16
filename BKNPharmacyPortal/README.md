@@ -2,7 +2,7 @@
 
 Unified Chrome MV3 extension for BKN Hospital Pharmacy. Combines the former **BKN Pharmacy** (`rx_menu`) and **Discharge Process Checklist** (`AAOverlay`) extensions into one portal backed by a shared pharmacy server.
 
-**Version:** 3.50.1 · **Manifest:** MV3 · **Target:** ArcusAir (`arcusair.bdms.co.th`, AngularJS 1.x SPA)
+**Version:** 3.50.2 · **Manifest:** MV3 · **Target:** ArcusAir (`arcusair.bdms.co.th`, AngularJS 1.x SPA)
 
 Full project context: [/README.md](../README.md)
 

@@ -528,6 +528,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       return true;
     }
     (async () => {
+      // Hard timeout. Without one a stalled upstream (the report endpoints chain
+      // several ArcusAir calls) leaves the fetch pending FOREVER: the caller's
+      // promise never settles, so the page sits on "กำลังโหลด…" with no error and
+      // no way to retry — which is exactly how home-med-api appears stuck in
+      // DevTools as (pending) with 0 B. 90s is well past the server's own 30s
+      // upstream timeout plus retries, so this only fires when something is
+      // genuinely wedged, never on a merely slow-but-working request.
+      const PROXY_TIMEOUT_MS = 90000;
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), PROXY_TIMEOUT_MS);
       try {
         const method  = msg.method  || 'GET';
         const headers = msg.headers || {};
@@ -535,13 +545,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         if (msg.body !== null && msg.body !== undefined) {
           body = (typeof msg.body === 'string') ? msg.body : JSON.stringify(msg.body);
         }
-        const res = await fetch(msg.url, { method, headers, body, redirect: 'follow' });
+        const res = await fetch(msg.url, {
+          method, headers, body, redirect: 'follow', signal: ctl.signal,
+        });
         const text = await res.text();
         let json = null;
         try { json = text ? JSON.parse(text) : null; } catch (_) {}
         sendResponse({ ok: res.ok, status: res.status, text, json });
       } catch (e) {
-        sendResponse({ ok: false, status: 0, error: String(e) });
+        const aborted = e && e.name === 'AbortError';
+        sendResponse({
+          ok: false, status: 0,
+          error: aborted
+            ? `Timed out after ${PROXY_TIMEOUT_MS / 1000}s — the pharmacy server or ArcusAir did not respond.`
+            : String(e),
+        });
+      } finally {
+        clearTimeout(timer);
       }
     })();
     return true;

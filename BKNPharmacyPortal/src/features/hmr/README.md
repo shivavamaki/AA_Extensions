@@ -25,6 +25,18 @@ sees the same progress.
    captures the reconcile token) and **Allocate / Dispense** (which now also
    carries the 🖨 **Sheet** action for the Home Medication Sheet).
 
+> **🖨 Sheet carries the full ArcusAir session, not just the token.** The server
+> rebuilds ArcusAir's request headers from the context object
+> (`_arcus_headers`: `useruid`←`loginuid`, `roleuid`, `orguid`←`organisationuid`,
+> `parentorguid`, `departmentuid`). Sending only `incusToken` left every one of
+> those blank and ArcusAir then never answered `getallorderitem` — the sheet sat
+> on *"กำลังโหลด…"* with the request stuck `(pending)`, while the same sheet
+> opened from the dispense workbench worked, because that extractor carries them
+> all. `buildHomeMedContext()` reads each from the tapped headers **or** the
+> normalised `patientCtx` (both spellings), and the button refuses to open with
+> a clear message when `loginuid` is still missing rather than opening a page
+> that can only spin.
+
 > **🖨 Sheet** opens `page-home-med.html` for the current patient directly from
 > Ward View. It sends the **same `LOAD_MED_TABLE` message** that
 > `content-home-med.js` sends from the dispense workbench, so `background.js`'s

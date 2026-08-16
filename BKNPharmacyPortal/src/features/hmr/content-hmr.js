@@ -316,10 +316,31 @@
       const incusToken = hdrs['incus-token'] || '';
       if (!patientvisituid || !incusToken) return null;
 
+      // The server rebuilds ArcusAir's session headers from THIS object
+      // (_arcus_headers: useruid←loginuid, roleuid, orguid←organisationuid,
+      // parentorguid, departmentuid). Sending only the token made every one of
+      // those blank, and ArcusAir then never answers getallorderitem — the
+      // sheet sat on "กำลังโหลด…" while the request hung. The dispense-workbench
+      // button works precisely because its extractor carries all of them, so
+      // carry the same set here.
+      const pc = ctx.data?.patientCtx || {};
+      const pick = (...keys) => {
+        for (const k of keys) {
+          const v = hdrs[k] || pc[k] || ctx.data?.[k];
+          if (v) return String(v);
+        }
+        return '';
+      };
+
       return {
         patientuid:      patientuid || '',
         patientvisituid,
         incusToken,
+        loginuid:         pick('useruid', 'loginuid'),
+        roleuid:          pick('roleuid'),
+        organisationuid:  pick('orguid', 'organisationuid'),
+        parentorguid:     pick('parentorguid'),
+        departmentuid:    pick('departmentuid', 'logindepartmentuid'),
         hn:              state?.hn || _currentHN || '',
         patientVisitId:  visitid || '',
         patientName:     detectPatientNameForQueue() || '',
@@ -1872,6 +1893,15 @@
         if (!context) {
           alert('[HM Process] ไม่พบข้อมูลผู้ป่วย (patientuid / visit / token)\n\n'
               + 'Could not resolve this patient on ArcusAir — open the patient once, then retry.');
+          return;
+        }
+        // Without loginuid the server sends ArcusAir a blank useruid header and
+        // getallorderitem never answers — the sheet would hang on "loading".
+        // Say so here instead of opening a page that can only spin.
+        if (!context.loginuid) {
+          alert('[HM Process] ยังไม่พบ session ของผู้ใช้ (loginuid)\n\n'
+              + 'ArcusAir session not captured yet — open a patient in ArcusAir once, '
+              + 'then press 🖨 Sheet again.');
           return;
         }
         await serverSave(visitid, {}, makeLog('Home Medication Sheet opened'));
