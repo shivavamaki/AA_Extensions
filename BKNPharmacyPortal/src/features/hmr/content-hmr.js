@@ -283,6 +283,50 @@
     return out;
   }
 
+  /* Build the context object page-home-med.js expects, using the SAME
+     resolution chain fetchDischargeInfo() uses (xhrTap visitMap → Angular
+     scope → patient context). The sheet hard-requires patientvisituid and
+     incusToken — it refuses to fetch without them — so return null rather
+     than opening a sheet that can only show an error. */
+  async function buildHomeMedContext(visitid, state) {
+    try {
+      const ctx = await new Promise(resolve =>
+        chrome.runtime.sendMessage({ type: 'MJ_EXTRACT_ANGULAR_CTX' }, r => resolve(r))
+      );
+      if (!ctx?.ok) return null;
+      const hdrs     = ctx.data?._raw?.arcusHdrs || {};
+      const visitMap = ctx.data?._raw?.xhrTap?.visitMap || {};
+      const mapped   = visitid ? visitMap[visitid] : null;
+
+      let patientuid, patientvisituid;
+      if (mapped?.patientvisituid) {
+        patientuid      = mapped.patientuid;
+        patientvisituid = mapped.patientvisituid;
+      } else {
+        const sd = await getAngularScopeUIDs(visitid);
+        if (sd.patientvisituid) {
+          patientuid      = sd.patientuid;
+          patientvisituid = sd.patientvisituid;
+        } else {
+          const pc = ctx.data?.patientCtx || {};
+          patientuid      = pc.patientuid;
+          patientvisituid = pc.patientvisituid;
+        }
+      }
+      const incusToken = hdrs['incus-token'] || '';
+      if (!patientvisituid || !incusToken) return null;
+
+      return {
+        patientuid:      patientuid || '',
+        patientvisituid,
+        incusToken,
+        hn:              state?.hn || _currentHN || '',
+        patientVisitId:  visitid || '',
+        patientName:     detectPatientNameForQueue() || '',
+      };
+    } catch (_) { return null; }
+  }
+
   function _emptyDi() {
     return {
       status: null, dischargeStage: null, homemedordered: null,
@@ -1778,19 +1822,27 @@
       await launchStep7(visitid, hn);
     });
 
-    // 🖨 Sheet — the Home Medication Sheet is produced from the dispense
-    // workbench (that is where content-home-med.js injects its button and where
-    // the order rows live), so from Ward View we navigate there rather than
-    // trying to open the sheet with no order context.
+    // 🖨 Sheet — open the Home Medication Sheet for THIS patient directly from
+    // Ward View. Sends the same LOAD_MED_TABLE message content-home-med.js
+    // sends, so background.js's openOrReuseTab handles it: the payload is
+    // written to chrome.storage.session BEFORE the tab opens, and an already
+    // open sheet is reused rather than duplicated. Opening the page URL raw
+    // would give a sheet with no patient context.
     document.querySelector('.hmr-step-print-btn')?.addEventListener('click', async () => {
-      if (_hmrIsAllocate() || _hmrIsDispenseDept() || _hmrIsWorkbench()) {
-        alert('[HM Process] กดปุ่ม 🏠💊 Home Med บนหน้านี้เพื่อพิมพ์\n\n'
-            + 'Use the 🏠💊 Home Med button on this page to print the sheet.');
-        return;
+      const btn = document.querySelector('.hmr-step-print-btn');
+      if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+      try {
+        const context = await buildHomeMedContext(visitid, state);
+        if (!context) {
+          alert('[HM Process] ไม่พบข้อมูลผู้ป่วย (patientuid / visit / token)\n\n'
+              + 'Could not resolve this patient on ArcusAir — open the patient once, then retry.');
+          return;
+        }
+        await serverSave(visitid, {}, makeLog('Home Medication Sheet opened'));
+        chrome.runtime.sendMessage({ type: 'LOAD_MED_TABLE', context });
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '🖨 Sheet'; }
       }
-      await serverSave(visitid, {}, makeLog('Home Med Sheet: opened dispense workbench to print'));
-      const ok = await navigateToPharmacyWorklist();
-      if (!ok) alert('[HM Process] ไม่สามารถเปิดหน้าจ่ายยาได้ · could not open the dispense workbench.');
     });
 
     document.getElementById('hmr-btn-reset')?.addEventListener('click', async () => {

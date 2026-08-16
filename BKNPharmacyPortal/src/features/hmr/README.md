@@ -25,6 +25,18 @@ sees the same progress.
    captures the reconcile token) and **Allocate / Dispense** (which now also
    carries the 🖨 **Sheet** action for the Home Medication Sheet).
 
+> **🖨 Sheet** opens `page-home-med.html` for the current patient directly from
+> Ward View. It sends the **same `LOAD_MED_TABLE` message** that
+> `content-home-med.js` sends from the dispense workbench, so `background.js`'s
+> `openOrReuseTab` handles it — payload written to `chrome.storage.session`
+> *before* the tab opens, and an already-open sheet reused rather than
+> duplicated. Opening the extension URL raw would produce a sheet with no
+> patient context. `buildHomeMedContext()` resolves `patientuid` /
+> `patientvisituid` / `incusToken` through the same chain as
+> `fetchDischargeInfo()` (xhrTap `visitMap` → Angular scope → patient context)
+> and returns `null` if the visit or token is missing, so the button reports
+> the problem instead of opening a sheet that can only render an error.
+
 > **Two discharge endpoints, and they disagree.**
 > `dischargeprocess/getdischargeprocess` carries the stage *timestamps*;
 > `dischargeprocess/getdischargeorder` carries the per-task *flags*. The latter
