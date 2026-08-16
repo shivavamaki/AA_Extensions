@@ -257,11 +257,19 @@
           }
         }
       }
-      /* Pharmacist name from toolbar menu button */
+      /* Pharmacist name from the header user menu.
+         .headUserDetBtn is a semantic class on the button itself and works on
+         every ArcusAir page. The long positional path below it was the only
+         selector before and is fragile — it pins the exact body child order,
+         the layout-row classes AND the user menu being the 9th md-menu, so any
+         toolbar difference silently yielded no name and the Home Med Sheet
+         printed "-" for ผู้ตรวจสอบรายการยา. Kept last purely as a fallback. */
       if (!ctx.pharmacistName) {
-        const pharmEl = document.querySelector(
-          "body > div.full-height.ng-scope.layout-row > div > md-toolbar > div > md-menu:nth-child(9) > button > span"
-        );
+        const pharmEl =
+          document.querySelector(".headUserDetBtn span.ng-binding") ||
+          document.querySelector(
+            "body > div.full-height.ng-scope.layout-row > div > md-toolbar > div > md-menu:nth-child(9) > button > span"
+          );
         if (pharmEl) {
           const t = _safeText(pharmEl);
           if (t) ctx.pharmacistName = t;

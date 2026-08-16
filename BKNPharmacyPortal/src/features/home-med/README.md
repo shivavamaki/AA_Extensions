@@ -133,6 +133,19 @@ see `.sign-box.appt-box`, `.hmproc-box`, `.sign-box.providers-box` in
   รายการยา** (from `context.pharmacistName`, `#pharmacistCheckedName`) and
   **ผู้จ่ายยา** — a blank dashed signature line, no name, by design.
 
+  > `pharmacistName` must travel **in the context** — the sheet is an extension
+  > page with no access to ArcusAir's DOM, so it cannot read the logged-in user
+  > itself. It is taken from **`.headUserDetBtn span.ng-binding`** (the header
+  > user button), which is a semantic class present on every ArcusAir page.
+  > The original extractor used a long positional path
+  > (`… md-menu:nth-child(9) > button > span`) that pinned the body child
+  > order, the layout-row classes *and* the user menu being the 9th `md-menu`;
+  > any toolbar difference silently produced no name and the sheet printed
+  > **"-"**. That path is now only a fallback. The same selector backs
+  > `detectUsername()` in `hmr`/`hmq`, ahead of the old scan-every-span
+  > heuristic — which could match a *patient* whose name carries a ภก./ภญ.
+  > title.
+
 **Physician moved out of the footer** — it's now an inline line
 (`.physician-line`, `#physicianNameTop`) at the **top of the clinical banner**,
 above Diagnosis, styled neutrally (not blue/red like Diagnosis/Allergy below

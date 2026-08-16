@@ -42,8 +42,22 @@
 
   // ── Username detection ───────────────────────────────────────────────
 
+  /* The logged-in user, straight from ArcusAir's header user button.
+     .headUserDetBtn is a semantic class on the button itself, so this works on
+     every ArcusAir page regardless of toolbar layout — unlike scanning every
+     span for "ภก."/"ภญ.", which can just as easily match a PATIENT whose name
+     carries a title. Returns '' when the header isn't rendered yet. */
+  function detectHeaderUser() {
+    const el = document.querySelector('.headUserDetBtn span.ng-binding');
+    return el ? norm(el.textContent) : '';
+  }
+
   function detectUsername() {
     if (_currentUser) return _currentUser;
+    const header = detectHeaderUser();
+    if (header) { _currentUser = header; return header; }
+    // Fallback for a page where the header hasn't rendered: scan for a span
+    // that looks like a pharmacist credential.
     for (const el of document.querySelectorAll('span.ng-binding.ng-scope, span.ng-binding')) {
       const t = norm(el.textContent);
       if (t && t.includes(',') && (t.includes('ภก.') || t.includes('ภญ.'))) {
@@ -357,6 +371,11 @@
         hn:              state?.hn || _currentHN || '',
         patientVisitId:  visitid || '',
         patientName:     detectPatientNameForQueue() || '',
+        // ผู้ตรวจสอบรายการยา on the printed sheet. The sheet runs in an
+        // extension page with no access to ArcusAir's DOM, so the name has to
+        // travel in the context — read from the header user button, which is
+        // present on every ArcusAir page.
+        pharmacistName:  detectHeaderUser(),
       };
     } catch (_) { return null; }
   }

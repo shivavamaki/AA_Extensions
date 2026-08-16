@@ -66,6 +66,12 @@
   let _currentUser = null;
   function detectUsername() {
     if (_currentUser) return _currentUser;
+    // Header user button first — semantic, present on every ArcusAir page, and
+    // unambiguous. The span scan below can match a PATIENT whose name carries a
+    // ภก./ภญ. title, so it is only a fallback.
+    const headerEl = document.querySelector('.headUserDetBtn span.ng-binding');
+    const header = headerEl ? norm(headerEl.textContent) : '';
+    if (header) { _currentUser = header; return header; }
     for (const el of document.querySelectorAll('span.ng-binding.ng-scope, span.ng-binding')) {
       const t = norm(el.textContent);
       if (t && t.includes(',') && (t.includes('ภก.') || t.includes('ภญ.'))) {
@@ -609,12 +615,9 @@
       text: 'หยุดยาต่อเนื่อง · Standing orders closed' },
   ];
 
-  function detectArcusUser() {
-    // The header user button renders "ชื่อ สกุล, ภก." in a plain span.
-    const span = document.querySelector('.headUserDetBtn span.ng-binding');
-    const t = norm(span && span.textContent);
-    return t || detectUsername();
-  }
+  // detectUsername() now reads .headUserDetBtn first, so this is just an alias
+  // kept for readability at the call sites that log an ArcusAir-side action.
+  const detectArcusUser = detectUsername;
 
   /* HN for the case being acted on. The dispense-return page carries
      h4.patientbannername; the discharge-process page may render the banner
