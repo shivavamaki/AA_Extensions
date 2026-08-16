@@ -3089,6 +3089,29 @@ def transition_hmq_entry(entry_id, action, user):
     save_hmq_entry(doc)
     return doc
 
+def append_hmq_log(entry_id, text, user):
+    """Append one audit-log line to a queue entry WITHOUT changing its status.
+
+    For events that happen in ArcusAir rather than in our UI — medicine
+    verified back, standing orders stopped. The timestamp is the moment the
+    pharmacist clicked in ArcusAir (the client posts on that click), so it is
+    the real event time, not when a poller noticed a flag.
+
+    Deliberately not restricted by status: a return can legitimately arrive
+    before Start or after Complete. Duplicate suppression is the client's job
+    (one physical click can fire Angular's handler twice).
+    """
+    text = (text or '').strip()
+    if not text:
+        return None
+    doc = load_hmq_entry(entry_id)
+    if not doc:
+        return None
+    now = _now_iso()
+    doc.setdefault('auditLog', []).append({'ts': now, 'user': user, 'action': text})
+    save_hmq_entry(doc)
+    return doc
+
 def update_hmq_location(entry_id, ward, room, user):
     """Backfill ward/room on an existing entry so a case queued before the bed
     could be read (e.g. special-care beds like CCU06) gets its location filled.
@@ -4438,8 +4461,22 @@ class Handler(BaseHTTPRequestHandler):
                 if doc is None:
                     self.send_json(404, {'error': 'Queue entry not found'}); return
                 self.send_json(200, doc); return
+            if action == 'log':
+                # Record an event that happened in ARCUSAIR (medicine returned,
+                # standing orders stopped) against this case. Status is NOT
+                # touched — this only appends to the audit trail, so a case can
+                # receive one before Start or after Complete.
+                #
+                # Pass the RAW user, not the 'Unknown' default: a "(detected)"
+                # entry has no known actor, and labelling it Unknown reads as a
+                # failed lookup rather than "nobody was observed doing this".
+                doc = append_hmq_log(key, (body.get('action_text') or body.get('text') or '').strip(),
+                                     (body.get('user') or '').strip())
+                if doc is None:
+                    self.send_json(404, {'error': 'Queue entry not found'}); return
+                self.send_json(200, doc); return
             if action not in ('start', 'complete', 'revert-process', 'revert-new'):
-                self.send_json(400, {'error': "action must be 'start', 'complete', 'revert-process', 'revert-new', or 'update-loc'"}); return
+                self.send_json(400, {'error': "action must be 'start', 'complete', 'revert-process', 'revert-new', 'update-loc', or 'log'"}); return
             doc = transition_hmq_entry(key, action, user)
             if doc is None:
                 self.send_json(404, {'error': 'Queue entry not found'}); return

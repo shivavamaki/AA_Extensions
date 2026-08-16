@@ -470,11 +470,7 @@
     if (_ageTimer) { clearInterval(_ageTimer); _ageTimer = null; }
   }
 
-  // ── "Add new case" button (Return workbench only) ───────────────────────
-  function findPrintPrescriptionBtn() {
-    return document.getElementById('printprescription');
-  }
-
+  // ── Patient banner (Return workbench) ───────────────────────────────────
   function extractPatientFromBanner() {
     const h4 = document.querySelector('h4.patientbannername');
     if (!h4) return null;
@@ -546,17 +542,6 @@
     return { ok: true, entry: r.json };
   }
 
-  async function onAddCaseClick() {
-    const patient = extractPatientFromBanner();
-    if (!patient) {
-      alert('[HM Process Queue] Could not detect the patient name/HN — make sure a patient is selected.');
-      return;
-    }
-    const { ward, room } = extractWardRoom();
-    const result = await addCaseFlow({ hn: patient.hn, name: patient.name, ward, room });
-    if (!result.ok) alert(`[HM Process Queue] ${result.reason}`);
-  }
-
   // Complete the active ("process") queue entry for this HN, if any — shared
   // by the popup's own ✓ Complete button and exposed via window.BKN_HMQ so
   // content-hmr.js's Ward View card can complete the same entry directly.
@@ -571,22 +556,74 @@
     return { ok: true, entry: r.json };
   }
 
-  window.BKN_HMQ = { addCase: addCaseFlow, completeActiveByHn };
-
-  function injectAddCaseButton() {
-    if (document.getElementById('hmq-add-btn')) return;
-    const printBtn = findPrintPrescriptionBtn();
-    if (!printBtn) return;
-    const btn = document.createElement('button');
-    btn.id = 'hmq-add-btn';
-    btn.type = 'button';
-    btn.className = printBtn.className;
-    btn.setAttribute('aria-label', 'Add new case to HM Process Queue');
-    btn.title = 'Add new case to HM Process Queue';
-    btn.innerHTML = '<span class="hmq-add-icon">➕</span>';
-    btn.addEventListener('click', onAddCaseClick);
-    printBtn.before(btn);
+  /* Append an audit-log line to today's queue entry for this HN, without
+     changing its status. Used for events that happen in ArcusAir (medicine
+     returned, standing orders stopped) so the case history records WHEN and
+     BY WHOM, alongside the Added/Started/Completed transitions. */
+  async function postHmqEvent(hn, { action, user }) {
+    if (!hn || !action) return false;
+    const list = await fetchQueue();
+    // Any of today's entries for this HN — a completed case can still receive
+    // a late return, so this is deliberately not restricted to 'process'.
+    const entry = list.find(e => e.hn === hn);
+    if (!entry) return false;
+    // `action` on the wire is the DISPATCH key ('log'); the human text rides
+    // as action_text so the two never collide.
+    const r = await putTransition(entry.id, 'log', { action_text: action, user });
+    if (r && r.ok) await refreshQueue();
+    return !!(r && r.ok);
   }
+
+  window.BKN_HMQ = { addCase: addCaseFlow, completeActiveByHn, logEvent: postHmqEvent };
+
+  /* ── Medicine return: log the REAL event ────────────────────────────────
+     The "+ Add new case" button used to live here. It is gone: the case is
+     already auto-enqueued at discharge stage 1–2 (content-hmr.js), so the
+     manual add was redundant.
+
+     Instead we listen to ArcusAir's OWN "Verify Return" button
+     (#verifydispensereturn). That click IS the medicine being accepted back,
+     so its timestamp is the real event time — not the moment our poller
+     happened to notice a flag flip. The acting pharmacist is read from
+     ArcusAir's header user menu (.headUserDetBtn), i.e. the account that
+     actually pressed it.
+
+     Bound with capture:true on document so it survives Angular re-rendering
+     the toolbar, and guarded so one click logs once. */
+  const RETURN_BTN_SEL = '#verifydispensereturn';
+
+  function detectArcusUser() {
+    // The header user button renders "ชื่อ สกุล, ภก." in a plain span.
+    const span = document.querySelector('.headUserDetBtn span.ng-binding');
+    const t = norm(span && span.textContent);
+    return t || detectUsername();
+  }
+
+  let _lastReturnLog = 0;
+  async function onVerifyReturnClick() {
+    // Angular can fire the handler twice for one physical click; ignore a
+    // repeat inside 1.5s rather than writing a duplicate audit line.
+    const now = Date.now();
+    if (now - _lastReturnLog < 1500) return;
+    _lastReturnLog = now;
+
+    const patient = extractPatientFromBanner();
+    if (!patient || !patient.hn) return;          // nothing reliable to key on
+    const user = detectArcusUser();
+    try {
+      await postHmqEvent(patient.hn, {
+        action: `คืนยาเรียบร้อย · Medicine returned (verified)`,
+        user,
+      });
+    } catch (e) {
+      console.log('[BKN-HMQ] return log failed:', e);
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target && e.target.closest && e.target.closest(RETURN_BTN_SEL);
+    if (btn) onVerifyReturnClick();
+  }, true);
 
   // ── Page sync ────────────────────────────────────────────────────────────
   function syncUI() {
@@ -594,9 +631,6 @@
       ensurePopup();
     } else {
       teardownPopupIfIrrelevant();
-    }
-    if (isReturnPage()) {
-      injectAddCaseButton();
     }
   }
 

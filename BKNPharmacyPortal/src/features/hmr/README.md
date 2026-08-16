@@ -195,7 +195,7 @@ Two buttons call the shared API `window.BKN_HMQ` exposed by
 [`../hmq/content-hmq.js`](../hmq/content-hmq.js) — see
 [`../hmq/README.md`](../hmq/README.md):
 
-- **➕** (header, before the "💊 HM Process" title) → `BKN_HMQ.addCase({hn, name,
+- **➕ Add to Queue** (HM Process card header) → `BKN_HMQ.addCase({hn, name,
   ward, room})`. Patient name comes from `h4.patientbannername`; ward/room come
   from `detectWardBed()`:
   - **Primary — the bedoccupancy DOM element** (`readBedOccupancy`): ArcusAir

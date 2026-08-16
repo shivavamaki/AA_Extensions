@@ -335,7 +335,32 @@
     };
   }
 
+  /* Log an ArcusAir-side flag flipping false→true onto the HMQ case.
+
+     Unlike the medicine return — where we hear the pharmacist's actual click
+     on ArcusAir's Verify Return button — nothing in the UI tells us WHEN the
+     ward stopped the standing orders or WHO did it. All we observe is the API
+     flag changing between two polls. So the line is labelled "(detected)" and
+     carries no user: recording whoever happened to have the card open would
+     name the wrong person in a clinical audit trail. */
+  const _flagSeen = {};
+  async function logFlagFlip(state, key, before, after, text) {
+    if (before === after || after !== true) return;   // only false/null → true
+    const hn = state && state.hn;
+    if (!hn) return;
+    const seenKey = `${hn}|${key}`;
+    if (_flagSeen[seenKey]) return;
+    _flagSeen[seenKey] = true;
+    try {
+      if (window.BKN_HMQ && window.BKN_HMQ.logEvent) {
+        await window.BKN_HMQ.logEvent(hn, { action: text, user: '' });
+      }
+    } catch (_) { /* best-effort */ }
+  }
+
   function applyDischargeInfo(state, di) {
+    const prevReturn   = state.checklist.medReturned;
+    const prevStanding = state.checklist.standingOrdersOff;
     state.checklist.dischargeStatus  = di.status;
     state.checklist.dischargeStage   = di.dischargeStage ?? null;
     state.checklist.homemedordered   = di.homemedordered;
@@ -344,6 +369,15 @@
     // openordersprocessed. getdischargeorder returns both and they disagree.
     state.checklist.standingOrdersOff = di.continuousordersprocessed;
     state.steps.continueOrdersOff     = di.continuousordersprocessed === true ? 'done' : 'pending';
+
+    // Record the two ArcusAir-side milestones on the queue case's history.
+    // The medicine return is ALSO logged (with the real user) by content-hmq's
+    // Verify-Return listener; this fallback covers a return done on a machine
+    // where that page was never opened, and is deduped per HN either way.
+    logFlagFlip(state, 'medReturned', prevReturn, di.pharmacyreturnscompleted,
+                'คืนยาเรียบร้อย · Pharmacy return completed (detected)');
+    logFlagFlip(state, 'standingOrdersOff', prevStanding, di.continuousordersprocessed,
+                'หยุดยาต่อเนื่อง · Standing orders stopped (detected)');
   }
 
   // Discharge stage 1 (Discharge Advice) / 2 (Discharge Order) means the ward

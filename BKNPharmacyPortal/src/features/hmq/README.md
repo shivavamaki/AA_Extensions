@@ -130,6 +130,30 @@ never loses the queue. (Only the popup's *position/width* is per-browser
 - **Revert transitions** clear the timestamp of the stage being undone
   (`completedAt`/`startedAt` → `null`) and append an audit-log entry, same as
   forward transitions.
+- **`action: 'log'` — record an ArcusAir-side event.** Appends one audit line
+  (`action_text` + `user`) **without changing status**, so a case can receive
+  one before Start or after Complete. Used for two milestones that happen in
+  ArcusAir rather than in our UI:
+
+  | Event | Source | Time | User |
+  |---|---|---|---|
+  | Medicine returned | click on ArcusAir's own `#verifydispensereturn` | **real** — the click itself | **real** — read from `.headUserDetBtn` |
+  | Standing orders stopped | `continuousordersprocessed` flipping `false→true` | *detected* — when a poll first saw it | none |
+
+  The second is deliberately labelled **"(detected)"** and carries **no user**.
+  Nothing in ArcusAir tells us when the ward stopped the orders or who did it —
+  only that the flag changed between two polls. Recording whoever happened to
+  have the card open would name the wrong person in a clinical audit trail, so
+  the field is left blank rather than guessed (the server stores the raw value,
+  not its `Unknown` default, so the modal shows nothing instead of a failed
+  lookup). Both are deduped per HN so a repeated poll or a double-fired Angular
+  click cannot write the line twice.
+
+  > The manual **➕ Add new case** button on the Return workbench is **gone** —
+  > the case is already auto-enqueued at discharge stage 1–2
+  > (`maybeAutoAddToQueue`), so it was redundant. `BKN_HMQ.addCase` remains, and
+  > is still what the HM Process card calls.
+
 - **`startedBy` — who is working the case.** Set from the `start` transition's
   `user` and shown as a 👤 chip beside the HN on **On Process** rows (both the
   floating popup and the Dashboard); `revert-new` clears it along with
