@@ -25,6 +25,19 @@ sees the same progress.
    captures the reconcile token) and **Allocate / Dispense** (which now also
    carries the 🖨 **Sheet** action for the Home Medication Sheet).
 
+> **🖨 Sheet is locked until Allocate / Dispense has run.** That step navigates
+> deep into ArcusAir, so every session uid is on the wire and resolvable —
+> `launchStep7()` calls `saveSessionCapture()` *before* navigating away and
+> stores `incusToken` + `loginuid` / `roleuid` / `organisationuid` /
+> `parentorguid` / `departmentuid` onto the per-visit capture bag
+> (`PUT /api/patients/{puid}/captures/{vuid}`). `buildHomeMedContext()` then
+> prefers the live tap and falls back to that bag, so the button works after a
+> Ward View reload or from another workstation. Until the step is `done` the
+> button renders `disabled` + `.is-locked` — clicking earlier could only open a
+> sheet that hangs. The server keeps the uids 7 days but drops the stored token
+> after 24 h, so a stale bag yields no token and the button says to re-run
+> Allocate / Dispense rather than opening a spinning page.
+
 > **🖨 Sheet carries the full ArcusAir session, not just the token.** The server
 > rebuilds ArcusAir's request headers from the context object
 > (`_arcus_headers`: `useruid`←`loginuid`, `roleuid`, `orguid`←`organisationuid`,

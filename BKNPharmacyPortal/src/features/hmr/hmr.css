@@ -195,6 +195,15 @@
   border-radius: 5px; padding: 3px 8px; margin-right: 5px;
 }
 .hmr-step-print-btn:hover { background: #ffecb3; }
+/* Locked until Allocate / Dispense has captured the ArcusAir session. */
+.hmr-step-print-btn.is-locked,
+.hmr-step-print-btn:disabled {
+  background: #eceff1;
+  color: #b0bec5;
+  border-color: #dde3e8;
+  cursor: not-allowed;
+}
+.hmr-step-print-btn.is-locked:hover { background: #eceff1; }
 
 .hmr-sec-lbl {
   font-size: 9.5px;

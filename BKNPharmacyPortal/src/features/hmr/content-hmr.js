@@ -313,8 +313,20 @@
           patientvisituid = pc.patientvisituid;
         }
       }
-      const incusToken = hdrs['incus-token'] || '';
-      if (!patientvisituid || !incusToken) return null;
+      if (!patientvisituid) return null;
+
+      // Fall back to the per-visit capture bag saved during Allocate / Dispense
+      // (saveSessionCapture) when this tab has not tapped a live request yet —
+      // e.g. Ward View freshly reloaded, or a different workstation. The server
+      // drops the stored token after 24h, so a stale bag yields no token and
+      // the caller reports that rather than opening a sheet that would hang.
+      let cap = null;
+      if (patientuid && window.BKNData && window.BKNData.loadCapture) {
+        try { cap = await window.BKNData.loadCapture(patientuid, patientvisituid); }
+        catch (_) { cap = null; }
+      }
+      const incusToken = hdrs['incus-token'] || (cap && cap.incusToken) || '';
+      if (!incusToken) return null;
 
       // The server rebuilds ArcusAir's session headers from THIS object
       // (_arcus_headers: useruid←loginuid, roleuid, orguid←organisationuid,
@@ -324,9 +336,10 @@
       // button works precisely because its extractor carries all of them, so
       // carry the same set here.
       const pc = ctx.data?.patientCtx || {};
+      // Live tap first, then the normalised context, then the saved capture.
       const pick = (...keys) => {
         for (const k of keys) {
-          const v = hdrs[k] || pc[k] || ctx.data?.[k];
+          const v = hdrs[k] || pc[k] || ctx.data?.[k] || (cap && cap[k]);
           if (v) return String(v);
         }
         return '';
@@ -1455,9 +1468,35 @@
 
   // ── Step 7 entry point (called from ward-view workstation) ───────────
 
+  /* Persist the ArcusAir session ids onto the per-visit capture bag.
+
+     Step 7 runs while the pharmacist is deep in ArcusAir, so every session uid
+     is on the wire and resolvable here. Saving them means the 🖨 Sheet button
+     works later from Ward View — even after a reload, or from another
+     workstation — instead of depending on whatever this tab happens to have
+     tapped. The server merges non-empty fields only, so a partial capture can
+     never blank out one another PC already stored. */
+  async function saveSessionCapture(visitid, state) {
+    try {
+      const ctx = await buildHomeMedContext(visitid, state);
+      if (!ctx || !ctx.patientuid || !ctx.patientvisituid) return false;
+      if (!window.BKNData || !window.BKNData.saveCapture) return false;
+      const payload = {};
+      for (const k of ['incusToken', 'loginuid', 'roleuid',
+                       'organisationuid', 'parentorguid', 'departmentuid']) {
+        if (ctx[k]) payload[k] = ctx[k];
+      }
+      if (!payload.loginuid) return false;     // nothing worth storing yet
+      return await window.BKNData.saveCapture(ctx.patientuid, ctx.patientvisituid, payload);
+    } catch (_) { return false; }
+  }
+
   async function launchStep7(visitid, hn) {
     console.log(`[BKN-HMR S7] launchStep7 visitid=${visitid} hn=${hn}`);
     _step7NoJob = false;
+    // Capture the session BEFORE navigating away — this is the moment the uids
+    // are guaranteed resolvable, and it is what makes 🖨 Sheet usable later.
+    await saveSessionCapture(visitid, _state);
     await saveStep7Job({ visitid, hn });
     const ok = await navigateToPharmacyWorklist();
     console.log(`[BKN-HMR S7] navigateToPharmacyWorklist returned ${ok}`);
@@ -1640,8 +1679,17 @@
         : `<button class="hmr-step-run-btn" data-step="${s.key}">▶ Run</button>`;
       // Allocate / Dispense also prints the Home Medication Sheet, so the
       // print action lives on that row instead of a separate step.
+      // 🖨 Sheet needs the ArcusAir session (token + loginuid). That is captured
+      // when Allocate / Dispense runs, so the button stays DISABLED until this
+      // step is done — clicking it before then could only produce a sheet that
+      // hangs waiting on ArcusAir.
+      const sheetReady = st === 'done';
       const printBtn = s.print
-        ? `<button class="hmr-step-print-btn" data-step="${s.key}" title="Print the Home Medication Sheet">🖨 Sheet</button>`
+        ? `<button class="hmr-step-print-btn${sheetReady ? '' : ' is-locked'}"
+             data-step="${s.key}"${sheetReady ? '' : ' disabled'}
+             title="${sheetReady
+               ? 'Print the Home Medication Sheet'
+               : 'ต้องทำ Allocate / Dispense ก่อน · run Allocate / Dispense first'}">🖨 Sheet</button>`
         : '';
       return `<div class="hmr-step-row ${cls}">
         <span class="hmr-step-num">${ic}</span>
@@ -1897,17 +1945,26 @@
         }
         // Without loginuid the server sends ArcusAir a blank useruid header and
         // getallorderitem never answers — the sheet would hang on "loading".
-        // Say so here instead of opening a page that can only spin.
+        // The button is already disabled until Allocate / Dispense has run, so
+        // this is the belt-and-braces case: the step is done but the stored
+        // session has since aged out (the server drops the token after 24h).
         if (!context.loginuid) {
           alert('[HM Process] ยังไม่พบ session ของผู้ใช้ (loginuid)\n\n'
-              + 'ArcusAir session not captured yet — open a patient in ArcusAir once, '
-              + 'then press 🖨 Sheet again.');
+              + 'กรุณากด ▶ Run ที่ขั้นตอน Allocate / Dispense อีกครั้ง\n'
+              + 'ArcusAir session not available — run Allocate / Dispense again, '
+              + 'then press 🖨 Sheet.');
           return;
         }
         await serverSave(visitid, {}, makeLog('Home Medication Sheet opened'));
         chrome.runtime.sendMessage({ type: 'LOAD_MED_TABLE', context });
       } finally {
-        if (btn) { btn.disabled = false; btn.textContent = '🖨 Sheet'; }
+        // Restore the button's own enabled state, not an unconditional true —
+        // the row re-renders with .is-locked when Allocate / Dispense is not
+        // done, and forcing disabled=false here would defeat that lock.
+        if (btn) {
+          btn.textContent = '🖨 Sheet';
+          btn.disabled = btn.classList.contains('is-locked');
+        }
       }
     });
 
