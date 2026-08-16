@@ -22,6 +22,13 @@
   const HN_RE      = /\b(48-\d{2}-\d{6})\b/;
 
   const DISCHARGE_API   = 'https://arcusair.bdms.co.th/inpatient/dischargeprocess/getdischargeprocess';
+  // Second, separate endpoint. getdischargeprocess carries the STAGE timestamps
+  // (dischargeadvicedon → finaldischargedon); getdischargeorder carries the
+  // per-task completion flags the auto-checklist reads. They are NOT the same
+  // shape: getdischargeorder returns BOTH `openordersprocessed` and
+  // `continuousordersprocessed`, and they disagree (seen live: open=false,
+  // continuous=true), so "Off standing order" must read `continuousordersprocessed`.
+  const DISCHARGE_ORDER_API = 'https://arcusair.bdms.co.th/inpatient/dischargeprocess/getdischargeorder';
   const WORKLIST_ROUTE  = '#!/pharmacy/dispenseworkbench';
   const STEP7_STORE_KEY = 'bkn_hmr_step7';
 
@@ -206,9 +213,36 @@
         );
         if (!r?.ok || !r.json) continue;
 
+        // Second call, same patient/visit + same headers: the per-task flags.
+        // Best-effort — the stage timestamps above are what gate the card, so a
+        // failure here just leaves the auto-checklist rows unknown ("—").
+        const hdrsCommon = {
+          'Content-Type':           'application/json',
+          'incus-token':            hdrs['incus-token']            || '',
+          'appname':                hdrs['appname']                || 'ARCUSAIR',
+          'departmentuid':          hdrs['departmentuid']          || '',
+          'orguid':                 hdrs['orguid']                 || '',
+          'parentorguid':           hdrs['parentorguid']           || '',
+          'roleuid':                hdrs['roleuid']                || '',
+          'useruid':                hdrs['useruid']                || '',
+          'hasanonymouspermission': hdrs['hasanonymouspermission'] || 'false',
+          'cache-control':          'no-cache',
+          'if-modified-since':      '0',
+        };
+        let dord = null;
+        try {
+          const r2 = await new Promise(resolve =>
+            chrome.runtime.sendMessage({
+              type: 'BKN_SERVER_PROXY', url: DISCHARGE_ORDER_API,
+              method: 'POST', headers: hdrsCommon, body,
+            }, x => resolve(x))
+          );
+          if (r2?.ok && r2.json) dord = r2.json.dischargeorder || null;
+        } catch (_) { /* leave dord null */ }
+
         const dp = r.json.dischargeprocess;
         if (dp === null && attempt < 2) continue;
-        if (dp === null) return { status: 'Not ready', dischargeStage: null, homemedordered: null, openordersprocessed: null, pharmacyreturnscompleted: null };
+        if (dp === null) return { ..._emptyDi(), status: 'Not ready', ...(_orderFlags(dord)) };
 
         let status, dischargeStage;
         if (dp.finaldischargedon)        { status = 'Final Discharge';   dischargeStage = 4; }
@@ -220,27 +254,52 @@
           status = DISCHARGE_STAGE[dischargeStage] || 'In Progress';
         }
 
-        return {
-          status,
-          dischargeStage,
-          homemedordered:           typeof dp.homemedordered           === 'boolean' ? dp.homemedordered           : null,
-          openordersprocessed:      typeof dp.openordersprocessed      === 'boolean' ? dp.openordersprocessed      : null,
-          pharmacyreturnscompleted: typeof dp.pharmacyreturnscompleted === 'boolean' ? dp.pharmacyreturnscompleted : null,
+        // getdischargeorder is the authority on the per-task flags when it
+        // answered; fall back to getdischargeprocess's copies otherwise.
+        const fromProcess = {
+          homemedordered:            _bool(dp.homemedordered),
+          openordersprocessed:       _bool(dp.openordersprocessed),
+          pharmacyreturnscompleted:  _bool(dp.pharmacyreturnscompleted),
+          continuousordersprocessed: _bool(dp.continuousordersprocessed),
         };
+        return { status, dischargeStage, ...fromProcess, ..._orderFlags(dord) };
       } catch (_) { continue; }
     }
     return _emptyDi();
   }
 
+  const _bool = v => (typeof v === 'boolean' ? v : null);
+
+  /* Pick out only the flags getdischargeorder actually returned, so a missing
+     key never overwrites a value the other endpoint supplied. */
+  function _orderFlags(dord) {
+    if (!dord || typeof dord !== 'object') return {};
+    const out = {};
+    for (const k of ['homemedordered', 'openordersprocessed',
+                     'pharmacyreturnscompleted', 'continuousordersprocessed']) {
+      const v = _bool(dord[k]);
+      if (v !== null) out[k] = v;
+    }
+    return out;
+  }
+
   function _emptyDi() {
-    return { status: null, dischargeStage: null, homemedordered: null, openordersprocessed: null, pharmacyreturnscompleted: null };
+    return {
+      status: null, dischargeStage: null, homemedordered: null,
+      openordersprocessed: null, pharmacyreturnscompleted: null,
+      continuousordersprocessed: null,
+    };
   }
 
   function applyDischargeInfo(state, di) {
     state.checklist.dischargeStatus  = di.status;
+    state.checklist.dischargeStage   = di.dischargeStage ?? null;
     state.checklist.homemedordered   = di.homemedordered;
     state.checklist.medReturned      = di.pharmacyreturnscompleted;
-    state.steps.continueOrdersOff    = di.openordersprocessed === true ? 'done' : 'pending';
+    // "Off standing order" reads continuousordersprocessed — NOT
+    // openordersprocessed. getdischargeorder returns both and they disagree.
+    state.checklist.standingOrdersOff = di.continuousordersprocessed;
+    state.steps.continueOrdersOff     = di.continuousordersprocessed === true ? 'done' : 'pending';
   }
 
   // Discharge stage 1 (Discharge Advice) / 2 (Discharge Order) means the ward
@@ -1312,8 +1371,11 @@
       },
       steps: {
         medReconcile:      'pending',
-        continueOrdersOff: 'pending',
+        continueOrdersOff: 'pending',   // auto (API flag) — shown in the auto checklist
         allocateDispensed: 'pending',
+        // Retired as a visible step (the Home Med Sheet prints from within
+        // Allocate / Dispense). Kept in the shape so records saved by an older
+        // build still load without losing a key.
         reportsPrinted:    'pending',
       },
       medreconcileuid: null,
@@ -1335,11 +1397,34 @@
     { key: 'controlledRemaining', th: 'จัดการยาเสพติดค้างจ่าย',        en: 'Controlled drugs completed?', singleComplete: true },
   ];
 
+  /* MANUAL checklist — the two semi-automated steps the pharmacist drives.
+     "Print reports" was removed: the Home Medication Sheet is printed from
+     within Allocate / Dispense, so a separate step was a second place to
+     forget. Off-continue-orders moved to the AUTO checklist (it is an API
+     flag, never something the pharmacist clicks). */
   const STEPS = [
-    { key: 'medReconcile',      num: 5, label: 'Med Reconcile', runnable: true },
-    { key: 'continueOrdersOff', num: 6, label: 'Off continue orders' },
-    { key: 'allocateDispensed', num: 7, label: 'Allocate / Dispense', runnable: true },
-    { key: 'reportsPrinted',    num: 8, label: 'Print reports' },
+    { key: 'medReconcile',      num: 1, label: 'Med Reconcile',
+      hint: 'ตรวจสอบรายการยาเดิม · capture reconcile token', runnable: true },
+    { key: 'allocateDispensed', num: 2, label: 'Allocate / Dispense',
+      hint: 'จัดยา + พิมพ์ Home Medication Sheet', runnable: true, print: true },
+  ];
+
+  /* AUTO checklist — every row is a boolean straight off the discharge APIs.
+     Nothing here is clickable by design; if a row is not ticked the ward has
+     not done that task yet. */
+  const AUTO_ROWS = [
+    { key: 'dischargeStage',   th: 'สถานะจำหน่าย',        en: 'Discharge stage',   stage: true },
+    { key: 'medReturned',      th: 'คืนยาเรียบร้อย',       en: 'Pharmacy return',   api: 'pharmacyreturnscompleted' },
+    { key: 'homemedordered',   th: 'สั่งยากลับบ้าน',        en: 'Discharge order',   api: 'homemedordered' },
+    { key: 'standingOrdersOff', th: 'หยุดยาต่อเนื่อง',      en: 'Off standing order', api: 'continuousordersprocessed' },
+  ];
+
+  /* Progress bar: the ward's own four discharge stages. */
+  const STAGE_LABELS = [
+    { n: 1, en: 'Discharge Advice',   th: 'แนะนำจำหน่าย' },
+    { n: 2, en: 'Discharge Order',    th: 'สั่งจำหน่าย' },
+    { n: 3, en: 'Medical Discharge',  th: 'จำหน่ายทางการแพทย์' },
+    { n: 4, en: 'Final Discharge',    th: 'จำหน่ายสมบูรณ์' },
   ];
 
   function renderWS(state) {
@@ -1349,23 +1434,65 @@
     const hmo = checklist.homemedordered;
     const mr  = checklist.medReturned;
 
-    const dcHtml = !dc
-      ? `<span class="hmr-dc-badge hmr-dc-warn">D/C status not detected</span>`
-      : dc === 'Not ready'
-        ? `<span class="hmr-dc-badge hmr-dc-warn">Not ready</span>`
-        : `<span class="hmr-dc-badge hmr-dc-ok">${dc} ✓</span>`;
+    // ── SECTION 1: discharge progression ──────────────────────────────
+    // The ward's four stages as a progress bar. The CURRENT stage is the first
+    // one not yet reached — that is the step still outstanding, so it is the
+    // one called out by name rather than the last completed one.
+    const stage   = Number(checklist.dischargeStage) || 0;
+    const nextIdx = STAGE_LABELS.findIndex(s => s.n > stage);
+    const nextSt  = nextIdx === -1 ? null : STAGE_LABELS[nextIdx];
+    const pct     = Math.max(0, Math.min(100, (stage / STAGE_LABELS.length) * 100));
 
-    const hmoHtml = hmo === true
-      ? `<span class="hmr-hmo-badge hmr-hmo-yes">Home Med ✓</span>`
-      : hmo === false
-        ? `<span class="hmr-hmo-badge hmr-hmo-no">Home Med ✗</span>`
-        : `<span class="hmr-hmo-badge hmr-hmo-null">Home Med —</span>`;
+    const segHtml = STAGE_LABELS.map(s => {
+      const cls = s.n <= stage ? 'is-done' : (nextSt && s.n === nextSt.n ? 'is-current' : 'is-todo');
+      return `<div class="hmr-pg-seg ${cls}" title="${s.en}">
+        <span class="hmr-pg-dot">${s.n <= stage ? '✓' : s.n}</span>
+        <span class="hmr-pg-lbl">${s.th}</span>
+      </div>`;
+    }).join('');
 
-    const mrHtml = mr === true
-      ? `<span class="hmr-hmo-badge hmr-hmo-yes">Meds Returned ✓</span>`
-      : mr === false
-        ? `<span class="hmr-hmo-badge hmr-hmo-no">Meds Returned ✗</span>`
-        : `<span class="hmr-hmo-badge hmr-hmo-null">Meds Returned —</span>`;
+    const pgCaption = !dc || dc === 'Not ready'
+      ? `<span class="hmr-pg-warn">ยังไม่เริ่มกระบวนการจำหน่าย · not started</span>`
+      : nextSt
+        ? `<span class="hmr-pg-next">กำลังรอ · waiting for <b>${nextSt.en}</b></span>`
+        : `<span class="hmr-pg-ok">จำหน่ายสมบูรณ์ · fully discharged ✓</span>`;
+
+    const progressHtml = `<div class="hmr-sec hmr-sec-progress">
+      <div class="hmr-sec-hd"><span class="hmr-sec-t">1 · ความคืบหน้าการจำหน่าย</span>
+        <span class="hmr-sec-en">Discharge progress</span></div>
+      <div class="hmr-pg-track"><div class="hmr-pg-fill" style="width:${pct}%"></div></div>
+      <div class="hmr-pg-segs">${segHtml}</div>
+      <div class="hmr-pg-cap">${pgCaption}</div>
+    </div>`;
+
+    // ── SECTION 2: automatic checklist (API-driven, read-only) ────────
+    const autoHtml = AUTO_ROWS.map(r => {
+      let v, detail;
+      if (r.stage) {
+        v = dc && dc !== 'Not ready' ? true : (dc === 'Not ready' ? false : null);
+        detail = dc || 'not detected';
+      } else {
+        v = checklist[r.key];
+        detail = r.api;
+      }
+      const cls = v === true ? 'is-ok' : v === false ? 'is-no' : 'is-unk';
+      const mark = v === true ? '✓' : v === false ? '✗' : '—';
+      return `<div class="hmr-auto-row ${cls}">
+        <span class="hmr-auto-mark">${mark}</span>
+        <span class="hmr-auto-text">
+          <span class="hmr-auto-th">${r.th}</span>
+          <span class="hmr-auto-en">${r.en}</span>
+        </span>
+        <span class="hmr-auto-api">${detail}</span>
+      </div>`;
+    }).join('');
+
+    const autoSection = `<div class="hmr-sec hmr-sec-auto">
+      <div class="hmr-sec-hd"><span class="hmr-sec-t">2 · ตรวจสอบอัตโนมัติ</span>
+        <span class="hmr-sec-en">Auto checklist · from ArcusAir</span>
+        <span class="hmr-sec-tag">AUTO</span></div>
+      ${autoHtml}
+    </div>`;
 
     const checkHtml = CHECKS.map(c => {
       const v = checklist[c.key];
@@ -1391,22 +1518,24 @@
       </div>`;
     }).join('');
 
+    // ── SECTION 3: manual checklist (the two steps the pharmacist drives) ──
     const stepHtml = STEPS.map(s => {
       const st  = steps[s.key];
       const cls = st === 'done' ? 'hmr-step-done' : st === 'skip' ? 'hmr-step-skip' : 'hmr-step-pend';
       const ic  = st === 'done' ? '✓' : st === 'skip' ? '—' : s.num;
-      let actionTag;
-      if (st === 'done') {
-        actionTag = `<button class="hmr-step-override-btn" data-step="${s.key}" title="Mark as pending">↺</button>`;
-      } else if (s.runnable) {
-        actionTag = `<button class="hmr-step-run-btn" data-step="${s.key}">▶ Run</button>`;
-      } else {
-        actionTag = `<span class="hmr-step-tag">AUTO</span><button class="hmr-step-done-btn" data-step="${s.key}" title="Mark as done manually">✓</button>`;
-      }
+      const actionTag = st === 'done'
+        ? `<button class="hmr-step-override-btn" data-step="${s.key}" title="Mark as pending">↺</button>`
+        : `<button class="hmr-step-run-btn" data-step="${s.key}">▶ Run</button>`;
+      // Allocate / Dispense also prints the Home Medication Sheet, so the
+      // print action lives on that row instead of a separate step.
+      const printBtn = s.print
+        ? `<button class="hmr-step-print-btn" data-step="${s.key}" title="Print the Home Medication Sheet">🖨 Sheet</button>`
+        : '';
       return `<div class="hmr-step-row ${cls}">
         <span class="hmr-step-num">${ic}</span>
-        <span class="hmr-step-name">${s.label}</span>
-        ${actionTag}
+        <span class="hmr-step-name">${s.label}
+          ${s.hint ? `<span class="hmr-step-hint">${s.hint}</span>` : ''}</span>
+        ${printBtn}${actionTag}
       </div>`;
     }).join('');
 
@@ -1429,19 +1558,19 @@
           ${modInfo ? `<span class="hmr-mod-info"> · ${modInfo}</span>` : ''}
         </div>
 
-        <div class="hmr-sec-lbl">Discharge Status <span class="hmr-auto-tag">AUTO</span></div>
-        <div class="hmr-dc-row">
-          ${dcHtml}
-          ${hmoHtml}
-          ${mrHtml}
+        ${progressHtml}
+
+        ${autoSection}
+        <div class="hmr-detect-row">
           <button class="hmr-detect-btn" id="hmr-detect-btn">↻ Detect</button>
         </div>
 
-        <div class="hmr-sec-lbl">Manual Checks</div>
-        <div class="hmr-checklist">${checkHtml}</div>
-
-        <div class="hmr-sec-lbl">Process Steps</div>
-        <div class="hmr-steps">${stepHtml}</div>
+        <div class="hmr-sec hmr-sec-manual">
+          <div class="hmr-sec-hd"><span class="hmr-sec-t">3 · ขั้นตอนที่ต้องทำ</span>
+            <span class="hmr-sec-en">Manual checklist</span></div>
+          <div class="hmr-checklist">${checkHtml}</div>
+          <div class="hmr-steps">${stepHtml}</div>
+        </div>
 
         <div class="hmr-actions">
           <button class="hmr-btn-reset" id="hmr-btn-reset">Reset</button>
@@ -1636,6 +1765,21 @@
       setLoadingStatus('Launching Step 7: Allocate / Dispense…');
       await serverSave(visitid, {}, makeLog('start process → step 7 launched'));
       await launchStep7(visitid, hn);
+    });
+
+    // 🖨 Sheet — the Home Medication Sheet is produced from the dispense
+    // workbench (that is where content-home-med.js injects its button and where
+    // the order rows live), so from Ward View we navigate there rather than
+    // trying to open the sheet with no order context.
+    document.querySelector('.hmr-step-print-btn')?.addEventListener('click', async () => {
+      if (_hmrIsAllocate() || _hmrIsDispenseDept() || _hmrIsWorkbench()) {
+        alert('[HM Process] กดปุ่ม 🏠💊 Home Med บนหน้านี้เพื่อพิมพ์\n\n'
+            + 'Use the 🏠💊 Home Med button on this page to print the sheet.');
+        return;
+      }
+      await serverSave(visitid, {}, makeLog('Home Med Sheet: opened dispense workbench to print'));
+      const ok = await navigateToPharmacyWorklist();
+      if (!ok) alert('[HM Process] ไม่สามารถเปิดหน้าจ่ายยาได้ · could not open the dispense workbench.');
     });
 
     document.getElementById('hmr-btn-reset')?.addEventListener('click', async () => {

@@ -1,9 +1,44 @@
 # HM Process — Home Medication Review workstation (`hmr`)
 
 A 💊 **HM Process** card injected into ArcusAir's **Ward View**, tracking one
-inpatient discharge through 4 tracked steps (Med Reconcile → Off continue
-orders → Allocate/Dispense → Print reports) plus 3 manual/auto checks. State
-persists server-side per visit so any workstation sees the same progress.
+inpatient discharge. State persists server-side per visit so any workstation
+sees the same progress.
+
+## Card layout — three sections
+
+1. **ความคืบหน้าการจำหน่าย · Discharge progress** — the ward's own four stages
+   (Discharge Advice → Discharge Order → Medical Discharge → Final Discharge)
+   as a progress bar. The **current** marker is the first stage *not yet
+   reached* — i.e. the outstanding one — so the caption reads
+   *"waiting for Medical Discharge"*, not the last thing completed.
+2. **ตรวจสอบอัตโนมัติ · Auto checklist** — read-only rows, each a boolean
+   straight off the discharge APIs. Nothing here is clickable by design: an
+   unticked row means the ward has not done that task yet.
+   | Row | Source |
+   |---|---|
+   | สถานะจำหน่าย · Discharge stage | stage timestamps (`getdischargeprocess`) |
+   | คืนยาเรียบร้อย · Pharmacy return | `pharmacyreturnscompleted` |
+   | สั่งยากลับบ้าน · Discharge order | `homemedordered` |
+   | หยุดยาต่อเนื่อง · Off standing order | **`continuousordersprocessed`** |
+3. **ขั้นตอนที่ต้องทำ · Manual checklist** — the two manual YES/NO checks plus
+   the two semi-automated steps the pharmacist drives: **Med Reconcile** (also
+   captures the reconcile token) and **Allocate / Dispense** (which now also
+   carries the 🖨 **Sheet** action for the Home Medication Sheet).
+
+> **Two discharge endpoints, and they disagree.**
+> `dischargeprocess/getdischargeprocess` carries the stage *timestamps*;
+> `dischargeprocess/getdischargeorder` carries the per-task *flags*. The latter
+> returns **both** `openordersprocessed` and `continuousordersprocessed`, and a
+> live capture showed `open=false` while `continuous=true` — so *Off standing
+> order* reads **`continuousordersprocessed`**. Reading the wrong one shows the
+> row as ✗ on a patient whose standing orders really were stopped.
+> `_orderFlags()` copies only keys the order endpoint actually returned, so a
+> missing key never clobbers the value the other endpoint supplied.
+
+> **"Print reports" was removed as a step.** The Home Medication Sheet prints
+> from within Allocate / Dispense, so a separate step was just a second place
+> to forget. `steps.reportsPrinted` is still written into new state objects so
+> records saved by an older build keep loading unchanged.
 
 > Internal identifiers are stable and load-bearing even though the user-facing
 > name is "HM Process": `MJ_*` message types, `aa_medicationJourney` tab key,
