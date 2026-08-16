@@ -4334,8 +4334,20 @@ class Handler(BaseHTTPRequestHandler):
                 'auditLog':  [],
             }
             protected = {'visitid', 'createdAt', 'auditLog', 'updatedAt'}
+            # MERGE nested dicts, don't replace them. Callers send PARTIAL
+            # patches — step 7 saves {'steps': {'allocateDispensed': 'done'}} —
+            # and a plain doc[k] = v replaced the whole `steps` object, wiping
+            # every other step. That is what made a completed Med Reconcile
+            # revert to pending as soon as Allocate/Dispense finished.
+            # Only `steps` and `checklist` merge; everything else is still
+            # last-write-wins, and an explicit null clears a nested key.
+            MERGE_KEYS = ('steps', 'checklist')
             for k, v in body.items():
-                if k not in protected:
+                if k in protected:
+                    continue
+                if k in MERGE_KEYS and isinstance(v, dict) and isinstance(doc.get(k), dict):
+                    doc[k] = {**doc[k], **v}
+                else:
                     doc[k] = v
             # Append incoming audit log entries (never overwrite existing)
             incoming_log = body.get('auditLog')

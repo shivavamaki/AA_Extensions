@@ -223,6 +223,7 @@ Floating popup on Ward View + the Pharmacy Return workbench — see
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/api/hmq?from=&to=` | Entries in a date range (newest first). **No range → today**; `?all=1` for the full history |
+| `PUT` | `/api/hmr/{visitid}` | Read-merge-write. **`steps` and `checklist` are merged key-by-key**, not replaced — callers send partial patches (step 7 saves only `{steps:{allocateDispensed:'done'}}`), and a shallow assign wiped every other step. All other fields stay last-write-wins; `auditLog` always appends |
 | `POST` | `/api/hmq` | Add a case — `{hn, name, ward, room, addedBy}`; `409` if that HN is already `new`/`process` today |
 | `PUT` | `/api/hmq/{id}` | Transition — `{action: 'start'\|'complete'\|'revert-process'\|'revert-new', user}` |
 

@@ -97,6 +97,9 @@ Load order: core utils → `shared-data-client.js` → features → legacy `cont
 ### Stable internal identifiers — do not rename
 `MJ_*` message types, `OPEN_MEDICATION_JOURNEY`, `aa_medicationJourney` tab key, `arcus-medj-btn2` DOM id, `mj-*` CSS hooks, `MedicationJourney` namespace — load-bearing even though the user-facing feature is "ADR Timeline". Likewise `HMR`/`hmr-*` naming throughout the `hmr` feature is historical ("Home Medication Review") even though the user-facing name is "HM Process".
 
+### `PUT /api/hmr/{visitid}` merges `steps`/`checklist` — never shallow-assign them
+Callers send **partial** patches: step 7 finishes on a different page from the Ward View card and saves only `{steps:{allocateDispensed:'done'}}`. A plain `doc[k] = v` replaced the whole `steps` object, so a completed Med Reconcile silently reverted to pending the moment Allocate/Dispense finished. The server deep-merges `steps` and `checklist` (`MERGE_KEYS`); everything else stays last-write-wins and `auditLog` always appends. Clearing still works — an explicit value in the patch overwrites, so ↺ revert and Reset are unaffected. The step-7 overlay also re-reads the record and merges client-side before saving, since its in-memory state is stale by then.
+
 ### Cross-feature APIs live on `window`, not messages
 `hmr`'s Ward View card calls `hmq`'s queue directly via `window.BKN_HMQ = { addCase, completeActiveByHn }` (set by `content-hmq.js`, consumed by `content-hmr.js`) — both content scripts run in the same page/world, so a plain `window` object avoids a `chrome.runtime` round-trip. If a third feature needs the queue, extend this object rather than adding a new message type.
 

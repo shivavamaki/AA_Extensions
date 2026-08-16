@@ -1332,8 +1332,19 @@
 
     document.getElementById('hmrs7-done-all')?.addEventListener('click', async () => {
       _hmrAutoStop = true;
+      // Read the CURRENT record first and merge, rather than sending a bare
+      // {steps:{allocateDispensed:'done'}}. Step 7 runs on a different page
+      // from the Ward View card, so the in-memory _state here is stale — and a
+      // partial patch used to wipe the other steps outright (a completed Med
+      // Reconcile reverted to pending). The server also deep-merges `steps`
+      // now; this keeps the client correct on its own.
+      let mergedSteps = { allocateDispensed: 'done' };
+      try {
+        const fresh = await serverLoad(job.visitid);
+        if (fresh?.steps) mergedSteps = { ...fresh.steps, allocateDispensed: 'done' };
+      } catch (_) { /* fall back to the single-key patch */ }
       await serverSave(job.visitid, {
-        steps: { allocateDispensed: 'done' },
+        steps: mergedSteps,
       }, makeLog('step 7: allocate/dispense completed'));
       await clearStep7Job();
       document.getElementById('hmr-step7-overlay')?.remove();
