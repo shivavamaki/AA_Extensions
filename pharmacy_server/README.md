@@ -248,6 +248,16 @@ never written again.
 > filtered by **Bangkok** day, so the filename window is widened by ±1 day and
 > the exact `_bangkok_date_of()` check still decides — the prefilter only ever
 > skips files that cannot match. `load_all_hmr()` uses the same helper.
+> **Live files are cached in memory** (`_load_json_cached`, keyed by
+> `(path, mtime_ns, size)`). HMQ/HMR store one file per live case/record and
+> re-read all of them on every request — measured **~5.9 ms per file**, so 56
+> open cases cost ~233 ms, on an endpoint the ward popup polls every **8 s**
+> from every open ArcusAir tab. Caching the parsed object cuts a warm
+> `/api/hmq?from=today&to=today` from **289 ms → 65 ms (4.4×)**; live updates
+> stay immediate because any write bumps `mtime`. The cache hands out a **deep
+> copy** (callers mutate what they load), which costs ~3 ms per 56 records
+> against ~1240 ms to re-parse them.
+>
 > A call with **no `from`/`to` now defaults to TODAY**, not "everything" — an
 > omitted or cleared date input would otherwise trigger the same unbounded scan
 > the filename filter exists to avoid. A caller that genuinely wants the whole
