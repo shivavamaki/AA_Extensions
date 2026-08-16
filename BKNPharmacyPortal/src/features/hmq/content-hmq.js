@@ -58,7 +58,9 @@
 
   function isWardView()     { return location.href.includes('inpatient/wardview'); }
   function isReturnPage()   { return location.href.includes('dispenseworkbench/pharmacy/return'); }
-  function isRelevantPage() { return isWardView() || isReturnPage(); }
+  // #!/inpatient/dischargeprocess — where "Close Continuous Orders" lives.
+  function isDischargePage(){ return location.href.includes('inpatient/dischargeprocess'); }
+  function isRelevantPage() { return isWardView() || isReturnPage() || isDischargePage(); }
 
   // ── Username detection (same heuristic as content-hmr.js) ────────────
   let _currentUser = null;
@@ -588,9 +590,24 @@
      ArcusAir's header user menu (.headUserDetBtn), i.e. the account that
      actually pressed it.
 
-     Bound with capture:true on document so it survives Angular re-rendering
-     the toolbar, and guarded so one click logs once. */
-  const RETURN_BTN_SEL = '#verifydispensereturn';
+     The same applies to "Close Continuous Orders" on the discharge-process
+     page: that click is the ward actually stopping the standing orders, so it
+     gives a real timestamp and a real actor — far better than inferring the
+     event from an API flag flipping between two polls.
+
+     Both are bound with capture:true on document so they survive Angular
+     re-rendering their toolbars, and each is guarded so one physical click
+     logs once. */
+  const ARCUS_EVENTS = [
+    { sel: '#verifydispensereturn',
+      text: 'คืนยาเรียบร้อย · Medicine returned (verified)' },
+    // "Close Continuous Orders" (#!/inpatient/dischargeprocess) has NO id, so
+    // match on ng-click *and* aria-label. Prefix (^=) not exact: a template
+    // tweak like `vm.closeOrder()` or a stray space would silently stop the
+    // logging, and the generated md-* classes are not usable as an anchor.
+    { sel: 'button[ng-click^="closeOrder("], button[ng-click$="closeOrder()"], button[aria-label="Close Order"]',
+      text: 'หยุดยาต่อเนื่อง · Standing orders closed' },
+  ];
 
   function detectArcusUser() {
     // The header user button renders "ชื่อ สกุล, ภก." in a plain span.
@@ -599,30 +616,39 @@
     return t || detectUsername();
   }
 
-  let _lastReturnLog = 0;
-  async function onVerifyReturnClick() {
+  /* HN for the case being acted on. The dispense-return page carries
+     h4.patientbannername; the discharge-process page may render the banner
+     differently, so fall back to scanning the document for an HN pattern
+     rather than silently logging nothing. */
+  function detectHnForEvent() {
+    const p = extractPatientFromBanner();
+    if (p && p.hn) return p.hn;
+    const m = /\b(48-\d{2}-\d{6,7})\b/.exec(document.body ? document.body.innerText : '');
+    return m ? m[1] : null;
+  }
+
+  const _lastEventLog = {};
+  async function onArcusEventClick(ev) {
     // Angular can fire the handler twice for one physical click; ignore a
     // repeat inside 1.5s rather than writing a duplicate audit line.
     const now = Date.now();
-    if (now - _lastReturnLog < 1500) return;
-    _lastReturnLog = now;
+    if (now - (_lastEventLog[ev.sel] || 0) < 1500) return;
+    _lastEventLog[ev.sel] = now;
 
-    const patient = extractPatientFromBanner();
-    if (!patient || !patient.hn) return;          // nothing reliable to key on
-    const user = detectArcusUser();
+    const hn = detectHnForEvent();
+    if (!hn) return;                              // nothing reliable to key on
     try {
-      await postHmqEvent(patient.hn, {
-        action: `คืนยาเรียบร้อย · Medicine returned (verified)`,
-        user,
-      });
+      await postHmqEvent(hn, { action: ev.text, user: detectArcusUser() });
     } catch (e) {
-      console.log('[BKN-HMQ] return log failed:', e);
+      console.log('[BKN-HMQ] event log failed:', e);
     }
   }
 
   document.addEventListener('click', (e) => {
-    const btn = e.target && e.target.closest && e.target.closest(RETURN_BTN_SEL);
-    if (btn) onVerifyReturnClick();
+    if (!e.target || !e.target.closest) return;
+    for (const ev of ARCUS_EVENTS) {
+      if (e.target.closest(ev.sel)) { onArcusEventClick(ev); return; }
+    }
   }, true);
 
   // ── Page sync ────────────────────────────────────────────────────────────

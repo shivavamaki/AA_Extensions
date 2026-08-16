@@ -370,10 +370,12 @@
     state.checklist.standingOrdersOff = di.continuousordersprocessed;
     state.steps.continueOrdersOff     = di.continuousordersprocessed === true ? 'done' : 'pending';
 
-    // Record the two ArcusAir-side milestones on the queue case's history.
-    // The medicine return is ALSO logged (with the real user) by content-hmq's
-    // Verify-Return listener; this fallback covers a return done on a machine
-    // where that page was never opened, and is deduped per HN either way.
+    // Fallback only. content-hmq listens to ArcusAir's own buttons (Verify
+    // Return / Close Continuous Orders) and logs the REAL click time and
+    // actor. These lines cover the case where the action happened on a machine
+    // that never had the relevant page open, so all we ever saw was the API
+    // flag change — hence "(detected)" and no user. Deduped per HN, and the
+    // real entry is written by whichever workstation saw the click.
     logFlagFlip(state, 'medReturned', prevReturn, di.pharmacyreturnscompleted,
                 'คืนยาเรียบร้อย · Pharmacy return completed (detected)');
     logFlagFlip(state, 'standingOrdersOff', prevStanding, di.continuousordersprocessed,

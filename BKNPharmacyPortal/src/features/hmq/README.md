@@ -135,19 +135,28 @@ never loses the queue. (Only the popup's *position/width* is per-browser
   one before Start or after Complete. Used for two milestones that happen in
   ArcusAir rather than in our UI:
 
-  | Event | Source | Time | User |
-  |---|---|---|---|
-  | Medicine returned | click on ArcusAir's own `#verifydispensereturn` | **real** — the click itself | **real** — read from `.headUserDetBtn` |
-  | Standing orders stopped | `continuousordersprocessed` flipping `false→true` | *detected* — when a poll first saw it | none |
+  | Event | ArcusAir button | Page |
+  |---|---|---|
+  | Medicine returned | `#verifydispensereturn` ("Verify Return") | `dispenseworkbench/pharmacy/return` |
+  | Standing orders closed | `[ng-click^="closeOrder("]` ("Close Continuous Orders") | `#!/inpatient/dischargeprocess` |
 
-  The second is deliberately labelled **"(detected)"** and carries **no user**.
-  Nothing in ArcusAir tells us when the ward stopped the orders or who did it —
-  only that the flag changed between two polls. Recording whoever happened to
-  have the card open would name the wrong person in a clinical audit trail, so
-  the field is left blank rather than guessed (the server stores the raw value,
-  not its `Unknown` default, so the modal shows nothing instead of a failed
-  lookup). Both are deduped per HN so a repeated poll or a double-fired Angular
+  Both give the **real** time (the click itself) and the **real** actor (read
+  from `.headUserDetBtn`, i.e. the ArcusAir account that pressed it — not
+  whoever has our card open). Deduped per selector so a double-fired Angular
   click cannot write the line twice.
+
+  The Close Continuous Orders button has **no id**, so it is matched on
+  `ng-click` *and* `aria-label`, with a prefix (`^=`) rather than an exact
+  match: a template tweak like `vm.closeOrder()` or a stray space would
+  otherwise stop the logging silently, and the generated `md-*` classes are not
+  a usable anchor.
+
+  `content-hmr.js` keeps a **fallback** that logs the same two milestones from
+  the API flag flipping `false→true`. Those lines are labelled **"(detected)"**
+  and carry **no user** — they only fire when the action happened on a machine
+  that never had the relevant page open, so all we ever saw was the flag. The
+  server stores the raw (empty) user rather than its `Unknown` default, so the
+  modal shows nothing instead of a failed lookup.
 
   > The manual **➕ Add new case** button on the Return workbench is **gone** —
   > the case is already auto-enqueued at discharge stage 1–2
