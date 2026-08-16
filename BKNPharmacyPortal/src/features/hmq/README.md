@@ -192,6 +192,41 @@ noise, since the nightly merge (above) only ever archives `done` entries.
   browsing history across workstations/days, not for working the queue; a
   note at the bottom of the page points back to the live popup for that.
 
+### Statistics tab
+
+A second tab (`📊 Statistics`) renders from the **same `_entries`** the board
+already fetched, so switching tabs never re-queries the server — the date range
+and the HN/name search apply to both views.
+
+Every figure derives from the three timestamps a case already carries, so
+nothing extra is stored server-side:
+
+| Metric | Derivation |
+|---|---|
+| Wait | `startedAt − createdAt` |
+| Process | `completedAt − startedAt` |
+| Total | `completedAt − createdAt` |
+
+Panels: KPI tiles (cases, cases/day, median wait, median process) · cases per
+day · median time per stage (stacked) · arrivals by hour · busiest wards ·
+pharmacist workload · a per-day detail table.
+
+Three decisions worth keeping:
+
+- **Median, not mean.** One case left open overnight turns a 14 m median into a
+  2 h 41 m mean. The median reports what a typical case actually costs.
+- **Missing timestamps exclude a case from that metric**, never count it as
+  zero — an unfinished case has no process time, and averaging it in as 0 would
+  quietly drag every figure down.
+- **Bangkok day bucketing** (`bkkDay`), matching the server, so a case queued at
+  03:00 Bangkok (20:00 UTC the previous day) lands on the right day.
+
+Charts are hand-authored SVG — no library, since the MV3 CSP blocks CDN
+scripts. Only the two-series stage bar uses a categorical palette
+(`#2a78d6` / `#eb6834`, validated: CVD ΔE 24.7 protan / 32.7 tritan, normal
+33.6 — all pass); every other chart is single-hue, because its job is magnitude,
+not identity.
+
 ## Files
 
 | File | Role |

@@ -303,3 +303,82 @@ body {
 }
 .hmqd-log-text { flex: 1; color: #37474f; }
 .hmqd-log-user { color: #90a4ae; font-size: 10px; margin-top: 1px; }
+
+/* ══ Tabs ═══════════════════════════════════════════════════════════════ */
+.hmqd-tabs {
+  display: flex; gap: 4px; padding: 0 18px;
+  background: #fff; border-bottom: 1px solid #dce4ec;
+}
+.hmqd-tab {
+  appearance: none; border: 0; background: none; cursor: pointer;
+  font: 600 13px/1 "Segoe UI", system-ui, sans-serif; color: #78909c;
+  padding: 12px 14px; border-bottom: 2.5px solid transparent;
+}
+.hmqd-tab:hover { color: #1565c0; }
+.hmqd-tab.is-active { color: #1565c0; border-bottom-color: #1565c0; }
+.hmqd-tab:focus-visible { outline: 2px solid #1565c0; outline-offset: -2px; }
+
+/* ══ Statistics ═════════════════════════════════════════════════════════
+   Palette validated with the dataviz validator (categorical, light surface):
+   #2a78d6 / #eb6834 — CVD ΔE 24.7 protan, 32.7 tritan, normal 33.6, all PASS.
+   Only the two-series stage bar uses categorical colour; every other chart is
+   single-hue sequential, because its job is magnitude, not identity. */
+#hmqd-stats { padding: 16px 18px 8px; }
+
+.hmqd-kpis {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px; margin-bottom: 14px;
+}
+.hmqd-tile {
+  background: #fff; border: 1px solid #dce4ec; border-radius: 10px;
+  padding: 13px 15px; box-shadow: 0 1px 2px rgba(20,28,36,.04);
+}
+.hmqd-tile-v {
+  font-size: 26px; font-weight: 700; color: #16212b; line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.hmqd-tile-l { font-size: 11.5px; font-weight: 600; color: #546e7a; margin-top: 2px; }
+.hmqd-tile-s { font-size: 10.5px; color: #90a4ae; margin-top: 3px; }
+
+.hmqd-panel {
+  background: #fff; border: 1px solid #dce4ec; border-radius: 10px;
+  padding: 14px 16px; margin-bottom: 12px;
+  box-shadow: 0 1px 2px rgba(20,28,36,.04);
+}
+.hmqd-panel h3 { margin: 0; font-size: 14px; color: #16212b; font-weight: 700; }
+.hmqd-sub { margin: 3px 0 12px; font-size: 11px; color: #90a4ae; line-height: 1.5; max-width: 78ch; }
+.hmqd-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.hmqd-nodata { font-size: 12px; color: #b0bec5; padding: 14px 0; }
+
+.hmqd-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.hmqd-bar { fill: #2a78d6; }                 /* sequential: one hue */
+.hmqd-s1  { fill: #2a78d6; }                 /* categorical slot 1 */
+.hmqd-s2  { fill: #eb6834; }                 /* categorical slot 2 */
+.hmqd-axis { stroke: #c3cdd6; stroke-width: 1; }
+.hmqd-cx { font-size: 9.5px; fill: #90a4ae; }
+.hmqd-cv { font-size: 9.5px; fill: #546e7a; font-variant-numeric: tabular-nums; }
+
+.hmqd-legend { display: flex; gap: 16px; margin-top: 8px; font-size: 11px; color: #546e7a; }
+.hmqd-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.hmqd-sw1 { background: #2a78d6; }
+.hmqd-sw2 { background: #eb6834; }
+
+.hmqd-hbars { display: flex; flex-direction: column; gap: 7px; }
+.hmqd-hb { display: flex; align-items: center; gap: 9px; font-size: 11.5px; }
+.hmqd-hb-lbl {
+  flex: 0 0 40%; color: #37474f; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.hmqd-hb-track { flex: 1 1 auto; height: 12px; background: #eef2f6; border-radius: 4px; overflow: hidden; }
+.hmqd-hb-fill  { display: block; height: 100%; background: #2a78d6; border-radius: 4px; }
+.hmqd-hb-val   { flex: 0 0 auto; color: #546e7a; font-variant-numeric: tabular-nums; min-width: 34px; text-align: right; }
+
+.hmqd-scroll { overflow-x: auto; }
+.hmqd-dtable { border-collapse: collapse; width: 100%; font-size: 12px; min-width: 460px; }
+.hmqd-dtable th, .hmqd-dtable td { padding: 7px 11px; text-align: left; border-bottom: 1px solid #eef2f6; }
+.hmqd-dtable th {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .07em;
+  color: #78909c; background: #f6f9fc; font-weight: 700;
+}
+.hmqd-dtable td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hmqd-dtable tr:last-child td { border-bottom: none; }

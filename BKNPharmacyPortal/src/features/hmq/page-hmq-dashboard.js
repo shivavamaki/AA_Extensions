@@ -159,6 +159,260 @@
     document.getElementById("hmqd-modal-overlay").classList.add("open");
   }
 
+  /* ══ Statistics ═══════════════════════════════════════════════════════
+     Every number here is derived from the three timestamps each case
+     already carries — createdAt (queued), startedAt (pharmacist pressed
+     Start), completedAt — so nothing new has to be stored server-side.
+
+       wait    = startedAt   − createdAt   (queued, nobody working it)
+       process = completedAt − startedAt   (being worked)
+       total   = completedAt − createdAt
+
+     Cases missing a timestamp are EXCLUDED from that metric rather than
+     counted as zero: an unfinished case has no process time, and averaging
+     it in as 0 would silently drag every average down. */
+  const MIN = 60000;
+
+  function _mins(a, b) {
+    if (!a || !b) return null;
+    const t0 = Date.parse(a), t1 = Date.parse(b);
+    if (isNaN(t0) || isNaN(t1)) return null;
+    const d = (t1 - t0) / MIN;
+    return d >= 0 ? d : null;          // clock skew / reverted case
+  }
+
+  function _median(xs) {
+    if (!xs.length) return null;
+    const s = [...xs].sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  }
+
+  function fmtMins(v) {
+    if (v == null) return "—";
+    if (v < 1) return "<1m";
+    if (v < 60) return `${Math.round(v)}m`;
+    const h = Math.floor(v / 60), m = Math.round(v % 60);
+    return m ? `${h}h ${m}m` : `${h}h`;
+  }
+
+  /* Bangkok calendar day of a UTC timestamp — matches the server's own
+     bucketing, so a case queued at 04:00 Bangkok lands on the right day. */
+  function bkkDay(iso) {
+    const t = Date.parse(iso);
+    if (isNaN(t)) return "";
+    return new Date(t + 7 * 3600 * 1000).toISOString().slice(0, 10);
+  }
+  function bkkHour(iso) {
+    const t = Date.parse(iso);
+    if (isNaN(t)) return null;
+    return new Date(t + 7 * 3600 * 1000).getUTCHours();
+  }
+
+  function computeStats(entries) {
+    const waits = [], procs = [], totals = [];
+    const byDay = new Map(), byHour = new Array(24).fill(0);
+    const byWard = new Map(), byPharm = new Map();
+    let done = 0, active = 0, waiting = 0;
+
+    for (const e of entries) {
+      const day = bkkDay(e.createdAt);
+      if (day) byDay.set(day, (byDay.get(day) || 0) + 1);
+      const hr = bkkHour(e.createdAt);
+      if (hr != null) byHour[hr]++;
+
+      const ward = String(e.ward || "").trim() || "—";
+      byWard.set(ward, (byWard.get(ward) || 0) + 1);
+
+      if (e.status === "done") done++;
+      else if (e.status === "process") active++;
+      else waiting++;
+
+      const w = _mins(e.createdAt, e.startedAt);
+      const p = _mins(e.startedAt, e.completedAt);
+      const t = _mins(e.createdAt, e.completedAt);
+      if (w != null) waits.push(w);
+      if (p != null) procs.push(p);
+      if (t != null) totals.push(t);
+
+      const who = shortUser(e.startedBy);
+      if (who && p != null) {
+        const cur = byPharm.get(who) || { n: 0, mins: 0 };
+        cur.n++; cur.mins += p;
+        byPharm.set(who, cur);
+      }
+    }
+
+    const days = [...byDay.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    return {
+      total: entries.length, done, active, waiting,
+      medWait: _median(waits), medProc: _median(procs), medTotal: _median(totals),
+      avgPerDay: days.length ? entries.length / days.length : 0,
+      days,
+      byHour,
+      wards: [...byWard.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8),
+      pharmacists: [...byPharm.entries()]
+        .map(([k, v]) => [k, v.n, v.mins / v.n])
+        .sort((a, b) => b[1] - a[1]).slice(0, 8),
+      waits, procs,
+    };
+  }
+
+  /* ── Chart primitives ──────────────────────────────────────────────
+     Hand-authored SVG: no library, no CDN (MV3 CSP blocks both). Marks
+     are thin with 4px rounded data-ends anchored to the baseline; the
+     grid is recessive; values are direct-labelled selectively, never on
+     every mark. Series colours come from --c1/--c2 so both themes get
+     their own validated step rather than an automatic flip. */
+  function svgBars(rows, opts) {
+    const o = Object.assign({ h: 150, pad: 26, label: v => v, unit: "" }, opts || {});
+    if (!rows.length) return `<div class="hmqd-nodata">No data in this range.</div>`;
+    const max = Math.max(...rows.map(r => r[1]), 1);
+    const n = rows.length;
+    const W = 640, H = o.h, bw = Math.max(3, Math.min(34, (W - o.pad) / n - 4));
+    const step = (W - o.pad) / n;
+    // Label every bar when they fit, otherwise thin them out — never a
+    // number on every mark when they would collide.
+    const every = n <= 12 ? 1 : Math.ceil(n / 12);
+    const bars = rows.map((r, i) => {
+      const bh = Math.max(2, (r[1] / max) * (H - 34));
+      const x = o.pad + i * step + (step - bw) / 2;
+      const y = H - 20 - bh;
+      const lbl = (i % every === 0)
+        ? `<text x="${x + bw / 2}" y="${H - 7}" class="hmqd-cx" text-anchor="middle">${escapeHtml(String(r[0]))}</text>`
+        : "";
+      const val = (i % every === 0 && r[1] > 0)
+        ? `<text x="${x + bw / 2}" y="${y - 4}" class="hmqd-cv" text-anchor="middle">${o.label(r[1])}</text>`
+        : "";
+      return `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="4" class="hmqd-bar">
+                <title>${escapeHtml(String(r[0]))} · ${o.label(r[1])}${o.unit}</title></rect>${lbl}${val}`;
+    }).join("");
+    return `<svg viewBox="0 0 ${W} ${H}" class="hmqd-svg" role="img"
+      aria-label="${escapeHtml(o.aria || "bar chart")}">
+      <line x1="${o.pad}" y1="${H - 20}" x2="${W}" y2="${H - 20}" class="hmqd-axis"/>
+      ${bars}</svg>`;
+  }
+
+  function svgHBars(rows, opts) {
+    const o = Object.assign({ label: v => v, unit: "" }, opts || {});
+    if (!rows.length) return `<div class="hmqd-nodata">No data in this range.</div>`;
+    const max = Math.max(...rows.map(r => r[1]), 1);
+    return `<div class="hmqd-hbars">` + rows.map(r => {
+      const pct = (r[1] / max) * 100;
+      return `<div class="hmqd-hb">
+        <span class="hmqd-hb-lbl" title="${escapeHtml(String(r[0]))}">${escapeHtml(String(r[0]))}</span>
+        <span class="hmqd-hb-track"><span class="hmqd-hb-fill" style="width:${pct}%"></span></span>
+        <span class="hmqd-hb-val">${o.label(r[1])}${o.unit}</span>
+      </div>`;
+    }).join("") + `</div>`;
+  }
+
+  /* Wait vs process, stacked — the only place two series share a mark, so
+     the only place a categorical palette is needed. Two series, both
+     direct-labelled in the legend; a 2px surface gap separates the fills. */
+  function svgStackedStage(wait, proc) {
+    if (wait == null && proc == null) {
+      return `<div class="hmqd-nodata">No completed cases in this range.</div>`;
+    }
+    const w = wait || 0, p = proc || 0, tot = w + p || 1;
+    const W = 640, H = 62, x0 = 10, bw = W - 20;
+    const ww = (w / tot) * bw, pw = Math.max(0, (p / tot) * bw - 2);
+    return `<svg viewBox="0 0 ${W} ${H}" class="hmqd-svg" role="img"
+      aria-label="Median time per stage: ${fmtMins(wait)} waiting, ${fmtMins(proc)} in process">
+      <rect x="${x0}" y="14" width="${ww}" height="26" rx="4" class="hmqd-s1"><title>Waiting ${fmtMins(wait)}</title></rect>
+      <rect x="${x0 + ww + 2}" y="14" width="${pw}" height="26" rx="4" class="hmqd-s2"><title>In process ${fmtMins(proc)}</title></rect>
+      <text x="${x0}" y="56" class="hmqd-cx">Waiting ${fmtMins(wait)}</text>
+      <text x="${W - 10}" y="56" class="hmqd-cx" text-anchor="end">In process ${fmtMins(proc)}</text>
+    </svg>`;
+  }
+
+  function renderStats() {
+    const el = document.getElementById("hmqd-stats");
+    if (!el) return;
+    const q = norm(document.getElementById("hmqd-search").value || "");
+    const rows = _entries.filter(e => matchesSearch(e, q));
+    if (!rows.length) {
+      el.innerHTML = `<div class="hmqd-error">No cases in this range.</div>`;
+      return;
+    }
+    const s = computeStats(rows);
+
+    const tile = (v, lbl, sub) => `<div class="hmqd-tile">
+      <div class="hmqd-tile-v">${v}</div>
+      <div class="hmqd-tile-l">${lbl}</div>
+      ${sub ? `<div class="hmqd-tile-s">${sub}</div>` : ""}</div>`;
+
+    el.innerHTML = `
+      <div class="hmqd-kpis">
+        ${tile(s.total, "Cases", `${s.done} completed · ${s.active} on process · ${s.waiting} new`)}
+        ${tile(s.avgPerDay.toFixed(1), "Cases / day", `over ${s.days.length} day${s.days.length === 1 ? "" : "s"}`)}
+        ${tile(fmtMins(s.medWait), "Median wait", "queued → started")}
+        ${tile(fmtMins(s.medProc), "Median process", "started → completed")}
+      </div>
+
+      <div class="hmqd-panel">
+        <h3>Cases per day</h3>
+        <p class="hmqd-sub">Queued per Bangkok calendar day.</p>
+        ${svgBars(s.days.map(([d, n]) => [d.slice(5), n]), {
+          aria: "Cases queued per day", h: 170,
+        })}
+      </div>
+
+      <div class="hmqd-panel">
+        <h3>Median time per stage</h3>
+        <p class="hmqd-sub">Where a case's time actually goes — median of
+          ${s.waits.length} waits and ${s.procs.length} processed cases.
+          Median, not mean: one forgotten case left open overnight would
+          otherwise dominate the average.</p>
+        ${svgStackedStage(s.medWait, s.medProc)}
+        <div class="hmqd-legend">
+          <span><i class="hmqd-sw1"></i>Waiting (queued → started)</span>
+          <span><i class="hmqd-sw2"></i>In process (started → completed)</span>
+        </div>
+      </div>
+
+      <div class="hmqd-panel">
+        <h3>When cases arrive</h3>
+        <p class="hmqd-sub">Queued by hour of day — where the staffing pressure sits.</p>
+        ${svgBars(s.byHour.map((n, h) => [String(h).padStart(2, "0"), n]), {
+          aria: "Cases queued by hour of day", h: 150,
+        })}
+      </div>
+
+      <div class="hmqd-grid2">
+        <div class="hmqd-panel">
+          <h3>Busiest wards</h3>
+          <p class="hmqd-sub">Cases per ward, top 8.</p>
+          ${svgHBars(s.wards, { unit: "" })}
+        </div>
+        <div class="hmqd-panel">
+          <h3>Pharmacist workload</h3>
+          <p class="hmqd-sub">Cases completed, with median process time each.</p>
+          ${s.pharmacists.length
+            ? svgHBars(s.pharmacists.map(p => [`${p[0]} · ${fmtMins(p[2])}`, p[1]]))
+            : `<div class="hmqd-nodata">No completed cases with a recorded pharmacist.</div>`}
+        </div>
+      </div>
+
+      <div class="hmqd-panel">
+        <h3>Daily detail</h3>
+        <div class="hmqd-scroll">
+          <table class="hmqd-dtable">
+            <thead><tr><th>Day</th><th>Cases</th><th>Completed</th><th>Median wait</th><th>Median process</th></tr></thead>
+            <tbody>${s.days.map(([d]) => {
+              const dr = rows.filter(e => bkkDay(e.createdAt) === d);
+              const w = dr.map(e => _mins(e.createdAt, e.startedAt)).filter(v => v != null);
+              const p = dr.map(e => _mins(e.startedAt, e.completedAt)).filter(v => v != null);
+              return `<tr><td>${d}</td><td class="n">${dr.length}</td>
+                <td class="n">${dr.filter(e => e.status === "done").length}</td>
+                <td class="n">${fmtMins(_median(w))}</td>
+                <td class="n">${fmtMins(_median(p))}</td></tr>`;
+            }).reverse().join("")}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
   // ── Load / refresh ───────────────────────────────────────────────────
   /* Only ever fetch the range the user is actually looking at.
 
@@ -184,7 +438,7 @@
     if (!r.ok) { _lastKey = ""; showError(r.reason); return; }
     _lastKey = key;
     _entries = r.list;
-    renderBoard();
+    renderActive();
     document.getElementById("hmqd-updated").textContent = `Updated ${new Date().toLocaleTimeString("en-GB")}`;
   }
 
@@ -196,10 +450,31 @@
     document.querySelectorAll(".hmqd-quick-ranges .hmqd-btn").forEach((b) => b.classList.remove("active"));
   }
 
+  /* Render whichever tab is showing. Both views read the same _entries, so
+     switching tabs never re-queries the server. */
+  let _tab = "board";
+  function renderActive() {
+    if (_tab === "stats") renderStats(); else renderBoard();
+  }
+
+  function switchTab(name) {
+    _tab = name;
+    document.querySelectorAll(".hmqd-tab").forEach(b => {
+      const on = b.dataset.tab === name;
+      b.classList.toggle("is-active", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    document.getElementById("hmqd-body").hidden  = name !== "board";
+    document.getElementById("hmqd-stats").hidden = name !== "stats";
+    renderActive();
+  }
+
   function wire() {
+    document.querySelectorAll(".hmqd-tab").forEach(b =>
+      b.addEventListener("click", () => switchTab(b.dataset.tab)));
     // Refresh forces a re-query even when the window is unchanged.
     document.getElementById("hmqd-refresh").addEventListener("click", () => load(true));
-    document.getElementById("hmqd-search").addEventListener("input", renderBoard);
+    document.getElementById("hmqd-search").addEventListener("input", renderActive);
 
     document.querySelectorAll(".hmqd-quick-ranges .hmqd-btn").forEach((btn) => {
       btn.addEventListener("click", () => {

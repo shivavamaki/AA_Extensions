@@ -19,6 +19,13 @@
   <span class="hmqd-total-badge" id="hmqd-total-badge">0 cases</span>
 </div>
 
+<div class="hmqd-tabs" role="tablist">
+  <button class="hmqd-tab is-active" id="hmqd-tab-board" role="tab"
+          aria-selected="true" aria-controls="hmqd-body" data-tab="board">📋 Queue board</button>
+  <button class="hmqd-tab" id="hmqd-tab-stats" role="tab"
+          aria-selected="false" aria-controls="hmqd-stats" data-tab="stats">📊 Statistics</button>
+</div>
+
 <div class="hmqd-toolbar">
   <div class="hmqd-field">
     <label>From</label>
@@ -44,6 +51,10 @@
 
 <div id="hmqd-body">
   <div class="hmqd-loading">Loading queue…</div>
+</div>
+
+<div id="hmqd-stats" hidden>
+  <div class="hmqd-loading">Loading statistics…</div>
 </div>
 
 <div class="hmqd-note">
