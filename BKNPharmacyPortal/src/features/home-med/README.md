@@ -129,6 +129,29 @@ see `.sign-box.appt-box`, `.hmproc-box`, `.sign-box.providers-box` in
   the printed copy. Shows "HM Process not started for this visit" — a normal,
   expected state, not an error — when no HMR record exists yet. See
   [`../hmr/README.md`](../hmr/README.md) for what populates that record.
+### ยาเดิม / Own medicines badge
+
+A medicine the patient brought in is tagged automatically and shown with a
+**ยาเดิม** badge (**Own medicines** in EN — it follows the Language selector).
+
+- **Source of truth is ArcusAir's own flag**, `patientorderitems.broughtfromoutside`
+  on `getallorderitem` — the same boolean behind the **POM** badge in ArcusAir's
+  Orders grid. The server maps it to `broughtFromOutside` in
+  `_arcus_item_to_med()`; `_medFromReport()` seeds `source: "own"` from it.
+- **Not** inferred from the non-formulary code `011001`. That code is shared by
+  every non-formulary item, including ones the hospital dispenses — treating it
+  as POM would mislabel a real dispensed medicine on a discharge document.
+- `source` carries two values that both render the badge: `"own"`
+  (auto-detected) and `"pom"` (added by hand from the Med Reconciliation panel).
+  Only the tooltip differs; the printed sheet doesn't distinguish them.
+- **The default is only a default.** The badge is a `<button>` — clicking it
+  sets `source: ""`, which `_persist()` saves. The saved-meds branch reads
+  `source` verbatim, so a reload keeps the pharmacist's decision instead of
+  re-applying the flag.
+- The language switch swaps the badge label in place (`_applyOwnMedLang`)
+  rather than re-rendering the table, so an in-progress `contenteditable` edit
+  isn't discarded.
+
 - **ลงชื่อเภสัชกร** (`providers-box`, narrowest) — two rows: **ผู้ตรวจสอบ
   รายการยา** (from `context.pharmacistName`, `#pharmacistCheckedName`) and
   **ผู้จ่ายยา** — a blank dashed signature line, no name, by design.

@@ -299,6 +299,9 @@
     .recon-empty b { color: #607d8b; }
 
     /* Tag on a medicine row added from the reconciliation panel. */
+    /* ยาเดิม / Own medicines. It is a <button> because clicking it clears the
+       auto-detected flag — the badge IS the override control. Button chrome is
+       reset so it still reads as a badge, and it prints as plain text. */
     .pom-badge {
       display: inline-block;
       font-size: 8px;
@@ -311,6 +314,18 @@
       padding: 1px 5px;
       margin-left: 5px;
       vertical-align: middle;
+      font-family: inherit;
+      line-height: 1.4;
+      cursor: pointer;
+    }
+    .pom-badge:hover {
+      background: #ddd6fe;
+      text-decoration: line-through;   /* hints that clicking removes it */
+    }
+    .pom-badge:focus-visible { outline: 2px solid #6d28d9; outline-offset: 1px; }
+    @media print {
+      .pom-badge { cursor: default; }
+      .pom-badge:hover { background: #ede9fe; text-decoration: none; }
     }
 
     .sheet-wrap {

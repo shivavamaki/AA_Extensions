@@ -555,6 +555,26 @@ let _currentLang = "th";
 // Retained for API compatibility only — the engine is offline on every path now.
 let _offlineOnly = true;
 
+/* "ยาเดิม" / "Own medicines" badge.
+
+   `source` carries two values that both mean patient's-own:
+     "own" — auto-detected from ArcusAir's broughtfromoutside flag
+     "pom" — added by hand from the Medication Reconciliation panel
+   Both render the same badge; only the tooltip differs, so the printed sheet
+   never distinguishes how the item was identified. Clicking clears it (see
+   _toggleOwnMed) — the badge is the override control, so it is deliberately
+   NOT a print-only decoration. */
+function _ownMedBadge(med) {
+  const s = norm(med.source || "");
+  if (s !== "own" && s !== "pom") return "";
+  const label = (_currentLang === "en") ? "Own medicines" : "ยาเดิม";
+  const why = s === "own"
+    ? "ยาเดิมของผู้ป่วย (ArcusAir: brought from outside) — คลิกเพื่อเอาป้ายออก"
+    : "ยาเดิมของผู้ป่วย (เพิ่มจาก Medication Reconciliation) — คลิกเพื่อเอาป้ายออก";
+  return `<button type="button" class="pom-badge no-translate" data-own="1"
+    data-no-translate translate="no" title="${escapeHtml(why)}">${escapeHtml(label)}</button>`;
+}
+
 function _medFromReport(m) {
   return {
     drug:        norm(m.drug || ""),
@@ -580,6 +600,12 @@ function _medFromReport(m) {
     // Auto-STAT when the order is "Stat" OR it comes from a used-at-hospital
     // store (Central Supply) — those are consumed in the department, not taken home.
     dispenseGroup: norm(m.dispenseGroup || "") || (_isUsedAtHospital(m) ? "stat" : "home"),
+    // "ยาเดิม" / Own medicines. Seeded from ArcusAir's own broughtfromoutside
+    // flag (the same one behind its Orders-grid POM badge), so the default is
+    // authoritative rather than inferred. The pharmacist can clear it from the
+    // badge — see _toggleOwnMed — and that choice is saved, so a reload never
+    // re-applies the default over a deliberate override.
+    source: norm(m.source || "") || (m.broughtFromOutside === true ? "own" : ""),
     takeUntilFinished: false,
     continueStartDate: "",
     continueEndDate: "",
@@ -637,7 +663,7 @@ function _buildMedRow(med, index, displayNo = index + 1) {
       <div class="med-cell">
 ${photo}
         <div class="med-text">
-          <div class="med-name" contenteditable="true" data-field="drug" data-ph="ชื่อยา" data-no-translate translate="no">${escapeHtml(med.drug || "")}</div>${med.source === "pom" ? `<span class="pom-badge no-translate" data-no-translate translate="no" title="Patient's Own Medication — added from Medication Reconciliation">POM</span>` : ""}
+          <div class="med-name" contenteditable="true" data-field="drug" data-ph="ชื่อยา" data-no-translate translate="no">${escapeHtml(med.drug || "")}</div>${_ownMedBadge(med)}
           ${med.code ? `<div class="med-code">Code: ${escapeHtml(med.code)}</div>` : ""}
           ${_buildContinuityTag(med)}
           ${med.takeUntilFinished ? `<div class="take-continue">${escapeHtml(_takeContinueLabel())}</div>` : ""}
@@ -1188,6 +1214,21 @@ function _bindRowEditing(tbody) {
     btn.addEventListener("click", () => {
       const tr = btn.closest(".med-row");
       if (tr) _removeMed(Number(tr.dataset.index));
+    });
+  });
+
+  // ยาเดิม / Own medicines badge — click to clear. The auto-detected default
+  // is only a default: clearing it writes source:"" which _persist saves, so
+  // a reload keeps the pharmacist's decision rather than re-applying the flag.
+  tbody.querySelectorAll(".pom-badge[data-own]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tr = btn.closest(".med-row");
+      if (!tr) return;
+      const idx = Number(tr.dataset.index);
+      if (idx < 0 || idx >= _meds.length) return;
+      _meds[idx].source = "";
+      _persist();
+      renderMeds();
     });
   });
 
@@ -2528,8 +2569,17 @@ function bindLangControl() {
     const fetchEl = document.getElementById("fetchStatus");
     if (_currentLang && fetchEl) fetchEl.textContent = "⏳ กำลังแปล…";
     await _applyTranslate(_currentLang, false);
+    // Swap the ยาเดิม / Own medicines badge label in place. Deliberately NOT a
+    // full renderMeds() — that would discard any contenteditable edit the
+    // pharmacist has in progress when they flip the language.
+    _applyOwnMedLang();
     if (fetchEl) fetchEl.textContent = _currentLang ? "✅ แปลแล้ว" : "";
   });
+}
+
+function _applyOwnMedLang() {
+  const label = (_currentLang === "en") ? "Own medicines" : "ยาเดิม";
+  document.querySelectorAll(".pom-badge[data-own]").forEach((b) => { b.textContent = label; });
 }
 
 /* ─────────────────────────────── Boot ─────────────────────────────────── */

@@ -1920,6 +1920,13 @@ def _arcus_item_to_med(it):
         'comments': _hm_norm(poi.get('comments') or it.get('comments') or ''),
         'orderdate': it.get('orderdate') or poi.get('startdate') or '',
         'startdate': poi.get('startdate') or '',
+        # ArcusAir's own "patient's own medication" flag — the same one that
+        # renders the POM badge in its Orders grid. An authoritative per-item
+        # boolean, so the sheet does not have to infer POM by matching against
+        # the reconciliation list. Note this is NOT the same as the shared
+        # non-formulary code 011001: a non-stocked item the hospital dispenses
+        # also carries that code but is not the patient's own.
+        'broughtFromOutside': poi.get('broughtfromoutside') is True,
     }
 
 
