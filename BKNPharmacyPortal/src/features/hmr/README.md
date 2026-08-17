@@ -25,6 +25,16 @@ sees the same progress.
    captures the reconcile token) and **Allocate / Dispense** (which now also
    carries the 🖨 **Sheet** action for the Home Medication Sheet).
 
+> **The reconciliation ids are stored in TWO places, deliberately.** Step 5
+> writes `medreconcileuid` / `medreconcileSnapshot` onto the **HMR record**
+> (keyed by `visitid`) *and* onto the **per-visit capture bag** (keyed by
+> `patientuid` + `patientvisituid`). The Home Med Sheet looks them up by
+> patient/visit, so a uid saved only on the HMR record left its Med
+> Reconciliation panel empty even though Step 5 had clearly run —
+> `_resolve_reconcile_meds()` needs one of them *in the context* or it returns
+> nothing. `buildHomeMedContext()` therefore reads the HMR record first, then
+> the capture bag as a cross-workstation fallback.
+
 > **🖨 Sheet is locked until Allocate / Dispense has run.** That step navigates
 > deep into ArcusAir, so every session uid is on the wire and resolvable —
 > `launchStep7()` calls `saveSessionCapture()` *before* navigating away and

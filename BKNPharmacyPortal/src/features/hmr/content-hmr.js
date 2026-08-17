@@ -339,6 +339,14 @@
         try { cap = await window.BKNData.loadCapture(patientuid, patientvisituid); }
         catch (_) { cap = null; }
       }
+
+      // Step 5 persists medreconcileuid / medreconcileSnapshot onto the HMR
+      // RECORD (keyed by visitid), not only onto the capture bag. The server's
+      // _resolve_reconcile_meds() needs one of them in this context or the
+      // sheet's Med Reconciliation panel renders empty — which is exactly what
+      // happens after a completed Med Reconcile if we don't carry them through.
+      let rec = null;
+      try { rec = await serverLoad(visitid); } catch (_) { rec = null; }
       const incusToken = hdrs['incus-token'] || (cap && cap.incusToken) || '';
       if (!incusToken) return null;
 
@@ -376,6 +384,10 @@
         // travel in the context — read from the header user button, which is
         // present on every ArcusAir page.
         pharmacistName:  detectHeaderUser(),
+        // Med Reconciliation panel input. HMR record first (Step 5 writes it
+        // there), then the shared capture bag as a cross-workstation fallback.
+        medreconcileuid:      (rec && rec.medreconcileuid) || (cap && cap.medreconcileuid) || null,
+        medreconcileSnapshot: (rec && rec.medreconcileSnapshot) || (cap && cap.medreconcileSnapshot) || null,
       };
     } catch (_) { return null; }
   }
@@ -922,6 +934,23 @@
     if (mu)       patch.medreconcileuid      = mu;
     const captured = [mu && 'medreconcileuid', snapshot && 'reconciliation snapshot'].filter(Boolean).join(' + ');
     await serverSave(job.visitid, patch, makeLog(`Med Reconcile: captured ${captured}`));
+
+    // ALSO write to the per-visit capture bag. The HMR record is keyed by
+    // visitid, but the Home Med Sheet looks the reconciliation up by
+    // patientuid+patientvisituid — so a uid saved only on the HMR record left
+    // the sheet's Med Reconciliation panel empty even though Step 5 had run.
+    // Best-effort and merge-only, so it can never blank another PC's capture.
+    try {
+      const puid = window.__arcus_pctx__?.patientuid || '';
+      if (puid && patientvisituid && window.BKNData?.saveCapture) {
+        const bag = {};
+        if (mu)       bag.medreconcileuid      = mu;
+        if (snapshot) bag.medreconcileSnapshot = snapshot;
+        if (Object.keys(bag).length) {
+          await window.BKNData.saveCapture(puid, patientvisituid, bag);
+        }
+      }
+    } catch (_) { /* the HMR record above is still the source of truth */ }
 
     await clearMedReconJob();
     document.getElementById('hmr-medrecon-continue-btn')?.remove();
