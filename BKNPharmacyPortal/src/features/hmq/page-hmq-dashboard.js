@@ -74,6 +74,25 @@
     return s.split(",")[0].trim() || s;
   }
 
+  /* Latest audit-log line for the case, shown under the name so the board
+     carries the current story at a glance instead of only behind the 🕒
+     modal. Newest entry wins — auditLog is append-only, so that is the last
+     element. The full history stays in the modal. */
+  function _latestLogHtml(entry) {
+    const log = Array.isArray(entry.auditLog) ? entry.auditLog : [];
+    if (!log.length) return "";
+    const last = log[log.length - 1] || {};
+    const action = norm(last.action || "");
+    if (!action) return "";
+    const who = shortUser(last.user);
+    const t   = String(last.ts || "").slice(11, 16);
+    const meta = [t, who].filter(Boolean).join(" · ");
+    return `<div class="hmqd-row-log" title="${escapeHtml(action)}">
+      <span class="hmqd-log-text">${escapeHtml(action)}</span>
+      ${meta ? `<span class="hmqd-log-when">${escapeHtml(meta)}</span>` : ""}
+    </div>`;
+  }
+
   function rowHtml(entry, col) {
     const hn   = escapeHtml(entry.hn || "");
     const name = escapeHtml(thaiName(entry.name));
@@ -98,6 +117,7 @@
       ${roomBadge}
       <div class="hmqd-row-info">
         <div class="hmqd-row-name">${name}</div>
+        ${_latestLogHtml(entry)}
         <div class="hmqd-row-meta">${ward || "&mdash;"}<span class="hmqd-hn">HN ${hn}</span>${byHtml}</div>
       </div>
       <div class="hmqd-row-date">${dateHtml}</div>

@@ -92,6 +92,27 @@ sees the same progress.
 > and the `HMR` naming throughout this file/CSS/server routes are historical
 > ("Home Medication Review") — don't rename them opportunistically.
 
+### 4 · บันทึกถึงทีม — pharmacist note
+
+A free-text note under the manual checklist (before Reset / Complete), for
+communication **within the department** about this discharge.
+
+- Saved onto the HMR record as `note` / `noteBy` / `noteAt`, so every
+  workstation sees the same text.
+- The author is read from ArcusAir's header user button
+  (`detectHeaderUser()` → `.headUserDetBtn span.ng-binding`) — the account
+  actually logged in, not `lastModifiedBy`, which changes on *any* save (a
+  checkbox, a step) and would misattribute the note.
+- Saves on **Ctrl+Enter**, on the **Save note** button, and on **blur** — so a
+  note is never lost by clicking straight into another control. Blur
+  deliberately does **not** re-render: that would tear out the textarea the
+  user just left and swallow the click that caused the blur. It refreshes the
+  byline in place instead.
+- Every save appends to the HMR audit log **and** is mirrored onto the queue
+  entry's log via `BKN_HMQ.logEvent`. The note lives on the HMR record (keyed
+  by `visitid`) but the Dashboard reads `/api/hmq` (keyed by case) — without
+  the mirror the note would never appear there.
+
 ## Where it runs
 
 - **`content-hmr.js`** injects `#hmr-trig-btn` next to the "Visit Details" `<h4>`

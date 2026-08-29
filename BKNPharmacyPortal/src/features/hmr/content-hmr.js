@@ -16,7 +16,7 @@
   if (window.__BKN_HMR_LOADED__) return;
   window.__BKN_HMR_LOADED__ = true;
 
-  const { norm } = window.CoreDom;
+  const { norm, escapeHtml } = window.CoreDom;
 
   const VISITID_RE = /\b(I48-\d{2}-\d{6})\b/;
   const HN_RE      = /\b(48-\d{2}-\d{6})\b/;
@@ -1590,6 +1590,8 @@
       },
       medreconcileuid: null,
       medreconcileSnapshot: null,
+      // Free-text note for intra-department communication about this discharge.
+      note: '', noteBy: '', noteAt: '',
       lastModifiedBy: detectUsername(),
       lastModifiedAt: new Date().toISOString(),
       auditLog:    [],
@@ -1636,6 +1638,16 @@
     { n: 3, en: 'Medical Discharge',  th: 'จำหน่ายทางการแพทย์' },
     { n: 4, en: 'Final Discharge',    th: 'จำหน่ายสมบูรณ์' },
   ];
+
+  /* Bangkok-local "DD/MM HH:MM" for the note byline. Stored timestamps are
+     UTC ISO, same as every other timestamp in this feature. */
+  function _fmtNoteTime(iso) {
+    const t = Date.parse(iso);
+    if (Number.isNaN(t)) return '';
+    const d = new Date(t + 7 * 3600 * 1000);
+    const p2 = n => String(n).padStart(2, '0');
+    return `${p2(d.getUTCDate())}/${p2(d.getUTCMonth() + 1)} ${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}`;
+  }
 
   function renderWS(state) {
     const { checklist, steps, visitid, hn, lastModifiedBy } = state;
@@ -1758,6 +1770,13 @@
       </div>`;
     }).join('');
 
+    // Who last saved the note, and when. Kept separate from lastModifiedBy —
+    // that changes on ANY save (a checkbox, a step), so it would wrongly
+    // attribute the note to whoever last touched the card.
+    const noteMetaHtml = state.noteBy
+      ? `${escapeHtml(state.noteBy)}${state.noteAt ? ' · ' + escapeHtml(_fmtNoteTime(state.noteAt)) : ''}`
+      : '<span class="hmr-note-empty">ยังไม่มีบันทึก · no note yet</span>';
+
     const chipLabel = visitid + (hn ? ` · HN ${hn}` : '');
     const modInfo   = lastModifiedBy && lastModifiedBy !== 'Unknown'
       ? `Last saved by ${lastModifiedBy}` : '';
@@ -1789,6 +1808,17 @@
             <span class="hmr-sec-en">Manual checklist</span></div>
           <div class="hmr-checklist">${checkHtml}</div>
           <div class="hmr-steps">${stepHtml}</div>
+        </div>
+
+        <div class="hmr-sec hmr-sec-note">
+          <div class="hmr-sec-hd"><span class="hmr-sec-t">4 · บันทึกถึงทีม</span>
+            <span class="hmr-sec-en">Pharmacist note · shared with the department</span></div>
+          <textarea class="hmr-note-box" id="hmr-note-box" rows="2"
+            placeholder="พิมพ์บันทึกเพื่อสื่อสารภายในแผนก… (Ctrl+Enter เพื่อบันทึก)">${escapeHtml(state.note || '')}</textarea>
+          <div class="hmr-note-foot">
+            <span class="hmr-note-meta" id="hmr-note-meta">${noteMetaHtml}</span>
+            <button class="hmr-note-save" id="hmr-note-save">บันทึก · Save note</button>
+          </div>
         </div>
 
         <div class="hmr-actions">
@@ -2026,6 +2056,58 @@
         }
       }
     });
+
+    /* Pharmacist note — free text shared with the department. Saved onto the
+       HMR record so every workstation sees it, and appended to the audit log
+       so the history shows WHO wrote WHAT and when. The author is read from
+       ArcusAir's header user button (detectHeaderUser), i.e. the account
+       actually logged in, not whoever last touched the card. */
+    const noteBox  = document.getElementById('hmr-note-box');
+    const noteBtn  = document.getElementById('hmr-note-save');
+    const saveNote = async (doRerender) => {
+      if (!noteBox) return;
+      const text = norm(noteBox.value || '');
+      if (text === norm(state.note || '')) return;      // nothing changed
+      const who = detectHeaderUser() || detectUsername();
+      const at  = new Date().toISOString();
+      if (noteBtn) { noteBtn.disabled = true; noteBtn.textContent = '⏳'; }
+      _state.note = text; _state.noteBy = who; _state.noteAt = at;
+      // Log the note itself, truncated — the audit trail is a history of what
+      // was communicated, and the dashboard shows the latest line verbatim.
+      const shown = text.length > 120 ? text.slice(0, 119) + '…' : text;
+      await serverSave(visitid, { note: text, noteBy: who, noteAt: at },
+        makeLog(text ? `บันทึก: ${shown}` : 'ลบบันทึกของเภสัชกร · note cleared'));
+      // Mirror onto the QUEUE entry's audit log as well. The note lives on the
+      // HMR record (keyed by visitid) but the Dashboard reads /api/hmq (keyed
+      // by case), so without this the note would never appear there — and the
+      // dashboard's whole point is seeing the current story per patient.
+      try {
+        const hnNow = await resolveHN(visitid, _state);
+        if (hnNow && window.BKN_HMQ?.logEvent) {
+          await window.BKN_HMQ.logEvent(hnNow, {
+            action: text ? `บันทึก: ${shown}` : 'ลบบันทึกของเภสัชกร · note cleared',
+            user: who,
+          });
+        }
+      } catch (_) { /* the HMR record above is still the source of truth */ }
+      if (doRerender) {
+        rerender(visitid, _state);
+      } else {
+        // Update the byline in place and restore the button.
+        const meta = document.getElementById('hmr-note-meta');
+        if (meta) meta.textContent = `${who} · ${_fmtNoteTime(at)}`;
+        if (noteBtn) { noteBtn.disabled = false; noteBtn.textContent = 'บันทึก · Save note'; }
+      }
+    };
+    noteBtn?.addEventListener('click', () => saveNote(true));
+    // Ctrl+Enter saves without reaching for the mouse; blur saves too, so a
+    // note is never lost by clicking straight into another control. Blur does
+    // NOT re-render — that would tear out the textarea the user just left (and
+    // steal the click that caused the blur); it only refreshes the byline.
+    noteBox?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveNote(true); }
+    });
+    noteBox?.addEventListener('blur', () => saveNote(false));
 
     document.getElementById('hmr-btn-reset')?.addEventListener('click', async () => {
       const fresh = newState(visitid, _currentHN);

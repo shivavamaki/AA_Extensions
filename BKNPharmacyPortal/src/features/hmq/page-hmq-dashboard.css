@@ -382,3 +382,34 @@ body {
 }
 .hmqd-dtable td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .hmqd-dtable tr:last-child td { border-bottom: none; }
+
+/* Latest audit-log line, between the name and the ward/HN meta row. Gives the
+   board the case's current story without opening the 🕒 modal. */
+.hmqd-row-log {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 10.5px;
+  line-height: 1.35;
+  min-width: 0;
+}
+.hmqd-log-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #37474f;
+  background: #f4f7fa;
+  border-left: 2px solid #90a4ae;
+  border-radius: 0 4px 4px 0;
+  padding: 1px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hmqd-log-when {
+  flex: 0 0 auto;
+  color: #b0bec5;
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
