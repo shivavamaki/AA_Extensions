@@ -628,8 +628,14 @@ function _appendNoData(tbody, text) {
  * `cont-*` class, and the screen shows a native <select>; print shows a static
  * coloured label (see OPD-Sheet.html print CSS). */
 function _buildContinuityTag(med) {
-  // OPD sheet only — the IPD discharge sheet has no last-5-visits comparison.
-  if (!_IS_OPD_SHEET) return "";
+  /* Shown on BOTH sheets, but filled differently:
+       OPD — the server auto-computes continued/adjusted by comparing the med
+             against the last-5-visits history (tag_meds_continuity).
+       IPD — no such history exists, so it starts BLANK and the pharmacist
+             picks. Deliberately not guessed: labelling a discharge med
+             "รับยาต่อเนื่อง" without evidence would be a clinical claim the
+             data does not support.
+     Either way the pharmacist's choice wins and is persisted with the row. */
   const val = med.continuity || "";
   const opts = CONTINUITY_OPTIONS.map((o) =>
     `<option value="${escapeHtml(o.value)}"${o.value === val ? " selected" : ""}>${escapeHtml(o.label)}</option>`

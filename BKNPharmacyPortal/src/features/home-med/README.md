@@ -129,6 +129,25 @@ see `.sign-box.appt-box`, `.hmproc-box`, `.sign-box.providers-box` in
   the printed copy. Shows "HM Process not started for this visit" — a normal,
   expected state, not an error — when no HMR record exists yet. See
   [`../hmr/README.md`](../hmr/README.md) for what populates that record.
+### Continuity tag (รับยาต่อเนื่อง / ปรับขนาดยา / ยาใหม่)
+
+A per-row dropdown (`.med-continuity`, `data-field="continuity"`), shown on
+**both** sheets but filled differently:
+
+| Sheet | Default |
+|---|---|
+| OPD | auto-computed server-side (`tag_meds_continuity`) by comparing the med against the last-5-visits history |
+| IPD | **blank** — there is no such history, so the pharmacist picks |
+
+The IPD sheet is deliberately not auto-guessed: labelling a discharge med
+*รับยาต่อเนื่อง* without evidence would be a clinical claim the data doesn't
+support. Either way the pharmacist's choice wins and is persisted with the row.
+
+An **untagged** badge is hidden entirely when printing
+(`.med-continuity:not(.cont-*)`), so an unclassified row prints nothing rather
+than an empty pill; the `<select>` is swapped for `.continuity-print` static
+text on paper, since selects don't print.
+
 ### ยาเดิม / Own medicines badge
 
 A medicine the patient brought in is tagged automatically and shown with a

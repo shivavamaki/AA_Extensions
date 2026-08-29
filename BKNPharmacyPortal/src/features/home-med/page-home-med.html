@@ -302,6 +302,38 @@
     /* ยาเดิม / Own medicines. It is a <button> because clicking it clears the
        auto-detected flag — the badge IS the override control. Button chrome is
        reset so it still reads as a badge, and it prints as plain text. */
+    /* ── Continuity tag (รับยาต่อเนื่อง / ปรับขนาดยา / ยาใหม่) ──────────────
+       Same control as the OPD sheet. On IPD it starts BLANK — there is no
+       last-5-visits history to auto-compute from — and the pharmacist picks.
+       An untagged badge is hidden entirely (rule at the end), so a row the
+       pharmacist has not classified shows nothing rather than an empty pill. */
+    .med-continuity {
+      vertical-align: middle;
+      margin-top: 3px;
+      display: inline-block;
+      border-radius: 999px;
+      background: #eef2f7;
+      border: 1px solid #dbe2ea;
+    }
+    .med-continuity.cont-continued { background: #e7f6ee; border-color: #b7e2c9; }
+    .med-continuity.cont-adjusted  { background: #fdf3e3; border-color: #f4d9a8; }
+    .med-continuity.cont-new       { background: #e6f0fb; border-color: #b9d4f2; }
+    .continuity-select {
+      appearance: none; -webkit-appearance: none;
+      border: none; outline: none; cursor: pointer;
+      background: transparent;
+      font-family: inherit;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.3;
+      padding: 1px 6px;
+      color: #334155;
+    }
+    .med-continuity.cont-continued .continuity-select { color: #065f46; }
+    .med-continuity.cont-adjusted  .continuity-select { color: #92400e; }
+    .med-continuity.cont-new       .continuity-select { color: #1e3a8a; }
+    .continuity-print { display: none; }
+
     .pom-badge {
       display: inline-block;
       font-size: 8px;
@@ -324,6 +356,14 @@
     }
     .pom-badge:focus-visible { outline: 2px solid #6d28d9; outline-offset: 1px; }
     @media print {
+      /* Selects don't print — swap to the static label, and drop the badge
+         entirely when the row was never classified. */
+      .continuity-select { display: none; }
+      .continuity-print  { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 6px; }
+      .med-continuity.cont-continued .continuity-print { color: #065f46; }
+      .med-continuity.cont-adjusted  .continuity-print { color: #92400e; }
+      .med-continuity.cont-new       .continuity-print { color: #1e3a8a; }
+      .med-continuity:not(.cont-continued):not(.cont-adjusted):not(.cont-new) { display: none; }
       .pom-badge { cursor: default; }
       .pom-badge:hover { background: #ede9fe; text-decoration: none; }
     }
