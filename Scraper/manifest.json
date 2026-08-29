@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Arcus Toolkit",
+  "version": "3.10.0",
+  "description": "Arcus Toolkit — auto date-range scraper + manual scraper + IP Fill + Auto Dispense.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://arcusair.bdms.co.th/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://arcusair.bdms.co.th/*"
+      ],
+      "js": [
+        "content/shared.js",
+        "content/panel.js",
+        "content/automation.js",
+        "content/scraper.js",
+        "content/scraper_panel.js",
+        "content/boot.js",
+        "content/ipfill_panel.js"
+      ],
+      "css": [
+        "styles.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

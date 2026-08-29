@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 360px;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 12px;
+      background: #fff;
+      color: #222;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    .header {
+      background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+      color: #fff;
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-title { font-size: 13px; font-weight: 700; letter-spacing: 0.3px; }
+    .header-version {
+      font-size: 9.5px;
+      background: rgba(255,255,255,0.18);
+      border-radius: 99px;
+      padding: 2px 8px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+
+    /* ── Tabs ────────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 7px 2px;
+      border: none;
+      background: none;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #888;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn.active  { color: #1565c0; border-bottom-color: #1565c0; }
+    .tab-btn:hover:not(.active) { color: #444; }
+
+    /* ── Panels ──────────────────────────────────────────── */
+    .panel { display: none; padding: 12px; }
+    .panel.active { display: block; }
+
+    /* ── Typography ──────────────────────────────────────── */
+    .section-label {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #546e7a;
+      margin-bottom: 5px;
+    }
+    .desc {
+      font-size: 10.5px;
+      color: #666;
+      line-height: 1.5;
+      margin-bottom: 9px;
+    }
+    .note {
+      font-size: 10px;
+      color: #9e9e9e;
+      line-height: 1.45;
+      margin-top: 6px;
+    }
+
+    /* ── Date inputs ─────────────────────────────────────── */
+    .date-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 9px;
+    }
+    .date-field label {
+      display: block;
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #1565c0;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 3px;
+    }
+    .date-field input {
+      width: 100%;
+      padding: 5px 7px;
+      border: 1px solid #cfd8dc;
+      border-radius: 5px;
+      font-size: 11px;
+      color: #263238;
+      background: #f8fbff;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .date-field input:focus { border-color: #1565c0; }
+
+    /* ── Buttons ─────────────────────────────────────────── */
+    .btn-group {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 9px;
+    }
+    button {
+      flex: 1;
+      padding: 7px 4px;
+      border: none;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    button:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+    button:active:not(:disabled) { transform: translateY(0); }
+    button:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    .btn-green  { background: #2e7d32; color: #fff; }
+    .btn-red    { background: #c62828; color: #fff; }
+    .btn-blue   { background: #1565c0; color: #fff; }
+    .btn-teal   { background: #00695c; color: #fff; }
+
+    /* ── Status box ──────────────────────────────────────── */
+    .status {
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      padding: 6px 9px;
+      min-height: 30px;
+      line-height: 1.5;
+      color: #555;
+      font-size: 10.5px;
+      white-space: pre-line;
+      word-break: break-word;
+    }
+    .status.running { border-color: #2e7d32; color: #2e7d32; background: #f1f8f1; }
+    .status.paused  { border-color: #e65100; color: #e65100; background: #fff8f5; }
+    .status.done    { border-color: #1565c0; color: #1565c0; background: #f0f4ff; }
+    .status.error   { border-color: #b71c1c; color: #b71c1c; background: #fff5f5; }
+
+    /* ── Divider ─────────────────────────────────────────── */
+    .divider {
+      border: none;
+      border-top: 1px solid #e0e0e0;
+      margin: 11px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <span class="header-title">🔧 Arcus Toolkit</span>
+    <span class="header-version">v3.10.0</span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="dispense">⚙️ Dispense</button>
+    <button class="tab-btn"        data-tab="scraper">🗓 Scraper</button>
+    <button class="tab-btn"        data-tab="ipfill">💉 IP Fill</button>
+  </div>
+
+  <!-- ══════════════════ DISPENSE TAB ══════════════════ -->
+  <div id="tab-dispense" class="panel active">
+    <div class="section-label">Auto Dispense</div>
+    <p class="desc">Open the Arcus dispense workbench. The floating page panel supports drag, minimize, row-type filter, and manual override wait.</p>
+    <div class="btn-group">
+      <button id="openWorkbench"      class="btn-blue">🔗 Open Workbench</button>
+      <button id="closeWorkbenchPanel" class="btn-red">✕ Close Panel</button>
+    </div>
+    <div id="dispenseStatus" class="status">Open the workbench — the automation panel appears automatically.</div>
+  </div>
+
+  <!-- ══════════════════ SCRAPER TAB ══════════════════ -->
+  <div id="tab-scraper" class="panel">
+
+    <!-- ── Panel visibility ───────────────────────── -->
+    <div class="section-label">Scraper panel</div>
+    <div class="btn-group">
+      <button id="showScraperPanel" class="btn-blue">☰ Show Panel</button>
+      <button id="hideScraperPanel" class="btn-red">✕ Hide Panel</button>
+    </div>
+    <div id="scraperPanelStatus" class="status">Toggle the floating scraper panel on the page.</div>
+
+    <hr class="divider">
+
+    <!-- ── Auto Scraper ─────────────────────────────── -->
+    <div class="section-label">🗓 Auto Scraper — Date Range</div>
+    <p class="desc">Scrapes one date at a time using the calendar UI. Progress is saved so you can resume anytime after stopping.</p>
+
+    <div class="date-row">
+      <div class="date-field">
+        <label>From</label>
+        <input id="autoFrom" type="text" value="01-03-2025" placeholder="DD-MM-YYYY">
+      </div>
+      <div class="date-field">
+        <label>To</label>
+        <input id="autoTo" type="text" value="28-02-2026" placeholder="DD-MM-YYYY">
+      </div>
+    </div>
+
+    <div class="btn-group">
+      <button id="startAutoScraper"  class="btn-green">▶ Start</button>
+      <button id="resumeAutoScraper" class="btn-teal">⏎ Resume</button>
+      <button id="stopAutoScraper"   class="btn-red" disabled>■ Stop</button>
+    </div>
+    <div id="autoScraperStatus" class="status">Ready — set date range and click Start.</div>
+    <p class="note">Files saved as YYYYMMDD_rows.json per date. Resume continues from last completed date.</p>
+
+    <hr class="divider">
+
+    <!-- ── Manual Scraper ──────────────────────────── -->
+    <div class="section-label">📋 Manual Scraper — Current View</div>
+    <p class="desc">Scrapes all visible rows on the current workbench page. Set your date and filters on the page first, then click Run.</p>
+
+    <div class="btn-group">
+      <button id="runScraper"  class="btn-green">▶ Run</button>
+      <button id="stopScraper" class="btn-red" disabled>■ Stop</button>
+    </div>
+    <div id="scraperStatus" class="status">Waiting…</div>
+    <p class="note">Files saved as arcus_scrape_*.json. Order type and PDPA filters are set in the page panel.</p>
+  </div>
+
+  <!-- ══════════════════ IP FILL TAB ══════════════════ -->
+  <div id="tab-ipfill" class="panel">
+    <div class="section-label">IP Fill Tools</div>
+    <p class="desc">Open the IP Fill page and show the floating panel. Supports drag, minimize, manual ward pause, and retry logic.</p>
+    <div class="btn-group">
+      <button id="openIpFill"      class="btn-blue">🔗 Open IP Fill</button>
+      <button id="closeIpFillPanel" class="btn-red">✕ Close Panel</button>
+    </div>
+    <div id="ipfillStatus" class="status">Open IP Fill — the panel appears automatically.</div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -22,3 +22,18 @@ pharmacy_server/data/temp-reports/
 # patient data (name/HN/ward), never commit.
 /*.xls
 /*.xlsx
+
+# ── Stale nested copies of the repo (accidental backup/copy-paste) ───────────
+# Real source lives at BKNPharmacyPortal/ and pharmacy_server/. These nested
+# duplicates are frozen at old versions (v3.8.5 / v3.46.1 vs current) and must
+# never be committed.
+BKNPharmacyPortal/BKNPharmacyPortal/
+pharmacy_server/BKNPharmacyPortal/
+pharmacy_server/pharmacy_server/
+
+# Separate project with its own git remote (shivavamaki/Pharmacy_Student_game)
+Pharmacy_Student_game/
+
+# Windows shortcuts and stray local scratch files
+*.lnk
+pharmacy_server/www/static/0..png
