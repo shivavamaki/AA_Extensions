@@ -2609,7 +2609,33 @@ def load_rx(col):
     except Exception:
         return {} if col in RX_DICT_COLS else []
 
+# Keep the last few versions of each rx collection. These are small,
+# pharmacist-curated files edited through a whole-file PUT, so ONE bad write
+# (an editor that saved before its load finished, a client sending {}) replaces
+# everything with no way back — pattern-overrides.json was reset to `{}` exactly
+# that way, and it is not tracked in git, so there was nothing to restore from.
+RX_BACKUP_KEEP = 5
+
+def _rx_backup(col):
+    """Snapshot the CURRENT rx file before it is overwritten. Best-effort: a
+    backup failure must never block the save itself."""
+    try:
+        src = rx_file(col)
+        if not src.exists() or src.stat().st_size <= 2:
+            return                      # nothing meaningful to preserve
+        bdir = DATA_DIR / 'rx' / '_backup'
+        bdir.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+        shutil.copy2(src, bdir / f'{col}.{stamp}.json')
+        old = sorted(bdir.glob(f'{col}.*.json'))
+        for stale in old[:-RX_BACKUP_KEEP]:
+            try: stale.unlink()
+            except OSError: pass
+    except Exception as e:
+        print(f'[rx-backup] {col}: {e}', file=sys.stderr)
+
 def save_rx(col, data):
+    _rx_backup(col)
     _atomic_write_json(rx_file(col), data)
 
 

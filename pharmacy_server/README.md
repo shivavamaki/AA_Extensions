@@ -183,6 +183,15 @@ of falling through to a misleading 401 — the caller is trusted, so it is a
 client bug, and keeping it out of the untrusted-write log stops real trust
 misses being buried under client-side noise.
 
+> **rx collections keep rolling backups.** `save_rx()` copies the current file
+> into `data/rx/_backup/{col}.{timestamp}.json` before overwriting it, keeping
+> the last `RX_BACKUP_KEEP` (5). These are small, pharmacist-curated files
+> edited through a **whole-file PUT**, so one bad write replaces everything —
+> `pattern-overrides.json` was reset to `{}` exactly that way, and `data/` is
+> gitignored, so there was no other copy. To restore, copy the wanted snapshot
+> back over the live file. Backups are skipped for an already-empty file, and a
+> backup failure never blocks the save.
+
 ### Patients (`data/patients/`)
 
 | Method | Path | Description |

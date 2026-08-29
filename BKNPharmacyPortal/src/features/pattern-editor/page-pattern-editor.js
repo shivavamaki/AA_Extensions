@@ -246,6 +246,8 @@ async function load() {
     const r = await fetch(`${SERVER_URL}/api/pattern-overrides`);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     overrides = await r.json() || {};
+    _loadedOk = true;
+    _loadedCount = Object.keys(overrides).length;
     rebuildOrder();
     render();
     const nBuiltin = Object.keys(builtins).length;
@@ -254,9 +256,11 @@ async function load() {
     setStatus(`${nBuiltin} built-in · ${nOverride} overridden · ${nCustom} custom.`, "ok");
   } catch (e) {
     overrides = {};
+    _loadedOk = false;   // Save must refuse — see save()
     rebuildOrder();   // still show the built-ins even if the server is down
     render();
-    setStatus(`⚠ Could not reach pharmacy server (${SERVER_URL}) — showing built-ins only. ${e.message}`, "error");
+    setStatus(`⚠ Could not reach pharmacy server (${SERVER_URL}) — showing built-ins only. `
+            + `การบันทึกถูกปิดไว้เพื่อกันข้อมูลหาย · saving is disabled so nothing is overwritten. ${e.message}`, "error");
   }
 }
 
@@ -264,7 +268,20 @@ async function load() {
 // actually differ from the shipped default. Untouched built-ins and empty
 // overrides are dropped so the server file stays the minimal delta (no drift:
 // the built-ins live in code, not in the saved file).
+/* Whether the current `overrides` really came from the server, and how many
+   entries it had. Both guard save(): this editor PUTs the WHOLE dict, so a
+   save built on top of an empty in-memory state silently wipes every stored
+   override. That is how the file ended up as `{}`. */
+let _loadedOk = false;
+let _loadedCount = 0;
+
 function save() {
+  // 1. Never write over the server's copy with a state we never loaded.
+  if (!_loadedOk) {
+    setStatus("⚠ ยังไม่ได้โหลดข้อมูลจากเซิร์ฟเวอร์ — กด Reload ก่อนบันทึก · "
+            + "Not loaded from the server yet; press Reload before saving.", "error");
+    return;
+  }
   const clean = {};
   Object.keys(overrides).forEach((key) => {
     if (!key) return;
@@ -281,6 +298,20 @@ function save() {
     if (mode) entry.mode = mode;
     clean[key] = entry;
   });
+  // 2. Confirm before a save that removes most of what was loaded. Pruning a
+  //    few rows is normal; going from many to almost none is the signature of
+  //    the wipe this guard exists to prevent.
+  const n = Object.keys(clean).length;
+  if (_loadedCount >= 5 && n < Math.ceil(_loadedCount / 2)) {
+    const ok = window.confirm(
+      `กำลังจะบันทึก ${n} รายการ ทับของเดิม ${_loadedCount} รายการ
+`
+      + `About to save ${n} override(s), replacing ${_loadedCount}.
+
+`
+      + `ยืนยันหรือไม่? · Continue?`);
+    if (!ok) { setStatus("ยกเลิกการบันทึก · Save cancelled.", "error"); return; }
+  }
   // Reflect the pruning locally so a follow-up edit starts from the saved state.
   overrides = clean;
   rebuildOrder();
@@ -291,7 +322,7 @@ function save() {
     body: JSON.stringify(clean),
   })
     .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); })
-    .then(() => { render(); setStatus(`✅ Saved ${Object.keys(clean).length} override(s).`, "ok"); })
+    .then(() => { _loadedCount = n; render(); setStatus(`✅ Saved ${n} override(s).`, "ok"); })
     .catch((e) => setStatus(`⚠ Save failed — ${e.message}`, "error"));
 }
 

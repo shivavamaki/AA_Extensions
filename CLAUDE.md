@@ -130,6 +130,9 @@ Chrome cannot install an unpacked extension from a URL. The server publishes the
 ### Parsed-JSON cache — `_load_json_cached` returns a COPY
 HMQ/HMR keep one file per live case, and `/api/hmq` re-read them all on every request (~5.9ms/file → ~233ms at 56 open cases), which the ward popup polls every 8s from every ArcusAir tab. `_load_json_cached(path)` caches the parsed object keyed by `(path, mtime_ns, size)` — a write bumps mtime, so a stale entry can never be served, and live updates stay immediate. It returns a **deep copy** because callers mutate what they load (`load_all_hmq`'s `startedBy` backfill, `transition_hmq_entry`); handing out the cached object would let one request corrupt every later one. Copying costs ~3ms per 56 records vs ~1240ms to re-parse, so the copy is not the expensive part. Don't cache single-record loaders on write paths (`load_hmq_entry`) — freshness matters more there than the one avoided read.
 
+### A whole-file PUT must never be built on an unloaded state
+The Pattern Editor (and any editor that `PUT`s a WHOLE collection) replaces the server file outright. If its `load()` failed, `overrides` is `{}` — and the next Save writes that empty state over everything. That is how `pattern-overrides.json` became `{}`; it is **not** tracked in git, so there was nothing to restore from. Two defences, keep both: the client refuses to save unless a load actually succeeded (`_loadedOk`) and confirms when a save would drop most of what it loaded; the server snapshots the current file into `data/rx/_backup/` before every `save_rx` (last `RX_BACKUP_KEEP`). Apply the same shape to any future whole-file editor.
+
 ### Server safety
 Single-file stdlib server. JSON writes use `_atomic_write_json` (temp + `os.replace`). Static files served via `_serve_file_under` / `_path_within`. Login-less writes are gated by `_is_trusted_extension()` (see *Write trust is by NETWORK* above).
 
