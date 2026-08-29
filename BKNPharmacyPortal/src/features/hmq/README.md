@@ -225,6 +225,23 @@ noise, since the nightly merge (above) only ever archives `done` entries.
   browsing history across workstations/days, not for working the queue; a
   note at the bottom of the page points back to the live popup for that.
 
+### The popup can always be dragged back
+
+Position and width persist per workstation in `localStorage['bkn:hmqPopupPos']`.
+Both the drag and the restore run through **`clampPos()`**, which keeps at least
+`MIN_VISIBLE_X` (120 px) of the card and the full 38 px header inside the
+viewport.
+
+Without that clamp a drag could park the card past the right or bottom edge —
+and because the position is *persisted*, it came back there on every load with
+its own drag handle off-screen, so it could never be dragged back. Clamping on
+**restore** (not only on drag) is what rescues a card already stranded by an
+older build. A debounced `resize` listener re-clamps too, so shrinking the
+browser window cannot strand it either.
+
+The Step 7 overlay in `hmr` clamps during the drag for the same reason, though
+it does not persist its position — a reload recovers that one.
+
 ### Statistics tab
 
 A second tab (`📊 Statistics`) renders from the **same `_entries`** the board

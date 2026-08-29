@@ -133,6 +133,29 @@
   function loadSavedPos() {
     try { return JSON.parse(localStorage.getItem(POS_KEY) || 'null'); } catch (_) { return null; }
   }
+
+  /* Keep the card reachable. A drag could previously park it past the right or
+     bottom edge — and because the position is persisted, it came back there on
+     every load with its drag handle off-screen, so it could not be dragged
+     back. Clamp so a usable strip of the HEADER always stays on screen: enough
+     width to grab, and the full header height. Also used when restoring a
+     saved position, which fixes a card already stranded off-screen (including
+     one saved by an older build, or after the window got smaller). */
+  const MIN_VISIBLE_X = 120;   // px of card width that must remain reachable
+  const HEADER_H      = 38;    // drag handle height
+
+  function clampPos(left, top, el) {
+    const vw = window.innerWidth  || document.documentElement.clientWidth  || 0;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+    const r  = el ? el.getBoundingClientRect() : { width: 300, height: 200 };
+    const w  = r.width  || 300;
+    const maxLeft = Math.max(0, vw - Math.min(w, MIN_VISIBLE_X));
+    const maxTop  = Math.max(0, vh - HEADER_H);
+    return {
+      left: Math.round(Math.min(Math.max(left, 0), maxLeft)),
+      top:  Math.round(Math.min(Math.max(top,  0), maxTop)),
+    };
+  }
   function patchSavedPos(patch) {
     try { localStorage.setItem(POS_KEY, JSON.stringify({ ...(loadSavedPos() || {}), ...patch })); } catch (_) {}
   }
@@ -167,7 +190,12 @@
         document.removeEventListener('mouseup', onUp);
         if (moved) {
           const r2 = el.getBoundingClientRect();
-          patchSavedPos({ left: Math.round(r2.left), top: Math.round(r2.top) });
+          // Clamp before persisting so a drag can never strand the card where
+          // its own handle is off-screen and it can't be dragged back.
+          const c = clampPos(r2.left, r2.top, el);
+          el.style.left = c.left + 'px';
+          el.style.top  = c.top  + 'px';
+          patchSavedPos(c);
         } else if (typeof opts.onClick === 'function') {
           opts.onClick();
         }
@@ -206,9 +234,13 @@
   function applySavedPos(el) {
     const saved = loadSavedPos();
     if (saved && saved.left != null && saved.top != null) {
+      // Re-clamp on restore: rescues a card stranded by an older build, and
+      // pulls it back into view when the window is now smaller than it was.
+      const c = clampPos(saved.left, saved.top, el);
       el.style.right = 'auto';
-      el.style.left  = saved.left + 'px';
-      el.style.top   = saved.top + 'px';
+      el.style.left  = c.left + 'px';
+      el.style.top   = c.top  + 'px';
+      if (c.left !== saved.left || c.top !== saved.top) patchSavedPos(c);
     } else {
       const anchor = findWardBoardTitle();
       if (anchor) {
@@ -371,6 +403,27 @@
       },
     });
     watchResize(el);
+    // Shrinking the browser window can leave the card outside the new viewport.
+    // Re-clamp on resize so it is always reachable without clearing storage.
+    if (!window.__bkn_hmq_resize__) {
+      window.__bkn_hmq_resize__ = true;
+      let t = null;
+      window.addEventListener('resize', () => {
+        clearTimeout(t);
+        t = setTimeout(() => {
+          const card = document.getElementById('hmq-card');
+          if (!card || card.classList.contains('min')) return;
+          const r = card.getBoundingClientRect();
+          const c = clampPos(r.left, r.top, card);
+          if (c.left !== Math.round(r.left) || c.top !== Math.round(r.top)) {
+            card.style.right = 'auto';
+            card.style.left  = c.left + 'px';
+            card.style.top   = c.top  + 'px';
+            patchSavedPos(c);
+          }
+        }, 250);
+      });
+    }
     wirePopup();
   }
 

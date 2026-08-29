@@ -1405,8 +1405,19 @@
       el.style.top  = oy + 'px';
       handle.style.cursor = 'grabbing';
       function onMove(e) {
-        el.style.left = (ox + e.clientX - startX) + 'px';
-        el.style.top  = (oy + e.clientY - startY) + 'px';
+        // Clamp to the viewport so the overlay's own drag handle can never be
+        // pushed off-screen mid-run. This overlay does NOT persist its
+        // position (a reload recovers it), but being unable to grab it while
+        // Step 7 is working is disruptive enough to prevent.
+        const vw = window.innerWidth  || document.documentElement.clientWidth  || 0;
+        const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+        const w  = el.getBoundingClientRect().width || 320;
+        const maxLeft = Math.max(0, vw - Math.min(w, 120));
+        const maxTop  = Math.max(0, vh - 38);
+        const nx = Math.min(Math.max(ox + e.clientX - startX, 0), maxLeft);
+        const ny = Math.min(Math.max(oy + e.clientY - startY, 0), maxTop);
+        el.style.left = nx + 'px';
+        el.style.top  = ny + 'px';
       }
       function onUp() {
         handle.style.cursor = 'grab';
