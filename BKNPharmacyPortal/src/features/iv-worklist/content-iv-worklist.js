@@ -91,9 +91,15 @@
 
   function readPatient() {
     const root = bannerRoot();
-    const scope = root ? norm(root.innerText || root.textContent) : '';
-    // Fall back to the page only when the banner is genuinely absent.
-    const text = scope || norm(document.body ? document.body.innerText : '');
+    /* textContent, NOT innerText. While the "Edit Administration Timings"
+       dialog is open, Angular Material marks the rest of the page inert /
+       aria-hidden, and Chrome's innerText only reports *rendered* text — so it
+       returns "" for the banner and for document.body alike, and the HN read
+       failed with "No patient HN on this page" even though the banner was
+       plainly on screen. textContent ignores rendering and always sees it. */
+    const scope = root ? norm(root.textContent) : '';
+    // Fall back to the page only when the banner yields nothing.
+    const text = scope || norm(document.body ? document.body.textContent : '');
 
     const hn = (/(\d{2}-\d{2}-\d{6,7})/.exec(text) || [])[1] || '';
 
@@ -197,7 +203,15 @@
     const ord = readOrder(dialog);
     const slot = readTiming(dialog);
 
-    if (!pt.hn)  return toast('ไม่พบ HN ของผู้ป่วย · No patient HN on this page', 'err');
+    if (!pt.hn) {
+      // Distinguish "banner missing" from "banner present but unreadable" —
+      // the two need different fixes and the old message covered both.
+      const seen = !!bannerRoot();
+      console.log(LOG, 'no HN. banner element found:', seen);
+      return toast(seen
+        ? 'อ่าน HN ไม่ได้ · Found the banner but could not read the HN — please report this'
+        : 'ไม่พบแถบข้อมูลผู้ป่วย · No patient banner on this page', 'err');
+    }
     if (!ord.drug) return toast('ไม่พบชื่อยา · No drug name in the dialog', 'err');
     if (!slot)   return toast('ไม่พบเวลาให้ยา · No administration time set', 'err');
 
