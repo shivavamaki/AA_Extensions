@@ -37,14 +37,32 @@
 
   // ── Data ──────────────────────────────────────────────────────────────────
 
+  /** The ONLY place that knows where rows come from. Server is the store. */
   async function loadRows() {
-    if (DEMO) {
-      $('ivw-demo-flag').hidden = false;
-      return window.IVDemoData.build(new Date());
-    }
-    const r = await fetch('/api/iv-worklist?date=' + new Date().toISOString().slice(0, 10));
+    const r = await api('/api/iv-worklist?date=' + todayStr());
     if (!r.ok) throw new Error('worklist ' + r.status);
-    return r.json();
+    return r.json;
+  }
+
+  /** Bangkok-local date — the server keys a day's file on the ward's date, so
+   *  a UTC-derived string would ask for the wrong file after 17:00 local. */
+  function todayStr() {
+    const d = new Date();
+    return d.getFullYear() + '-' +
+           String(d.getMonth() + 1).padStart(2, '0') + '-' +
+           String(d.getDate()).padStart(2, '0');
+  }
+
+  /* Route through BKNData when the portal's client is present (it knows the
+     server URL and carries auth); fall back to a same-origin fetch. */
+  async function api(path, opts) {
+    if (window.BKNData && window.BKNData.serverFetch) {
+      return window.BKNData.serverFetch(path, opts);
+    }
+    const r = await fetch(path, opts);
+    let json = null;
+    try { json = await r.json(); } catch (_) {}
+    return { ok: r.ok, status: r.status, json };
   }
 
   // ── Filter chips ──────────────────────────────────────────────────────────
@@ -427,8 +445,11 @@
     const dp = $('ivw-d-prep-by'), dc = $('ivw-d-check-by');
     dp.value = r.preparedBy || U.state.preparedBy || '';
     dc.value = r.checkedBy  || U.state.checkedBy  || '';
-    dp.oninput = () => { r.preparedBy = dp.value.trim(); refreshSignHint(r); };
-    dc.oninput = () => { r.checkedBy  = dc.value.trim(); refreshSignHint(r); };
+    dp.oninput  = () => { r.preparedBy = dp.value.trim(); refreshSignHint(r); };
+    dc.oninput  = () => { r.checkedBy  = dc.value.trim(); refreshSignHint(r); };
+    // Persist on blur, not per keystroke — one write per correction.
+    dp.onchange = () => saveFields(r, { preparedBy: dp.value.trim() });
+    dc.onchange = () => saveFields(r, { checkedBy:  dc.value.trim() });
     refreshSignHint(r);
 
     // Live label preview, scaled down — what will come off the printer. Built
@@ -447,8 +468,8 @@
 
     // Printing stamps the bag first: a label with no preparer and no mix time
     // is useless on a ward, so the click both records and prints.
-    $('ivw-d-print-ipd').onclick   = () => { stampForPrint(r); S.printIpd([r]); render(); };
-    $('ivw-d-print-small').onclick = () => { stampForPrint(r); S.printSmall([r]); render(); };
+    $('ivw-d-print-ipd').onclick   = async () => { await stampForPrint(r); S.printIpd([r]); render(); };
+    $('ivw-d-print-small').onclick = async () => { await stampForPrint(r); S.printSmall([r]); render(); };
 
     renderActions(r);
   }
@@ -468,15 +489,14 @@
    * must never come out blank. Does not advance the status — that stays an
    * explicit action.
    */
-  function stampForPrint(r) {
+  async function stampForPrint(r) {
+    if (r.preparedAt) return;                       // already stamped
+    // Printing a label IS the moment of preparation, and the printed expiry must
+    // be the STORED one — so move the row to `preparing` server-side and print
+    // what comes back, rather than inventing a time the server never saw.
     if (!r.preparedBy) r.preparedBy = U.state.preparedBy || '';
-    if (!r.preparedAt) {
-      r.preparedAt = new Date().toISOString();
-      r.expiresAt = C.computeExpiry(r.preparedAt, r.drug.stabilityHours);
-      (r.auditLog = r.auditLog || []).push({
-        ts: r.preparedAt, user: r.preparedBy || 'Unknown', action: 'Label printed',
-      });
-    }
+    if (r.status === 'ordered') await transition(r.id, 'pending');
+    if (r.status === 'pending') await transition(r.id, 'preparing');
   }
 
   function renderActions(r) {
@@ -511,46 +531,49 @@
    * PATCH — the server owns expiresAt, the HAD rule and the auditLog append,
    * and resolves two technicians claiming the same dose.
    */
+  /**
+   * Request a transition. The SERVER performs it.
+   *
+   * Every timestamp, `expiresAt`, the HAD rule, the different-checker rule and
+   * the audit line are the server's job — it is the only place that sees all
+   * workstations, so it is the only place those can be consistent. The client
+   * pre-checks purely to grey out a button; it never writes the record.
+   */
   async function transition(id, to) {
     const r = state.rows.find(x => x.id === id);
-    if (!r || C.transitionError(r, to)) return;
+    if (!r) return;
 
-    const nowISO = new Date().toISOString();
-    const user = 'Demo user';
-
-    if (!DEMO) {
-      const res = await fetch('/api/iv-worklist/' + encodeURIComponent(id), {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: to }),
-      });
-      if (!res.ok) { alert('Could not update: ' + res.status); return; }
-      Object.assign(r, await res.json());
-      return render();
-    }
-
-    r.status = to;
-    if (to === 'pending')   r.acceptedAt = nowISO;
-    if (to === 'preparing') {
-      r.preparedAt = nowISO;
-      r.preparedBy = r.preparedBy || U.state.preparedBy || user;
-      r.expiresAt  = C.computeExpiry(nowISO, r.drug.stabilityHours);
-    }
-    if (to === 'checked') {
-      const who = r.checkedBy || U.state.checkedBy;
-      const v = U.canCheck(r.preparedBy, who);
-      if (!v.ok) { alert(v.why); return; }
-      r.checkedAt = nowISO; r.checkedBy = who;
-    }
-    if (to === 'sent') { r.sentAt = nowISO; r.sentBy = U.state.preparedBy || user; }
-    (r.auditLog = r.auditLog || []).push({
-      ts: nowISO,
-      user: (to === 'checked' ? (r.checkedBy || user) : (r.preparedBy || user)),
-      action: { pending: 'Accepted into worklist', preparing: 'Started preparing',
-                checked: 'Checked (second person)', sent: 'Sent to ward',
-                cancelled: 'Cancelled', returned: 'Returned' }[to] || to,
+    const res = await api('/api/iv-worklist/' + encodeURIComponent(id), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: to,
+        date: r.date,
+        user: U.state.preparedBy || U.state.detected || 'Unknown',
+        preparedBy: r.preparedBy || U.state.preparedBy || '',
+        checkedBy:  r.checkedBy  || U.state.checkedBy  || '',
+      }),
     });
+
+    if (!res.ok) {
+      // 409 carries the clinical reason (HAD needs a check, same person, …),
+      // which is exactly what the pharmacist needs to see.
+      const msg = (res.json && res.json.error) || ('HTTP ' + res.status);
+      alert(msg);
+      return;
+    }
+    Object.assign(r, res.json);
     render();
+  }
+
+  /** Persist a hand-typed correction (preparer, checker, note). */
+  async function saveFields(r, fields) {
+    const res = await api('/api/iv-worklist/' + encodeURIComponent(r.id), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: r.date, fields }),
+    });
+    if (res.ok && res.json) Object.assign(r, res.json);
   }
 
   // ── Send report (all wards currently in view) ──────────────────────────────

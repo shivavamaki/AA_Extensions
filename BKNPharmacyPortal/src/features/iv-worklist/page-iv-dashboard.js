@@ -8,7 +8,6 @@
   'use strict';
 
   const C = window.IVWorklistCore;
-  const DEMO = new URLSearchParams(location.search).get('demo') !== '0';
 
   const state = { days: 7, rows: [] };
   const $ = id => document.getElementById(id);
@@ -20,14 +19,10 @@
   };
 
   async function loadRange(days) {
-    if (DEMO) {
-      $('ivd-demo-flag').hidden = false;
-      return window.IVDemoData.buildHistory(new Date(), days);
-    }
     const to = new Date();
     const from = new Date(to.getTime() - days * 86400e3);
     const q = `from=${from.toISOString().slice(0, 10)}&to=${to.toISOString().slice(0, 10)}`;
-    const r = await fetch('/api/iv-worklist/range?' + q);
+    const r = await fetch('/api/iv-worklist?' + q);
     if (!r.ok) throw new Error('range ' + r.status);
     return r.json();
   }

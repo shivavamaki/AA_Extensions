@@ -24,6 +24,9 @@ pharmacy_server/data/logs/
 pharmacy_server/data/report-cache/
 pharmacy_server/data/ext-pkg/
 pharmacy_server/data/med-images/
+# IV Worklist rows carry HN, patient name, ward and room — production data,
+# never committed. Written by the server as data/iv-worklist/YYYY-MM-DD.json.
+pharmacy_server/data/iv-worklist/
 pharmacy_server/data/users.json
 # Monthly shift-roster snapshots the server writes (state-YYYY-MM.json).
 # state.json + bookings.json stay tracked — they were committed long ago

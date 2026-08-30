@@ -115,6 +115,9 @@ import shutil
 import sys
 import socket
 import ssl
+
+# Sibling module: IV Worklist store + CRUD (see iv_worklist.py).
+import iv_worklist
 import tempfile
 import time
 import urllib.error
@@ -155,6 +158,7 @@ REPORT_CACHE_DIR  = DATA_DIR / 'report-cache'   # parsed report rows, 1-day rete
 PATIENTS_DIR      = DATA_DIR / 'patients'
 HMR_DIR           = DATA_DIR / 'hmr'
 HMQ_DIR           = DATA_DIR / 'hmq'
+IV_WORKLIST_DIR   = DATA_DIR / 'iv-worklist'
 OPD_QUEUE_DIR     = DATA_DIR / 'opd-queue'
 LOGS_DIR          = DATA_DIR / 'logs'
 WWW_DIR           = Path(__file__).parent / 'www'
@@ -3845,6 +3849,21 @@ class Handler(BaseHTTPRequestHandler):
 
         # /api/hmq               → ('hmq-list', None, None)  (GET: list, POST: add)
         # /api/hmq/{id}          → ('hmq', id, None)          (PUT: start/complete)
+        # /api/iv-worklist            -> today's rows (or ?date= / ?from=&to=)
+        # /api/iv-worklist/by-visit/X -> one admission (hmr cross-feature hook)
+        # /api/iv-worklist/<id>       -> one dose (PATCH to transition)
+        if len(parts) >= 2 and parts[0] == 'api' and parts[1] == 'iv-worklist':
+            if len(parts) == 2:
+                return 'iv-worklist-list', None, None
+            if parts[2] == 'sync':
+                return 'iv-worklist-sync', None, None
+            if parts[2] == 'by-visit' and len(parts) == 4:
+                return 'iv-worklist-visit', urllib.parse.unquote(parts[3]), None
+            rid = urllib.parse.unquote(parts[2])
+            if not iv_worklist.safe_id(rid):
+                return None, None, None
+            return 'iv-worklist', rid, None
+
         if len(parts) >= 2 and parts[0] == 'api' and parts[1] == 'hmq':
             if len(parts) == 2:
                 return 'hmq-list', None, None
@@ -4149,6 +4168,25 @@ class Handler(BaseHTTPRequestHandler):
             if not from_date and not to_date and not (qs.get('all') or [''])[0]:
                 from_date = to_date = _hmq_today()
             self.send_json(200, load_all_hmq(from_date, to_date))
+        elif rtype == 'iv-worklist-list':
+            qs = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            date  = (qs.get('date') or [None])[0]
+            d_from = (qs.get('from') or [None])[0]
+            d_to   = (qs.get('to')   or [None])[0]
+            if d_from or d_to:
+                rows = iv_worklist.load_range(IV_WORKLIST_DIR.parent, d_from or d_to, d_to or d_from)
+            else:
+                rows = iv_worklist.load_day(IV_WORKLIST_DIR.parent, date or iv_worklist.today_str())
+            self.send_json(200, rows)
+        elif rtype == 'iv-worklist-visit':
+            qs = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            self.send_json(200, iv_worklist.by_visit(
+                IV_WORKLIST_DIR.parent, key, (qs.get('date') or [None])[0]))
+        elif rtype == 'iv-worklist':
+            qs = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            rows = iv_worklist.load_day(IV_WORKLIST_DIR.parent, (qs.get('date') or [None])[0] or iv_worklist.today_str())
+            row = next((r for r in rows if r.get('id') == key), None)
+            self.send_json(200 if row else 404, row or {'error': 'not found'})
         elif rtype == 'opd-queue':
             qs        = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
             from_date = (qs.get('from') or [''])[0]
@@ -4480,6 +4518,33 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(404, {'error': 'Case not found'}); return
             self.send_json(200, {'ok': True, 'case': doc}); return
 
+        elif rtype == 'iv-worklist':
+            # Transition one dose, or correct its free-text fields.
+            #   {'status': 'preparing'|'checked'|..., 'user', 'checkedBy', 'preparedBy'}
+            #   {'fields': {'note': ...}}
+            # The server stamps every timestamp, computes expiresAt and appends
+            # the audit line, so two workstations cannot disagree about a bag.
+            if not isinstance(body, dict):
+                self.send_json(400, {'error': 'Body must be a JSON object'}); return
+            date = (body.get('date') or '').strip() or None
+            if body.get('fields'):
+                row, err = iv_worklist.patch_fields(
+                    IV_WORKLIST_DIR.parent, key, body['fields'], _atomic_write_json, date)
+            else:
+                to = (body.get('status') or '').strip()
+                if to not in iv_worklist.FLOW + iv_worklist.TERMINAL:
+                    self.send_json(400, {'error': 'Unknown status'}); return
+                row, err = iv_worklist.apply_transition(
+                    IV_WORKLIST_DIR.parent, key, to,
+                    (body.get('user') or '').strip() or 'Unknown', _atomic_write_json,
+                    date_str=date,
+                    checked_by=(body.get('checkedBy') or '').strip() or None,
+                    prepared_by=(body.get('preparedBy') or '').strip() or None)
+            if err:
+                # 409: the move is understood but not allowed in this state
+                # (HAD needs a second check, same-person check, illegal jump).
+                self.send_json(404 if err == 'Not found' else 409, {'error': err}); return
+            self.send_json(200, row)
         elif rtype == 'hmq':
             # Advance/revert a queue entry, or backfill its ward/room:
             #   {'action': 'start'|'complete'|'revert-process'|'revert-new', 'user'}
@@ -4652,6 +4717,20 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json(200, {'ok': True, 'case': updated, 'updated': True}); return
             stored = add_opd_queue_case(body)
             self.send_json(201, {'ok': True, 'case': stored}); return
+
+        # ── IV Worklist: upsert today's doses from the extractor ──
+        if rtype == 'iv-worklist-sync':
+            # Idempotent by (visit, order, date, slot): the getter runs all day,
+            # so a dose already on the board keeps its status and audit trail.
+            if not isinstance(body, dict):
+                self.send_json(400, {'error': 'Body must be a JSON object'}); return
+            rows = body.get('rows')
+            if not isinstance(rows, list):
+                self.send_json(400, {'error': 'rows must be a list'}); return
+            res = iv_worklist.sync_doses(
+                IV_WORKLIST_DIR.parent, rows, _atomic_write_json,
+                (body.get('date') or '').strip() or None)
+            self.send_json(200, res); return
 
         # ── HMQ: add a new case to today's queue ────────────────
         if rtype == 'hmq-list':
