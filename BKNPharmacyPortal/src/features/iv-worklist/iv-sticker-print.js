@@ -38,7 +38,7 @@
     return `<div class="label-ipd">
   ${isHad ? '<div class="had-banner">⚠ HIGH ALERT DRUGS ⚠</div>' : ''}
   <div class="top-row"><span>HN: ${esc(r.hn)}</span><span>ROOM: ${esc(r.room)}</span></div>
-  <div class="patient-name">${esc(r.name)}</div>
+  <div class="patient-name">${esc(r.name)}${r.age ? ' · ' + esc(r.age) + ' Y' : ''}</div>
   <div class="drug-name">${esc(d.name)} ${esc(d.dose)}${esc(inStr)}</div>
   ${d.rate ? `<div class="rate-line">${esc(d.rate)}</div>` : ''}
   <div class="info-grid">

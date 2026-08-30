@@ -75,31 +75,63 @@
     return { drug, freq: norm(freq) };
   }
 
-  /** Patient from the eMAR banner. Same heuristic hmq uses. */
-  function readPatient() {
-    const body = document.body ? document.body.innerText : '';
-    const hn = (/\b(48-\d{2}-\d{6,7})\b/.exec(body) || [])[1] || '';
+  /**
+   * Patient from the eMAR banner (`.main-banner` / `patient-emr-banner`).
+   *
+   * Scoped to the banner element rather than scanning document.body: the eMAR
+   * page also lists every ordered drug, the attending doctor and a ward column,
+   * so a whole-page regex picks up whichever match happens to come first. That
+   * is how room once came back as the doctor's name.
+   */
+  function bannerRoot() {
+    return document.querySelector('.main-banner') ||
+           document.querySelector('patient-emr-banner') ||
+           null;
+  }
 
+  function readPatient() {
+    const root = bannerRoot();
+    const scope = root ? norm(root.innerText || root.textContent) : '';
+    // Fall back to the page only when the banner is genuinely absent.
+    const text = scope || norm(document.body ? document.body.innerText : '');
+
+    const hn = (/(\d{2}-\d{2}-\d{6,7})/.exec(text) || [])[1] || '';
+
+    /* Name: the banner renders it as its own node. Prefer the dedicated
+       element, then the Thai/Latin name that sits beside the HN. */
     let name = '';
-    const h4 = document.querySelector('h4.patientbannername');
-    if (h4) {
-      const full = norm(h4.textContent);
-      const m = /\((48-\d{2}-\d{6,7})\)/.exec(full);
+    const nameEl = document.querySelector('h4.patientbannername') ||
+                   (root && root.querySelector('.patientbannername'));
+    if (nameEl) {
+      const full = norm(nameEl.textContent);
+      const m = /\((\d{2}-\d{2}-\d{6,7})\)/.exec(full);
       name = m ? norm(full.slice(0, m.index)) : full;
     }
+    if (!name && hn) {
+      // "ด.ช. ชนิดนัย พมมะจัก 48-24-006947" — the name precedes the HN.
+      const m = new RegExp('([^\n]{3,60}?)\s*' + hn.replace(/-/g, '\-')).exec(text);
+      if (m) name = norm(m[1]).replace(/^.*?(?=[฀-๿]|[A-Z]{2})/, '');
+    }
 
-    /* "Ward 9 / 909" in the banner. The SAME "Ward N / …" shape also precedes
-       the attending doctor ("Ward 9 / สยุมพร …, พญ."), and that one comes
-       first — so a loose \S+ captures the doctor's name as the room, which is
-       what shipped in the first cut. Require a bed-shaped token (2-4 digits, or
-       ICU/CCU/NICU + digits) and take the LAST match, which is the bed row. */
-    const bedRe = /(Ward\s*\d+|ICU\s*\d*|CCU\s*\d*)\s*\/\s*([0-9]{2,4}|(?:ICU|CCU|NICU)[-\s]?\d{1,3})/ig;
-    let m, wr = null;
-    while ((m = bedRe.exec(body))) wr = m;
+    /* Ward / bed. "Ward N / …" appears twice in the banner — once before the
+       attending doctor, once before the bed — so require a bed-shaped token
+       (digits, or ICU/CCU/NICU + digits) and take the LAST match. */
+    const bedRe = /(Ward\s*\d+|ICU\s*\d*|CCU\s*\d*|NICU\s*\d*)\s*\/\s*([0-9]{2,4}|(?:ICU|CCU|NICU)[-\s]?\d{1,3})/ig;
+    let m2, wr = null;
+    while ((m2 = bedRe.exec(text))) wr = m2;
+
+    /* Age / sex and the visit number are on the banner too and are worth
+       carrying: they let the label and the send sheet identify a patient
+       without a second lookup. */
+    const visit = (/(I\d{2}-\d{2}-\d{6,7})/.exec(text) || [])[1] || '';
+    const age = (/(\d{1,3})\s*Y/i.exec(text) || [])[1] || '';
+
     return {
       hn, name,
       ward: wr ? norm(wr[1]) : '',
       room: wr ? norm(wr[2]) : '',
+      visitNo: visit,
+      age,
     };
   }
 
@@ -184,6 +216,7 @@
         patientvisituid: '',                 // eMAR dialog exposes no uid
         orderItemId: `emar:${pt.hn}:${ord.drug}`.slice(0, 120),
         hn: pt.hn, name: pt.name, ward: pt.ward, room: pt.room,
+        visitNo: pt.visitNo, age: pt.age,
         slot,
         date: todayStr(),
         dueAt: `${todayStr()}T${slot}:00+07:00`,
