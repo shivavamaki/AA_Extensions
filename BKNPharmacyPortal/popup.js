@@ -149,6 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initPendingCodeApp();
   initShiftSchedule();
   initHmqDashboard();
+  initIvWorklist();
   initWorkspaceSections();
   initApiTest();
 
@@ -3372,6 +3373,13 @@ function initPendingCodeApp() {
 function initHmqDashboard() {
   document.getElementById('btnHmqDashboard')?.addEventListener('click', () => {
     chrome.tabs.create({ url: chrome.runtime.getURL('src/features/hmq/page-hmq-dashboard.html') });
+  });
+}
+
+// ── IV Worklist (IV preparation queue) ────────────────────────────────────────
+function initIvWorklist() {
+  document.getElementById('btnIvWorklist')?.addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('src/features/iv-worklist/page-iv-worklist.html') });
   });
 }
 

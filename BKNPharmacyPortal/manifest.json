@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.54.0",
+  "version": "3.55.0",
   "version_name": "3.54.0 — Pattern Editor cannot wipe saved overrides; rx collections keep rolling backups",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzP9KPTBvryIH7rdPZ9RDvBKHZI1DzJHiOCfKJUWlupAlSZ1UiIZKIHWLww6kEXdACU1phvahaG6+2aLgzCToNv5YuKmBAoNlDu4Lm7xYUm62gEok3Y21jbZ/NUZJUh1Clz9ruMtQo95QNHoFx4aOHuLdMPJ9HXHlOA7DGVkaxtNbCeaOxkntUvJMtOk3771RD2Dxfl9Ad8kgOOa+cjYrZwDYJ187LZyk3CU/57xqtACPVCaYfj/xVcWOZwdulCd0IUXqLuhKDnp1Y/DNL40o9O5hEvOBJbOZmCqFPvlulpffjybE1xO/hkxPc+/yZRQ3r2Y4Iopjm1eYM9idygLHdwIDAQAB",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
