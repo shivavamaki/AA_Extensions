@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>IV Worklist — Live board</title>
+<link rel="stylesheet" href="page-iv-worklist.css">
+</head>
+<body>
+
+<div class="ivw-header">
+  <span class="ivw-header-icon">💉</span>
+  <div>
+    <div class="ivw-title">IV Worklist — คิวเตรียมยาฉีด
+      <span class="ivw-ver" id="ivw-ver">v0.0.1 alpha</span>
+    </div>
+    <div class="ivw-subtitle">IPD antibiotic &amp; admixture preparation · live across workstations</div>
+  </div>
+  <span class="ivw-demo-flag" id="ivw-demo-flag" hidden>DEMO DATA</span>
+  <div class="ivw-spacer"></div>
+
+  <!-- Who is at the bench. Detected from ArcusAir, always overridable. -->
+  <div class="ivw-userbox">
+    <label for="ivw-prep-by">ผู้เตรียม · Prepared by</label>
+    <input list="ivw-staff-list" id="ivw-prep-by" class="ivw-userinput"
+           placeholder="พิมพ์หรือเลือกชื่อ" autocomplete="off">
+    <datalist id="ivw-staff-list"></datalist>
+  </div>
+  <div class="ivw-userbox">
+    <label for="ivw-check-by">ผู้ตรวจสอบ · Checked by</label>
+    <input list="ivw-staff-list" id="ivw-check-by" class="ivw-userinput"
+           placeholder="ต้องคนละคน" autocomplete="off">
+  </div>
+
+  <button class="ivw-btn" id="ivw-print-report">🖨 Send report</button>
+  <a class="ivw-btn" href="page-iv-dashboard.html">📊 Dashboard</a>
+  <div class="ivw-clock" id="ivw-clock">--:--</div>
+</div>
+
+<!-- Orders raised mid-shift announce themselves rather than appearing quietly. -->
+<div class="ivw-alert" id="ivw-alert" hidden role="status" aria-live="polite">
+  <span class="ivw-alert-icon">🔔</span>
+  <span id="ivw-alert-text">New case</span>
+  <button class="ivw-btn ivw-btn-sm" id="ivw-alert-show">ดู · Show</button>
+  <button class="ivw-alert-x" id="ivw-alert-x" aria-label="Dismiss">×</button>
+</div>
+
+<!-- Completion: overall, then one bar per ward. -->
+<div class="ivw-progress-wrap">
+  <div class="ivw-progress-total">
+    <div class="ivw-ptot-head">
+      <span class="ivw-ptot-label">ความคืบหน้าวันนี้ · Today</span>
+      <span class="ivw-ptot-num" id="ivw-ptot-num">0 / 0</span>
+    </div>
+    <div class="ivw-bar"><div class="ivw-bar-fill" id="ivw-ptot-fill" style="width:0%"></div></div>
+    <div class="ivw-ptot-sub" id="ivw-ptot-sub"></div>
+  </div>
+  <div class="ivw-progress-wards" id="ivw-ward-progress"></div>
+</div>
+
+<div class="ivw-stats">
+  <div class="ivw-stat is-alert">
+    <div class="ivw-stat-num" id="ivw-s-expired">0</div>
+    <div class="ivw-stat-label">หมดอายุ · Expired</div>
+  </div>
+  <div class="ivw-stat is-warn">
+    <div class="ivw-stat-num" id="ivw-s-soon">0</div>
+    <div class="ivw-stat-label">ใกล้หมดอายุ · Expiring</div>
+  </div>
+  <div class="ivw-stat is-alert">
+    <div class="ivw-stat-num" id="ivw-s-late">0</div>
+    <div class="ivw-stat-label">เกินเวลา · Overdue</div>
+  </div>
+  <div class="ivw-stat is-active">
+    <div class="ivw-stat-num" id="ivw-s-active">0</div>
+    <div class="ivw-stat-label">กำลังดำเนินการ · Active</div>
+  </div>
+  <div class="ivw-stat is-done">
+    <div class="ivw-stat-num" id="ivw-s-sent">0</div>
+    <div class="ivw-stat-label">ส่งแล้ววันนี้ · Sent</div>
+  </div>
+  <div class="ivw-stat">
+    <div class="ivw-stat-num" id="ivw-s-had">0</div>
+    <div class="ivw-stat-label">High-alert</div>
+  </div>
+</div>
+
+<!-- Filters: collapsible, 2 columns × 2 rows. -->
+<div class="ivw-filters" id="ivw-filters">
+  <button class="ivw-filters-toggle" id="ivw-filters-toggle" aria-expanded="true"
+          aria-controls="ivw-filter-grid">
+    <span class="ivw-caret">▾</span>
+    <span>ตัวกรอง · Filters</span>
+    <span class="ivw-filter-summary" id="ivw-filter-summary">ทั้งหมด · All</span>
+  </button>
+
+  <div class="ivw-filter-grid" id="ivw-filter-grid">
+    <div class="ivw-frow">
+      <span class="ivw-flabel">⏱ เวลาให้ยา · Admin time</span>
+      <div class="ivw-chips" id="ivw-f-slots"></div>
+    </div>
+    <div class="ivw-frow">
+      <span class="ivw-flabel">🏥 หอผู้ป่วย · Ward</span>
+      <div class="ivw-chips" id="ivw-f-wards"></div>
+    </div>
+    <div class="ivw-frow">
+      <span class="ivw-flabel">💊 ยา · Medicine</span>
+      <div class="ivw-chips" id="ivw-f-drugs"></div>
+    </div>
+    <div class="ivw-frow">
+      <span class="ivw-flabel">📋 สถานะ · Status</span>
+      <div class="ivw-chips" id="ivw-f-status"></div>
+    </div>
+  </div>
+</div>
+
+<div class="ivw-toolbar">
+  <div class="ivw-seg" id="ivw-view">
+    <button data-view="ward" class="is-active">🏥 By ward</button>
+    <button data-view="board">📋 Board</button>
+  </div>
+  <input type="search" class="ivw-search" id="ivw-search"
+         placeholder="ค้นหา HN / ชื่อ / ห้อง / ยา · Search">
+  <button class="ivw-btn" id="ivw-clear">✕ Clear filters</button>
+  <div class="ivw-spacer"></div>
+  <span class="ivw-count" id="ivw-count"></span>
+  <button class="ivw-btn ivw-btn-primary" id="ivw-refresh">↻ Refresh</button>
+</div>
+
+<div class="ivw-wardlist" id="ivw-wardlist"></div>
+<div class="ivw-board" id="ivw-board" hidden></div>
+
+<!-- Detail drawer -->
+<div class="ivw-drawer-back" id="ivw-drawer-back"></div>
+<aside class="ivw-drawer" id="ivw-drawer" aria-hidden="true">
+  <div class="ivw-drawer-head">
+    <div>
+      <div class="ivw-drawer-title" id="ivw-d-drug">—</div>
+      <div class="ivw-subtitle" id="ivw-d-id">—</div>
+    </div>
+    <button class="ivw-drawer-close" id="ivw-d-close" aria-label="Close">×</button>
+  </div>
+
+  <div class="ivw-drawer-body">
+    <dl class="ivw-kv">
+      <dt>ผู้ป่วย · Patient</dt><dd id="ivw-d-pt">—</dd>
+      <dt>HN</dt>                 <dd id="ivw-d-hn">—</dd>
+      <dt>ห้อง · Room</dt>        <dd id="ivw-d-room">—</dd>
+      <dt>เวลาให้ยา · Slot</dt>   <dd id="ivw-d-slot">—</dd>
+      <dt>ขนาด · Dose</dt>        <dd id="ivw-d-dose">—</dd>
+      <dt>ตัวทำละลาย · Diluent</dt><dd id="ivw-d-solvent">—</dd>
+      <dt>ความถี่ · Frequency</dt><dd id="ivw-d-freq">—</dd>
+      <dt>กำหนดให้ · Due</dt>     <dd id="ivw-d-due">—</dd>
+      <dt>เตรียมเมื่อ · Mixed</dt><dd id="ivw-d-prep">—</dd>
+      <dt>หมดอายุ · Expires</dt>  <dd id="ivw-d-exp">—</dd>
+    </dl>
+
+    <!-- Per-dose signing. Defaults come from the header pickers; either can be
+         typed over for this one bag. -->
+    <div class="ivw-section">
+      <h4>ผู้รับผิดชอบ · Signed by</h4>
+      <div class="ivw-signrow">
+        <label for="ivw-d-prep-by">ผู้เตรียม · Prepared</label>
+        <input list="ivw-staff-list" id="ivw-d-prep-by" class="ivw-userinput" placeholder="ชื่อผู้เตรียม">
+      </div>
+      <div class="ivw-signrow">
+        <label for="ivw-d-check-by">ผู้ตรวจสอบ · Checked</label>
+        <input list="ivw-staff-list" id="ivw-d-check-by" class="ivw-userinput" placeholder="ต้องคนละคน">
+      </div>
+      <div class="ivw-signhint" id="ivw-d-signhint"></div>
+    </div>
+
+    <div class="ivw-section">
+      <h4>สติกเกอร์ · Sticker</h4>
+      <div class="ivw-stickerbar">
+        <button class="ivw-btn" id="ivw-d-print-ipd">🏷 IPD label · 8×3.5 cm</button>
+        <button class="ivw-btn" id="ivw-d-print-small">🏷 Small · 4×2 cm</button>
+      </div>
+      <div class="ivw-sticker-preview" id="ivw-d-sticker"></div>
+    </div>
+
+    <div class="ivw-section">
+      <h4>ประวัติ · Audit trail</h4>
+      <ul class="ivw-audit" id="ivw-d-audit"></ul>
+    </div>
+  </div>
+
+  <div class="ivw-blocked" id="ivw-d-blocked"></div>
+  <div class="ivw-actions" id="ivw-d-actions"></div>
+</aside>
+
+<script src="iv-version.js"></script>
+<script src="iv-worklist-core.js"></script>
+<script src="iv-drug-db.js"></script>
+<script src="iv-user.js"></script>
+<script src="iv-sticker-print.js"></script>
+<script src="iv-demo-data.js"></script>
+<script src="page-iv-worklist.js"></script>
+</body>
+</html>

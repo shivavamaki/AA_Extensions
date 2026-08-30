@@ -25,6 +25,10 @@ pharmacy_server/data/report-cache/
 pharmacy_server/data/ext-pkg/
 pharmacy_server/data/med-images/
 pharmacy_server/data/users.json
+# Monthly shift-roster snapshots the server writes (state-YYYY-MM.json).
+# state.json + bookings.json stay tracked — they were committed long ago
+# and the app reads them as reference; the dated snapshots are runtime.
+pharmacy_server/data/schedule/state-*.json
 # (kept explicit for clarity)
 pharmacy_server/data/kpi/
 # Temporary Jasper report downloads
@@ -34,6 +38,12 @@ pharmacy_server/data/temp-reports/
 # patient data (name/HN/ward), never commit.
 /*.xls
 /*.xlsx
+# The IV master worksheets carry the live ward list — real HN, name and
+# room for every inpatient on IV antibiotics. Reference data was extracted
+# from them into src/features/iv-worklist/iv-drug-db.js (drugs only, no
+# patients); the workbooks themselves must never be committed.
+/IV_ATB_Master*.csv
+/IV_ATB_Master*.xlsx
 
 # ── Stale nested copies of the repo (accidental backup/copy-paste) ───────────
 # Real source lives at BKNPharmacyPortal/ and pharmacy_server/. These nested

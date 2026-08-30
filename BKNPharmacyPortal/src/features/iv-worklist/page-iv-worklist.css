@@ -1,0 +1,526 @@
+/* page-iv-worklist.css — IV Worklist board + dashboard.
+ *
+ * Light clinical surface, not a dark ops console: this is read under pharmacy
+ * fluorescents, next to paper, for a whole shift. Warm-grey neutrals (a touch
+ * of blue, never a flat mid-grey) keep it calm, so the one red thing on screen
+ * is always the one that needs a person.
+ *
+ * Each ward carries its own hue on the group rail, room badge and filter chip,
+ * so a pharmacist finds "Ward 8" by colour before reading a word.
+ */
+
+:root {
+  /* Surfaces — warm off-white, cards lifted a little */
+  --ivw-bg:      #f4f6f8;
+  --ivw-panel:   #ffffff;
+  --ivw-panel-2: #eef2f6;
+  --ivw-line:    #d9e1e8;
+  --ivw-line-2:  #eaeff3;
+
+  --ivw-text:  #1a2530;
+  --ivw-dim:   #5d707f;
+  --ivw-faint: #8ba0b0;
+
+  /* Workflow states */
+  --ivw-ordered:   #8697a5;
+  --ivw-pending:   #b8792a;
+  --ivw-preparing: #1f7fc4;
+  --ivw-checked:   #1e8f63;
+  --ivw-sent:      #4a8f6b;
+  --ivw-cancelled: #97a3ad;
+  --ivw-returned:  #7e5cb0;
+
+  /* Semantic — deliberately distinct from the ward hues */
+  --ivw-stat:    #c8352a;
+  --ivw-urgent:  #c9761c;
+  --ivw-expired: #c8352a;
+  --ivw-soon:    #b8792a;
+  --ivw-had:     #b02455;
+
+  --ivw-radius: 10px;
+  --ivw-gap: 12px;
+  --ivw-font: "Sarabun", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --ivw-shadow: 0 1px 2px rgba(26, 37, 48, .06), 0 1px 8px rgba(26, 37, 48, .04);
+  --w: #6b7f8e;               /* ward hue, overridden per [data-ward] */
+}
+
+/* Ward identity — set via data-ward in JS so a ward keeps its colour
+   everywhere it appears. */
+[data-ward="Ward 4"] { --w: #2f8fa8; }
+[data-ward="Ward 5"] { --w: #3a7bc8; }
+[data-ward="Ward 6"] { --w: #6b5fc4; }
+[data-ward="Ward 7"] { --w: #a1568f; }
+[data-ward="Ward 8"] { --w: #b8703a; }
+[data-ward="Ward 9"] { --w: #4f8f3a; }
+[data-ward="ICU"]    { --w: #c8352a; }
+[data-ward="CCU"]    { --w: #a8365c; }
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ivw-bg);
+  color: var(--ivw-text);
+  font: 14px/1.45 var(--ivw-font);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+.ivw-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 20px;
+  background: var(--ivw-panel);
+  border-bottom: 1px solid var(--ivw-line);
+  position: sticky; top: 0; z-index: 20;
+  box-shadow: var(--ivw-shadow);
+}
+.ivw-header-icon { font-size: 24px; }
+.ivw-title { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+.ivw-subtitle { font-size: 12px; color: var(--ivw-dim); margin-top: 1px; }
+.ivw-spacer { flex: 1; }
+
+.ivw-clock {
+  font-variant-numeric: tabular-nums;
+  font-size: 19px; font-weight: 650;
+  padding: 3px 12px;
+  background: var(--ivw-panel-2); border: 1px solid var(--ivw-line);
+  border-radius: var(--ivw-radius);
+}
+
+.ivw-demo-flag {
+  font-size: 11px; font-weight: 700; letter-spacing: .5px;
+  color: #6b4a00; background: #ffe9b8; border: 1px solid #f0d089;
+  padding: 3px 9px; border-radius: 999px;
+}
+
+/* ── Stat strip ──────────────────────────────────────────────────────────── */
+
+.ivw-stats { display: flex; gap: var(--ivw-gap); flex-wrap: wrap; padding: 14px 20px 0; }
+.ivw-stat {
+  flex: 1 1 130px; min-width: 122px;
+  background: var(--ivw-panel); border: 1px solid var(--ivw-line);
+  border-top: 3px solid var(--ivw-faint);
+  border-radius: var(--ivw-radius); padding: 9px 13px;
+  box-shadow: var(--ivw-shadow);
+}
+.ivw-stat-num { font-size: 25px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.ivw-stat-label { font-size: 11px; color: var(--ivw-dim); margin-top: 1px; }
+.ivw-stat.is-alert  { border-top-color: var(--ivw-expired); }
+.ivw-stat.is-warn   { border-top-color: var(--ivw-soon); }
+.ivw-stat.is-active { border-top-color: var(--ivw-preparing); }
+.ivw-stat.is-done   { border-top-color: var(--ivw-checked); }
+.ivw-stat.is-alert .ivw-stat-num { color: var(--ivw-expired); }
+.ivw-stat.is-warn  .ivw-stat-num { color: var(--ivw-soon); }
+
+/* ── Filters ─────────────────────────────────────────────────────────────── */
+
+.ivw-filters {
+  margin: 14px 20px 0; padding: 10px 14px;
+  background: var(--ivw-panel); border: 1px solid var(--ivw-line);
+  border-radius: var(--ivw-radius); box-shadow: var(--ivw-shadow);
+  display: flex; flex-direction: column; gap: 7px;
+}
+.ivw-frow { display: flex; align-items: baseline; gap: 12px; }
+.ivw-flabel {
+  flex: 0 0 158px; font-size: 11px; color: var(--ivw-dim);
+  letter-spacing: .3px; font-weight: 650;
+}
+.ivw-chips { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; }
+.ivw-chip {
+  background: var(--ivw-panel-2); color: var(--ivw-dim);
+  border: 1px solid var(--ivw-line); border-radius: 999px;
+  padding: 3px 11px; font: inherit; font-size: 12px; cursor: pointer;
+  font-variant-numeric: tabular-nums; transition: background .12s, color .12s;
+}
+.ivw-chip:hover { background: #e3eaf0; color: var(--ivw-text); }
+.ivw-chip:focus-visible { outline: 2px solid var(--ivw-preparing); outline-offset: 1px; }
+.ivw-chip.is-on { background: var(--ivw-preparing); border-color: transparent; color: #fff; font-weight: 620; }
+.ivw-chip.is-on[data-ward]   { background: var(--w); }
+.ivw-chip.is-on.is-pending   { background: var(--ivw-pending); }
+.ivw-chip.is-on.is-preparing { background: var(--ivw-preparing); }
+.ivw-chip.is-on.is-checked   { background: var(--ivw-checked); }
+.ivw-chip.is-on.is-sent      { background: var(--ivw-sent); }
+.ivw-chip.is-on.is-ordered   { background: var(--ivw-ordered); }
+.ivw-chip.is-on.is-cancelled { background: var(--ivw-cancelled); }
+.ivw-chip.is-on.is-returned  { background: var(--ivw-returned); }
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+
+.ivw-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 20px; }
+.ivw-seg { display: flex; border: 1px solid var(--ivw-line); border-radius: var(--ivw-radius); overflow: hidden; background: var(--ivw-panel); }
+.ivw-seg button { background: transparent; color: var(--ivw-dim); border: 0; padding: 7px 14px; font: inherit; font-size: 13px; cursor: pointer; }
+.ivw-seg button + button { border-left: 1px solid var(--ivw-line); }
+.ivw-seg button.is-active { background: var(--ivw-preparing); color: #fff; font-weight: 620; }
+.ivw-seg button:hover:not(.is-active) { background: var(--ivw-panel-2); color: var(--ivw-text); }
+
+.ivw-search {
+  background: var(--ivw-panel); border: 1px solid var(--ivw-line);
+  border-radius: var(--ivw-radius); color: var(--ivw-text);
+  padding: 7px 12px; font: inherit; min-width: 230px;
+}
+.ivw-search::placeholder { color: var(--ivw-faint); }
+
+.ivw-btn {
+  background: var(--ivw-panel); color: var(--ivw-text);
+  border: 1px solid var(--ivw-line); border-radius: var(--ivw-radius);
+  padding: 7px 13px; font: inherit; cursor: pointer; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.ivw-btn:hover { background: var(--ivw-panel-2); }
+.ivw-btn:focus-visible { outline: 2px solid var(--ivw-preparing); outline-offset: 1px; }
+.ivw-btn-primary { background: var(--ivw-preparing); color: #fff; border-color: transparent; font-weight: 620; }
+.ivw-btn-primary:hover { background: #1a6ea9; }
+.ivw-btn-sm { padding: 3px 10px; font-size: 12px; }
+.ivw-count { font-size: 12px; color: var(--ivw-dim); font-variant-numeric: tabular-nums; }
+
+/* ── Ward groups ─────────────────────────────────────────────────────────── */
+
+.ivw-wardlist { padding: 0 20px 28px; display: flex; flex-direction: column; gap: 16px; }
+
+.ivw-wardgroup {
+  background: var(--ivw-panel); border: 1px solid var(--ivw-line);
+  border-left: 4px solid var(--w);
+  border-radius: var(--ivw-radius); overflow: hidden;
+  box-shadow: var(--ivw-shadow);
+}
+.ivw-wardgroup > h3 {
+  margin: 0; padding: 9px 14px; font-size: 14px; font-weight: 700;
+  background: var(--ivw-panel-2);
+  border-bottom: 1px solid var(--ivw-line-2);
+  display: flex; align-items: center; gap: 9px;
+}
+.ivw-wardname { color: var(--w); }
+.ivw-col-count {
+  font-variant-numeric: tabular-nums; font-size: 12px; font-weight: 600;
+  background: var(--w); color: #fff; border-radius: 999px; padding: 1px 9px;
+}
+.ivw-wardbar { margin-left: auto; display: flex; gap: 6px; }
+
+.ivw-wardgroup-cards {
+  padding: 12px; display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px;
+}
+
+/* ── Patient card: one card per patient, dose rows inside ────────────────── */
+
+.ivw-pcard {
+  border: 1px solid var(--ivw-line); border-radius: 9px;
+  background: var(--ivw-panel); overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.ivw-pcard.is-expired { border-color: var(--ivw-expired); }
+
+.ivw-pcard-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; background: var(--ivw-panel-2);
+  border-bottom: 1px solid var(--ivw-line-2);
+}
+.ivw-room {
+  font-variant-numeric: tabular-nums; font-weight: 700; font-size: 13px;
+  background: var(--w); color: #fff;
+  border-radius: 6px; padding: 2px 8px; flex-shrink: 0;
+}
+.ivw-pcard-who { flex: 1; min-width: 0; }
+.ivw-pcard-name { font-weight: 640; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ivw-pcard-hn { font-size: 11px; color: var(--ivw-dim); font-variant-numeric: tabular-nums; }
+.ivw-pcard-badges { display: flex; gap: 4px; flex-shrink: 0; }
+
+.ivw-doses { display: flex; flex-direction: column; }
+.ivw-dose {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background .1s;
+}
+.ivw-dose + .ivw-dose { border-top: 1px solid var(--ivw-line-2); }
+.ivw-dose:hover { background: #f2f7fb; }
+.ivw-dose:focus-visible { outline: 2px solid var(--ivw-preparing); outline-offset: -2px; }
+.ivw-dose.is-expired   { background: #fdf0ef; border-left-color: var(--ivw-expired); }
+.ivw-dose.is-stat      { border-left-color: var(--ivw-stat); }
+.ivw-dose.is-done      { opacity: .55; }
+.ivw-dose.is-cancelled { opacity: .45; }
+.ivw-dose.is-cancelled .ivw-dose-drug { text-decoration: line-through; }
+
+.ivw-slot {
+  font-variant-numeric: tabular-nums; font-weight: 700; font-size: 13px;
+  color: var(--ivw-text); background: var(--ivw-panel-2);
+  border: 1px solid var(--ivw-line); border-radius: 5px;
+  padding: 1px 6px; flex-shrink: 0; min-width: 48px; text-align: center;
+}
+.ivw-slot.is-late { background: #fdeceb; border-color: #eab6b2; color: var(--ivw-expired); }
+.ivw-slot.is-due  { background: #fdf4e3; border-color: #e8cf9c; color: #8a5a12; }
+
+.ivw-dose-main { flex: 1; min-width: 0; }
+.ivw-dose-drug { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ivw-dose-sub  { font-size: 11px; color: var(--ivw-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.ivw-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; background: var(--ivw-ordered); }
+.ivw-dot.is-pending   { background: var(--ivw-pending); }
+.ivw-dot.is-preparing { background: var(--ivw-preparing); }
+.ivw-dot.is-checked   { background: var(--ivw-checked); }
+.ivw-dot.is-sent      { background: var(--ivw-sent); }
+.ivw-dot.is-cancelled { background: var(--ivw-cancelled); }
+
+/* ── Tags ────────────────────────────────────────────────────────────────── */
+
+.ivw-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.ivw-tag { font-size: 10px; font-weight: 700; letter-spacing: .3px; padding: 1px 6px; border-radius: 999px; white-space: nowrap; }
+.ivw-tag-had     { background: #fce8ef; color: var(--ivw-had); border: 1px solid #f0c2d3; }
+.ivw-tag-stat    { background: #fdeceb; color: var(--ivw-stat); border: 1px solid #f2c4c0; }
+.ivw-tag-urgent  { background: #fdf2e4; color: var(--ivw-urgent); border: 1px solid #eed6b0; }
+.ivw-tag-expired { background: var(--ivw-expired); color: #fff; }
+.ivw-tag-soon    { background: #fdf4e3; color: #8a5a12; border: 1px solid #e8cf9c; }
+
+.ivw-empty { padding: 18px 12px; text-align: center; color: var(--ivw-faint); font-size: 12px; }
+
+/* ── Kanban board (secondary view) ───────────────────────────────────────── */
+
+.ivw-board {
+  display: grid; grid-template-columns: repeat(5, minmax(215px, 1fr));
+  gap: var(--ivw-gap); padding: 0 20px 28px; align-items: start;
+}
+@media (max-width: 1400px) { .ivw-board { grid-template-columns: repeat(3, minmax(215px, 1fr)); } }
+@media (max-width: 900px)  { .ivw-board { grid-template-columns: 1fr; } }
+
+.ivw-col {
+  background: var(--ivw-panel); border: 1px solid var(--ivw-line);
+  border-radius: var(--ivw-radius); overflow: hidden;
+  display: flex; flex-direction: column; box-shadow: var(--ivw-shadow);
+}
+.ivw-col-head {
+  display: flex; align-items: center; gap: 8px; padding: 9px 12px;
+  background: var(--ivw-panel-2); border-bottom: 1px solid var(--ivw-line-2);
+  border-top: 3px solid var(--ivw-faint); font-weight: 650; font-size: 13px;
+}
+.ivw-col[data-status="pending"]   .ivw-col-head { border-top-color: var(--ivw-pending); }
+.ivw-col[data-status="preparing"] .ivw-col-head { border-top-color: var(--ivw-preparing); }
+.ivw-col[data-status="checked"]   .ivw-col-head { border-top-color: var(--ivw-checked); }
+.ivw-col[data-status="sent"]      .ivw-col-head { border-top-color: var(--ivw-sent); }
+.ivw-col .ivw-col-count { background: var(--ivw-faint); }
+.ivw-col-body { padding: 8px; display: flex; flex-direction: column; gap: 7px; overflow-y: auto; max-height: calc(100vh - 340px); }
+
+.ivw-card {
+  background: var(--ivw-panel); border: 1px solid var(--ivw-line);
+  border-left: 3px solid transparent; border-radius: 7px;
+  padding: 8px 10px; cursor: pointer;
+}
+.ivw-card:hover { border-color: var(--ivw-preparing); }
+.ivw-card.is-stat { border-left-color: var(--ivw-stat); }
+.ivw-card.is-expired { border-left-color: var(--ivw-expired); background: #fdf0ef; }
+.ivw-card-top { display: flex; align-items: baseline; gap: 7px; }
+.ivw-card-drug { font-weight: 640; font-size: 13px; flex: 1; }
+.ivw-card-due { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--ivw-dim); font-weight: 650; }
+.ivw-card-due.is-late { color: var(--ivw-expired); }
+.ivw-card-sub { font-size: 11px; color: var(--ivw-dim); margin-top: 1px; }
+.ivw-card-pt  { font-size: 11px; margin-top: 3px; }
+
+/* ── Drawer ──────────────────────────────────────────────────────────────── */
+
+.ivw-drawer-back {
+  position: fixed; inset: 0; background: rgba(26, 37, 48, .32);
+  opacity: 0; pointer-events: none; transition: opacity .16s; z-index: 40;
+}
+.ivw-drawer-back.is-open { opacity: 1; pointer-events: auto; }
+
+.ivw-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(430px, 94vw);
+  background: var(--ivw-panel); border-left: 1px solid var(--ivw-line);
+  transform: translateX(100%); transition: transform .18s ease;
+  z-index: 41; display: flex; flex-direction: column;
+  box-shadow: -6px 0 24px rgba(26, 37, 48, .12);
+}
+.ivw-drawer.is-open { transform: none; }
+.ivw-drawer-head { padding: 13px 18px; border-bottom: 1px solid var(--ivw-line); display: flex; align-items: flex-start; gap: 10px; }
+.ivw-drawer-title { font-size: 16px; font-weight: 700; }
+.ivw-drawer-close { margin-left: auto; background: none; border: 0; color: var(--ivw-dim); font-size: 22px; cursor: pointer; line-height: 1; padding: 0 4px; }
+.ivw-drawer-close:hover { color: var(--ivw-text); }
+.ivw-drawer-body { padding: 15px 18px; overflow-y: auto; flex: 1; }
+
+.ivw-kv { display: grid; grid-template-columns: 112px 1fr; gap: 5px 12px; font-size: 13px; }
+.ivw-kv dt { color: var(--ivw-dim); }
+.ivw-kv dd { margin: 0; }
+
+.ivw-section { margin-top: 18px; }
+.ivw-section > h4 { margin: 0 0 8px; font-size: 11px; letter-spacing: .5px; color: var(--ivw-dim); font-weight: 700; text-transform: uppercase; }
+
+.ivw-audit { list-style: none; margin: 0; padding: 0; font-size: 12px; }
+.ivw-audit li { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--ivw-line-2); }
+.ivw-audit time { color: var(--ivw-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.ivw-actions { display: flex; gap: 8px; flex-wrap: wrap; padding: 13px 18px; border-top: 1px solid var(--ivw-line); background: var(--ivw-panel-2); }
+.ivw-actions .ivw-btn { flex: 1 1 auto; justify-content: center; }
+.ivw-btn[disabled] { opacity: .45; cursor: not-allowed; }
+.ivw-blocked { font-size: 12px; color: var(--ivw-stat); padding: 0 18px 10px; display: none; }
+.ivw-blocked.is-shown { display: block; }
+
+/* ── Sticker preview ─────────────────────────────────────────────────────── */
+
+.ivw-stickerbar { display: flex; gap: 8px; margin-bottom: 10px; }
+.ivw-sticker-preview {
+  background: #fff; border: 1px solid var(--ivw-line); border-radius: 6px;
+  padding: 6px; display: flex; justify-content: center; overflow: hidden;
+}
+.ivw-sticker-preview .label-ipd {
+  width: 8cm; height: 3.5cm; transform: scale(.82); transform-origin: top center;
+  font-family: 'Sarabun', sans-serif; color: #000; padding: 4px 7px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  box-sizing: border-box; margin-bottom: -.7cm;
+}
+.ivw-sticker-preview .had-banner { background: #c00; color: #fff; text-align: center; font-size: 7.5pt; font-weight: 800; letter-spacing: .12em; padding: 2px 0; margin: -4px -7px 3px; }
+.ivw-sticker-preview .top-row { display: flex; justify-content: space-between; font-size: 8pt; font-weight: 700; }
+.ivw-sticker-preview .patient-name { font-size: 8.5pt; }
+.ivw-sticker-preview .drug-name { font-size: 9.5pt; font-weight: 700; line-height: 1.15; }
+.ivw-sticker-preview .rate-line { font-size: 7.5pt; color: #333; }
+.ivw-sticker-preview .info-grid { display: flex; gap: 0 8px; font-size: 7pt; flex-wrap: wrap; }
+.ivw-sticker-preview .info-row { display: flex; gap: 2px; }
+.ivw-sticker-preview .info-key { color: #555; }
+.ivw-sticker-preview .info-val { font-weight: 600; }
+.ivw-sticker-preview .label-dates { display: flex; gap: 10px; font-size: 7pt; border-top: .5px solid #ccc; padding-top: 2px; }
+.ivw-sticker-preview .label-sig { font-size: 7pt; color: #555; display: flex; justify-content: space-between; }
+.ivw-sticker-preview .label-note { font-size: 6.5pt; border-top: .5px solid #eee; padding-top: 1px; color: #333; }
+.ivw-sticker-preview .label-storage { font-size: 6.5pt; color: #888; text-align: right; }
+
+/* ── Dashboard ───────────────────────────────────────────────────────────── */
+
+.ivd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--ivw-gap); padding: 0 20px 28px; }
+.ivd-panel { background: var(--ivw-panel); border: 1px solid var(--ivw-line); border-radius: var(--ivw-radius); padding: 14px 16px; box-shadow: var(--ivw-shadow); }
+.ivd-panel > h3 { margin: 0 0 12px; font-size: 12px; letter-spacing: .4px; color: var(--ivw-dim); font-weight: 700; }
+
+.ivd-bars { display: flex; align-items: flex-end; gap: 3px; height: 130px; }
+.ivd-bar { flex: 1; background: var(--ivw-preparing); border-radius: 3px 3px 0 0; min-height: 2px; }
+.ivd-bar:hover { background: var(--ivw-checked); }
+.ivd-bar-labels { display: flex; gap: 3px; margin-top: 4px; }
+.ivd-bar-labels span { flex: 1; text-align: center; font-size: 9px; color: var(--ivw-faint); }
+
+.ivd-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ivd-table th, .ivd-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--ivw-line-2); }
+.ivd-table th { color: var(--ivw-dim); font-weight: 650; font-size: 11px; letter-spacing: .3px; }
+.ivd-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.ivd-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--ivw-dim); }
+.ivd-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; }
+
+@media (max-width: 1100px) {
+  .ivw-frow { flex-direction: column; align-items: stretch; gap: 4px; }
+  .ivw-flabel { flex: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+/* ── Alpha badge ─────────────────────────────────────────────────────────── */
+
+.ivw-ver {
+  font-size: 10px; font-weight: 700; letter-spacing: .4px;
+  vertical-align: middle; margin-left: 6px;
+  background: #ffe9b8; color: #6b4a00; border: 1px solid #f0d089;
+  border-radius: 999px; padding: 1px 7px;
+}
+
+/* ── Bench identity ──────────────────────────────────────────────────────── */
+
+.ivw-userbox { display: flex; flex-direction: column; gap: 2px; }
+.ivw-userbox > label { font-size: 10px; color: var(--ivw-dim); font-weight: 650; letter-spacing: .2px; }
+.ivw-userinput {
+  background: var(--ivw-panel); border: 1px solid var(--ivw-line);
+  border-radius: 7px; padding: 5px 9px; font: inherit; font-size: 12px;
+  color: var(--ivw-text); width: 150px;
+}
+.ivw-userinput:focus-visible { outline: 2px solid var(--ivw-preparing); outline-offset: 1px; }
+.ivw-userinput::placeholder { color: var(--ivw-faint); }
+
+.ivw-signrow { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.ivw-signrow > label { flex: 0 0 132px; font-size: 12px; color: var(--ivw-dim); }
+.ivw-signrow .ivw-userinput { flex: 1; width: auto; }
+.ivw-signhint { font-size: 11px; color: var(--ivw-dim); min-height: 15px; }
+.ivw-signhint.is-warn { color: var(--ivw-stat); font-weight: 600; }
+
+/* ── New-case alert ──────────────────────────────────────────────────────── */
+
+.ivw-alert {
+  display: flex; align-items: center; gap: 10px;
+  margin: 12px 20px 0; padding: 9px 14px;
+  background: #e8f4fd; border: 1px solid #a9d3f0; border-left: 4px solid var(--ivw-preparing);
+  border-radius: var(--ivw-radius); font-size: 13px; font-weight: 600;
+  color: #10486e;
+  animation: ivw-slidein .22s ease;
+}
+@keyframes ivw-slidein { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
+.ivw-alert-icon { font-size: 16px; }
+.ivw-alert-x {
+  margin-left: auto; background: none; border: 0; color: #10486e;
+  font-size: 19px; cursor: pointer; line-height: 1; padding: 0 3px;
+}
+.ivw-alert-x:hover { opacity: .65; }
+
+/* ── Progress ────────────────────────────────────────────────────────────── */
+
+.ivw-progress-wrap {
+  display: flex; gap: var(--ivw-gap); align-items: stretch;
+  padding: 14px 20px 0; flex-wrap: wrap;
+}
+.ivw-progress-total {
+  flex: 0 0 260px;
+  background: var(--ivw-panel); border: 1px solid var(--ivw-line);
+  border-radius: var(--ivw-radius); padding: 10px 13px; box-shadow: var(--ivw-shadow);
+}
+.ivw-ptot-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.ivw-ptot-label { font-size: 11px; color: var(--ivw-dim); font-weight: 650; }
+.ivw-ptot-num { margin-left: auto; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ivw-ptot-sub { font-size: 10.5px; color: var(--ivw-dim); margin-top: 5px; }
+
+.ivw-bar { height: 7px; background: var(--ivw-panel-2); border-radius: 999px; overflow: hidden; }
+.ivw-bar-fill {
+  height: 100%; background: var(--ivw-preparing); border-radius: 999px;
+  transition: width .3s ease;
+}
+.ivw-bar-fill.is-complete { background: var(--ivw-checked); }
+
+.ivw-progress-wards {
+  flex: 1; display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px;
+}
+.ivw-wprog {
+  background: var(--ivw-panel); border: 1px solid var(--ivw-line);
+  border-left: 3px solid var(--w);
+  border-radius: 8px; padding: 7px 10px; cursor: pointer;
+  box-shadow: var(--ivw-shadow);
+}
+.ivw-wprog:hover { background: var(--ivw-panel-2); }
+.ivw-wprog-head { display: flex; align-items: baseline; gap: 6px; margin-bottom: 5px; }
+.ivw-wprog-name { font-size: 11.5px; font-weight: 700; color: var(--w); }
+.ivw-wprog-num { margin-left: auto; font-size: 11px; color: var(--ivw-dim); font-variant-numeric: tabular-nums; }
+.ivw-wprog .ivw-bar-fill { background: var(--w); }
+
+/* ── Collapsible 2×2 filter grid ─────────────────────────────────────────── */
+
+.ivw-filters-toggle {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  background: none; border: 0; padding: 0 0 8px; cursor: pointer;
+  font: inherit; font-size: 12px; font-weight: 700; color: var(--ivw-dim);
+  text-align: left;
+}
+.ivw-filters-toggle:focus-visible { outline: 2px solid var(--ivw-preparing); outline-offset: 2px; }
+.ivw-caret { transition: transform .16s; display: inline-block; }
+.ivw-filters.is-collapsed .ivw-caret { transform: rotate(-90deg); }
+.ivw-filter-summary {
+  margin-left: auto; font-weight: 500; color: var(--ivw-faint);
+  font-size: 11.5px; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; max-width: 55%;
+}
+
+/* Two columns × two rows — the four filters always sit in a stable 2×2 block,
+   so nothing reflows as chips appear and the eye learns one layout. */
+.ivw-filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 20px;
+}
+.ivw-filters.is-collapsed .ivw-filter-grid { display: none; }
+.ivw-filter-grid .ivw-frow { flex-direction: column; align-items: stretch; gap: 4px; }
+.ivw-filter-grid .ivw-flabel { flex: none; }
+
+@media (max-width: 900px) {
+  .ivw-filter-grid { grid-template-columns: 1fr; }
+  .ivw-userinput { width: 120px; }
+}

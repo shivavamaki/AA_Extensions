@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>IV Worklist — Dashboard</title>
+<link rel="stylesheet" href="page-iv-worklist.css">
+</head>
+<body>
+
+<div class="ivw-header">
+  <span class="ivw-header-icon">📊</span>
+  <div>
+    <div class="ivw-title">IV Worklist — Dashboard</div>
+    <div class="ivw-subtitle">Workload, turnaround and safety trends · read-only</div>
+  </div>
+  <span class="ivw-demo-flag" id="ivd-demo-flag" hidden>DEMO DATA</span>
+  <div class="ivw-spacer"></div>
+  <a class="ivw-btn" href="page-iv-worklist.html">💉 Live board</a>
+</div>
+
+<div class="ivw-toolbar">
+  <div class="ivw-seg" id="ivd-range">
+    <button data-days="7" class="is-active">Last 7 days</button>
+    <button data-days="14">14 days</button>
+    <button data-days="30">30 days</button>
+  </div>
+  <div class="ivw-spacer"></div>
+  <span class="ivw-subtitle" id="ivd-updated"></span>
+</div>
+
+<div class="ivw-stats">
+  <div class="ivw-stat is-active">
+    <div class="ivw-stat-num" id="ivd-total">0</div>
+    <div class="ivw-stat-label">เตรียมทั้งหมด · Total prepared</div>
+  </div>
+  <div class="ivw-stat is-done">
+    <div class="ivw-stat-num" id="ivd-perday">0</div>
+    <div class="ivw-stat-label">เฉลี่ยต่อวัน · Avg / day</div>
+  </div>
+  <div class="ivw-stat">
+    <div class="ivw-stat-num" id="ivd-turnaround">—</div>
+    <div class="ivw-stat-label">Median turnaround (min)</div>
+  </div>
+  <div class="ivw-stat is-warn">
+    <div class="ivw-stat-num" id="ivd-cancelled">0</div>
+    <div class="ivw-stat-label">ยกเลิก · Cancelled</div>
+  </div>
+  <div class="ivw-stat is-alert">
+    <div class="ivw-stat-num" id="ivd-wasted">0</div>
+    <div class="ivw-stat-label">หมดอายุ/คืน · Expired + returned</div>
+  </div>
+  <div class="ivw-stat">
+    <div class="ivw-stat-num" id="ivd-had">0</div>
+    <div class="ivw-stat-label">High-alert doses</div>
+  </div>
+</div>
+
+<div class="ivd-grid">
+  <div class="ivd-panel">
+    <h3>ปริมาณงานตามชั่วโมง · Workload by hour</h3>
+    <div class="ivd-bars" id="ivd-hours"></div>
+    <div class="ivd-bar-labels" id="ivd-hour-labels"></div>
+    <div class="ivd-legend">
+      <span><i style="background:var(--ivw-preparing)"></i>Doses due in that hour</span>
+    </div>
+  </div>
+
+  <div class="ivd-panel">
+    <h3>ยาที่เตรียมบ่อย · Most prepared drugs</h3>
+    <table class="ivd-table">
+      <thead><tr><th>Drug</th><th class="num">Doses</th><th class="num">HAD</th></tr></thead>
+      <tbody id="ivd-drugs"></tbody>
+    </table>
+  </div>
+
+  <div class="ivd-panel">
+    <h3>ตามหอผู้ป่วย · By ward</h3>
+    <table class="ivd-table">
+      <thead><tr><th>Ward</th><th class="num">Doses</th><th class="num">Share</th></tr></thead>
+      <tbody id="ivd-wards"></tbody>
+    </table>
+  </div>
+
+  <div class="ivd-panel">
+    <h3>แนวโน้มรายวัน · Daily volume</h3>
+    <div class="ivd-bars" id="ivd-daily"></div>
+    <div class="ivd-bar-labels" id="ivd-daily-labels"></div>
+  </div>
+</div>
+
+<script src="iv-worklist-core.js"></script>
+<script src="iv-drug-db.js"></script>
+<script src="iv-demo-data.js"></script>
+<script src="page-iv-dashboard.js"></script>
+</body>
+</html>

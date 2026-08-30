@@ -185,7 +185,18 @@
         "src/features/pattern-editor/page-pattern-editor.js",
         "src/features/hmq/page-hmq-dashboard.html",
         "src/features/hmq/page-hmq-dashboard.js",
-        "src/features/hmq/page-hmq-dashboard.css"
+        "src/features/hmq/page-hmq-dashboard.css",
+        "src/features/iv-worklist/page-iv-worklist.html",
+        "src/features/iv-worklist/page-iv-worklist.js",
+        "src/features/iv-worklist/page-iv-worklist.css",
+        "src/features/iv-worklist/page-iv-dashboard.html",
+        "src/features/iv-worklist/page-iv-dashboard.js",
+        "src/features/iv-worklist/iv-worklist-core.js",
+        "src/features/iv-worklist/iv-demo-data.js",
+        "src/features/iv-worklist/iv-sticker-print.js",
+        "src/features/iv-worklist/iv-version.js",
+        "src/features/iv-worklist/iv-drug-db.js",
+        "src/features/iv-worklist/iv-user.js"
       ],
       "matches": [
         "<all_urls>"
