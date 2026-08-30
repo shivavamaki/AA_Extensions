@@ -88,8 +88,14 @@
       name = m ? norm(full.slice(0, m.index)) : full;
     }
 
-    // "Ward 9 / 909" in the banner — ward and bed in one cell.
-    const wr = /(Ward\s*\d+|ICU\s*\d*|CCU\s*\d*)\s*\/\s*(\S+)/i.exec(body);
+    /* "Ward 9 / 909" in the banner. The SAME "Ward N / …" shape also precedes
+       the attending doctor ("Ward 9 / สยุมพร …, พญ."), and that one comes
+       first — so a loose \S+ captures the doctor's name as the room, which is
+       what shipped in the first cut. Require a bed-shaped token (2-4 digits, or
+       ICU/CCU/NICU + digits) and take the LAST match, which is the bed row. */
+    const bedRe = /(Ward\s*\d+|ICU\s*\d*|CCU\s*\d*)\s*\/\s*([0-9]{2,4}|(?:ICU|CCU|NICU)[-\s]?\d{1,3})/ig;
+    let m, wr = null;
+    while ((m = bedRe.exec(body))) wr = m;
     return {
       hn, name,
       ward: wr ? norm(wr[1]) : '',

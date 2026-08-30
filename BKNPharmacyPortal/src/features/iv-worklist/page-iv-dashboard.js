@@ -10,6 +10,19 @@
   const C = window.IVWorklistCore;
 
   const state = { days: 7, rows: [] };
+
+  /* Must go through BKNData: this page is served from chrome-extension://, so a
+     bare fetch('/api/...') resolves against the EXTENSION origin, not the
+     pharmacy server, and quietly returns nothing. */
+  async function api(path, opts) {
+    if (window.BKNData && window.BKNData.serverFetch) {
+      return window.BKNData.serverFetch(path, opts);
+    }
+    const r = await fetch(path, opts);
+    let json = null;
+    try { json = await r.json(); } catch (_) {}
+    return { ok: r.ok, status: r.status, json };
+  }
   const $ = id => document.getElementById(id);
   const el = (t, c, x) => {
     const n = document.createElement(t);
@@ -22,9 +35,9 @@
     const to = new Date();
     const from = new Date(to.getTime() - days * 86400e3);
     const q = `from=${from.toISOString().slice(0, 10)}&to=${to.toISOString().slice(0, 10)}`;
-    const r = await fetch('/api/iv-worklist?' + q);
+    const r = await api('/api/iv-worklist?' + q);
     if (!r.ok) throw new Error('range ' + r.status);
-    return r.json();
+    return r.json;
   }
 
   // ── Panels ────────────────────────────────────────────────────────────────

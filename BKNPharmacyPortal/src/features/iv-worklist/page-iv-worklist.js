@@ -59,6 +59,11 @@
     if (window.BKNData && window.BKNData.serverFetch) {
       return window.BKNData.serverFetch(path, opts);
     }
+    /* Reached only if shared-data-client.js failed to load. This page is served
+       from chrome-extension://, so a bare fetch('/api/...') resolves against the
+       EXTENSION origin and can never reach the pharmacy server — it 404s and the
+       board renders empty, which looks exactly like "no work today". Say so. */
+    console.warn('[iv-worklist] BKNData missing — cannot reach the pharmacy server');
     const r = await fetch(path, opts);
     let json = null;
     try { json = await r.json(); } catch (_) {}
@@ -204,10 +209,23 @@
     _newIds = fresh;
 
     const first = rows.find(r => r.id === fresh[0]);
+    $('ivw-alert').dataset.kind = 'new';
+    $('ivw-alert-show').hidden = false;
     $('ivw-alert-text').textContent = fresh.length === 1 && first
       ? `เคสใหม่ · New: ${first.room} ${first.drug.name} ${first.slot}:00`
       : `เคสใหม่ · ${fresh.length} new doses arrived`;
     $('ivw-alert').hidden = false;
+  }
+
+  /** Persistent error strip — reuses the new-case alert row. */
+  function setBanner(msg) {
+    const box = $('ivw-alert');
+    if (!box) return;
+    if (!msg) { if (box.dataset.kind === 'err') box.hidden = true; return; }
+    box.dataset.kind = 'err';
+    box.hidden = false;
+    $('ivw-alert-text').textContent = msg;
+    $('ivw-alert-show').hidden = true;
   }
 
   function dismissAlert() { $('ivw-alert').hidden = true; _newIds = []; }
@@ -601,8 +619,18 @@
   }
 
   async function reload() {
-    try { state.rows = await loadRows(); }
-    catch (e) { state.rows = []; console.error('[iv-worklist] load failed', e); }
+    try {
+      state.rows = await loadRows();
+      setBanner('');
+    } catch (e) {
+      state.rows = [];
+      console.error('[iv-worklist] load failed', e);
+      // An empty board and an unreachable server look identical on screen.
+      // Never let a connection failure masquerade as "nothing to prepare".
+      setBanner(window.BKNData
+        ? 'ต่อ Server ไม่ได้ · Cannot reach the pharmacy server — check it is running.'
+        : 'โหลดไม่ครบ · shared-data-client.js did not load; reload the extension.');
+    }
     announceNew(state.rows);
     renderFilters();
     render();
