@@ -12,7 +12,19 @@ pharmacy_server/backup_files/
 # All runtime data under pharmacy_server/data is server-written. New files must
 # never be tracked. Files already committed stay tracked (ignore rules don't
 # untrack); this only stops *new* untracked files from showing up.
-pharmacy_server/data/
+# Ignore the sensitive/runtime subfolders individually rather than all of
+# data/, so the reference collections (rx/, ks/) can be versioned. Listing
+# the parent would stop git descending at all and no !negation could work.
+pharmacy_server/data/patients/
+pharmacy_server/data/hmr/
+pharmacy_server/data/hmq/
+pharmacy_server/data/opd-queue/
+pharmacy_server/data/auth/
+pharmacy_server/data/logs/
+pharmacy_server/data/report-cache/
+pharmacy_server/data/ext-pkg/
+pharmacy_server/data/med-images/
+pharmacy_server/data/users.json
 # (kept explicit for clarity)
 pharmacy_server/data/kpi/
 # Temporary Jasper report downloads
@@ -37,3 +49,11 @@ Pharmacy_Student_game/
 # Windows shortcuts and stray local scratch files
 *.lnk
 pharmacy_server/www/static/0..png
+
+# ── Reference data: safe to version (no patient identifiers) ─────────────────
+# data/ is ignored wholesale above because it is production-written and holds
+# patient records. These two collections are clinical REFERENCE data — drug
+# database, mixing protocols, frequency master, FAQs — maintained by the
+# pharmacists and worth keeping in history. Verified free of HN/name/patientuid.
+# NOTE: never un-ignore patients/, hmr/, hmq/, opd-queue/, temp-reports/, logs/
+# or auth/ — those carry identifiable patient data and credential hashes.

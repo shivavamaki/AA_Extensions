@@ -1,0 +1,1871 @@
+{
+  "source": "Arcus Frequency Master",
+  "url": "https://arcusair.bdms.co.th/#!/ordermanagement/frequencymaster",
+  "scrapedAt": "2026-06-02T08:16:10.496Z",
+  "count": 207,
+  "rows": [
+    {
+      "code": "BID",
+      "name": "2 Time Daily Morning and Evening",
+      "lang": {
+        "EN": "2 Time Daily Morning and Evening",
+        "TH": "วันละ 2 ครั้ง เช้า เย็น"
+      },
+      "scrapedAt": "2026-06-02T07:51:06.924Z"
+    },
+    {
+      "code": "BID PRN",
+      "name": "2 Time Daily Morning and Evening If needed",
+      "lang": {
+        "EN": "2 Time Daily Morning and Evening If needed",
+        "TH": "วันละ 2 ครั้ง เช้า เย็น เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T07:51:14.317Z"
+    },
+    {
+      "code": "8 AM- 6 PM.",
+      "name": "2 Times Daily at 8.00 AM. and 6.00 PM.",
+      "lang": {
+        "EN": "2 Times Daily at 8.00 AM. and 6.00 PM.",
+        "TH": "วันละ 2 ครั้ง เวลา 8.00 น. และ เวลา 18.00 น."
+      },
+      "scrapedAt": "2026-06-02T07:51:17.138Z"
+    },
+    {
+      "code": "8 AM- 8 PM.",
+      "name": "2 Times Daily at 8.00 AM. and 8.00 PM.",
+      "lang": {
+        "EN": "2 Times Daily at 8.00 AM. and 8.00 PM.",
+        "TH": "วันละ 2 ครั้ง เวลา 8.00 น. และ เวลา 20.00 น."
+      },
+      "scrapedAt": "2026-06-02T07:51:24.492Z"
+    },
+    {
+      "code": "BID PC AM HS",
+      "name": "2 Times Daily After Breakfast and Bedtime",
+      "lang": {
+        "EN": "2 Times Daily After Breakfast and Bedtime",
+        "TH": "วันละ 2 ครั้ง หลังอาหาร เช้า ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:51:27.153Z"
+    },
+    {
+      "code": "BID PC",
+      "name": "2 Times Daily After Breakfast and Dinner",
+      "lang": {
+        "EN": "2 Times Daily After Breakfast and Dinner",
+        "TH": "วันละ 2 ครั้ง หลังอาหาร เช้า เย็น"
+      },
+      "scrapedAt": "2026-06-02T07:51:29.119Z"
+    },
+    {
+      "code": "BID PC PRN",
+      "name": "2 Times Daily After Breakfast and Dinner If needed",
+      "lang": {
+        "EN": "2 Times Daily After Breakfast and Dinner If needed",
+        "TH": "วันละ 2 ครั้ง หลังอาหาร เช้า เย็น เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T07:51:31.830Z"
+    },
+    {
+      "code": "BID PC AM.LUN",
+      "name": "2 Times Daily After Breakfast and Lunch",
+      "lang": {
+        "EN": "2 Times Daily After Breakfast and Lunch",
+        "TH": "วันละ 2 ครั้ง หลังอาหาร เช้า กลางวัน"
+      },
+      "scrapedAt": "2026-06-02T07:51:34.672Z"
+    },
+    {
+      "code": "BID PC AM.LUN& 5GM HS",
+      "name": "2 Times Daily After Breakfast, Lunch and 2 Spoons at Bedtime",
+      "lang": {
+        "EN": "2 Times Daily After Breakfast, Lunch and 2 Spoons at Bedtime",
+        "TH": "วันละ 2 ครั้ง หลังอาหาร เช้า กลางวัน และทาน 2 ช้อน ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:51:37.528Z"
+    },
+    {
+      "code": "BID PC PM.HS",
+      "name": "2 Times Daily After Dinner and Bedtime",
+      "lang": {
+        "EN": "2 Times Daily After Dinner and Bedtime",
+        "TH": "วันละ 2 ครั้ง หลังอาหาร เย็น ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:51:40.044Z"
+    },
+    {
+      "code": "BID PC LUN.HS",
+      "name": "2 Times Daily After Lunch and Bedtime",
+      "lang": {
+        "EN": "2 Times Daily After Lunch and Bedtime",
+        "TH": "วันละ 2 ครั้ง หลังอาหาร กลางวัน ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:51:42.483Z"
+    },
+    {
+      "code": "BID PC LUN.PM.",
+      "name": "2 Times Daily After Lunch and Dinner",
+      "lang": {
+        "EN": "2 Times Daily After Lunch and Dinner",
+        "TH": "วันละ 2 ครั้ง หลังอาหาร กลางวัน เย็น"
+      },
+      "scrapedAt": "2026-06-02T07:51:52.008Z"
+    },
+    {
+      "code": "BA WAKE AC PM",
+      "name": "2 Times Daily After Wake up in the Morning and Before Dinner",
+      "lang": {
+        "EN": "2 Times Daily After Wake up in the Morning and Before Dinner",
+        "TH": "วันละ 2 ครั้ง หลังตื่นนอนตอนเช้า และก่อนอาหารเย็น"
+      },
+      "scrapedAt": "2026-06-02T07:52:01.163Z"
+    },
+    {
+      "code": "BID AC AM AFTERNOON",
+      "name": "2 Times Daily Before Breakfast and Afternoon (7 AM, 2 PM)",
+      "lang": {
+        "EN": "2 Times Daily Before Breakfast and Afternoon (7 AM, 2 PM)",
+        "TH": "วันละ 2 ครั้ง  ก่อนอาหารเช้า บ่าย (7 AM, 2 PM)"
+      },
+      "scrapedAt": "2026-06-02T07:52:05.352Z"
+    },
+    {
+      "code": "BA MORNING-BEDTIME",
+      "name": "2 Times Daily Before Breakfast and Bedtime",
+      "lang": {
+        "EN": "2 Times Daily Before Breakfast and Bedtime",
+        "TH": "วันละ 2 ครั้ง ก่อนอาหาร เช้า ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:52:14.856Z"
+    },
+    {
+      "code": "BID AC AM.HS",
+      "name": "2 Times Daily Before Breakfast and Bedtime",
+      "lang": {
+        "EN": "2 Times Daily Before Breakfast and Bedtime",
+        "TH": "วันละ 2 ครั้ง ก่อนอาหาร เช้า ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:52:24.066Z"
+    },
+    {
+      "code": "BID AC",
+      "name": "2 Times Daily Before Breakfast and Dinner",
+      "lang": {
+        "EN": "2 Times Daily Before Breakfast and Dinner",
+        "TH": "วันละ 2 ครั้ง ก่อนอาหาร เช้า เย็น"
+      },
+      "scrapedAt": "2026-06-02T07:52:33.487Z"
+    },
+    {
+      "code": "BA",
+      "name": "2 Times Daily Before Breakfast and Dinner",
+      "lang": {
+        "EN": "2 Times Daily Before Breakfast and Dinner",
+        "TH": "วันละ 2 ครั้ง ก่อนอาหาร เช้า เย็น"
+      },
+      "scrapedAt": "2026-06-02T07:52:42.857Z"
+    },
+    {
+      "code": "BID AC PRN",
+      "name": "2 Times Daily Before Breakfast and Dinner If needed",
+      "lang": {
+        "EN": "2 Times Daily Before Breakfast and Dinner If needed",
+        "TH": "วันละ 2 ครั้ง ก่อนอาหาร เช้า เย็น เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T07:52:52.083Z"
+    },
+    {
+      "code": "BID AC AM LUNCH",
+      "name": "2 Times Daily Before Breakfast and Lunch",
+      "lang": {
+        "EN": "2 Times Daily Before Breakfast and Lunch",
+        "TH": "วันละ 2 ครั้ง ก่อนอาหาร เช้า กลางวัน"
+      },
+      "scrapedAt": "2026-06-02T07:52:55.021Z"
+    },
+    {
+      "code": "BID AC PM.HS",
+      "name": "2 Times Daily Before Dinner and Bedtime",
+      "lang": {
+        "EN": "2 Times Daily Before Dinner and Bedtime",
+        "TH": "วันละ 2 ครั้ง ก่อนอาหาร เย็น ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:52:57.935Z"
+    },
+    {
+      "code": "BID AC LUN HS.",
+      "name": "2 Times Daily Before Lunch and Bedtime",
+      "lang": {
+        "EN": "2 Times Daily Before Lunch and Bedtime",
+        "TH": "วันละ 2 ครั้ง ก่อนอาหาร กลางวัน ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:52:59.922Z"
+    },
+    {
+      "code": "BID AC LUN DINNER",
+      "name": "2 Times Daily Before Lunch and Dinner",
+      "lang": {
+        "EN": "2 Times Daily Before Lunch and Dinner",
+        "TH": "วันละ 2 ครั้ง ก่อนอาหาร กลางวัน เย็น"
+      },
+      "scrapedAt": "2026-06-02T07:53:02.508Z"
+    },
+    {
+      "code": "BID AM.HS",
+      "name": "2 Times Daily Morning and Bedtime",
+      "lang": {
+        "EN": "2 Times Daily Morning and Bedtime",
+        "TH": "วันละ 2 ครั้ง เช้า ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:53:04.486Z"
+    },
+    {
+      "code": "BID AM.HS PRN",
+      "name": "2 Times Daily Morning and Bedtime If needed",
+      "lang": {
+        "EN": "2 Times Daily Morning and Bedtime If needed",
+        "TH": "วันละ 2 ครั้ง เช้า ก่อนนอน   เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T07:53:06.453Z"
+    },
+    {
+      "code": "BD",
+      "name": "2 Times Daily Morning and Evening",
+      "lang": {
+        "EN": "2 Times Daily Morning and Evening",
+        "TH": "วันละ 2 ครั้ง เช้า เย็น"
+      },
+      "scrapedAt": "2026-06-02T07:53:08.468Z"
+    },
+    {
+      "code": "BID AM.NOON",
+      "name": "2 Times Daily Morning and Noon",
+      "lang": {
+        "EN": "2 Times Daily Morning and Noon",
+        "TH": "วันละ 2 ครั้ง เช้า กลางวัน"
+      },
+      "scrapedAt": "2026-06-02T07:53:10.263Z"
+    },
+    {
+      "code": "BID C AM HS",
+      "name": "2 Times Daily With Breakfast and Bedtime",
+      "lang": {
+        "EN": "2 Times Daily With Breakfast and Bedtime",
+        "TH": "วันละ 2 ครั้ง พร้อมอาหาร เช้า ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:53:12.645Z"
+    },
+    {
+      "code": "BID C MEALS",
+      "name": "2 Times Daily With Breakfast and Dinner",
+      "lang": {
+        "EN": "2 Times Daily With Breakfast and Dinner",
+        "TH": "วันละ 2 ครั้ง พร้อมอาหาร เช้า เย็น"
+      },
+      "scrapedAt": "2026-06-02T07:53:14.606Z"
+    },
+    {
+      "code": "BID C AM LUN",
+      "name": "2 Times Daily With Breakfast and Lunch",
+      "lang": {
+        "EN": "2 Times Daily With Breakfast and Lunch",
+        "TH": "วันละ 2 ครั้ง พร้อมอาหาร เช้า กลางวัน"
+      },
+      "scrapedAt": "2026-06-02T07:53:21.040Z"
+    },
+    {
+      "code": "BID C PM HS",
+      "name": "2 Times Daily With Dinner and Bedtime",
+      "lang": {
+        "EN": "2 Times Daily With Dinner and Bedtime",
+        "TH": "วันละ 2 ครั้ง พร้อมอาหาร เย็น ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:53:32.464Z"
+    },
+    {
+      "code": "BID C LUN HS",
+      "name": "2 Times Daily With Lunch and Bedtime",
+      "lang": {
+        "EN": "2 Times Daily With Lunch and Bedtime",
+        "TH": "วันละ 2 ครั้ง พร้อมอาหาร กลางวัน ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:53:37.110Z"
+    },
+    {
+      "code": "BID C LUN PM",
+      "name": "2 Times Daily With Lunch and Dinner",
+      "lang": {
+        "EN": "2 Times Daily With Lunch and Dinner",
+        "TH": "วันละ 2 ครั้ง พร้อมอาหาร กลางวัน เย็น"
+      },
+      "scrapedAt": "2026-06-02T07:53:46.492Z"
+    },
+    {
+      "code": "TID PC MORNING AFTERNOON HS",
+      "name": "3 Times Daily After Breakfast Afternoon and Bed time",
+      "lang": {
+        "EN": "3 Times Daily After Breakfast Afternoon and Bed time",
+        "TH": "วันละ 3 ครั้ง หลังอาหาร เช้า บ่าย ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:53:55.971Z"
+    },
+    {
+      "code": "TID PC AM AFTERNOON HS",
+      "name": "3 Times Daily After Breakfast Afternoon and Bedtime",
+      "lang": {
+        "EN": "3 Times Daily After Breakfast Afternoon and Bedtime",
+        "TH": "วันละ 3 ครั้ง หลังอาหาร เช้า บ่าย ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:53:58.007Z"
+    },
+    {
+      "code": "TID PC AM.PM.HS",
+      "name": "3 Times Daily After Breakfast Dinner and Bedtime",
+      "lang": {
+        "EN": "3 Times Daily After Breakfast Dinner and Bedtime",
+        "TH": "วันละ 3 ครั้ง หลังอาหาร เช้า เย็น ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:54:07.544Z"
+    },
+    {
+      "code": "TID PC AM.LUN.HS",
+      "name": "3 Times Daily After Breakfast Lunch and Bedtime",
+      "lang": {
+        "EN": "3 Times Daily After Breakfast Lunch and Bedtime",
+        "TH": "วันละ 3 ครั้ง หลังอาหาร เช้า กลางวัน ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:54:16.854Z"
+    },
+    {
+      "code": "TID PC",
+      "name": "3 Times Daily After Breakfast Lunch and Dinner",
+      "lang": {
+        "EN": "3 Times Daily After Breakfast Lunch and Dinner",
+        "TH": "วันละ 3 ครั้ง หลังอาหาร เช้า กลางวัน เย็น"
+      },
+      "scrapedAt": "2026-06-02T07:54:23.552Z"
+    },
+    {
+      "code": "TP",
+      "name": "3 Times Daily After Breakfast Lunch and Dinner",
+      "lang": {
+        "EN": "3 Times Daily After Breakfast Lunch and Dinner",
+        "TH": "วันละ 3 ครั้ง หลังอาหาร เช้า กลางวัน เย็น"
+      },
+      "scrapedAt": "2026-06-02T07:54:33.002Z"
+    },
+    {
+      "code": "TID PC2",
+      "name": "3 Times Daily After Breakfast Lunch and Dinner (Away from other medicine 2 hr)",
+      "lang": {
+        "EN": "3 Times Daily After Breakfast Lunch and Dinner (Away from other medicine 2 hr)",
+        "TH": "วันละ 3 ครั้ง หลังอาหาร เช้า กลางวัน เย็น"
+      },
+      "scrapedAt": "2026-06-02T07:54:42.292Z"
+    },
+    {
+      "code": "TID PC PRN",
+      "name": "3 Times Daily After Breakfast Lunch and Dinner If needed",
+      "lang": {
+        "EN": "3 Times Daily After Breakfast Lunch and Dinner If needed",
+        "TH": "วันละ 3 ครั้ง หลังอาหาร เช้า กลางวัน เย็น เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T07:54:51.644Z"
+    },
+    {
+      "code": "TID AC AM AFTERNOON HS",
+      "name": "3 Times Daily Before Breakfast Afternoon and Bedtime",
+      "lang": {
+        "EN": "3 Times Daily Before Breakfast Afternoon and Bedtime",
+        "TH": "วันละ 3 ครั้ง ก่อนอาหาร เช้า บ่าย ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:55:01.103Z"
+    },
+    {
+      "code": "TID AC MORNING AFTERNOON HS",
+      "name": "3 Times Daily Before Breakfast Afternoon and Bedtime",
+      "lang": {
+        "EN": "3 Times Daily Before Breakfast Afternoon and Bedtime",
+        "TH": "วันละ 3 ครั้ง ก่อนอาหาร เช้า บ่าย ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:55:10.372Z"
+    },
+    {
+      "code": "TID AC AM.PM.HS.",
+      "name": "3 Times Daily Before Breakfast Dinner and Bedtime",
+      "lang": {
+        "EN": "3 Times Daily Before Breakfast Dinner and Bedtime",
+        "TH": "วันละ 3 ครั้ง ก่อนอาหาร เช้า เย็น ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:55:16.937Z"
+    },
+    {
+      "code": "TID AC AM.LUN.HS",
+      "name": "3 Times Daily Before Breakfast Lunch and Bedtime",
+      "lang": {
+        "EN": "3 Times Daily Before Breakfast Lunch and Bedtime",
+        "TH": "วันละ 3 ครั้ง ก่อนอาหาร เช้า กลางวัน ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:55:19.669Z"
+    },
+    {
+      "code": "TA",
+      "name": "3 Times Daily Before Breakfast Lunch and Dinner",
+      "lang": {
+        "EN": "3 Times Daily Before Breakfast Lunch and Dinner",
+        "TH": "วันละ 3 ครั้ง ก่อนอาหาร เช้า กลางวัน เย็น"
+      },
+      "scrapedAt": "2026-06-02T07:55:22.674Z"
+    },
+    {
+      "code": "TID AC",
+      "name": "3 Times Daily Before Breakfast Lunch and Dinner",
+      "lang": {
+        "EN": "3 Times Daily Before Breakfast Lunch and Dinner",
+        "TH": "วันละ 3 ครั้ง ก่อนอาหาร เช้า กลางวัน เย็น"
+      },
+      "scrapedAt": "2026-06-02T07:55:24.769Z"
+    },
+    {
+      "code": "TID AC PRN",
+      "name": "3 Times Daily Before Breakfast Lunch and Dinner If needed",
+      "lang": {
+        "EN": "3 Times Daily Before Breakfast Lunch and Dinner If needed",
+        "TH": "วันละ 3 ครั้ง  ก่อนอาหาร เช้า กลางวัน เย็น เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T07:55:27.459Z"
+    },
+    {
+      "code": "TID MORNING AFTERNOON HS",
+      "name": "3 Times Daily Morning Afternoon And Bedtime",
+      "lang": {
+        "EN": "3 Times Daily Morning Afternoon And Bedtime",
+        "TH": "วันละ 3 ครั้ง เช้า บ่าย ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:55:30.602Z"
+    },
+    {
+      "code": "TID AM.PM.HS",
+      "name": "3 Times Daily Morning Evening and Bedtime",
+      "lang": {
+        "EN": "3 Times Daily Morning Evening and Bedtime",
+        "TH": "วันละ 3 ครั้ง เช้า เย็น ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:55:34.547Z"
+    },
+    {
+      "code": "TID",
+      "name": "3 Times Daily Morning Noon Evening",
+      "lang": {
+        "EN": "3 Times Daily Morning Noon Evening",
+        "TH": "วันละ 3 ครั้ง เช้า กลางวัน เย็น"
+      },
+      "scrapedAt": "2026-06-02T07:55:41.163Z"
+    },
+    {
+      "code": "TID PRN",
+      "name": "3 Times Daily Morning Noon Evening If needed",
+      "lang": {
+        "EN": "3 Times Daily Morning Noon Evening If needed",
+        "TH": "วันละ 3 ครั้ง เช้า กลางวัน เย็น เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T07:55:43.756Z"
+    },
+    {
+      "code": "TID AM NOON HS",
+      "name": "3 Times Daily Morning Noon and Bedtime",
+      "lang": {
+        "EN": "3 Times Daily Morning Noon and Bedtime",
+        "TH": "วันละ 3 ครั้ง เช้า กลางวัน ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:55:53.403Z"
+    },
+    {
+      "code": "TID C AM.PM.HS",
+      "name": "3 Times Daily With Breakfast Dinner and Bedtime",
+      "lang": {
+        "EN": "3 Times Daily With Breakfast Dinner and Bedtime",
+        "TH": "วันละ 3 ครั้ง พร้อมอาหาร เช้า เย็น ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:56:02.842Z"
+    },
+    {
+      "code": "TID C AM.LUN.HS",
+      "name": "3 Times Daily With Breakfast Lunch and Bedtime",
+      "lang": {
+        "EN": "3 Times Daily With Breakfast Lunch and Bedtime",
+        "TH": "วันละ 3 ครั้ง พร้อมอาหาร เช้า กลางวัน ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:56:12.123Z"
+    },
+    {
+      "code": "TID C MEALS",
+      "name": "3 Times Daily With Breakfast Lunch and Dinner",
+      "lang": {
+        "EN": "3 Times Daily With Breakfast Lunch and Dinner",
+        "TH": "วันละ 3 ครั้ง พร้อมอาหาร เช้า กลางวัน เย็น"
+      },
+      "scrapedAt": "2026-06-02T07:56:21.429Z"
+    },
+    {
+      "code": "TIWPC AM MWF",
+      "name": "3 Times Weekly After Breakfast on Monday Wednesday Friday",
+      "lang": {
+        "EN": "3 Times Weekly After Breakfast on Monday Wednesday Friday",
+        "TH": "สัปดาห์ละ 3 ครั้ง หลังอาหาร เฉพาะวันจันทร์ พุธ ศุกร์"
+      },
+      "scrapedAt": "2026-06-02T07:56:30.771Z"
+    },
+    {
+      "code": "TIWPC PM MWF",
+      "name": "3 Times Weekly After Dinner on Monday Wednesday Friday",
+      "lang": {
+        "EN": "3 Times Weekly After Dinner on Monday Wednesday Friday",
+        "TH": "สัปดาห์ละ 3 ครั้ง หลังอาหาร เฉพาะวันจันทร์ พุธ ศุกร์"
+      },
+      "scrapedAt": "2026-06-02T07:56:40.043Z"
+    },
+    {
+      "code": "TIWAC AM MWF",
+      "name": "3 Times Weekly Before Breakfast on Monday Wednesday Friday",
+      "lang": {
+        "EN": "3 Times Weekly Before Breakfast on Monday Wednesday Friday",
+        "TH": "สัปดาห์ละ 3 ครั้ง ก่อนอาหาร เฉพาะวันจันทร์ พุธ ศุกร์"
+      },
+      "scrapedAt": "2026-06-02T07:56:49.625Z"
+    },
+    {
+      "code": "TIW M,W,F",
+      "name": "3 Times Weekly On Monday Wednesday and Friday",
+      "lang": {
+        "EN": "3 Times Weekly On Monday Wednesday and Friday",
+        "TH": "สัปดาห์ละ 3 ครั้ง เฉพาะวันจันทร์ พุธ ศุกร์"
+      },
+      "scrapedAt": "2026-06-02T07:56:59.096Z"
+    },
+    {
+      "code": "TIW T, TH, SAT",
+      "name": "3 Times Weekly On Tuesday, Thursday and Saturday",
+      "lang": {
+        "EN": "3 Times Weekly On Tuesday, Thursday and Saturday",
+        "TH": "สัปดาห์ละ 3 ครั้ง เฉพาะวันอังคาร พฤหัส เสาร์"
+      },
+      "scrapedAt": "2026-06-02T07:57:10.687Z"
+    },
+    {
+      "code": "TIW T,TH, SUN",
+      "name": "3 Times Weekly On Tuesday, Thursday and Sunday",
+      "lang": {
+        "EN": "3 Times Weekly On Tuesday, Thursday and Sunday",
+        "TH": "สัปดาห์ละ 3 ครั้ง เฉพาะวันอังคาร พฤหัส อาทิตย์"
+      },
+      "scrapedAt": "2026-06-02T07:57:20.385Z"
+    },
+    {
+      "code": "TIW",
+      "name": "3 Times Weekly1",
+      "lang": {
+        "EN": "3 Times Weekly1",
+        "TH": "สัปดาห์ละ 3 ครั้ง"
+      },
+      "scrapedAt": "2026-06-02T07:57:30.027Z"
+    },
+    {
+      "code": "TID PC LUN.PM.HS",
+      "name": "3 times a daily after Lunch, Dinner and Bedtime",
+      "lang": {
+        "EN": "3 times a daily after Lunch, Dinner and Bedtime",
+        "TH": "วันละ 3 ครั้ง หลังอาหาร กลางวัน เย็น ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:57:39.518Z"
+    },
+    {
+      "code": "QID",
+      "name": "4 Times A Day Morning Noon Evening and Bedtime",
+      "lang": {
+        "EN": "4 Times A Day Morning Noon Evening and Bedtime",
+        "TH": "วันละ 4 ครั้ง เช้า กลางวัน เย็น ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:57:49.340Z"
+    },
+    {
+      "code": "QID PRN",
+      "name": "4 Times A Day Morning Noon Evening and Bedtime If needed",
+      "lang": {
+        "EN": "4 Times A Day Morning Noon Evening and Bedtime If needed",
+        "TH": "วันละ 4 ครั้ง เช้า กลางวัน เย็น ก่อนนอน เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T07:57:59.017Z"
+    },
+    {
+      "code": "QID PC",
+      "name": "4 Times Daily After Breakfast Lunch Dinner and Bedtime",
+      "lang": {
+        "EN": "4 Times Daily After Breakfast Lunch Dinner and Bedtime",
+        "TH": "วันละ 4 ครั้ง หลังอาหาร เช้า กลางวัน เย็น ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:58:08.825Z"
+    },
+    {
+      "code": "QID PC PRN",
+      "name": "4 Times Daily After Breakfast Lunch Dinner and Bedtime If needed",
+      "lang": {
+        "EN": "4 Times Daily After Breakfast Lunch Dinner and Bedtime If needed",
+        "TH": "วันละ 4 ครั้ง หลังอาหาร เช้า กลางวัน เย็น ก่อนนอน เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T07:58:18.540Z"
+    },
+    {
+      "code": "QID AC",
+      "name": "4 Times Daily Before Breakfast Lunch Dinner and Bedtime",
+      "lang": {
+        "EN": "4 Times Daily Before Breakfast Lunch Dinner and Bedtime",
+        "TH": "วันละ 4 ครั้ง ก่อนอาหาร เช้า กลางวัน เย็น ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:58:28.323Z"
+    },
+    {
+      "code": "QID AC PRN",
+      "name": "4 Times Daily Before Breakfast Lunch Dinner and Bedtime If needed",
+      "lang": {
+        "EN": "4 Times Daily Before Breakfast Lunch Dinner and Bedtime If needed",
+        "TH": "วันละ 4 ครั้ง ก่อนอาหาร เช้า กลางวัน เย็น ก่อนนอน เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T07:58:37.994Z"
+    },
+    {
+      "code": "QID C MEALS",
+      "name": "4 Times Daily With Breakfast Lunch Dinner and Bedtime",
+      "lang": {
+        "EN": "4 Times Daily With Breakfast Lunch Dinner and Bedtime",
+        "TH": "วันละ 4 ครั้ง พร้อมอาหาร เช้า กลางวัน เย็น ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T07:58:47.661Z"
+    },
+    {
+      "code": "5 TIMES DAILY (Q 4 HRS)",
+      "name": "5 Times A Day 6AM. 10AM. 2PM. 6PM. 10PM.",
+      "lang": {
+        "EN": "5 Times A Day 6AM. 10AM. 2PM. 6PM. 10PM.",
+        "TH": "วันละ 5 ครั้ง เวลา 6.00, 10.00, 14.00, 18.00, 22.00 น."
+      },
+      "scrapedAt": "2026-06-02T07:58:57.443Z"
+    },
+    {
+      "code": "AS DIRECTED",
+      "name": "As directed",
+      "lang": {
+        "EN": "As directed",
+        "TH": "ตามแพทย์สั่ง"
+      },
+      "scrapedAt": "2026-06-02T07:59:07.374Z"
+    },
+    {
+      "code": "CONTINUOUS",
+      "name": "CONTINUOUS",
+      "lang": {
+        "EN": "CONTINUOUS",
+        "TH": "ต่อเนื่อง"
+      },
+      "scrapedAt": "2026-06-02T07:59:17.026Z"
+    },
+    {
+      "code": "ORS",
+      "name": "Drink Instead of Water",
+      "lang": {
+        "EN": "Drink Instead of Water",
+        "TH": "ดื่มแทนน้ำ"
+      },
+      "scrapedAt": "2026-06-02T07:59:21.624Z"
+    },
+    {
+      "code": "Q 1 HR",
+      "name": "Every 1 Hour",
+      "lang": {
+        "EN": "Every 1 Hour",
+        "TH": "ทุก 1 ชั่วโมง"
+      },
+      "scrapedAt": "2026-06-02T07:59:26.503Z"
+    },
+    {
+      "code": "PRN Q 1 HR",
+      "name": "Every 1 Hour When have Symptom",
+      "lang": {
+        "EN": "Every 1 Hour When have Symptom",
+        "TH": "ทุก 1 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T07:59:31.885Z"
+    },
+    {
+      "code": "MONTHLY",
+      "name": "Every 1 Month",
+      "lang": {
+        "EN": "Every 1 Month",
+        "TH": "เดือนละ 1 ครั้ง"
+      },
+      "scrapedAt": "2026-06-02T07:59:35.964Z"
+    },
+    {
+      "code": "Q 1 MO",
+      "name": "Every 1 Month",
+      "lang": {
+        "EN": "Every 1 Month",
+        "TH": "ทุก 1 เดือน"
+      },
+      "scrapedAt": "2026-06-02T07:59:40.439Z"
+    },
+    {
+      "code": "Q 1 WK",
+      "name": "Every 1 Week",
+      "lang": {
+        "EN": "Every 1 Week",
+        "TH": "ทุก 1 สัปดาห์"
+      },
+      "scrapedAt": "2026-06-02T07:59:49.936Z"
+    },
+    {
+      "code": "PRN Q 1 TO 2 HR",
+      "name": "Every 1-2 Hours When have Symptom",
+      "lang": {
+        "EN": "Every 1-2 Hours When have Symptom",
+        "TH": "ทุก 1-2 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T07:59:59.286Z"
+    },
+    {
+      "code": "Q 10 DAYS",
+      "name": "Every 10 Days",
+      "lang": {
+        "EN": "Every 10 Days",
+        "TH": "ทุก 10 วัน"
+      },
+      "scrapedAt": "2026-06-02T08:00:08.708Z"
+    },
+    {
+      "code": "Q 12 HRS",
+      "name": "Every 12 Hours",
+      "lang": {
+        "EN": "Every 12 Hours",
+        "TH": "ทุก 12 ชั่วโมง"
+      },
+      "scrapedAt": "2026-06-02T08:00:18.188Z"
+    },
+    {
+      "code": "PRN Q 12 HR",
+      "name": "Every 12 Hours When have Symptom",
+      "lang": {
+        "EN": "Every 12 Hours When have Symptom",
+        "TH": "ทุก 12 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:00:27.638Z"
+    },
+    {
+      "code": "Q 12 WKS",
+      "name": "Every 12 Weeks",
+      "lang": {
+        "EN": "Every 12 Weeks",
+        "TH": "ทุก 12 สัปดาห์"
+      },
+      "scrapedAt": "2026-06-02T08:00:36.995Z"
+    },
+    {
+      "code": "Q 15 MIN",
+      "name": "Every 15 Minutes",
+      "lang": {
+        "EN": "Every 15 Minutes",
+        "TH": "ทุก 15 นาที"
+      },
+      "scrapedAt": "2026-06-02T08:00:46.334Z"
+    },
+    {
+      "code": "Q 18 HRS",
+      "name": "Every 18 Hours",
+      "lang": {
+        "EN": "Every 18 Hours",
+        "TH": "ทุก 18 ชั่วโมง"
+      },
+      "scrapedAt": "2026-06-02T08:00:55.742Z"
+    },
+    {
+      "code": "Q 2 HRS",
+      "name": "Every 2 Hours",
+      "lang": {
+        "EN": "Every 2 Hours",
+        "TH": "ทุก 2 ชั่วโมง"
+      },
+      "scrapedAt": "2026-06-02T08:00:59.516Z"
+    },
+    {
+      "code": "PRN Q 2 HRS",
+      "name": "Every 2 Hours When have Symptom",
+      "lang": {
+        "EN": "Every 2 Hours When have Symptom",
+        "TH": "ทุก 2 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:01:09.064Z"
+    },
+    {
+      "code": "Q 2 WK",
+      "name": "Every 2 Weeks",
+      "lang": {
+        "EN": "Every 2 Weeks",
+        "TH": "ทุก 2 สัปดาห์"
+      },
+      "scrapedAt": "2026-06-02T08:01:18.298Z"
+    },
+    {
+      "code": "Q 2 DAY HS PRN CONSTIPATION",
+      "name": "Every 2 days Before Bedtime If Needed For Constipation",
+      "lang": {
+        "EN": "Every 2 days Before Bedtime If Needed For Constipation",
+        "TH": "ทุก 2 วัน เวลาท้องผูก"
+      },
+      "scrapedAt": "2026-06-02T08:01:27.522Z"
+    },
+    {
+      "code": "Q 2-3 HR",
+      "name": "Every 2-3 Hours",
+      "lang": {
+        "EN": "Every 2-3 Hours",
+        "TH": "ทุก 2-3 ชั่วโมง"
+      },
+      "scrapedAt": "2026-06-02T08:01:36.898Z"
+    },
+    {
+      "code": "PRN Q 2-3 HR",
+      "name": "Every 2-3 Hours When have Symptom",
+      "lang": {
+        "EN": "Every 2-3 Hours When have Symptom",
+        "TH": "ทุก 2-3 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:01:46.198Z"
+    },
+    {
+      "code": "PRN Q 2-4 HR",
+      "name": "Every 2-4 Hours When have Symptom",
+      "lang": {
+        "EN": "Every 2-4 Hours When have Symptom",
+        "TH": "ทุก 2-4 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:01:51.719Z"
+    },
+    {
+      "code": "Q 24 HRS",
+      "name": "Every 24 Hours",
+      "lang": {
+        "EN": "Every 24 Hours",
+        "TH": "ทุกๆ 24 ชั่วโมง"
+      },
+      "scrapedAt": "2026-06-02T08:02:00.457Z"
+    },
+    {
+      "code": "PRN Q 24 HR",
+      "name": "Every 24 Hours When have Symptom",
+      "lang": {
+        "EN": "Every 24 Hours When have Symptom",
+        "TH": "ทุก 24 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:02:09.898Z"
+    },
+    {
+      "code": "Q 3 HRS",
+      "name": "Every 3 Hours",
+      "lang": {
+        "EN": "Every 3 Hours",
+        "TH": "ทุก 3 ชั่วโมง"
+      },
+      "scrapedAt": "2026-06-02T08:02:19.248Z"
+    },
+    {
+      "code": "PRN Q 3 HR",
+      "name": "Every 3 Hours When have Symptom",
+      "lang": {
+        "EN": "Every 3 Hours When have Symptom",
+        "TH": "ทุก 3 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:02:21.336Z"
+    },
+    {
+      "code": "Q 3 MO",
+      "name": "Every 3 Months",
+      "lang": {
+        "EN": "Every 3 Months",
+        "TH": "ทุก 3 เดือน"
+      },
+      "scrapedAt": "2026-06-02T08:02:30.840Z"
+    },
+    {
+      "code": "Q 3 WKS",
+      "name": "Every 3 Weeks",
+      "lang": {
+        "EN": "Every 3 Weeks",
+        "TH": "ทุก 3 สัปดาห์"
+      },
+      "scrapedAt": "2026-06-02T08:02:40.049Z"
+    },
+    {
+      "code": "Q 30 MIN",
+      "name": "Every 30 Minutes",
+      "lang": {
+        "EN": "Every 30 Minutes",
+        "TH": "ทุก 30 นาที"
+      },
+      "scrapedAt": "2026-06-02T08:02:49.479Z"
+    },
+    {
+      "code": "Q 36 HRS",
+      "name": "Every 36 Hours",
+      "lang": {
+        "EN": "Every 36 Hours",
+        "TH": "ทุก 36 ชั่วโมง"
+      },
+      "scrapedAt": "2026-06-02T08:02:58.826Z"
+    },
+    {
+      "code": "Q 4 HRS",
+      "name": "Every 4 Hours",
+      "lang": {
+        "EN": "Every 4 Hours",
+        "TH": "ทุก 4 ชั่วโมง"
+      },
+      "scrapedAt": "2026-06-02T08:03:08.226Z"
+    },
+    {
+      "code": "Q 4 HR.PRN.FEVER",
+      "name": "Every 4 Hours If Needed For Fever",
+      "lang": {
+        "EN": "Every 4 Hours If Needed For Fever",
+        "TH": "ทุก 4 ชั่วโมง เวลามีไข้"
+      },
+      "scrapedAt": "2026-06-02T08:03:17.646Z"
+    },
+    {
+      "code": "PRN Q 4 HR",
+      "name": "Every 4 Hours When have Symptom",
+      "lang": {
+        "EN": "Every 4 Hours When have Symptom",
+        "TH": "ทุก 4 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:03:21.502Z"
+    },
+    {
+      "code": "Q 4 WKS",
+      "name": "Every 4 Weeks",
+      "lang": {
+        "EN": "Every 4 Weeks",
+        "TH": "ทุก 4 สัปดาห์"
+      },
+      "scrapedAt": "2026-06-02T08:03:25.076Z"
+    },
+    {
+      "code": "Q 4 HRS (02,06,10,14,18,22)",
+      "name": "Every 4 hours (2AM, 6AM, 10AM, 2PM, 6PM, 10PM)",
+      "lang": {
+        "EN": "Every 4 hours (2AM, 6AM, 10AM, 2PM, 6PM, 10PM)",
+        "TH": "ทุก 4 ชั่วโมง(02.00, 06.00, 10.00, 14.00, 18.00, 22.00 น.)"
+      },
+      "scrapedAt": "2026-06-02T08:03:34.685Z"
+    },
+    {
+      "code": "Q 4-6 HRS PRN.",
+      "name": "Every 4-6 Hours If Needed",
+      "lang": {
+        "EN": "Every 4-6 Hours If Needed",
+        "TH": "ทุก 4-6 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:03:44.036Z"
+    },
+    {
+      "code": "Q 48 HRS",
+      "name": "Every 48 Hours",
+      "lang": {
+        "EN": "Every 48 Hours",
+        "TH": "ทุก 48 ชั่วโมง"
+      },
+      "scrapedAt": "2026-06-02T08:03:50.895Z"
+    },
+    {
+      "code": "PRN Q 48 HRS",
+      "name": "Every 48 Hours When have Symptom",
+      "lang": {
+        "EN": "Every 48 Hours When have Symptom",
+        "TH": "ทุก 48 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:03:54.886Z"
+    },
+    {
+      "code": "Q 5 MIN",
+      "name": "Every 5 Minute",
+      "lang": {
+        "EN": "Every 5 Minute",
+        "TH": "ทุก 5 นาที"
+      },
+      "scrapedAt": "2026-06-02T08:03:57.827Z"
+    },
+    {
+      "code": "Q 6 HRS PRN",
+      "name": "Every 6 Hours If Needed",
+      "lang": {
+        "EN": "Every 6 Hours If Needed",
+        "TH": "ทุก 6 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:04:00.380Z"
+    },
+    {
+      "code": "Q 6 HR.PRN.ABDOMINAL",
+      "name": "Every 6 Hours If Needed For Abdominal Pain",
+      "lang": {
+        "EN": "Every 6 Hours If Needed For Abdominal Pain",
+        "TH": "ทุก 6 ชั่วโมง เวลาปวดท้อง"
+      },
+      "scrapedAt": "2026-06-02T08:04:03.474Z"
+    },
+    {
+      "code": "Q 6 HR.PRN.COUGH",
+      "name": "Every 6 Hours If Needed For Cough",
+      "lang": {
+        "EN": "Every 6 Hours If Needed For Cough",
+        "TH": "ทุก 6 ชั่วโมง เวลาไอ"
+      },
+      "scrapedAt": "2026-06-02T08:04:13.108Z"
+    },
+    {
+      "code": "Q 6 HR.PRN.DIZZINESS",
+      "name": "Every 6 Hours If Needed For Dizziness",
+      "lang": {
+        "EN": "Every 6 Hours If Needed For Dizziness",
+        "TH": "ทุก 6 ชั่วโมง เวลาวิงเวียน"
+      },
+      "scrapedAt": "2026-06-02T08:04:22.509Z"
+    },
+    {
+      "code": "Q 6 HR.PRN.FEVER",
+      "name": "Every 6 Hours If Needed For Fever",
+      "lang": {
+        "EN": "Every 6 Hours If Needed For Fever",
+        "TH": "ทุก 6 ชั่วโมง เวลามีไข้"
+      },
+      "scrapedAt": "2026-06-02T08:04:31.872Z"
+    },
+    {
+      "code": "Q 6 HR.PRN.HEADACHE",
+      "name": "Every 6 Hours If Needed For Headache",
+      "lang": {
+        "EN": "Every 6 Hours If Needed For Headache",
+        "TH": "ทุก 6 ชั่วโมง เวลาปวดศีรษะ"
+      },
+      "scrapedAt": "2026-06-02T08:04:41.139Z"
+    },
+    {
+      "code": "Q 6 HR.PRN.HI.FEVER",
+      "name": "Every 6 Hours If Needed For High Fever",
+      "lang": {
+        "EN": "Every 6 Hours If Needed For High Fever",
+        "TH": "ทุก 6 ชั่วโมง เวลามีไข้สูง"
+      },
+      "scrapedAt": "2026-06-02T08:04:45.416Z"
+    },
+    {
+      "code": "Q 6 HR.PRN.NASAL CONGESTION",
+      "name": "Every 6 Hours If Needed For Nasal Congestant",
+      "lang": {
+        "EN": "Every 6 Hours If Needed For Nasal Congestant",
+        "TH": "ทุก 6 ชั่วโมง เวลามีอาการคัดจมูก"
+      },
+      "scrapedAt": "2026-06-02T08:04:48.816Z"
+    },
+    {
+      "code": "Q 6 HR.PRN.VOMITING",
+      "name": "Every 6 Hours If Needed For Nausea or Vomiting",
+      "lang": {
+        "EN": "Every 6 Hours If Needed For Nausea or Vomiting",
+        "TH": "ทุก 6 ชั่วโมง เวลาคลื่นไส้ อาเจียน"
+      },
+      "scrapedAt": "2026-06-02T08:04:52.185Z"
+    },
+    {
+      "code": "Q 6 HR.PRN.PAIN",
+      "name": "Every 6 Hours If Needed For Pain",
+      "lang": {
+        "EN": "Every 6 Hours If Needed For Pain",
+        "TH": "ทุก 6 ชั่วโมง เวลาปวด"
+      },
+      "scrapedAt": "2026-06-02T08:04:59.227Z"
+    },
+    {
+      "code": "Q 6 HR.PRN.PAINORFEVER",
+      "name": "Every 6 Hours If Needed For Pain or Fever",
+      "lang": {
+        "EN": "Every 6 Hours If Needed For Pain or Fever",
+        "TH": "ทุก 6  ชั่วโมง เวลาปวด หรือ มีไข้"
+      },
+      "scrapedAt": "2026-06-02T08:05:02.494Z"
+    },
+    {
+      "code": "Q 6 HR.PRN.SEVERE.PAIN",
+      "name": "Every 6 Hours If Needed For Severe Pain",
+      "lang": {
+        "EN": "Every 6 Hours If Needed For Severe Pain",
+        "TH": "ทุก 6 ชั่วโมง เวลาปวดมาก"
+      },
+      "scrapedAt": "2026-06-02T08:05:06.848Z"
+    },
+    {
+      "code": "Q 6 HR.PRN.ITCHING",
+      "name": "Every 6 Hours If Needed For itching",
+      "lang": {
+        "EN": "Every 6 Hours If Needed For itching",
+        "TH": "ทุก 6 ชั่วโมง เวลาคัน"
+      },
+      "scrapedAt": "2026-06-02T08:05:10.185Z"
+    },
+    {
+      "code": "PRN Q 6 HR BREAK THROUGH PAIN",
+      "name": "Every 6 Hours If Needed for Break Through Pain",
+      "lang": {
+        "EN": "Every 6 Hours If Needed for Break Through Pain",
+        "TH": "ทุก 6 ชั่วโมง เวลามีอาการปวด"
+      },
+      "scrapedAt": "2026-06-02T08:05:12.978Z"
+    },
+    {
+      "code": "PRN Q 6 HR.",
+      "name": "Every 6 Hours When have Symptom",
+      "lang": {
+        "EN": "Every 6 Hours When have Symptom",
+        "TH": "ทุก 6 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:05:15.782Z"
+    },
+    {
+      "code": "Q 6 HRS",
+      "name": "Every 6 hours",
+      "lang": {
+        "EN": "Every 6 hours",
+        "TH": "ทุก 6 ชั่วโมง"
+      },
+      "scrapedAt": "2026-06-02T08:05:18.712Z"
+    },
+    {
+      "code": "Q 6 HR",
+      "name": "Every 6 hours (0,6,12,18)",
+      "lang": {
+        "EN": "Every 6 hours (0,6,12,18)",
+        "TH": "ทุก 6 ชั่วโมง(00.00, 06.00, 12.00, 18.00 น.)"
+      },
+      "scrapedAt": "2026-06-02T08:05:21.741Z"
+    },
+    {
+      "code": "Q 6 HRS (03,09,15, 21)",
+      "name": "Every 6 hours (3AM, 9AM, 3PM, 9PM)",
+      "lang": {
+        "EN": "Every 6 hours (3AM, 9AM, 3PM, 9PM)",
+        "TH": "ทุก 6 ชั่วโมง(03.00, 09.00, 15.00, 21.00 น.)"
+      },
+      "scrapedAt": "2026-06-02T08:05:24.982Z"
+    },
+    {
+      "code": "Q 6 HRS (06,12,18, 24)",
+      "name": "Every 6 hours (6AM, 12PM, 6PM, 12AM)",
+      "lang": {
+        "EN": "Every 6 hours (6AM, 12PM, 6PM, 12AM)",
+        "TH": "ทุก 6 ชั่วโมง(06.00, 12.00, 18.00, 24.00 น.)"
+      },
+      "scrapedAt": "2026-06-02T08:05:34.629Z"
+    },
+    {
+      "code": "Q 6 MONTH",
+      "name": "Every 6 months",
+      "lang": {
+        "EN": "Every 6 months",
+        "TH": "ทุก 6 เดือน"
+      },
+      "scrapedAt": "2026-06-02T08:05:44.071Z"
+    },
+    {
+      "code": "PRN Q 6-8 HR",
+      "name": "Every 6-8 Hours When have Symptom",
+      "lang": {
+        "EN": "Every 6-8 Hours When have Symptom",
+        "TH": "ทุก 6-8 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:05:53.374Z"
+    },
+    {
+      "code": "Q 72 HRS",
+      "name": "Every 72 Hours",
+      "lang": {
+        "EN": "Every 72 Hours",
+        "TH": "ทุก 72 ชั่วโมง"
+      },
+      "scrapedAt": "2026-06-02T08:06:02.594Z"
+    },
+    {
+      "code": "Q 8 HRS",
+      "name": "Every 8 Hours",
+      "lang": {
+        "EN": "Every 8 Hours",
+        "TH": "ทุก 8 ชั่วโมง"
+      },
+      "scrapedAt": "2026-06-02T08:06:11.900Z"
+    },
+    {
+      "code": "Q 8 HRS (06,14,22)",
+      "name": "Every 8 Hours (6AM, 2PM, 10PM)",
+      "lang": {
+        "EN": "Every 8 Hours (6AM, 2PM, 10PM)",
+        "TH": "ทุก 8 ชั่วโมง"
+      },
+      "scrapedAt": "2026-06-02T08:06:21.373Z"
+    },
+    {
+      "code": "Q 8 HR.PRN.DIZZINESS",
+      "name": "Every 8 Hours If Needed For Dizziness",
+      "lang": {
+        "EN": "Every 8 Hours If Needed For Dizziness",
+        "TH": "ทุก 8 ชั่วโมง เวลาวิงเวียน"
+      },
+      "scrapedAt": "2026-06-02T08:06:30.827Z"
+    },
+    {
+      "code": "Q 8 HR.PRN.FEVER",
+      "name": "Every 8 Hours If Needed For Fever",
+      "lang": {
+        "EN": "Every 8 Hours If Needed For Fever",
+        "TH": "ทุก 8 ชั่วโมง เวลามีไข้"
+      },
+      "scrapedAt": "2026-06-02T08:06:40.278Z"
+    },
+    {
+      "code": "Q 8 HR.PRN.VOMITING",
+      "name": "Every 8 Hours If Needed For Nausea or Vomiting",
+      "lang": {
+        "EN": "Every 8 Hours If Needed For Nausea or Vomiting",
+        "TH": "ทุก 8 ชั่วโมง เวลาคลื่นไส้ อาเจียน"
+      },
+      "scrapedAt": "2026-06-02T08:06:49.892Z"
+    },
+    {
+      "code": "Q 8 HR.PRN.PAIN",
+      "name": "Every 8 Hours If Needed For Pain",
+      "lang": {
+        "EN": "Every 8 Hours If Needed For Pain",
+        "TH": "ทุก 8 ชั่วโมง เวลาปวด"
+      },
+      "scrapedAt": "2026-06-02T08:06:59.365Z"
+    },
+    {
+      "code": "Q 8 HR.PRN.PAINORFEVER",
+      "name": "Every 8 Hours If Needed For Pain or Fever",
+      "lang": {
+        "EN": "Every 8 Hours If Needed For Pain or Fever",
+        "TH": "ทุก 8 ชั่วโมง เวลาปวด หรือ มีไข้"
+      },
+      "scrapedAt": "2026-06-02T08:07:08.798Z"
+    },
+    {
+      "code": "PRN Q 8 HR",
+      "name": "Every 8 Hours When have Symptom",
+      "lang": {
+        "EN": "Every 8 Hours When have Symptom",
+        "TH": "ทุก 8 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:07:18.287Z"
+    },
+    {
+      "code": "Q 96 HRS",
+      "name": "Every 96 Hours",
+      "lang": {
+        "EN": "Every 96 Hours",
+        "TH": "ทุก 96  ชั่วโมง"
+      },
+      "scrapedAt": "2026-06-02T08:07:22.791Z"
+    },
+    {
+      "code": "EVENPC BREAKFAST",
+      "name": "Every Even Day After Breakfast",
+      "lang": {
+        "EN": "Every Even Day After Breakfast",
+        "TH": "ทุกวันคู่ วันละ 1 ครั้ง หลังอาหารเช้า"
+      },
+      "scrapedAt": "2026-06-02T08:07:32.479Z"
+    },
+    {
+      "code": "EVENHS",
+      "name": "Every Even Day At Bedtime",
+      "lang": {
+        "EN": "Every Even Day At Bedtime",
+        "TH": "ทุกวันคู่ ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T08:07:41.816Z"
+    },
+    {
+      "code": "EVENAC BREAKFAST",
+      "name": "Every Even Day Before Breakfast",
+      "lang": {
+        "EN": "Every Even Day Before Breakfast",
+        "TH": "ทุกวันคู่ ก่อนอาหารเช้า"
+      },
+      "scrapedAt": "2026-06-02T08:07:51.068Z"
+    },
+    {
+      "code": "ODDPC BREAKFAST",
+      "name": "Every Odd Day After Breakfast",
+      "lang": {
+        "EN": "Every Odd Day After Breakfast",
+        "TH": "ทุกวันคี่ หลังอาหารเช้า"
+      },
+      "scrapedAt": "2026-06-02T08:08:00.741Z"
+    },
+    {
+      "code": "AD (ODD DAY) HS",
+      "name": "Every Odd Day At Bedtime",
+      "lang": {
+        "EN": "Every Odd Day At Bedtime",
+        "TH": "ทุกวันคี่ ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T08:08:10.237Z"
+    },
+    {
+      "code": "AD (ODD DAY) AC BREAKFAST",
+      "name": "Every Odd Day Before Breakfast",
+      "lang": {
+        "EN": "Every Odd Day Before Breakfast",
+        "TH": "ทุกวันคี่ ก่อนอาหารเช้า"
+      },
+      "scrapedAt": "2026-06-02T08:08:19.674Z"
+    },
+    {
+      "code": "ODDHS",
+      "name": "Every Odd Day at Bed Time",
+      "lang": {
+        "EN": "Every Odd Day at Bed Time",
+        "TH": "ทุกวันคี่ ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T08:08:29.287Z"
+    },
+    {
+      "code": "EOD",
+      "name": "Every Other Day",
+      "lang": {
+        "EN": "Every Other Day",
+        "TH": "วันเว้นวัน"
+      },
+      "scrapedAt": "2026-06-02T08:08:38.819Z"
+    },
+    {
+      "code": "AD(ALTERNATELY)",
+      "name": "Every Other Day",
+      "lang": {
+        "EN": "Every Other Day",
+        "TH": "วันเว้นวัน"
+      },
+      "scrapedAt": "2026-06-02T08:08:50.707Z"
+    },
+    {
+      "code": "EOD PC AM",
+      "name": "Every Other Day After Breakfast",
+      "lang": {
+        "EN": "Every Other Day After Breakfast",
+        "TH": "วันเว้นวัน หลังอาหารเช้า"
+      },
+      "scrapedAt": "2026-06-02T08:08:56.611Z"
+    },
+    {
+      "code": "AD PC AM",
+      "name": "Every Other Day After Breakfast",
+      "lang": {
+        "EN": "Every Other Day After Breakfast",
+        "TH": "วันเว้นวัน หลังอาหารเช้า"
+      },
+      "scrapedAt": "2026-06-02T08:09:02.098Z"
+    },
+    {
+      "code": "EOD PC DINNER",
+      "name": "Every Other Day After Dinner",
+      "lang": {
+        "EN": "Every Other Day After Dinner",
+        "TH": "วันเว้นวัน หลังอาหารเย็น"
+      },
+      "scrapedAt": "2026-06-02T08:09:11.899Z"
+    },
+    {
+      "code": "AD PC DINNER",
+      "name": "Every Other Day After Dinner",
+      "lang": {
+        "EN": "Every Other Day After Dinner",
+        "TH": "วันเว้นวัน หลังอาหารเย็น"
+      },
+      "scrapedAt": "2026-06-02T08:09:20.907Z"
+    },
+    {
+      "code": "AD PC LUNCH",
+      "name": "Every Other Day After Lunch",
+      "lang": {
+        "EN": "Every Other Day After Lunch",
+        "TH": "วันเว้นวัน หลังอาหารกลางวัน"
+      },
+      "scrapedAt": "2026-06-02T08:09:26.442Z"
+    },
+    {
+      "code": "EOD PC LUNCH",
+      "name": "Every Other Day After Lunch",
+      "lang": {
+        "EN": "Every Other Day After Lunch",
+        "TH": "วันเว้นวัน หลังอาหารกลางวัน"
+      },
+      "scrapedAt": "2026-06-02T08:09:29.847Z"
+    },
+    {
+      "code": "AD HS",
+      "name": "Every Other Day At Bed Time",
+      "lang": {
+        "EN": "Every Other Day At Bed Time",
+        "TH": "วันเว้นวัน ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T08:09:35.874Z"
+    },
+    {
+      "code": "EOD HS",
+      "name": "Every Other Day At Bed Time",
+      "lang": {
+        "EN": "Every Other Day At Bed Time",
+        "TH": "วันเว้นวัน ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T08:09:38.911Z"
+    },
+    {
+      "code": "AD AC AM",
+      "name": "Every Other Day Before Breakfast",
+      "lang": {
+        "EN": "Every Other Day Before Breakfast",
+        "TH": "วันเว้นวัน ก่อนอาหารเช้า"
+      },
+      "scrapedAt": "2026-06-02T08:09:48.865Z"
+    },
+    {
+      "code": "EOD AC AM",
+      "name": "Every Other Day Before Breakfast",
+      "lang": {
+        "EN": "Every Other Day Before Breakfast",
+        "TH": "วันเว้นวัน ก่อนอาหารเช้า"
+      },
+      "scrapedAt": "2026-06-02T08:09:58.222Z"
+    },
+    {
+      "code": "PRN Q 1/2 HOUR",
+      "name": "Every half An Hour When have Symptom",
+      "lang": {
+        "EN": "Every half An Hour When have Symptom",
+        "TH": "ทุกครึ่งชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:10:07.598Z"
+    },
+    {
+      "code": "PRN Q 1 HR FOR HEADACHE",
+      "name": "For Early Headache can repeat in An Hour If not better.",
+      "lang": {
+        "EN": "For Early Headache can repeat in An Hour If not better.",
+        "TH": "prn:เวลามีอาการปวดศีรษะ ถ้าไม่ดีขึ้นซ้ำได้อีก 1 เม็ดใน 1 ชม."
+      },
+      "scrapedAt": "2026-06-02T08:10:17.427Z"
+    },
+    {
+      "code": "IVCONT",
+      "name": "IV Continuous",
+      "lang": {
+        "EN": "IV Continuous",
+        "TH": "ให้ทางหลอดเลือดดำต่อเนื่อง"
+      },
+      "scrapedAt": "2026-06-02T08:10:26.868Z"
+    },
+    {
+      "code": "INTRA-OP",
+      "name": "Intra-Op",
+      "lang": {
+        "EN": "Intra-Op",
+        "TH": "ระหว่างผ่าตัด"
+      },
+      "scrapedAt": "2026-06-02T08:10:36.160Z"
+    },
+    {
+      "code": "ONCE",
+      "name": "Once",
+      "lang": {
+        "EN": "Once",
+        "TH": "ครั้งเดียว"
+      },
+      "scrapedAt": "2026-06-02T08:10:38.396Z"
+    },
+    {
+      "code": "WEEKLY",
+      "name": "Once A Week",
+      "lang": {
+        "EN": "Once A Week",
+        "TH": "สัปดาห์ละ 1 ครั้ง"
+      },
+      "scrapedAt": "2026-06-02T08:10:41.457Z"
+    },
+    {
+      "code": "ONCE DAILY",
+      "name": "Once Daily",
+      "lang": {
+        "EN": "Once Daily",
+        "TH": "วันละ 1 ครั้ง"
+      },
+      "scrapedAt": "2026-06-02T08:10:46.267Z"
+    },
+    {
+      "code": "PRN ONCE DAILY",
+      "name": "Once Daily When have Symptom",
+      "lang": {
+        "EN": "Once Daily When have Symptom",
+        "TH": "วันละ 1 ครั้ง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:10:56.235Z"
+    },
+    {
+      "code": "OD PC BREAKFAST",
+      "name": "Once Daily After Breakfast",
+      "lang": {
+        "EN": "Once Daily After Breakfast",
+        "TH": "วันละ 1 ครั้ง หลังอาหารเช้า"
+      },
+      "scrapedAt": "2026-06-02T08:10:59.369Z"
+    },
+    {
+      "code": "OD PC DINNER",
+      "name": "Once Daily After Dinner",
+      "lang": {
+        "EN": "Once Daily After Dinner",
+        "TH": "วันละ 1 ครั้ง หลังอาหารเย็น"
+      },
+      "scrapedAt": "2026-06-02T08:11:09.152Z"
+    },
+    {
+      "code": "OD PC LUNCH",
+      "name": "Once Daily After Lunch",
+      "lang": {
+        "EN": "Once Daily After Lunch",
+        "TH": "วันละ 1 ครั้ง หลังอาหารกลางวัน"
+      },
+      "scrapedAt": "2026-06-02T08:11:18.738Z"
+    },
+    {
+      "code": "OD PC PRN",
+      "name": "Once Daily After Meal If needed",
+      "lang": {
+        "EN": "Once Daily After Meal If needed",
+        "TH": "วันละ 1 ครั้ง หลังอาหาร เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:11:25.248Z"
+    },
+    {
+      "code": "OD WAKE UP",
+      "name": "Once Daily After Wake up in the Morning",
+      "lang": {
+        "EN": "Once Daily After Wake up in the Morning",
+        "TH": "วันละ 1 ครั้ง หลังตื่นนอนตอนเช้าทันที"
+      },
+      "scrapedAt": "2026-06-02T08:11:31.434Z"
+    },
+    {
+      "code": "HS.PRN",
+      "name": "Once Daily At Bed Time When have symptom",
+      "lang": {
+        "EN": "Once Daily At Bed Time When have symptom",
+        "TH": "วันละ 1 ครั้ง ก่อนนอน  เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:11:41.205Z"
+    },
+    {
+      "code": "HS.PRN SLEEP",
+      "name": "Once Daily At Bed Time If Needed For Insomnia",
+      "lang": {
+        "EN": "Once Daily At Bed Time If Needed For Insomnia",
+        "TH": "วันละ 1 ครั้ง ก่อนนอน เวลานอนไม่หลับ"
+      },
+      "scrapedAt": "2026-06-02T08:11:50.822Z"
+    },
+    {
+      "code": "HS.PRN CONSTIPATION",
+      "name": "Once Daily At Bed Time If Needed For Constipation",
+      "lang": {
+        "EN": "Once Daily At Bed Time If Needed For Constipation",
+        "TH": "วันละ 1 ครั้ง ก่อนนอน เวลาท้องผูก"
+      },
+      "scrapedAt": "2026-06-02T08:12:00.238Z"
+    },
+    {
+      "code": "HS.PRN ITCHY",
+      "name": "Once Daily At Bed Time If Needed For Itching",
+      "lang": {
+        "EN": "Once Daily At Bed Time If Needed For Itching",
+        "TH": "วันละ 1 ครั้ง ก่อนนอน เวลาคัน"
+      },
+      "scrapedAt": "2026-06-02T08:12:09.810Z"
+    },
+    {
+      "code": "HS",
+      "name": "Once Daily Before Bedtime",
+      "lang": {
+        "EN": "Once Daily Before Bedtime",
+        "TH": "วันละ 1 ครั้ง ก่อนนอน"
+      },
+      "scrapedAt": "2026-06-02T08:12:12.337Z"
+    },
+    {
+      "code": "OD AC BREAKFAST",
+      "name": "Once Daily Before Breakfast",
+      "lang": {
+        "EN": "Once Daily Before Breakfast",
+        "TH": "วันละ 1 ครั้ง ก่อนอาหารเช้า"
+      },
+      "scrapedAt": "2026-06-02T08:12:17.057Z"
+    },
+    {
+      "code": "OD AC DINNER",
+      "name": "Once Daily Before Dinner",
+      "lang": {
+        "EN": "Once Daily Before Dinner",
+        "TH": "วันละ 1 ครั้ง ก่อนอาหารเย็น"
+      },
+      "scrapedAt": "2026-06-02T08:12:26.840Z"
+    },
+    {
+      "code": "OD AC LUNCH",
+      "name": "Once Daily Before Lunch",
+      "lang": {
+        "EN": "Once Daily Before Lunch",
+        "TH": "วันละ 1 ครั้ง ก่อนอาหารกลางวัน"
+      },
+      "scrapedAt": "2026-06-02T08:12:36.556Z"
+    },
+    {
+      "code": "OD MORNING",
+      "name": "Once Daily Morning",
+      "lang": {
+        "EN": "Once Daily Morning",
+        "TH": "วันละ 1 ครั้ง เช้า"
+      },
+      "scrapedAt": "2026-06-02T08:12:46.090Z"
+    },
+    {
+      "code": "OD PRN",
+      "name": "Once Daily When Have Symptom",
+      "lang": {
+        "EN": "Once Daily When Have Symptom",
+        "TH": "วันละ 1 ครั้ง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:12:54.174Z"
+    },
+    {
+      "code": "OD WITH BREAKFAST",
+      "name": "Once Daily With Breakfast",
+      "lang": {
+        "EN": "Once Daily With Breakfast",
+        "TH": "วันละ 1 ครั้ง พร้อมอาหารเช้า"
+      },
+      "scrapedAt": "2026-06-02T08:13:04.076Z"
+    },
+    {
+      "code": "OD WITH DINNER",
+      "name": "Once Daily With Dinner",
+      "lang": {
+        "EN": "Once Daily With Dinner",
+        "TH": "วันละ 1 ครั้ง พร้อมอาหารเย็น"
+      },
+      "scrapedAt": "2026-06-02T08:13:13.658Z"
+    },
+    {
+      "code": "OD WITH LUNCH",
+      "name": "Once Daily With Lunch",
+      "lang": {
+        "EN": "Once Daily With Lunch",
+        "TH": "วันละ 1 ครั้ง พร้อมอาหารกลางวัน"
+      },
+      "scrapedAt": "2026-06-02T08:13:23.192Z"
+    },
+    {
+      "code": "OD PM.",
+      "name": "Once Daily in the Evening",
+      "lang": {
+        "EN": "Once Daily in the Evening",
+        "TH": "วันละ 1 ครั้ง เย็น"
+      },
+      "scrapedAt": "2026-06-02T08:13:29.754Z"
+    },
+    {
+      "code": "OD AM",
+      "name": "Once Daily in the Morning",
+      "lang": {
+        "EN": "Once Daily in the Morning",
+        "TH": "วันละ 1 ครั้ง ตอนเช้า"
+      },
+      "scrapedAt": "2026-06-02T08:13:32.934Z"
+    },
+    {
+      "code": "Q 1 YEAR",
+      "name": "Once a year1",
+      "lang": {
+        "EN": "Once a year1",
+        "TH": "ปีละครั้ง"
+      },
+      "scrapedAt": "2026-06-02T08:13:41.578Z"
+    },
+    {
+      "code": "SL2",
+      "name": "Repeat Every 5 Minutes",
+      "lang": {
+        "EN": "Repeat Every 5 Minutes",
+        "TH": "ซ้ำได้ทุก 5 นาที ถ้าอม 3 เม็ดแล้วไม่ดีขึ้น ให้รีบมาโรงพยาบาล"
+      },
+      "scrapedAt": "2026-06-02T08:13:51.503Z"
+    },
+    {
+      "code": "2029",
+      "name": "Sublingual",
+      "lang": {
+        "EN": "Sublingual",
+        "TH": "อมใต้ลิ้น"
+      },
+      "scrapedAt": "2026-06-02T08:14:00.853Z"
+    },
+    {
+      "code": "469",
+      "name": "TIWAC AM MWF",
+      "lang": {
+        "EN": "TIWAC AM MWF",
+        "TH": "สัปดาห์ละ 3 ครั้ง (จันทร์ พุธ ศุกร์) ก่อนอาหารเช้า"
+      },
+      "scrapedAt": "2026-06-02T08:14:10.586Z"
+    },
+    {
+      "code": "STAT",
+      "name": "Take Now",
+      "lang": {
+        "EN": "Take Now",
+        "TH": "รับประทานทันที"
+      },
+      "scrapedAt": "2026-06-02T08:14:18.126Z"
+    },
+    {
+      "code": "STAT (SIRS/SEPSIS)",
+      "name": "Take now (SIRS/Sepsis)",
+      "lang": {
+        "EN": "Take now (SIRS/Sepsis)",
+        "TH": "ทันที (SIRS/SEPSIS)"
+      },
+      "scrapedAt": "2026-06-02T08:14:28.016Z"
+    },
+    {
+      "code": "BIW M,F",
+      "name": "Twice A Week on Monday and Friday",
+      "lang": {
+        "EN": "Twice A Week on Monday and Friday",
+        "TH": "สัปดาห์ละ 2 ครั้ง เฉพาะวันจันทร์ ศุกร์"
+      },
+      "scrapedAt": "2026-06-02T08:14:37.429Z"
+    },
+    {
+      "code": "BIW M,TH",
+      "name": "Twice A Week on Monday and Thursday",
+      "lang": {
+        "EN": "Twice A Week on Monday and Thursday",
+        "TH": "สัปดาห์ละ 2 ครั้ง เฉพาะวันจันทร์ และ พฤหัส"
+      },
+      "scrapedAt": "2026-06-02T08:14:40.961Z"
+    },
+    {
+      "code": "BIW T,TH",
+      "name": "Twice A Week on Tuesday And Thrusday",
+      "lang": {
+        "EN": "Twice A Week on Tuesday And Thrusday",
+        "TH": "สัปดาห์ละ 2 ครั้ง เฉพาะวันอังคาร และ พฤหัส"
+      },
+      "scrapedAt": "2026-06-02T08:14:50.689Z"
+    },
+    {
+      "code": "BIW W,SUN",
+      "name": "Twice A Week on Wednesday and Sunday",
+      "lang": {
+        "EN": "Twice A Week on Wednesday and Sunday",
+        "TH": "สัปดาห์ละ 2 ครั้ง เฉพาะวันพุธ อาทิตย์"
+      },
+      "scrapedAt": "2026-06-02T08:14:59.996Z"
+    },
+    {
+      "code": "BIW W,SAT",
+      "name": "Twice A Week on Wednesday and Saturday",
+      "lang": {
+        "EN": "Twice A Week on Wednesday and Saturday",
+        "TH": "สัปดาห์ละ 2 ครั้ง เฉพาะวันพุธ เสาร์"
+      },
+      "scrapedAt": "2026-06-02T08:15:09.465Z"
+    },
+    {
+      "code": "Q 3 HRS EXACTIME",
+      "name": "every 3 HRS (0,3,6,9,12,15,18,21)",
+      "lang": {
+        "EN": "every 3 HRS (0,3,6,9,12,15,18,21)",
+        "TH": "ทุก 3 ชั่วโมง"
+      },
+      "scrapedAt": "2026-06-02T08:15:19.253Z"
+    },
+    {
+      "code": "PRN Q 5 MIN",
+      "name": "prn q 5 min chest pain sublingual",
+      "lang": {
+        "EN": "prn q 5 min chest pain sublingual",
+        "TH": "ทุก 5 นาที เวลาเจ็บหน้าอก (อมใต้ลิ้น)"
+      },
+      "scrapedAt": "2026-06-02T08:15:26.031Z"
+    },
+    {
+      "code": "PRN Q2HR",
+      "name": "prn q2hr",
+      "lang": {
+        "EN": "prn q2hr",
+        "TH": "ทุก 2 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:15:35.784Z"
+    },
+    {
+      "code": "PRN Q4HR",
+      "name": "prn q4hr",
+      "lang": {
+        "EN": "prn q4hr",
+        "TH": "ทุก 4 ชั่วโมง เวลามีอาการ"
+      },
+      "scrapedAt": "2026-06-02T08:15:41.584Z"
+    },
+    {
+      "code": "LAUN",
+      "name": "มื้อกลางวัน",
+      "lang": {
+        "EN": "มื้อกลางวัน",
+        "TH": "มื้อกลางวัน"
+      },
+      "scrapedAt": "2026-06-02T08:15:51.337Z"
+    },
+    {
+      "code": "BREAK",
+      "name": "มื้อเช้า",
+      "lang": {
+        "EN": "มื้อเช้า",
+        "TH": "มื้อเช้า"
+      },
+      "scrapedAt": "2026-06-02T08:15:57.436Z"
+    },
+    {
+      "code": "DINNE",
+      "name": "มื้อเย็น",
+      "lang": {
+        "EN": "มื้อเย็น",
+        "TH": "มื้อเย็น"
+      },
+      "scrapedAt": "2026-06-02T08:16:04.503Z"
+    }
+  ]
+}
