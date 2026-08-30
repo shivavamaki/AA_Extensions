@@ -1,0 +1,74 @@
+/* iv-worklist.css — the bits injected INTO ArcusAir (eMAR dialog).
+ *
+ * Separate from page-iv-worklist.css: that styles our own pages, this lives
+ * inside someone else's Angular Material app. Everything here is scoped to
+ * .ivq-* and sets its own font/colour explicitly, because ArcusAir's global
+ * styles would otherwise inherit into the button and make it look like a
+ * misrendered part of their dialog.
+ */
+
+.ivq-add-btn {
+  /* !important throughout: md-dialog's own button rules are broad and would
+     otherwise win on specificity inside the dialog. */
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  margin: 0 !important;
+  padding: 4px 12px !important;
+
+  font-family: "Sarabun", "Segoe UI", system-ui, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  text-transform: none !important;   /* md buttons uppercase everything */
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+
+  color: #fff !important;
+  background: #1f7fc4 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 1px 3px rgba(26, 37, 48, .22) !important;
+  cursor: pointer !important;
+  min-width: 0 !important;
+  height: auto !important;
+}
+.ivq-add-btn:hover:not([disabled]) { background: #1a6ea9 !important; }
+.ivq-add-btn:focus-visible {
+  outline: 2px solid #0d4f7d !important;
+  outline-offset: 2px !important;
+}
+.ivq-add-btn[disabled] { opacity: .55 !important; cursor: default !important; }
+
+/* Toast — fixed to the viewport so it is readable over the modal backdrop,
+   which sits at a high z-index of ArcusAir's choosing. */
+#ivq-toast {
+  position: fixed !important;
+  right: 20px !important;
+  bottom: 20px !important;
+  z-index: 2147483647 !important;      /* above md-dialog and its backdrop */
+
+  max-width: 380px !important;
+  padding: 11px 16px !important;
+  border-radius: 10px !important;
+  border-left: 4px solid #1f7fc4 !important;
+
+  font-family: "Sarabun", "Segoe UI", system-ui, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.45 !important;
+  color: #14212b !important;
+  background: #fff !important;
+  box-shadow: 0 4px 20px rgba(20, 33, 43, .26) !important;
+
+  opacity: 0;
+  transition: opacity .2s ease !important;
+  pointer-events: none !important;
+}
+#ivq-toast.is-ok   { border-left-color: #1e8f63 !important; }
+#ivq-toast.is-warn { border-left-color: #b8792a !important; background: #fff8e9 !important; }
+#ivq-toast.is-err  { border-left-color: #c8352a !important; background: #fdf0ef !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  #ivq-toast { transition: none !important; }
+}

@@ -273,3 +273,45 @@ and none of that is reproduced.
 > window instead (Meropenem 4 h, Pip/Tazo 12 h, most cephalosporins 24 h). Those
 > numbers drive the expiry badge staff will act on, so confirm them with the IV
 > team before go-live.
+
+---
+
+## Adding a case from ArcusAir (eMAR)
+
+`content-iv-worklist.js` injects a **💉 Add to IV Queue** button into ArcusAir's
+*Edit Administration Timings* dialog, beside the drug-name heading. It runs on
+the eMAR route only (`#!/inpatient/emar`), checked on every injection attempt
+because ArcusAir is a hash-router SPA and never reloads the page.
+
+That dialog is the right anchor because it is the one moment where ArcusAir has
+already stated the drug, the frequency **and** the exact administration time the
+ward intends — so nothing has to be re-fetched or guessed.
+
+| Read | From |
+|---|---|
+| Drug | the `<h4>` heading |
+| Frequency | `Frequency : …` in the dialog text |
+| Slot | the **last** `.tp` time-picker (`input.tp_hr` + `input.tp_min`) |
+| HN / name / ward / room | the eMAR patient banner |
+
+**The last picker, deliberately.** The dialog shows the current timing first and
+*New Timings* second; when a nurse is moving a dose, the second one is the round
+the bag actually has to make. Values are read from the live `.value` property,
+not `getAttribute('value')`, or an edited time is missed.
+
+**Duplicate guard.** Before adding, it GETs today's rows and matches on
+HN + drug + slot. If the dose is already queued it says so — with the row's
+current status — instead of silently creating a second bag for the same round.
+Matching is on those three fields rather than an order id because the eMAR
+dialog never exposes the order-item uid.
+
+The generated `#dialogContent_NNN` id changes on every open, so it is never used
+as a selector; injection is anchored structurally and re-runs from a debounced
+MutationObserver plus a light poll, the same way `content-hmr.js` handles
+ArcusAir dialogs that Angular rebuilds.
+
+> Rows added this way carry `orderItemId: "emar:<hn>:<drug>"` and no
+> `patientvisituid` — the dialog exposes neither. When the getter lands, its
+> rows will key on the real order uid, so a dose added by hand and the same dose
+> synced from the API will **not** deduplicate against each other. Worth
+> resolving before both paths run together.
