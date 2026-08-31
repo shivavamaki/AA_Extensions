@@ -135,11 +135,24 @@
       name = m ? norm(full.slice(0, m.index)) : full;
     }
     if (!name && hn) {
-      // "ด.ช. ชนิดนัย พมมะจัก 48-24-006947" — the name precedes the HN.
+      /* "ด.ช. ชนิดนัย พมมะจัก 48-24-006947" — the name precedes the HN.
+         Split on the HN and take the tail of the left side, rather than
+         building a RegExp from a string: writing '\s' inside a normal string
+         collapses to a bare "s", which silently turned the character class
+         into [...s] and the separator into "s*". */
       for (const t of textSources()) {
-        const m = new RegExp('([\u0E00-\u0E7FA-Za-z.\s]{3,60}?)\s*' +
-                             hn.replace(/-/g, '\-')).exec(t);
-        if (m) { name = norm(m[1]); break; }
+        const i = t.indexOf(hn);
+        if (i <= 0) continue;
+        const before = t.slice(0, i).trim();
+        // Last run of Thai/Latin name characters immediately before the HN.
+        /* The banner repeats the romanised name twice before the Thai one
+           ("MASTER X MASTER X ด.ช. …"). Prefer the trailing Thai form —
+           it is what ward staff read on a label — and fall back to the
+           last romanised run only when there is no Thai. */
+        const th = /([฀-๿][฀-๿.\s]{2,59})$/.exec(before);
+        const la = /([A-Za-z][A-Za-z.\s]{2,59})$/.exec(before);
+        const hit = th || la;
+        if (hit) { name = norm(hit[1]); break; }
       }
     }
 
@@ -232,7 +245,7 @@
       console.log(LOG, 'no HN. banner found:', !!bannerRoot(),
                   '| text sources:', srcs.length);
       srcs.forEach((t, i) => console.log(LOG, '  [' + i + ']', t.slice(0, 200)));
-      return toast(seen
+      return toast(bannerRoot()
         ? 'อ่าน HN ไม่ได้ · Found the banner but could not read the HN — please report this'
         : 'ไม่พบแถบข้อมูลผู้ป่วย · No patient banner on this page', 'err');
     }
