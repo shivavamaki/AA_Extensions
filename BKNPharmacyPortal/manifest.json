@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.56.3",
-  "version_name": "3.56.3 — IV Worklist: fix \"No patient HN\" when the eMAR timings dialog is open",
+  "version": "3.56.4",
+  "version_name": "3.56.4 — IV Worklist: read patient details from every candidate element, not just the banner",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzP9KPTBvryIH7rdPZ9RDvBKHZI1DzJHiOCfKJUWlupAlSZ1UiIZKIHWLww6kEXdACU1phvahaG6+2aLgzCToNv5YuKmBAoNlDu4Lm7xYUm62gEok3Y21jbZ/NUZJUh1Clz9ruMtQo95QNHoFx4aOHuLdMPJ9HXHlOA7DGVkaxtNbCeaOxkntUvJMtOk3771RD2Dxfl9Ad8kgOOa+cjYrZwDYJ187LZyk3CU/57xqtACPVCaYfj/xVcWOZwdulCd0IUXqLuhKDnp1Y/DNL40o9O5hEvOBJbOZmCqFPvlulpffjybE1xO/hkxPc+/yZRQ3r2Y4Iopjm1eYM9idygLHdwIDAQAB",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [

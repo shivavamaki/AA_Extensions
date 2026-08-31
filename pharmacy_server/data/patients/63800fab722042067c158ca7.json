@@ -1,7 +1,7 @@
 {
   "patientuid": "63800fab722042067c158ca7",
   "createdAt": "2026-05-31T09:21:59.594038+00:00",
-  "updatedAt": "2026-05-31T09:21:59.594038+00:00",
+  "updatedAt": "2026-08-30T13:16:45.055560+00:00",
   "context": {
     "patientuid": "63800fab722042067c158ca7",
     "patientvisituid": "6a1a7e21cc214c06281b2054",
@@ -13,5 +13,63 @@
     "customMedications": [],
     "adrEvent": null
   },
-  "medicationCache": {}
+  "medicationCache": {},
+  "captures": {
+    "6a940ee7320417bb7a512438": {
+      "medreconcileSnapshot": {
+        "medreconcile": {
+          "_id": "6a94196a8cbc2d325fc45d70",
+          "medicationitems": [],
+          "reviewedbyusers": [],
+          "reconciledbyusers": [],
+          "medreconcilelogs": [
+            {
+              "modifiedat": "2026-08-30T11:52:10.947Z",
+              "useruid": "6544b8f517165c057bf313f4",
+              "comments": "PREPARED",
+              "_id": "6a94196a8cbc2d325fc45d71"
+            }
+          ],
+          "patientuid": "63800fab722042067c158ca7",
+          "patientvisituid": "6a940ee7320417bb7a512438",
+          "reconciledate": "2026-08-30T11:52:10.947Z",
+          "userdepartmentuid": {
+            "_id": "5b857e32136d276403482bc9",
+            "name": "Pediatrics"
+          },
+          "preparedbyuseruid": {
+            "_id": "6544b8f517165c057bf313f4",
+            "name": "อรยา จุลแดง, RN.",
+            "iscareprovider": false,
+            "licensenumber": ""
+          },
+          "comments": null,
+          "isactive": true,
+          "createdby": "6544b8f517165c057bf313f4",
+          "createdat": "2026-08-30T11:52:10.947Z",
+          "modifiedby": "6544b8f517165c057bf313f4",
+          "modifiedat": "2026-08-30T11:52:10.947Z",
+          "statusflag": "A",
+          "orguid": "5b20f438d1202e29ce16f710",
+          "sourceofdatapatient": null,
+          "sourceofdatarelative": true,
+          "sourceofdatarelativedetails": "มารดา",
+          "sourceofdataother": null,
+          "sourceofdataotherdetails": null,
+          "currentmedicationusing": "NOTMEDREUSE",
+          "reconciletypeuid": {
+            "_id": "691f13df73ed91126bf60f06",
+            "valuedescription": "Admission",
+            "valuecode": "RECADM",
+            "relatedvalue": "Admission",
+            "domaincode": "RECONTYPE"
+          },
+          "__v": 0
+        }
+      },
+      "incusToken": "6a942bdfaaa8cee0ee5a7924",
+      "ts": 1788095805055,
+      "tokenTs": 1788095805055
+    }
+  }
 }

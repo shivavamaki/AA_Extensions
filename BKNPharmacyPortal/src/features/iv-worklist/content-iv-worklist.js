@@ -89,25 +89,46 @@
            null;
   }
 
+  /**
+   * Candidate texts to mine, most-specific first.
+   *
+   * Deliberately a LIST, not a single winner. The previous version picked the
+   * banner and fell back to the page only when the banner was empty — but
+   * .main-banner can hold the patient photo subtree and still return a bit of
+   * text, so it never looked "empty", never fell through, and the HN was
+   * missed while the console happily reported "banner element found: true".
+   * Now every source is tried in turn until one yields the field.
+   */
+  function textSources() {
+    const out = [];
+    const push = el => { if (el) { const t = norm(el.textContent); if (t) out.push(t); } };
+    push(bannerRoot());
+    push(document.querySelector('patient-emr-banner'));
+    push(document.querySelector('.sec-banner'));
+    // The header strip above the tabs carries HN + ward on the eMAR page.
+    document.querySelectorAll('md-content, .full-height').forEach(el => {
+      if (out.length < 6) push(el);
+    });
+    push(document.body);
+    return out;
+  }
+
+  /** First regex hit across the candidate texts. */
+  function findIn(re, group) {
+    for (const t of textSources()) {
+      const m = re.exec(t);
+      re.lastIndex = 0;
+      if (m) return m[group || 1];
+    }
+    return '';
+  }
+
   function readPatient() {
-    const root = bannerRoot();
-    /* textContent, NOT innerText. While the "Edit Administration Timings"
-       dialog is open, Angular Material marks the rest of the page inert /
-       aria-hidden, and Chrome's innerText only reports *rendered* text — so it
-       returns "" for the banner and for document.body alike, and the HN read
-       failed with "No patient HN on this page" even though the banner was
-       plainly on screen. textContent ignores rendering and always sees it. */
-    const scope = root ? norm(root.textContent) : '';
-    // Fall back to the page only when the banner yields nothing.
-    const text = scope || norm(document.body ? document.body.textContent : '');
+    const hn = findIn(/(\d{2}-\d{2}-\d{6,7})/);
 
-    const hn = (/(\d{2}-\d{2}-\d{6,7})/.exec(text) || [])[1] || '';
-
-    /* Name: the banner renders it as its own node. Prefer the dedicated
-       element, then the Thai/Latin name that sits beside the HN. */
     let name = '';
     const nameEl = document.querySelector('h4.patientbannername') ||
-                   (root && root.querySelector('.patientbannername'));
+                   document.querySelector('.patientbannername');
     if (nameEl) {
       const full = norm(nameEl.textContent);
       const m = /\((\d{2}-\d{2}-\d{6,7})\)/.exec(full);
@@ -115,29 +136,28 @@
     }
     if (!name && hn) {
       // "ด.ช. ชนิดนัย พมมะจัก 48-24-006947" — the name precedes the HN.
-      const m = new RegExp('([^\n]{3,60}?)\s*' + hn.replace(/-/g, '\-')).exec(text);
-      if (m) name = norm(m[1]).replace(/^.*?(?=[฀-๿]|[A-Z]{2})/, '');
+      for (const t of textSources()) {
+        const m = new RegExp('([\u0E00-\u0E7FA-Za-z.\s]{3,60}?)\s*' +
+                             hn.replace(/-/g, '\-')).exec(t);
+        if (m) { name = norm(m[1]); break; }
+      }
     }
 
-    /* Ward / bed. "Ward N / …" appears twice in the banner — once before the
-       attending doctor, once before the bed — so require a bed-shaped token
-       (digits, or ICU/CCU/NICU + digits) and take the LAST match. */
-    const bedRe = /(Ward\s*\d+|ICU\s*\d*|CCU\s*\d*|NICU\s*\d*)\s*\/\s*([0-9]{2,4}|(?:ICU|CCU|NICU)[-\s]?\d{1,3})/ig;
-    let m2, wr = null;
-    while ((m2 = bedRe.exec(text))) wr = m2;
-
-    /* Age / sex and the visit number are on the banner too and are worth
-       carrying: they let the label and the send sheet identify a patient
-       without a second lookup. */
-    const visit = (/(I\d{2}-\d{2}-\d{6,7})/.exec(text) || [])[1] || '';
-    const age = (/(\d{1,3})\s*Y/i.exec(text) || [])[1] || '';
+    /* Ward / bed. "Ward N / …" appears twice — once before the attending
+       doctor, once before the bed — so require a bed-shaped token and take the
+       LAST match in whichever source supplies it. */
+    let ward = '', room = '';
+    for (const t of textSources()) {
+      const re = /(Ward\s*\d+|ICU\s*\d*|CCU\s*\d*|NICU\s*\d*)\s*\/\s*([0-9]{2,4}|(?:ICU|CCU|NICU)[-\s]?\d{1,3})/ig;
+      let m, last = null;
+      while ((m = re.exec(t))) last = m;
+      if (last) { ward = norm(last[1]); room = norm(last[2]); break; }
+    }
 
     return {
-      hn, name,
-      ward: wr ? norm(wr[1]) : '',
-      room: wr ? norm(wr[2]) : '',
-      visitNo: visit,
-      age,
+      hn, name, ward, room,
+      visitNo: findIn(/(I\d{2}-\d{2}-\d{6,7})/),
+      age: findIn(/(\d{1,3})\s*Y/i),
     };
   }
 
@@ -206,8 +226,12 @@
     if (!pt.hn) {
       // Distinguish "banner missing" from "banner present but unreadable" —
       // the two need different fixes and the old message covered both.
-      const seen = !!bannerRoot();
-      console.log(LOG, 'no HN. banner element found:', seen);
+      // Dump what we actually saw, so a failure is diagnosable from the
+      // console instead of guessing at selectors.
+      const srcs = textSources();
+      console.log(LOG, 'no HN. banner found:', !!bannerRoot(),
+                  '| text sources:', srcs.length);
+      srcs.forEach((t, i) => console.log(LOG, '  [' + i + ']', t.slice(0, 200)));
       return toast(seen
         ? 'อ่าน HN ไม่ได้ · Found the banner but could not read the HN — please report this'
         : 'ไม่พบแถบข้อมูลผู้ป่วย · No patient banner on this page', 'err');
