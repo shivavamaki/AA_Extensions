@@ -124,7 +124,7 @@
   }
 
   function readPatient() {
-    const hn = findIn(/(\d{2}-\d{2}-\d{6,7})/);
+    const hn = findIn(/(\d{2}-\d{2}-\d{6,7})/);
 
     let name = '';
     const nameEl = document.querySelector('h4.patientbannername') ||
@@ -161,7 +161,7 @@
        LAST match in whichever source supplies it. */
     let ward = '', room = '';
     for (const t of textSources()) {
-      const re = /(Ward\s*\d+|ICU\s*\d*|CCU\s*\d*|NICU\s*\d*)\s*\/\s*([0-9]{2,4}|(?:ICU|CCU|NICU)[-\s]?\d{1,3})/ig;
+      const re = /(Ward\s*\d+|ICU\s*\d*|CCU\s*\d*|NICU\s*\d*)\s*\/\s*([0-9]{2,4}|(?:ICU|CCU|NICU)[-\s]?\d{1,3})/ig;
       let m, last = null;
       while ((m = re.exec(t))) last = m;
       if (last) { ward = norm(last[1]); room = norm(last[2]); break; }
@@ -169,8 +169,8 @@
 
     return {
       hn, name, ward, room,
-      visitNo: findIn(/(I\d{2}-\d{2}-\d{6,7})/),
-      age: findIn(/(\d{1,3})\s*Y/i),
+      visitNo: findIn(/(I\d{2}-\d{2}-\d{6,7})/),
+      age: findIn(/(\d{1,3})\s*Y/i),
     };
   }
 
