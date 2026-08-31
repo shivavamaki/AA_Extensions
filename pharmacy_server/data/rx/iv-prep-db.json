@@ -1,0 +1,983 @@
+{
+  "_meta": {
+    "source": "IV_ATB_Master 2026.xlsx",
+    "sheets": [
+      "Stock + IV Off (Q:Z)",
+      "database (A:D)",
+      "RT_COMMON_257 (D,E)"
+    ],
+    "generated": "2026-08-31",
+    "note": "Drug list, shelf life, diluent and default frequency come from the \"Stock + IV Off\" sheet; ATB/HAD from \"database\"; drug codes and the exact ArcusAir item names from the Pending IP Fill report. Dilution volume = dose mg / concMgPerMl (Form sheet BZ/CA/CB).",
+    "warning": "wardPrepares:true drugs are mixed on the ward, not by pharmacy — they must not appear on the IV worklist.",
+    "counts": {
+      "drugs": 39,
+      "pharmacyPrepared": 25,
+      "wardPrepared": 14,
+      "highAlert": 2,
+      "withArcusCodes": 37,
+      "arcusCodeTotal": 55,
+      "diluents": 19
+    }
+  },
+  "drugs": [
+    {
+      "name": "50%MgSO4",
+      "type": "HAD",
+      "had": true,
+      "wardPrepares": false,
+      "shelfDays": 30,
+      "stabilityHours": 720,
+      "defaultFreq": "",
+      "diluent": {
+        "adult": "",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51171606000004",
+          "itemName": "Magnesium sulfate 50% 1 g/2 mL INJ Amp"
+        }
+      ]
+    },
+    {
+      "name": "Amikacin",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 5,
+      "stabilityHours": 120,
+      "defaultFreq": "q 24 hrs",
+      "diluent": {
+        "adult": "conc. 20 mg/mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": 20.0,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51101586000008",
+          "itemName": "Amikacin 500 Mg Inj"
+        }
+      ]
+    },
+    {
+      "name": "amoxiclav",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": true,
+      "shelfDays": null,
+      "stabilityHours": null,
+      "defaultFreq": "q 8 hrs",
+      "diluent": {
+        "adult": "",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "ปกติไม่ได้เตรียมเด้อออออ วอร์ดเตรียมเองจ้า",
+      "arcusItems": []
+    },
+    {
+      "name": "Amphotericin B",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": true,
+      "shelfDays": 1,
+      "stabilityHours": 24,
+      "defaultFreq": "q 24 hrs",
+      "diluent": {
+        "adult": "",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "ปกติไม่ได้เตรียมเด้อออออ วอร์ดเตรียมเองจ้า",
+      "arcusItems": [
+        {
+          "code": "51101801000007",
+          "itemName": "Amphotericin-B For Inj Usp 50 Mg(ยานอกบัญชี)"
+        }
+      ]
+    },
+    {
+      "name": "Azithromycin",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 7,
+      "stabilityHours": 168,
+      "defaultFreq": "",
+      "diluent": {
+        "adult": "",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51101572000016",
+          "itemName": "Azithromycin 500 mg IV INJ Vial"
+        },
+        {
+          "code": "51101572000006",
+          "itemName": "Zithromax Iv (500 Mg) Inj"
+        }
+      ]
+    },
+    {
+      "name": "Cef-3",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 7,
+      "stabilityHours": 168,
+      "defaultFreq": "q 24 hrs",
+      "diluent": {
+        "adult": "NSS 50 mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": 100.0,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51101551000010",
+          "itemName": "Ceftriaxone (Cef-3) 1 g IV INJ Vial"
+        }
+      ]
+    },
+    {
+      "name": "Cefazolin",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 7,
+      "stabilityHours": 168,
+      "defaultFreq": "q 6 hrs",
+      "diluent": {
+        "adult": "NSS 50 mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": 100.0,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51101578000002",
+          "itemName": "Cefazolin 1 g INJ Vial"
+        }
+      ]
+    },
+    {
+      "name": "Cefoperazone/Sulbactam",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 3,
+      "stabilityHours": 72,
+      "defaultFreq": "",
+      "diluent": {
+        "adult": "",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51010010404004",
+          "itemName": "Cefoperazone <(>&<)> Sulbactam INJ (1.5 g)Vial"
+        },
+        {
+          "code": "51010010404033",
+          "itemName": "Sulbactam 2 g INJ Vial"
+        },
+        {
+          "code": "51010010601040",
+          "itemName": "Ampicillin/Sulbactam (3 g) INJ VIAL"
+        }
+      ]
+    },
+    {
+      "name": "Cefotaxime",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 5,
+      "stabilityHours": 120,
+      "defaultFreq": "",
+      "diluent": {
+        "adult": "",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51101593000001",
+          "itemName": "Cefotaxime (1 g) INJ"
+        }
+      ]
+    },
+    {
+      "name": "Ceftazidime",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 7,
+      "stabilityHours": 168,
+      "defaultFreq": "q 8 hrs",
+      "diluent": {
+        "adult": "NSS 50 mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51101552000002",
+          "itemName": "Ceftazidime (Cef-4) 1 g INJ Vial"
+        },
+        {
+          "code": "51101552000012",
+          "itemName": "Zavicefta INJ 2.5 g (Ceftazidime 2 g/Avibactam 0.5 g)(ยานอกบัญชี)"
+        }
+      ]
+    },
+    {
+      "name": "Cefuroxime",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 7,
+      "stabilityHours": 168,
+      "defaultFreq": "",
+      "diluent": {
+        "adult": "",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51101573000011",
+          "itemName": "Cefuroxime 750 mg INJ Vial"
+        }
+      ]
+    },
+    {
+      "name": "ciproflox",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 2,
+      "stabilityHours": 48,
+      "defaultFreq": "",
+      "diluent": {
+        "adult": "",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51101542000013",
+          "itemName": "Ciprofloxacin 400 mg/200 mL INJ Vial"
+        }
+      ]
+    },
+    {
+      "name": "ciproflox",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": true,
+      "shelfDays": null,
+      "stabilityHours": null,
+      "defaultFreq": "q 12 hrs",
+      "diluent": {
+        "adult": "",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "ปกติไม่ได้เตรียมเด้อออออ วอร์ดเตรียมเองจ้า",
+      "arcusItems": [
+        {
+          "code": "51101542000013",
+          "itemName": "Ciprofloxacin 400 mg/200 mL INJ Vial"
+        }
+      ]
+    },
+    {
+      "name": "Clindamycin",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 7,
+      "stabilityHours": 168,
+      "defaultFreq": "q 8 hrs",
+      "diluent": {
+        "adult": "NSS 50 mL",
+        "child": "NSS"
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51101504000012",
+          "itemName": "Clindamycin 600 mg/4 mL INJ Vial"
+        }
+      ]
+    },
+    {
+      "name": "Cloxacillin",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": true,
+      "shelfDays": 1,
+      "stabilityHours": 24,
+      "defaultFreq": "q 6 hrs",
+      "diluent": {
+        "adult": "NSS 100 mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": null,
+      "note": "ปกติไม่ได้เตรียมเด้อออออ วอร์ดเตรียมเองจ้า",
+      "arcusItems": [
+        {
+          "code": "51101512000006",
+          "itemName": "Cloxacillin 1 Gm Inj"
+        }
+      ]
+    },
+    {
+      "name": "Colistin",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": true,
+      "shelfDays": 7,
+      "stabilityHours": 168,
+      "defaultFreq": "q 12 hrs",
+      "diluent": {
+        "adult": "",
+        "child": "SWI"
+      },
+      "concMgPerMl": null,
+      "note": "ปกติไม่ได้เตรียมเด้อออออ วอร์ดเตรียมเองจ้า",
+      "arcusItems": [
+        {
+          "code": "51101526000002",
+          "itemName": "Colistin 150 mg INJ Vial"
+        }
+      ]
+    },
+    {
+      "name": "cravit",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": true,
+      "shelfDays": null,
+      "stabilityHours": null,
+      "defaultFreq": "q 24 hrs",
+      "diluent": {
+        "adult": "",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "ปกติไม่ได้เตรียมเด้อออออ วอร์ดเตรียมเองจ้า",
+      "arcusItems": [
+        {
+          "code": "51101538000009",
+          "itemName": "Levofloxacin 750 mg/150 mL INF Vial"
+        }
+      ]
+    },
+    {
+      "name": "Cymevene",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": true,
+      "shelfDays": 1,
+      "stabilityHours": 24,
+      "defaultFreq": "q 12 hrs",
+      "diluent": {
+        "adult": "",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "as package insert ไม่ได้เตรียมเด้อออออ วอร์ดเตรียมเองจ้า",
+      "arcusItems": [
+        {
+          "code": "51102339000009",
+          "itemName": "Ganciclovir 500 mg INJ Vial"
+        }
+      ]
+    },
+    {
+      "name": "Ertapenem (Invanz)",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": true,
+      "shelfDays": 1,
+      "stabilityHours": 24,
+      "defaultFreq": "q 24 hrs",
+      "diluent": {
+        "adult": "NSS 50 mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": null,
+      "note": "exp. 1 day update 27/2/23 ไม่ได้เตรียมเด้อออออ วอร์ดเตรียมเองจ้า",
+      "arcusItems": [
+        {
+          "code": "51010010408004",
+          "itemName": "Invanz 1 Gm Inj"
+        }
+      ]
+    },
+    {
+      "name": "Fosfomycin",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 7,
+      "stabilityHours": 168,
+      "defaultFreq": "q 12 hrs",
+      "diluent": {
+        "adult": "NSS 50 mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": []
+    },
+    {
+      "name": "Gentamicin",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 7,
+      "stabilityHours": 168,
+      "defaultFreq": "q 24 hrs",
+      "diluent": {
+        "adult": "NSS 100 mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51101584000009",
+          "itemName": "Gentamicin INJ (80 mg/2mL) Vial"
+        }
+      ]
+    },
+    {
+      "name": "KCl",
+      "type": "HAD",
+      "had": true,
+      "wardPrepares": false,
+      "shelfDays": 7,
+      "stabilityHours": 168,
+      "defaultFreq": "q 6 hrs",
+      "diluent": {
+        "adult": "NSS 50 mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51191802000028",
+          "itemName": "Potassium Chloride Inj (20 Meq/10Ml) Amp"
+        }
+      ]
+    },
+    {
+      "name": "Levoflox",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 2,
+      "stabilityHours": 48,
+      "defaultFreq": "q 12 hrs",
+      "diluent": {
+        "adult": "undiluted",
+        "child": "undiluted"
+      },
+      "concMgPerMl": null,
+      "note": "exp. 14 day update 27/2/23",
+      "arcusItems": [
+        {
+          "code": "51101538000009",
+          "itemName": "Levofloxacin 750 mg/150 mL INF Vial"
+        }
+      ]
+    },
+    {
+      "name": "Liposome Amphotericin B",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 1,
+      "stabilityHours": 24,
+      "defaultFreq": "q 24 hrs",
+      "diluent": {
+        "adult": "D-5-W",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51101801000006",
+          "itemName": "Ambisome 50 Mg Inj(ยานอกบัญชี)"
+        },
+        {
+          "code": "51111714000001",
+          "itemName": "Doxorubicin liposome INJ (20mg/10mL)(Lipo-dox)(ยานอกบัญชี)"
+        }
+      ]
+    },
+    {
+      "name": "meicelin",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 1,
+      "stabilityHours": 24,
+      "defaultFreq": "q 12 hrs",
+      "diluent": {
+        "adult": "NSS 100 mL",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51010010403001",
+          "itemName": "MEIcelin 1 Gm Inj"
+        }
+      ]
+    },
+    {
+      "name": "Meicelin",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": true,
+      "shelfDays": 1,
+      "stabilityHours": 24,
+      "defaultFreq": "q 12 hrs",
+      "diluent": {
+        "adult": "NSS 100 mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": null,
+      "note": "ปกติไม่ได้เตรียมเด้อออออ วอร์ดเตรียมเองจ้า",
+      "arcusItems": [
+        {
+          "code": "51010010403001",
+          "itemName": "MEIcelin 1 Gm Inj"
+        }
+      ]
+    },
+    {
+      "name": "MERONEM®",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 2,
+      "stabilityHours": 48,
+      "defaultFreq": "q 8 hrs",
+      "diluent": {
+        "adult": "NSS 50 mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": null,
+      "note": "Concentration > 20mg/ml และ Syringe 50 mg/ mL",
+      "arcusItems": [
+        {
+          "code": "51101611000003",
+          "itemName": "Meropenem 1 g INJ Vial"
+        },
+        {
+          "code": "51101611000004",
+          "itemName": "Meronem 1 Gm Inj"
+        }
+      ]
+    },
+    {
+      "name": "Meropenem",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 2,
+      "stabilityHours": 48,
+      "defaultFreq": "",
+      "diluent": {
+        "adult": "",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51101611000003",
+          "itemName": "Meropenem 1 g INJ Vial"
+        },
+        {
+          "code": "51101611000004",
+          "itemName": "Meronem 1 Gm Inj"
+        }
+      ]
+    },
+    {
+      "name": "Omegacin",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": true,
+      "shelfDays": 1,
+      "stabilityHours": 24,
+      "defaultFreq": "q 12 hrs",
+      "diluent": {
+        "adult": "NSS 100 mL",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "ปกติไม่ได้เตรียมเด้อออออ วอร์ดเตรียมเองจ้า",
+      "arcusItems": [
+        {
+          "code": "51284601000001",
+          "itemName": "OmeGACIN INJ (300 mg) Vial"
+        }
+      ]
+    },
+    {
+      "name": "PIP/TAZO",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 7,
+      "stabilityHours": 168,
+      "defaultFreq": "q 8 hrs",
+      "diluent": {
+        "adult": "NSS 50 mL",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "exp. 7 day update 27/2/23, siam exp. 7 days",
+      "arcusItems": [
+        {
+          "code": "51010010318036",
+          "itemName": "Piperacillin/Tazobactam 4.5 g INJ Vial"
+        }
+      ]
+    },
+    {
+      "name": "Rocephin",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 7,
+      "stabilityHours": 168,
+      "defaultFreq": "q 24 hrs",
+      "diluent": {
+        "adult": "NSS 50 mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": 100.0,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51101551000004",
+          "itemName": "Rocephin IV (1 Gm) Infusion #"
+        },
+        {
+          "code": "51101551000010",
+          "itemName": "Ceftriaxone (Cef-3) 1 g IV INJ Vial"
+        },
+        {
+          "code": "51101551000017",
+          "itemName": "Rocephin INJ (2 g) I.V.Vial"
+        }
+      ]
+    },
+    {
+      "name": "Sulbactam",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": true,
+      "shelfDays": 3,
+      "stabilityHours": 72,
+      "defaultFreq": "",
+      "diluent": {
+        "adult": "",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "ปกติไม่ได้เตรียมเด้อออออ วอร์ดเตรียมเองจ้า",
+      "arcusItems": [
+        {
+          "code": "51010010404004",
+          "itemName": "Cefoperazone <(>&<)> Sulbactam INJ (1.5 g)Vial"
+        },
+        {
+          "code": "51010010404033",
+          "itemName": "Sulbactam 2 g INJ Vial"
+        },
+        {
+          "code": "51010010601040",
+          "itemName": "Ampicillin/Sulbactam (3 g) INJ VIAL"
+        }
+      ]
+    },
+    {
+      "name": "Sulbactam",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": true,
+      "shelfDays": 2,
+      "stabilityHours": 48,
+      "defaultFreq": "",
+      "diluent": {
+        "adult": "",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "ปกติไม่ได้เตรียมเด้อออออ วอร์ดเตรียมเองจ้า",
+      "arcusItems": [
+        {
+          "code": "51010010404004",
+          "itemName": "Cefoperazone <(>&<)> Sulbactam INJ (1.5 g)Vial"
+        },
+        {
+          "code": "51010010404033",
+          "itemName": "Sulbactam 2 g INJ Vial"
+        },
+        {
+          "code": "51010010601040",
+          "itemName": "Ampicillin/Sulbactam (3 g) INJ VIAL"
+        }
+      ]
+    },
+    {
+      "name": "Sulcef",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 3,
+      "stabilityHours": 72,
+      "defaultFreq": "q 12 hrs",
+      "diluent": {
+        "adult": "NSS 100 mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51010010404004",
+          "itemName": "Cefoperazone <(>&<)> Sulbactam INJ (1.5 g)Vial"
+        }
+      ]
+    },
+    {
+      "name": "Sulperazone",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 5,
+      "stabilityHours": 120,
+      "defaultFreq": "q 12 hrs",
+      "diluent": {
+        "adult": "NSS 100 mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51010010404004",
+          "itemName": "Cefoperazone <(>&<)> Sulbactam INJ (1.5 g)Vial"
+        }
+      ]
+    },
+    {
+      "name": "Tygacil",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": true,
+      "shelfDays": 2,
+      "stabilityHours": 48,
+      "defaultFreq": "q 12 hrs",
+      "diluent": {
+        "adult": "",
+        "child": ""
+      },
+      "concMgPerMl": null,
+      "note": "ปกติไม่ได้เตรียมเด้อออออ วอร์ดเตรียมเองจ้า",
+      "arcusItems": [
+        {
+          "code": "51010010101001",
+          "itemName": "Tygacil 50 Mg Inj(ยานอกบัญชี)"
+        }
+      ]
+    },
+    {
+      "name": "Unasyn",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 3,
+      "stabilityHours": 72,
+      "defaultFreq": "q 6 hrs",
+      "diluent": {
+        "adult": "NSS 50 mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": null,
+      "note": "Conc. 30 mg/mL เก็บได้ 3 วัน",
+      "arcusItems": [
+        {
+          "code": "51010010404004",
+          "itemName": "Cefoperazone <(>&<)> Sulbactam INJ (1.5 g)Vial"
+        },
+        {
+          "code": "51010010404033",
+          "itemName": "Sulbactam 2 g INJ Vial"
+        },
+        {
+          "code": "51101567000003",
+          "itemName": "Ampicillin INJ (500 mg) Vial"
+        },
+        {
+          "code": "51010010601040",
+          "itemName": "Ampicillin/Sulbactam (3 g) INJ VIAL"
+        },
+        {
+          "code": "51010010318040",
+          "itemName": "Unasyn 3 Gm Inj"
+        }
+      ]
+    },
+    {
+      "name": "Vancomycin",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": false,
+      "shelfDays": 14,
+      "stabilityHours": 336,
+      "defaultFreq": "q 8 hrs",
+      "diluent": {
+        "adult": "NSS 250 mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": null,
+      "note": "",
+      "arcusItems": [
+        {
+          "code": "51101591000003",
+          "itemName": "Vancomycin Inj (500 Mg) Vial"
+        }
+      ]
+    },
+    {
+      "name": "zithromax",
+      "type": "ATB",
+      "had": false,
+      "wardPrepares": true,
+      "shelfDays": 7,
+      "stabilityHours": 168,
+      "defaultFreq": "q 24 hrs",
+      "diluent": {
+        "adult": "NSS 250 mL",
+        "child": "SWI"
+      },
+      "concMgPerMl": 2.0,
+      "note": "ปกติไม่ได้เตรียมเด้อออออ วอร์ดเตรียมเองจ้า",
+      "arcusItems": [
+        {
+          "code": "51101572000016",
+          "itemName": "Azithromycin 500 mg IV INJ Vial"
+        },
+        {
+          "code": "51101572000006",
+          "itemName": "Zithromax Iv (500 Mg) Inj"
+        }
+      ]
+    }
+  ],
+  "diluents": [
+    {
+      "code": "51142905000004",
+      "itemName": "Bupivacaine In Dextrose (Heavy)(4 Ml) Inj"
+    },
+    {
+      "code": "51191601000013",
+      "itemName": "D-5-W (P) INJ 100 mL"
+    },
+    {
+      "code": "51191601000029",
+      "itemName": "D-5-W (P) INJ 1000 mL"
+    },
+    {
+      "code": "51191601000011",
+      "itemName": "D-5-W (P) INJ 250 mL in 500 mL"
+    },
+    {
+      "code": "51191601000012",
+      "itemName": "D-5-W (P) INJ 50 mL in 100 mL"
+    },
+    {
+      "code": "51191601000015",
+      "itemName": "D-5-W (P) INJ 500 mL"
+    },
+    {
+      "code": "51191602000032",
+      "itemName": "NSS 0.45% (P) INJ 1000 mL"
+    },
+    {
+      "code": "51191602000011",
+      "itemName": "NSS 0.45% (P) INJ 500 mL"
+    },
+    {
+      "code": "51191602000033",
+      "itemName": "NSS 0.9 % (P) INJ 100 mL"
+    },
+    {
+      "code": "51191602000037",
+      "itemName": "NSS 0.9 % (P) INJ 1000 mL"
+    },
+    {
+      "code": "51191602000022",
+      "itemName": "NSS 0.9 % (P) INJ 2000 mL"
+    },
+    {
+      "code": "51191602000015",
+      "itemName": "NSS 0.9 % (P) INJ 250 mL in 500 mL"
+    },
+    {
+      "code": "51191602000016",
+      "itemName": "NSS 0.9 % (P) INJ 50 mL in 100 mL"
+    },
+    {
+      "code": "51191602000020",
+      "itemName": "NSS 0.9 % (P) INJ 500 mL"
+    },
+    {
+      "code": "51191602000044",
+      "itemName": "NSS 0.9 % (Softbag) INJ 1000 mL"
+    },
+    {
+      "code": "51191602000030",
+      "itemName": "NSS 0.9 % INJ Tube 5 mL"
+    },
+    {
+      "code": "51191605000006",
+      "itemName": "Sterile Water (P) INJ 100 mL"
+    },
+    {
+      "code": "51191605000014",
+      "itemName": "Sterile Water (P) INJ 1000 mL"
+    },
+    {
+      "code": "51191605000003",
+      "itemName": "Sterile Water INJ 10 mL Amp"
+    }
+  ]
+}
