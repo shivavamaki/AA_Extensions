@@ -67,12 +67,51 @@
   }
 
   /** Drug, frequency and dates, parsed from the dialog's own text. */
+  /**
+   * Drug, dose, frequency and route.
+   *
+   * The dialog states the drug and frequency; the eMAR ROW behind it carries
+   * the full order line ("Infuse 1000 Milligram Every 24 Hours Route :
+   * IntraVenously"), which is the only place the dose and route appear.
+   *
+   * That row is found by CONTENT, not by a selector. ArcusAir's generated path
+   * (#tab-content-41 > … > tr:nth-child(3) > td…) changes with the tab id, the
+   * row order and the number of routes above it, so any fixed selector would
+   * break on the next patient. Instead: find the <h4> whose text equals the
+   * drug in the dialog, then read its enclosing block.
+   */
   function readOrder(dialog) {
     const h4 = findHeading(dialog);
     const drug = h4 ? norm(h4.textContent) : '';
-    const text = norm(dialog.textContent);
-    const freq = (/Frequency\s*:\s*([^:]+?)(?:\s+Timings|\s*$)/i.exec(text) || [])[1] || '';
-    return { drug, freq: norm(freq) };
+    const dtext = norm(dialog.textContent);
+
+    let freq = (/Frequency\s*:\s*([^:]+?)(?:\s+Timings|\s*$)/i.exec(dtext) || [])[1] || '';
+    let dose = '', route = '';
+
+    if (drug) {
+      // The matching row's own heading — same drug name, outside the dialog.
+      for (const el of document.querySelectorAll('h4')) {
+        if (dialog.contains(el)) continue;
+        if (norm(el.textContent) !== drug) continue;
+        // Walk out to the block that also holds the "Infuse …" line.
+        let box = el, txt = '';
+        for (let i = 0; i < 5 && box; i++) {
+          box = box.parentElement;
+          if (!box) break;
+          txt = norm(box.textContent);
+          if (/Infuse|Route\s*:/i.test(txt)) break;
+        }
+        if (!txt) continue;
+        dose  = (/Infuse\s+([\d.]+\s*\S+)/i.exec(txt) || [])[1] || '';
+        route = (/Route\s*:\s*([A-Za-z ]+?)(?:\s+Date|\s*$)/i.exec(txt) || [])[1] || '';
+        if (!freq) {
+          freq = (/(Every\s+\d+\s*\w+|q\s*\d+\s*h\w*|Once\s+\w+)/i.exec(txt) || [])[1] || '';
+        }
+        break;
+      }
+    }
+
+    return { drug, freq: norm(freq), dose: norm(dose), route: norm(route) };
   }
 
   /**
@@ -273,7 +312,12 @@
         dueAt: `${todayStr()}T${slot}:00+07:00`,
         drug: {
           name: ord.drug,
-          dose: '', solvent: '', route: 'IV', rate: '',
+          dose: ord.dose,
+          // Diluent is NOT on the eMAR row — the server fills it from the
+          // workbook (iv-drug-db) by drug name, which is the authority.
+          solvent: '',
+          route: ord.route || 'IV',
+          rate: '',
           freq: ord.freq,
           had: false,
           // The SERVER re-resolves stability and HAD from the workbook; these
