@@ -124,6 +124,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
+import concurrent.futures
 import http.cookiejar
 import struct
 import threading
@@ -1966,6 +1967,46 @@ def _opd_store_prio_probe(item):
                     out[label][k] = {'name': v[0].get('name'), 'valuedescription': v[0].get('valuedescription')}
                 else:
                     out[label][k] = v
+    return out
+
+
+def _gather(tasks, timeout=30):
+    """Run independent best-effort ArcusAir fetches concurrently.
+
+    `tasks` is {key: (fn, fallback)}. Each fn is called with no arguments in its
+    own thread; its return value lands in the result dict under `key`. Any
+    exception (or an overall timeout) yields `fallback` instead — the same
+    swallow-and-default contract the callers had when these ran serially, so a
+    slow or failing supplementary endpoint still never fails the sheet.
+
+    These are blocking urllib calls that spend their time in socket waits, so
+    threads overlap them fine despite the GIL. Latency becomes the slowest call
+    rather than the sum of all of them.
+    """
+    if not tasks:
+        return {}
+    out = {k: fb for k, (_fn, fb) in tasks.items()}
+    # NOT a `with` block: the executor's context manager shuts down with
+    # wait=True, which would re-block on a straggler for exactly the time the
+    # timeout above just declined to wait. Shut down without waiting instead so a
+    # hung upstream costs `timeout`, not its full socket timeout. The daemon
+    # threads die with the process; each urllib call has its own 30s cap.
+    ex = concurrent.futures.ThreadPoolExecutor(max_workers=len(tasks))
+    try:
+        futs = {ex.submit(fn): k for k, (fn, _fb) in tasks.items()}
+        try:
+            for fut in concurrent.futures.as_completed(futs, timeout=timeout):
+                k = futs[fut]
+                try:
+                    out[k] = fut.result()
+                except Exception as exc:  # noqa: BLE001 — best-effort by contract
+                    print(f'[gather] {k} failed: {exc}', file=sys.stderr)
+        except concurrent.futures.TimeoutError:
+            unfinished = [futs[f] for f in futs if not f.done()]
+            print(f'[gather] timed out after {timeout}s; using fallbacks for: '
+                  f'{", ".join(unfinished)}', file=sys.stderr)
+    finally:
+        ex.shutdown(wait=False)
     return out
 
 
@@ -4809,24 +4850,28 @@ class Handler(BaseHTTPRequestHandler):
             # Log exactly what the Home Medication Sheet received (API summary +
             # built meds) to data/logs for inspection.
             _log_home_med_fetch(ctx, data, result)
-            # Allergies are supplementary — fetch best-effort, never fail the sheet.
-            try:
-                result['allergies'] = build_allergies_from_arcus(fetch_arcus_allergies(ctx))
-            except Exception as e:
-                result['allergies'] = {'nkda': False, 'items': [], 'hasRecord': False, 'error': str(e)}
-            # Future appointments — best-effort, never fail the sheet.
-            try:
-                appt_data = fetch_arcus_future_appointments(ctx)
-                result['appointmentText'] = format_appointments_th(appt_data)
-            except Exception:
-                result['appointmentText'] = (
+            # Allergies, appointments and reconciliation are supplementary and
+            # mutually independent — each needs only ctx, never another's result.
+            # Run them concurrently so the sheet waits for the slowest rather than
+            # the sum; every one keeps its own best-effort fallback.
+            _sub = _gather({
+                'allergies': (
+                    lambda: build_allergies_from_arcus(fetch_arcus_allergies(ctx)),
+                    {'nkda': False, 'items': [], 'hasRecord': False,
+                     'error': 'fetch failed'},
+                ),
+                'appointmentText': (
+                    lambda: format_appointments_th(fetch_arcus_future_appointments(ctx)),
                     'ไม่มีนัดติดตามอาการ '
                     'แต่ถ้าพบอาการผิดปรกติหรืออาการแย่ลง '
-                    'แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม'
-                )
-            # Medication Reconciliation panel — best-effort; prefers the
-            # client-captured snapshot, see _resolve_reconcile_meds().
-            result['reconcileMeds'] = _resolve_reconcile_meds(ctx)
+                    'แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม',
+                ),
+                # Prefers the client-captured snapshot, see _resolve_reconcile_meds().
+                'reconcileMeds': (lambda: _resolve_reconcile_meds(ctx), []),
+            })
+            result['allergies']       = _sub['allergies']
+            result['appointmentText'] = _sub['appointmentText']
+            result['reconcileMeds']   = _sub['reconcileMeds']
             result['hasReconcile'] = bool(result['reconcileMeds'])
             result['ok'] = True
             result['source'] = 'arcus-api'
@@ -4851,17 +4896,38 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 self.send_json(500, {'error': f'Parse error: {e}'}); return
             _log_home_med_fetch(ctx, data, result)
-            # Allergies — best-effort (OPD has patientuid + patientvisituid).
-            try:
-                result['allergies'] = build_allergies_from_arcus(fetch_arcus_allergies(ctx))
-            except Exception as e:
-                result['allergies'] = {'nkda': False, 'items': [], 'hasRecord': False, 'error': str(e)}
-            # OPD panel = recent visits' medical history (replaces reconciliation),
-            # fetched from patientorder/search and grouped by visit (this visit
-            # excluded). Return up to OPD_HISTORY_MAX groups so the client's visit-
-            # count selector can slice locally without a re-fetch.
-            result['visitHistory'] = build_opd_visit_history(
-                ctx, ctx.get('patientvisituid', ''), OPD_HISTORY_MAX)
+            # Allergies, visit history, appointments and the visit-summary panel
+            # are mutually independent (each derives only from ctx). Run them
+            # concurrently — serially this was the bulk of the OPD sheet's wait,
+            # since build_opd_visit_summary() is itself three upstream calls.
+            #   allergies    — best-effort (OPD has patientuid + patientvisituid)
+            #   visitHistory — recent visits' medical history (replaces
+            #                  reconciliation), from patientorder/search grouped by
+            #                  visit (this visit excluded). Up to OPD_HISTORY_MAX
+            #                  groups so the client's visit-count selector can slice
+            #                  locally without a re-fetch.
+            _sub = _gather({
+                'allergies': (
+                    lambda: build_allergies_from_arcus(fetch_arcus_allergies(ctx)),
+                    {'nkda': False, 'items': [], 'hasRecord': False,
+                     'error': 'fetch failed'},
+                ),
+                'visitHistory': (
+                    lambda: build_opd_visit_history(
+                        ctx, ctx.get('patientvisituid', ''), OPD_HISTORY_MAX),
+                    [],
+                ),
+                'appointmentText': (
+                    lambda: format_appointments_th(fetch_arcus_future_appointments(ctx)),
+                    '(ไม่สามารถโหลดนัดหมายได้)',
+                ),
+                'visitSummary': (
+                    lambda: build_opd_visit_summary(ctx),
+                    {'vitals': [], 'visits': [], 'doctorNotes': []},
+                ),
+            }, timeout=45)
+            result['allergies']    = _sub['allergies']
+            result['visitHistory'] = _sub['visitHistory']
             # Tag each current med by continuity vs. the history (รับยาต่อเนื่อง /
             # ปรับขนาดยา) — a default the pharmacist can override. Compare against
             # the DEFAULT window so the tag doesn't shift when the user changes N.
@@ -4870,14 +4936,10 @@ class Handler(BaseHTTPRequestHandler):
                                     (result.get('visitHistory') or [])[:OPD_HISTORY_DEFAULT])
             except Exception:
                 pass
-            # Future appointments — same source as the IPD sheet; best-effort.
-            try:
-                result['appointmentText'] = format_appointments_th(fetch_arcus_future_appointments(ctx))
-            except Exception as e:
-                result['appointmentText'] = f'(ไม่สามารถโหลดนัดหมายได้: {e})'
-            # Current-visit summary panel: vital signs + visit summary + doctor
-            # notes. All best-effort — a failure just leaves that section empty.
-            result['visitSummary'] = build_opd_visit_summary(ctx)
+            # Appointments + current-visit summary panel (vitals, visit summary,
+            # doctor notes) — both fetched in the _gather() above.
+            result['appointmentText'] = _sub['appointmentText']
+            result['visitSummary']    = _sub['visitSummary']
             # OPD sheets carry no discharge reconciliation.
             result['reconcileMeds'] = []
             result['hasReconcile'] = False
