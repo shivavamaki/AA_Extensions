@@ -26,6 +26,7 @@
     <input list="ivw-staff-list" id="ivw-prep-by" class="ivw-userinput"
            placeholder="พิมพ์หรือเลือกชื่อ" autocomplete="off">
     <datalist id="ivw-staff-list"></datalist>
+<datalist id="ivw-dil-list"></datalist>
   </div>
   <div class="ivw-userbox">
     <label for="ivw-check-by">ผู้ตรวจสอบ · Checked by</label>
@@ -34,6 +35,8 @@
   </div>
 
   <button class="ivw-btn" id="ivw-print-report">🖨 Send report</button>
+  <a class="ivw-btn" href="page-iv-presets.html"
+     title="ตัวทำละลายเริ่มต้น อายุยา ความเข้มข้น · Default diluent, shelf life, concentration">🧪 Presets</a>
   <a class="ivw-btn" href="page-iv-dashboard.html">📊 Dashboard</a>
   <div class="ivw-clock" id="ivw-clock">--:--</div>
 </div>
@@ -149,10 +152,16 @@
       <dt>ห้อง · Room</dt>        <dd id="ivw-d-room">—</dd>
       <dt>เวลาให้ยา · Slot</dt>   <dd id="ivw-d-slot">—</dd>
       <dt>ขนาด · Dose</dt>        <dd id="ivw-d-dose">—</dd>
-      <dt>ตัวทำละลาย · Diluent</dt><dd id="ivw-d-solvent">—</dd>
+      <dt>ตัวทำละลาย · Diluent</dt>
+      <dd><input list="ivw-dil-list" id="ivw-d-solvent-in" class="ivw-userinput"
+                 placeholder="เลือกหรือพิมพ์เอง"></dd>
       <dt>ความถี่ · Frequency</dt><dd id="ivw-d-freq">—</dd>
       <dt>กำหนดให้ · Due</dt>     <dd id="ivw-d-due">—</dd>
-      <dt>เตรียมเมื่อ · Mixed</dt><dd id="ivw-d-prep">—</dd>
+      <dt>เตรียมเมื่อ · Mixed</dt>
+      <dd class="ivw-mixrow">
+        <input type="datetime-local" id="ivw-d-mixed-in" class="ivw-userinput">
+        <button class="ivw-btn ivw-btn-sm" id="ivw-d-mix-now" type="button">ตอนนี้</button>
+      </dd>
       <dt>หมดอายุ · Expires</dt>  <dd id="ivw-d-exp">—</dd>
     </dl>
 

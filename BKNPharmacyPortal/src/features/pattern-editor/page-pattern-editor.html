@@ -96,6 +96,11 @@
     <div class="toolbar">
       <input type="text" id="drug-search" placeholder="Search drug name or code…" style="flex:1; max-width:360px;">
       <button id="drug-reload">↻ Reload DB</button>
+      <select id="drug-filter" title="Filter by whether a Patient Instruction is set">
+        <option value="all">All drugs</option>
+        <option value="has">✓ Has instruction</option>
+        <option value="none">— No instruction</option>
+      </select>
       <span id="drug-count" style="color:#6b7280;font-size:12px;"></span>
     </div>
     <div class="drug-results" id="drug-results"></div>

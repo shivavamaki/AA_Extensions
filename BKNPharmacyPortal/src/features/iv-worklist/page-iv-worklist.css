@@ -524,3 +524,12 @@ body {
   .ivw-filter-grid { grid-template-columns: 1fr; }
   .ivw-userinput { width: 120px; }
 }
+
+/* ── Drawer: editable diluent + mix time ─────────────────────────────────── */
+
+/* The dd cells hold inputs now, so they need to size like fields rather than
+   text. Kept narrow: the drawer is 430px and the label must stay readable. */
+.ivw-kv dd .ivw-userinput{width:100%;min-width:0}
+.ivw-mixrow{display:flex;gap:6px;align-items:center}
+.ivw-mixrow .ivw-userinput{flex:1;min-width:0}
+.ivw-mixrow .ivw-btn-sm{flex-shrink:0;white-space:nowrap}

@@ -1,11 +1,11 @@
 {
   "patientuid": "63800fab722042067c158ca7",
   "createdAt": "2026-05-31T09:21:59.594038+00:00",
-  "updatedAt": "2026-08-30T13:16:45.055560+00:00",
+  "updatedAt": "2026-09-01T07:05:47.480691+00:00",
   "context": {
     "patientuid": "63800fab722042067c158ca7",
-    "patientvisituid": "6a1a7e21cc214c06281b2054",
-    "hn": "48-15-015763",
+    "patientvisituid": "6a940ee7320417bb7a512438",
+    "hn": "48-22-021756",
     "patientName": "MISS NARANRAT  PHAKTHANACHAIWONG"
   },
   "adrTimeline": {
@@ -20,7 +20,20 @@
         "medreconcile": {
           "_id": "6a94196a8cbc2d325fc45d70",
           "medicationitems": [],
-          "reviewedbyusers": [],
+          "reviewedbyusers": [
+            {
+              "useruid": {
+                "_id": "63101b44567e610637d41b04",
+                "code": "048583323",
+                "name": "นาตญา จารย์แปะ, ภญ.",
+                "iscareprovider": false,
+                "licensenumber": ""
+              },
+              "reviewdate": "2026-08-30T13:16:50.716Z",
+              "comments": null,
+              "_id": "6a942d42aaa8cee0ee5af9b5"
+            }
+          ],
           "reconciledbyusers": [],
           "medreconcilelogs": [
             {
@@ -28,6 +41,20 @@
               "useruid": "6544b8f517165c057bf313f4",
               "comments": "PREPARED",
               "_id": "6a94196a8cbc2d325fc45d71"
+            },
+            {
+              "modifiedat": "2026-08-30T13:16:50.655Z",
+              "useruid": "63101b44567e610637d41b04",
+              "comments": "MODIFIED MEDICINE ITEM",
+              "reasonuid": null,
+              "_id": "6a942d4237fce98efed7bfff"
+            },
+            {
+              "modifiedat": "2026-08-30T13:16:50.716Z",
+              "useruid": "63101b44567e610637d41b04",
+              "comments": "REVIEWED",
+              "reasonuid": null,
+              "_id": "6a942d42aaa8cee0ee5af9b6"
             }
           ],
           "patientuid": "63800fab722042067c158ca7",
@@ -64,12 +91,12 @@
             "relatedvalue": "Admission",
             "domaincode": "RECONTYPE"
           },
-          "__v": 0
+          "__v": 2
         }
       },
-      "incusToken": "6a942bdfaaa8cee0ee5a7924",
-      "ts": 1788095805055,
-      "tokenTs": 1788095805055
+      "incusToken": "6a9637ad64ef92628843a442",
+      "ts": 1788246347480,
+      "tokenTs": 1788246347480
     }
   }
 }

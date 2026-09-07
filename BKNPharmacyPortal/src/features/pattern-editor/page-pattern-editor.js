@@ -363,6 +363,7 @@ const drugResultsEl = document.getElementById("drug-results");
 const drugEditorEl  = document.getElementById("drug-editor");
 const drugStatusEl  = document.getElementById("drug-status");
 const drugCountEl   = document.getElementById("drug-count");
+const drugFilterEl  = document.getElementById("drug-filter");
 
 function setDrugStatus(msg, cls) {
   drugStatusEl.textContent = msg || "";
@@ -392,23 +393,39 @@ async function loadDrugDb() {
   }
 }
 
+const DRUG_RESULT_MAX = 50;
+
 function renderDrugResults() {
   if (!_drugDb) { drugResultsEl.innerHTML = ""; return; }
   const q = (drugSearchEl.value || "").trim().toLowerCase();
+  const mode = (drugFilterEl && drugFilterEl.value) || "all";
   drugResultsEl.innerHTML = "";
-  if (q.length < 2) {
+  // With a filter active, listing is useful on its own ("which drugs still have
+  // no instruction?"), so only require a search term in the unfiltered case.
+  if (q.length < 2 && mode === "all") {
     drugResultsEl.innerHTML = `<div class="drug-row" style="cursor:default;color:#9ca3af">Type at least 2 characters to search…</div>`;
     return;
   }
   const matches = [];
+  let total = 0;                       // matches before the display cap
   for (const code of Object.keys(_drugDb)) {
     const e = _drugDb[code] || {};
     const name = String(e.name || "").toLowerCase();
-    if (name.includes(q) || code.toLowerCase().includes(q)) matches.push(code);
-    if (matches.length >= 50) break;
+    if (q.length >= 2 && !(name.includes(q) || code.toLowerCase().includes(q))) continue;
+    // Filter before the cap, or the cap could fill with rows the filter then
+    // discards and hide real results.
+    if (mode !== "all") {
+      const has = !!patientInstruction(e);
+      if (mode === "has" ? !has : has) continue;
+    }
+    total++;
+    if (matches.length < DRUG_RESULT_MAX) matches.push(code);
   }
   if (!matches.length) {
-    drugResultsEl.innerHTML = `<div class="drug-row" style="cursor:default;color:#9ca3af">No match.</div>`;
+    const msg = mode === "has" ? "No drugs with an instruction match."
+              : mode === "none" ? "No drugs without an instruction match."
+              : "No match.";
+    drugResultsEl.innerHTML = `<div class="drug-row" style="cursor:default;color:#9ca3af">${msg}</div>`;
     return;
   }
   matches.forEach((code) => {
@@ -422,6 +439,13 @@ function renderDrugResults() {
     row.addEventListener("click", () => selectDrug(code));
     drugResultsEl.appendChild(row);
   });
+  if (total > matches.length) {
+    const more = document.createElement("div");
+    more.className = "drug-row";
+    more.style.cssText = "cursor:default;color:#9ca3af";
+    more.textContent = `Showing ${matches.length} of ${total} — narrow the search to see the rest.`;
+    drugResultsEl.appendChild(more);
+  }
 }
 
 function escapeText(s) {
@@ -504,6 +528,7 @@ function _applyLocalInstruction(code, th, en) {
 }
 
 drugSearchEl.addEventListener("input", renderDrugResults);
+if (drugFilterEl) drugFilterEl.addEventListener("change", renderDrugResults);
 document.getElementById("drug-reload").addEventListener("click", loadDrugDb);
 
 /* ══════════════════════════════════════════════════════════════════════════

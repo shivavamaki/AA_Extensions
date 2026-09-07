@@ -1,5 +1,9 @@
 [
   {
+    "name": "Yok",
+    "role": "Pharmacist"
+  },
+  {
     "name": "Akira",
     "role": "Pharmacist"
   },
@@ -20,20 +24,12 @@
     "role": "Pharmacist"
   },
   {
-    "name": "Waram",
-    "role": "Pharmacist"
-  },
-  {
     "name": "Nattaya",
     "role": "Pharmacist"
   },
   {
     "name": "Narudee",
     "role": "Phar.Assist"
-  },
-  {
-    "name": "Chayaporn",
-    "role": "Pharmacist"
   },
   {
     "name": "Oum",
@@ -121,10 +117,6 @@
   },
   {
     "name": "Arisara",
-    "role": "Phar.Assist"
-  },
-  {
-    "name": "Rattanan",
     "role": "Phar.Assist"
   },
   {

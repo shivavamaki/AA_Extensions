@@ -17,6 +17,8 @@
   ];
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  const Driver = window.ArcusDriver;
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
 
   const state = {
@@ -54,26 +56,31 @@
     return r.width > 0 && r.height > 0;
   }
 
-  async function waitFor(fn, timeoutMs = 15000, intervalMs = 300) {
-    const start = Date.now();
-    while (Date.now() - start < timeoutMs) {
-      if (state.stopRequested) return null;
-      const result = fn();
-      if (result) return result;
-      await sleep(intervalMs);
-    }
-    return null;
+  // Mutation-driven via the shared driver: resolves on the DOM change that
+  // satisfies the predicate rather than on the next 300ms poll.
+  async function waitFor(fn, timeoutMs = 15000, _intervalMs = 300) {
+    return Driver.waitFor(fn, timeoutMs, { shouldAbort: () => state.stopRequested });
   }
 
+  // Trusted CDP click under turbo, synthetic events otherwise. The driver
+  // only scrolls when the element is off-screen, so the old unconditional
+  // scroll + sleep(150) per click is gone.
   async function clickLikeUser(el) {
     if (!el) return false;
-    try { el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (_) {}
-    await sleep(150);
-    ["mouseover", "mouseenter", "mousedown", "mouseup", "click"].forEach((type) => {
-      el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }));
-    });
-    if (typeof el.click === "function") el.click();
-    return true;
+    const result = await Driver.click(el);
+    return !!result.ok;
+  }
+
+  // Click, then resume when the resulting request finishes.
+  async function clickAndSettle(el, maxMs = 10000) {
+    if (!el) return false;
+    const result = await Driver.clickAndSettle(el, { timeoutMs: maxMs });
+    return !!result.ok;
+  }
+
+  async function settle(maxMs = 4000) {
+    const result = await Driver.waitForSettle({ timeoutMs: maxMs });
+    return !!result.ok;
   }
 
   function setNativeValue(input, value) {
@@ -450,7 +457,7 @@
     location.hash = ITEM_MASTER_HASH;
     const ok = await waitFor(() => isItemMasterPage(), 15000, 200);
     if (!ok) throw new Error("Cannot navigate to Item Master page");
-    await sleep(200);
+    await settle(3000);
     await enableIncludeInactive();
   }
 
@@ -463,7 +470,6 @@
 
     await clickLikeUser(codeInput);
     setNativeValue(codeInput, code);
-    await sleep(100);
 
     const searchBtn = await waitFor(() => {
       const el = document.querySelector("#iSearchBtn");
@@ -471,8 +477,9 @@
     }, 5000);
     if (!searchBtn) throw new Error("#iSearchBtn not found");
 
-    await clickLikeUser(searchBtn);
-    // Wait for results: #iModifyBtn0 appearing means data loaded
+    // The search XHR and the row it renders are two separate signals; wait for
+    // the request, then for the button that proves the row painted.
+    await clickAndSettle(searchBtn, 12000);
     await waitFor(() => document.querySelector("#iModifyBtn0"), 10000, 200);
   }
 
@@ -483,10 +490,10 @@
     }, 8000);
     if (!modifyBtn) return false;
 
-    await clickLikeUser(modifyBtn);
+    await clickAndSettle(modifyBtn, 12000);
     const ok = await waitFor(() => isItemDetailPage(), 12000, 200);
     if (!ok) throw new Error("Did not navigate to Item Detail page");
-    await sleep(300);
+    await settle(3000);
     return true;
   }
 

@@ -1,5 +1,25 @@
 [
   {
+    "codeName": "MERONEM",
+    "generic": "Meropenem",
+    "type": "ATB",
+    "exp": 2,
+    "storage": "Keep in Refrigerator",
+    "had": "",
+    "conc": "",
+    "rate": ""
+  },
+  {
+    "codeName": "test",
+    "generic": "test",
+    "type": "EYE",
+    "exp": 1,
+    "storage": "Keep in Room Temp.",
+    "had": "High Alert Drugs",
+    "conc": "",
+    "rate": ""
+  },
+  {
     "codeName": "KCl",
     "generic": "KCl",
     "type": "HAD",
@@ -200,7 +220,7 @@
     "rate": ""
   },
   {
-    "codeName": "Cefazolin (ceFAZolin 1 Gm)",
+    "codeName": "ceFAZolin",
     "generic": "Cefazolin",
     "type": "ATB",
     "exp": 7,
@@ -210,7 +230,7 @@
     "rate": "IV drip 60 ml/hr"
   },
   {
-    "codeName": "Ceftriaxone 1 g",
+    "codeName": "Ceftriaxone ",
     "generic": "Ceftriaxone",
     "type": "ATB",
     "exp": 7,
@@ -220,7 +240,7 @@
     "rate": "IV drip 10 ml/hr"
   },
   {
-    "codeName": "Vancomycin 500 mg",
+    "codeName": "Vancomycin ",
     "generic": "Vancomycin",
     "type": "ATB",
     "exp": 14,
@@ -230,7 +250,7 @@
     "rate": "IV drip in 30 min"
   },
   {
-    "codeName": "Pip/Tazo 4.5 g",
+    "codeName": "Pip/Tazo ",
     "generic": "Piperacillin/Tazobactam",
     "type": "ATB",
     "exp": 2,
@@ -240,8 +260,8 @@
     "rate": "IV drip every 8 hr"
   },
   {
-    "codeName": "Rocephin 2 g",
-    "generic": "Rocephin",
+    "codeName": "Rocephin",
+    "generic": "Ceftriaxone",
     "type": "ATB",
     "exp": 7,
     "storage": "Keep in Refrigerator",
@@ -250,8 +270,8 @@
     "rate": "IV drip 1 Gm/hr"
   },
   {
-    "codeName": "Dalacin-C 600 mg",
-    "generic": "Dalacin-C",
+    "codeName": "Dalacin-C ",
+    "generic": "Clindamycin",
     "type": "ATB",
     "exp": 7,
     "storage": "Keep in Refrigerator",
@@ -260,7 +280,7 @@
     "rate": "IV drip 30 mL/hr"
   },
   {
-    "codeName": "Meropenem 1 g",
+    "codeName": "Meropenem ",
     "generic": "Meropenem",
     "type": "ATB",
     "exp": 2,
@@ -270,8 +290,8 @@
     "rate": "IV drip every 24 hr"
   },
   {
-    "codeName": "Invanz 1 g",
-    "generic": "Invanz",
+    "codeName": "Invanz ",
+    "generic": "Ertapenem",
     "type": "ATB",
     "exp": 3,
     "storage": "Keep in Refrigerator",
@@ -280,7 +300,7 @@
     "rate": "IV drip in 1 hr"
   },
   {
-    "codeName": "Amikacin 500 mg",
+    "codeName": "Amikacin ",
     "generic": "Amikacin",
     "type": "ATB",
     "exp": 5,
@@ -290,7 +310,7 @@
     "rate": ""
   },
   {
-    "codeName": "Levofloxacin 750 mg",
+    "codeName": "Levofloxacin ",
     "generic": "Levofloxacin",
     "type": "ATB",
     "exp": 2,
@@ -300,7 +320,7 @@
     "rate": "IV drip every 5 hr"
   },
   {
-    "codeName": "Ceftazidime 1 g",
+    "codeName": "Ceftazidime ",
     "generic": "Ceftazidime",
     "type": "ATB",
     "exp": 7,
@@ -311,7 +331,7 @@
   },
   {
     "codeName": "5-FU",
-    "generic": "5-FU",
+    "generic": "5-Fluorouracil",
     "type": "Cytotoxic",
     "exp": 28,
     "storage": "Keep in Room Temp.",
@@ -330,7 +350,7 @@
     "rate": ""
   },
   {
-    "codeName": "Gemcitabine 200 mg",
+    "codeName": "Gemcitabine ",
     "generic": "Gemcitabine",
     "type": "Cytotoxic",
     "exp": 7,

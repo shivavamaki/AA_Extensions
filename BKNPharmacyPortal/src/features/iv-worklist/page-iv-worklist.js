@@ -447,32 +447,41 @@
     $('ivw-d-room').textContent = (r.ward || '') + '  ·  ' + (r.room || '');
     $('ivw-d-slot').textContent = (r.slot || '--') + ':00';
     $('ivw-d-dose').textContent = d.dose || '—';
-    $('ivw-d-solvent').textContent = d.solvent || '—';
+    // diluent + mix time are inputs now — filled in wireDoseInputs()
     $('ivw-d-freq').textContent = d.freq || '—';
     $('ivw-d-due').textContent  = C.hhmm(r.dueAt) + '  (' + C.relTime(r.dueAt, now) + ')';
-    $('ivw-d-prep').textContent = r.preparedAt ? C.hhmm(r.preparedAt) : '—';
+    wireDoseInputs(r, now);
 
-    const exp = C.expiryState(r, now);
-    $('ivw-d-exp').textContent = r.expiresAt
-      ? C.hhmm(r.expiresAt) + '  (' + (exp === 'expired' ? 'EXPIRED' : C.relTime(r.expiresAt, now)) + ')'
-      : '—';
-    $('ivw-d-by').textContent      = r.preparedBy || '—';
-    $('ivw-d-checked').textContent = r.checkedBy || '—';
-
-    // Per-dose signing: default to the header pickers, override per bag.
+    /* Per-dose signing, defaulting to the header pickers.
+     *
+     * The default must be written onto the ROW, not just into the input: the
+     * sticker is built from the row, so a name that only ever lived in the
+     * header printed as "Prep.: —" even though the field on screen showed it.
+     * Whatever the pharmacist can see in the box is what the label must carry. */
     const dp = $('ivw-d-prep-by'), dc = $('ivw-d-check-by');
-    dp.value = r.preparedBy || U.state.preparedBy || '';
-    dc.value = r.checkedBy  || U.state.checkedBy  || '';
-    dp.oninput  = () => { r.preparedBy = dp.value.trim(); refreshSignHint(r); };
-    dc.oninput  = () => { r.checkedBy  = dc.value.trim(); refreshSignHint(r); };
+    let dirtySigners = false;
+    if (!r.preparedBy && U.state.preparedBy) { r.preparedBy = U.state.preparedBy; dirtySigners = true; }
+    if (!r.checkedBy  && U.state.checkedBy)  { r.checkedBy  = U.state.checkedBy;  dirtySigners = true; }
+    dp.value = r.preparedBy || '';
+    dc.value = r.checkedBy  || '';
+    // Repaint the label as the names are typed: Prep./Check are printed on the
+    // sticker, so the preview must show what will actually come out.
+    dp.oninput  = () => { r.preparedBy = dp.value.trim(); refreshSignHint(r); paintSticker(r); };
+    dc.oninput  = () => { r.checkedBy  = dc.value.trim(); refreshSignHint(r); paintSticker(r); };
     // Persist on blur, not per keystroke — one write per correction.
     dp.onchange = () => saveFields(r, { preparedBy: dp.value.trim() });
     dc.onchange = () => saveFields(r, { checkedBy:  dc.value.trim() });
     refreshSignHint(r);
+    // wireDoseInputs() painted the label before these defaults were applied,
+    // so repaint now that preparedBy / checkedBy are on the row.
+    paintSticker(r);
+    // Persist a default the moment it is adopted, so the name survives a reload
+    // and other workstations see who prepared the bag — not just this screen.
+    if (dirtySigners) saveFields(r, { preparedBy: r.preparedBy, checkedBy: r.checkedBy });
 
-    // Live label preview, scaled down — what will come off the printer. Built
-    // from the row, so the printed expiry is always the row's own expiresAt.
-    $('ivw-d-sticker').innerHTML = S.buildIpdLabel(r);
+    // Preview is painted by paintSticker(), called from wireDoseInputs() and
+    // again whenever a signer name changes — painting it here as well would
+    // render a stale copy AFTER those handlers had already drawn the current one.
 
     const audit = $('ivw-d-audit');
     audit.textContent = '';
@@ -486,8 +495,12 @@
 
     // Printing stamps the bag first: a label with no preparer and no mix time
     // is useless on a ward, so the click both records and prints.
-    $('ivw-d-print-ipd').onclick   = async () => { await stampForPrint(r); S.printIpd([r]); render(); };
-    $('ivw-d-print-small').onclick = async () => { await stampForPrint(r); S.printSmall([r]); render(); };
+    /* Printing does NOT change the status. Coupling the two meant a print
+       silently pushed the dose to `preparing` through two server round-trips,
+       and a refused transition stopped the label printing at all. The
+       pharmacist advances the status with the buttons below when they mean to. */
+    $('ivw-d-print-ipd').onclick   = () => S.printIpd([r]);
+    $('ivw-d-print-small').onclick = () => S.printSmall([r]);
 
     renderActions(r);
   }
@@ -500,21 +513,108 @@
     h.classList.toggle('is-warn', !v.ok);
   }
 
+
+  /* Local datetime <-> ISO. A datetime-local input has no timezone, so it must
+     be read as WALL CLOCK time — using toISOString() here would shift the mix
+     time by the UTC offset and put the expiry 7 hours out. */
+  function toLocalInput(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (!isFinite(d.getTime())) return '';
+    const p = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+           'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  function fromLocalInput(v) {
+    if (!v) return null;
+    const d = new Date(v);          // parsed in local time, which is what we want
+    return isFinite(d.getTime()) ? d.toISOString() : null;
+  }
+
+  /** Diluent choices, from the preset DB plus whatever is already in use. */
+  function fillDiluentList() {
+    const dl = $('ivw-dil-list');
+    if (!dl) return;
+    const set = new Set();
+    const db = window.IVDrugDB;
+    if (db && db.DRUGS) {
+      db.DRUGS.forEach(d => {
+        if (d.adult) set.add(d.adult);
+        if (d.child) set.add(d.child);
+      });
+    }
+    state.rows.forEach(r => { if (r.drug && r.drug.solvent) set.add(r.drug.solvent); });
+    ['NSS 50 mL', 'NSS 100 mL', 'NSS 250 mL', 'SWI 10 mL', 'SWI 20 mL', 'D-5-W']
+      .forEach(v => set.add(v));
+    dl.textContent = '';
+    [...set].filter(Boolean).sort().forEach(v => {
+      const o = document.createElement('option');
+      o.value = v;
+      dl.appendChild(o);
+    });
+  }
+
   /**
-   * Fill in preparer + mix time if the bag has not been stamped yet.
+   * Diluent + mix time inputs.
    *
-   * Printing a label IS the moment of preparation in practice, so the sticker
-   * must never come out blank. Does not advance the status — that stays an
-   * explicit action.
+   * The pharmacist sets only WHEN it was mixed; the expiry is derived from the
+   * drug's own shelf life, so nobody can type an expiry that contradicts the
+   * stability rule. Changing either field re-renders the sticker preview
+   * immediately, so what is on screen is what will print.
    */
-  async function stampForPrint(r) {
-    if (r.preparedAt) return;                       // already stamped
-    // Printing a label IS the moment of preparation, and the printed expiry must
-    // be the STORED one — so move the row to `preparing` server-side and print
-    // what comes back, rather than inventing a time the server never saw.
-    if (!r.preparedBy) r.preparedBy = U.state.preparedBy || '';
-    if (r.status === 'ordered') await transition(r.id, 'pending');
-    if (r.status === 'pending') await transition(r.id, 'preparing');
+  function wireDoseInputs(r, now) {
+    const d = r.drug || {};
+    const sol = $('ivw-d-solvent-in');
+    const mix = $('ivw-d-mixed-in');
+
+    sol.value = d.solvent || '';
+    sol.oninput = () => {
+      d.solvent = sol.value.trim();
+      paintSticker(r);
+    };
+    sol.onchange = () => saveFields(r, { solvent: d.solvent });
+
+    mix.value = toLocalInput(r.preparedAt);
+    const applyMix = () => {
+      r.preparedAt = fromLocalInput(mix.value);
+      r.expiresAt = r.preparedAt
+        ? C.computeExpiry(r.preparedAt, d.stabilityHours)
+        : null;
+      paintExpiry(r);
+      paintSticker(r);
+    };
+    mix.oninput = applyMix;
+    mix.onchange = () => {
+      applyMix();
+      saveFields(r, { preparedAt: r.preparedAt, expiresAt: r.expiresAt });
+    };
+
+    $('ivw-d-mix-now').onclick = () => {
+      mix.value = toLocalInput(new Date().toISOString());
+      applyMix();
+      saveFields(r, { preparedAt: r.preparedAt, expiresAt: r.expiresAt });
+    };
+
+    paintExpiry(r);
+  }
+
+  /** Expiry is shown, never typed — it is computed from mix time + shelf life. */
+  function paintExpiry(r) {
+    const now = Date.now();
+    const el = $('ivw-d-exp');
+    if (!r.expiresAt) {
+      const h = (r.drug || {}).stabilityHours;
+      el.textContent = h ? ('— (อายุยา ' + h + ' ชม. หลังผสม)') : '—';
+      return;
+    }
+    const st = C.expiryState(r, now);
+    el.textContent = C.hhmm(r.expiresAt) + '  (' +
+      (st === 'expired' ? 'หมดอายุแล้ว' : C.relTime(r.expiresAt, now)) + ')';
+  }
+
+  function paintSticker(r) {
+    const host = $('ivw-d-sticker');
+    if (host) host.innerHTML = S.buildIpdLabel(r);
   }
 
   function renderActions(r) {
@@ -633,6 +733,7 @@
     }
     announceNew(state.rows);
     renderFilters();
+    fillDiluentList();
     render();
   }
 

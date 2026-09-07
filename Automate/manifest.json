@@ -1,15 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Arcus Toolkit",
-  "version": "4.2.0",
-  "version_name": "2026.06.15 — Auto Dispense and IP Fill automation panel",
+  "version": "4.6.1",
+  "version_name": "2026-09-02 - Re-confirm after override dialog; auto override; CDP turbo",
   "description": "Auto Dispense and IP Fill automation for Arcus Pharmacy Management System.",
   "permissions": [
     "activeTab",
     "scripting",
     "storage",
     "tabs",
-    "downloads"
+    "downloads",
+    "debugger"
   ],
   "host_permissions": [
     "https://arcusair.bdms.co.th/*",
@@ -27,19 +28,43 @@
         "https://arcusair.bdms.co.th/*"
       ],
       "js": [
+        "content/api-client.js",
+        "content/driver.js",
         "content/shared.js",
+        "content/auto-override.js",
         "content/panel.js",
         "content/automation.js",
         "content/boot.js",
         "content/ipfill_panel.js",
         "content/drug-image.js",
         "content/frequency-master.js",
-        "content/order-item.js"
+        "content/order-item.js",
+        "content/translation.js"
       ],
       "css": [
         "styles.css"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://arcusair.bdms.co.th/*"
+      ],
+      "js": [
+        "page-hook.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "page-hook.js"
+      ],
+      "matches": [
+        "https://arcusair.bdms.co.th/*"
+      ]
     }
   ]
 }

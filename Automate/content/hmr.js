@@ -11,16 +11,25 @@
   // ── Storage ──────────────────────────────────────────────────────────
 
   function loadState(cb) {
-    chrome.storage.local.get([STORAGE_KEY], r => {
+    // Reloading the extension while this page stays open kills the connection:
+    // chrome.storage still exists but calling it throws.
+    try {
+      chrome.storage.local.get([STORAGE_KEY], r => {
       _allState = r[STORAGE_KEY] || {};
       _stateReady = true;
       if (cb) cb();
-    });
+      });
+    } catch (_) {
+      _stateReady = true;      // carry on with empty state
+      if (cb) cb();
+    }
   }
 
   function saveRoomData(key, data) {
     _allState[key] = data;
-    chrome.storage.local.set({ [STORAGE_KEY]: _allState });
+    try {
+      chrome.storage.local.set({ [STORAGE_KEY]: _allState });
+    } catch (_) {}
   }
 
   function getRoomData(key) {

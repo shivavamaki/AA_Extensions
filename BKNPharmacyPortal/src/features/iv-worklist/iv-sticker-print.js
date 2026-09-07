@@ -29,6 +29,29 @@
            ` ${pad(x.getHours())}:${pad(x.getMinutes())}`;
   }
 
+  /**
+   * The ArcusAir banner prints a Latin name twice, back to back
+   * ("MR. X Y MR. X Y"), and the extractor captures the whole run. On an
+   * 8x3.5 cm label that doubling costs a whole line. Collapse an exact
+   * repeated tail; leave anything that is not a clean repeat untouched.
+   */
+  function dedupeName(n) {
+    const t = String(n == null ? '' : n).replace(/\s+/g, ' ').trim();
+    const half = Math.floor(t.length / 2);
+    for (let L = half; L >= 6; L--) {
+      const a = t.slice(-L).trim();
+      const b = t.slice(-2 * L, -L).trim();
+      if (a && a.toLowerCase() === b.toLowerCase()) return a;
+    }
+    return t;
+  }
+
+  /** Short drug name for the label: the pharmacy's nickname when we have one. */
+  function labelDrug(d) {
+    d = d || {};
+    return d.nickname || d.name || '';
+  }
+
   /* ── IPD label: 8 × 3.5 cm ──────────────────────────────────────────────── */
 
   function buildIpdLabel(r) {
@@ -38,8 +61,8 @@
     return `<div class="label-ipd">
   ${isHad ? '<div class="had-banner">⚠ HIGH ALERT DRUGS ⚠</div>' : ''}
   <div class="top-row"><span>HN: ${esc(r.hn)}</span><span>ROOM: ${esc(r.room)}</span></div>
-  <div class="patient-name">${esc(r.name)}${r.age ? ' · ' + esc(r.age) + ' Y' : ''}</div>
-  <div class="drug-name">${esc(d.name)} ${esc(d.dose)}${esc(inStr)}</div>
+  <div class="patient-name">${esc(dedupeName(r.name))}${r.age ? ' · ' + esc(r.age) + ' Y' : ''}</div>
+  <div class="drug-name">${esc(labelDrug(d))} ${esc(d.dose)}${esc(inStr)}</div>
   ${d.rate ? `<div class="rate-line">${esc(d.rate)}</div>` : ''}
   <div class="info-grid">
     <div class="info-row"><span class="info-key">Freq:</span><span class="info-val">${esc(d.freq || '')}</span></div>
@@ -82,7 +105,7 @@
   function buildSmallLabel(r) {
     const d = r.drug || {};
     return `<div class="label-sm">
-  <div class="sm-drug">${esc(d.name)} ${esc(d.dose)}</div>
+  <div class="sm-drug">${esc(labelDrug(d))} ${esc(d.dose)}</div>
   <div class="sm-line">${esc(r.hn)} · ${esc(r.room)}</div>
   <div class="sm-line">${esc(r.slot || '')}:00 · ${esc(d.freq || '')}</div>
   <div class="sm-exp">Exp ${esc(fmtDatetime(r.expiresAt))}</div>

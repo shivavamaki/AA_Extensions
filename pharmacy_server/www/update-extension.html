@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>อัปเดต BKN Pharmacy Portal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#f4f6f8; --panel:#fff; --panel2:#eef2f6; --line:#d9e1e8; --line2:#eaeff3;
+    --text:#1a2530; --dim:#5d707f; --faint:#8ba0b0;
+    --accent:#1f7fc4; --ok:#1e8f63; --warn:#b8792a; --alert:#c8352a;
+    --radius:11px;
+    --shadow:0 1px 2px rgba(26,37,48,.06), 0 1px 8px rgba(26,37,48,.04);
+    --font:"Sarabun","Segoe UI",system-ui,-apple-system,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0f1720; --panel:#17212c; --panel2:#1e2a37; --line:#2a3947; --line2:#243140;
+      --text:#e8eef4; --dim:#8ba0b4; --faint:#5d7183;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 1px 10px rgba(0,0,0,.2);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1720; --panel:#17212c; --panel2:#1e2a37; --line:#2a3947; --line2:#243140;
+    --text:#e8eef4; --dim:#8ba0b4; --faint:#5d7183;
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 var(--font);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:0 20px 48px}
+
+  header{background:var(--panel);border-bottom:1px solid var(--line);box-shadow:var(--shadow)}
+  .head-in{max-width:900px;margin:0 auto;padding:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .logo{font-size:30px}
+  h1{margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em}
+  .sub{color:var(--dim);font-size:13px;margin-top:2px}
+  .spacer{flex:1}
+  .ver-badge{
+    background:var(--ok);color:#fff;border-radius:999px;padding:5px 15px;
+    font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;
+  }
+  .ver-badge.is-loading{background:var(--faint)}
+
+  h2{font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--dim);
+     font-weight:700;margin:30px 0 12px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+        box-shadow:var(--shadow);padding:20px}
+
+  /* ── Download ─────────────────────────────────────────────── */
+  .dl{display:flex;gap:14px;flex-wrap:wrap;align-items:stretch}
+  .dl-main{flex:1 1 320px}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:9px;
+    background:var(--accent);color:#fff;text-decoration:none;font-weight:700;font-size:16px;
+    border:0;border-radius:10px;padding:15px 26px;cursor:pointer;width:100%;
+  }
+  .btn:hover{background:#1a6ea9}
+  .btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  .btn.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line);font-size:14px;padding:12px 20px}
+  .btn.secondary:hover{background:var(--line2)}
+  .btn-note{font-size:12.5px;color:var(--dim);margin-top:8px;text-align:center}
+
+  /* ── Steps ────────────────────────────────────────────────── */
+  ol.steps{margin:0;padding:0;list-style:none;counter-reset:s}
+  ol.steps li{
+    counter-increment:s;position:relative;padding:0 0 20px 46px;
+    border-left:2px solid var(--line2);margin-left:15px;
+  }
+  ol.steps li:last-child{border-left-color:transparent;padding-bottom:0}
+  ol.steps li::before{
+    content:counter(s);position:absolute;left:-16px;top:-2px;
+    width:30px;height:30px;border-radius:50%;
+    background:var(--accent);color:#fff;font-weight:700;font-size:14px;
+    display:grid;place-items:center;
+  }
+  .step-t{font-weight:700;margin-bottom:2px}
+  .step-d{color:var(--dim);font-size:13.5px}
+  kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;
+      border-radius:5px;padding:1px 7px;font:inherit;font-size:12.5px;font-weight:600;white-space:nowrap}
+
+  /* ── Security note ────────────────────────────────────────── */
+  .why{
+    background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--warn);
+    border-radius:var(--radius);padding:14px 18px;font-size:13.5px;color:var(--dim);margin-top:16px;
+  }
+  .why b{color:var(--text)}
+
+  /* ── Releases ─────────────────────────────────────────────── */
+  .rel{border-bottom:1px solid var(--line2);padding:16px 0}
+  .rel:last-child{border-bottom:0;padding-bottom:0}
+  .rel:first-child{padding-top:0}
+  .rel-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:5px}
+  .rel-v{font-weight:700;font-variant-numeric:tabular-nums}
+  .chip{font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+        padding:2px 9px;border-radius:999px}
+  .chip.feature{background:#e3f1e9;color:var(--ok)}
+  .chip.fix{background:#fdf2e4;color:var(--warn)}
+  .chip.data{background:#e6eef7;color:var(--accent)}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .chip.feature{background:#123122}
+    :root:not([data-theme="light"]) .chip.fix{background:#2f2513}
+    :root:not([data-theme="light"]) .chip.data{background:#14283c}
+  }
+  .rel-d{margin-left:auto;color:var(--faint);font-size:12.5px;font-variant-numeric:tabular-nums}
+  .rel-t{font-weight:600;margin-bottom:3px}
+  .rel-t-en{color:var(--dim);font-size:13px;font-weight:400;margin-bottom:7px}
+  .rel ul{margin:0;padding-left:20px;font-size:13.5px;color:var(--dim)}
+  .rel ul li{margin-bottom:3px}
+  .rel.is-current{background:var(--panel2);margin:0 -20px;padding:16px 20px;border-radius:9px}
+
+  .hash{font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--faint);
+        word-break:break-all;margin-top:10px;line-height:1.5}
+  .hash b{color:var(--dim);font-family:var(--font)}
+  .muted{color:var(--faint)}
+  footer{color:var(--faint);font-size:12.5px;text-align:center;margin-top:34px}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-in">
+    <span class="logo">💊</span>
+    <div>
+      <h1>อัปเดต BKN Pharmacy Portal</h1>
+      <div class="sub">Update the pharmacy Chrome extension</div>
+    </div>
+    <div class="spacer"></div>
+    <span class="ver-badge is-loading" id="ver">กำลังตรวจสอบ…</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2>ดาวน์โหลด · Download</h2>
+  <div class="card">
+    <div class="dl">
+      <div class="dl-main">
+        <a class="btn" id="dl-bat" href="/bkn-install.bat" download>
+          ⬇ ดาวน์โหลดตัวติดตั้ง · Download installer
+        </a>
+        <div class="btn-note">ไฟล์เดียว ใช้ได้ทุกครั้งที่มีเวอร์ชันใหม่ · One file, reuse it for every future update</div>
+      </div>
+      <div class="dl-main">
+        <a class="btn secondary" id="dl-zip" href="/ext-download">
+          🗜 ดาวน์โหลด .zip เอง · Download the .zip only
+        </a>
+        <div class="btn-note">สำหรับติดตั้งด้วยตนเอง · For manual install</div>
+      </div>
+    </div>
+    <div class="hash" id="hash"></div>
+  </div>
+
+  <h2>วิธีติดตั้ง · How to install</h2>
+  <div class="card">
+    <ol class="steps">
+      <li>
+        <div class="step-t">กดปุ่ม “ดาวน์โหลดตัวติดตั้ง” ด้านบน</div>
+        <div class="step-d">ไฟล์ <code>bkn-install.bat</code> จะถูกบันทึกไว้ในโฟลเดอร์ Downloads ของเครื่องคุณ<br>
+          The file is saved to your own Downloads folder.</div>
+      </li>
+      <li>
+        <div class="step-t">เปิดโฟลเดอร์ Downloads แล้ว <b>ดับเบิลคลิก</b> ไฟล์นั้น</div>
+        <div class="step-d">ถ้า Windows ถามเรื่องความปลอดภัย ให้เลือก <kbd>More info</kbd> → <kbd>Run anyway</kbd><br>
+          If Windows asks, choose More info → Run anyway.</div>
+      </li>
+      <li>
+        <div class="step-t">รอจนขึ้นข้อความ “Updated to version …”</div>
+        <div class="step-d">ตัวติดตั้งจะดาวน์โหลด ตรวจสอบ แล้วติดตั้งลงที่ <code>D:\pharmacy</code> ให้เอง<br>
+          The installer downloads, verifies, then installs to D:\pharmacy by itself.</div>
+      </li>
+      <li>
+        <div class="step-t">Chrome จะเปิดขึ้นมา — กดปุ่ม <b>รีโหลด ↻</b> ของส่วนขยาย</div>
+        <div class="step-d">แล้วปิดแท็บนั้นได้เลย เป็นอันเสร็จ<br>
+          Press the extension’s reload arrow, then close the tab. Done.</div>
+      </li>
+    </ol>
+
+    <div class="why">
+      <b>ทำไมต้องดาวน์โหลดมาไว้ที่เครื่องตัวเอง?</b><br>
+      สคริปต์ที่วางอยู่บนไดรฟ์ที่ใช้ร่วมกัน ใครก็ตามที่เขียนไฟล์ในโฟลเดอร์นั้นได้
+      สามารถแก้ไขไฟล์นั้น แล้วโค้ดจะทำงานบนทุกเครื่องที่เปิดมัน
+      การเก็บสำเนาไว้ที่เครื่องตัวเองจึงปลอดภัยกว่า
+      <br><br>
+      <b>Why download it instead of running it from the shared drive?</b>
+      A script on a share can be replaced by anyone who can write to that folder,
+      and would then run on every workstation that launches it. Your own local copy removes that risk.
+    </div>
+  </div>
+
+  <h2>เวอร์ชันล่าสุด · What’s new</h2>
+  <div class="card" id="releases">
+    <div class="muted">กำลังโหลด… · Loading…</div>
+  </div>
+
+  <footer>
+    BKN Pharmacy Portal · <span id="foot-ver" class="muted">—</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  /* Current published version + checksum. The page is served BY the pharmacy
+     server, so a same-origin relative path always reaches the right host —
+     never hard-code an IP here, or the page breaks when the server moves. */
+  fetch('/api/ext-version')
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(info => {
+      const v = info.version || '—';
+      const b = $('ver');
+      b.textContent = 'เวอร์ชัน ' + v;
+      b.classList.remove('is-loading');
+      $('foot-ver').textContent = 'v' + v;
+      if (info.sha256) {
+        const mb = info.size ? (info.size / 1048576).toFixed(1) + ' MB · ' : '';
+        // Published so the download can be checked. Verify on a PC with:
+        //   certutil -hashfile <file> SHA256
+        $('hash').innerHTML =
+          '<b>ขนาด · Size:</b> ' + mb +
+          '<b>SHA-256:</b> ' + esc(info.sha256) +
+          '<br><span class="muted">ตรวจสอบไฟล์ได้ด้วยคำสั่ง · Verify with: ' +
+          '<code>certutil -hashfile bkn-portal.zip SHA256</code></span>';
+      }
+      render(v);
+    })
+    .catch(() => {
+      const b = $('ver');
+      b.textContent = 'ต่อ Server ไม่ได้';
+      b.classList.remove('is-loading');
+      b.style.background = 'var(--alert)';
+      render(null);
+    });
+
+  /* Release notes are curated in data/rx/releases.json — edited by the
+     pharmacy, not generated from commits, so the wording staff read is the
+     wording you chose. */
+  function render(currentVer) {
+    fetch('/api/releases')
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        const rels = (data && data.releases) || [];
+        if (!rels.length) return fail();
+        $('releases').innerHTML = rels.map((r, i) => {
+          const items = (r.items || []).map(x => '<li>' + esc(x) + '</li>').join('');
+          const cur = (currentVer && r.version === currentVer) || (!currentVer && i === 0);
+          return '<div class="rel' + (cur ? ' is-current' : '') + '">' +
+            '<div class="rel-h">' +
+              '<span class="rel-v">v' + esc(r.version) + '</span>' +
+              (r.kind ? '<span class="chip ' + esc(r.kind) + '">' + esc(r.kind) + '</span>' : '') +
+              (cur ? '<span class="chip data">ใช้อยู่ · current</span>' : '') +
+              '<span class="rel-d">' + esc(r.date || '') + '</span>' +
+            '</div>' +
+            (r.title_th ? '<div class="rel-t">' + esc(r.title_th) + '</div>' : '') +
+            (r.title_en ? '<div class="rel-t-en">' + esc(r.title_en) + '</div>' : '') +
+            (items ? '<ul>' + items + '</ul>' : '') +
+          '</div>';
+        }).join('');
+      })
+      .catch(fail);
+  }
+
+  function fail() {
+    $('releases').innerHTML =
+      '<div class="muted">ยังไม่มีบันทึกการเปลี่ยนแปลง · No release notes published yet.</div>';
+  }
+})();
+</script>
+</body>
+</html>

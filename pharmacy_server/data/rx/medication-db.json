@@ -25865,8 +25865,14 @@
     "image_path": "",
     "image_file": "",
     "original_image_file": "",
-    "instructions": [],
-    "instructionCount": 0
+    "instructions": [
+      {
+        "type": "Patient Instruction",
+        "EN": "(ทานหลังอาหารทันที) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ",
+        "TH": "(ทานหลังอาหารทันที) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ"
+      }
+    ],
+    "instructionCount": 1
   },
   "51142106000013": {
     "code": "51142106000013",

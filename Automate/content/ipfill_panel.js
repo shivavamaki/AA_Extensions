@@ -90,8 +90,9 @@
   };
 
   window.ArcusStore = window.ArcusStore || {};
-  window.ArcusStore.ipfill = { state, SELECTORS, DEFAULT_WARD_OPTIONS, MODES, version: "3.9.3" };
+  window.ArcusStore.ipfill = { state, SELECTORS, DEFAULT_WARD_OPTIONS, MODES, version: "4.3.0" };
 
+  const Driver = window.ArcusDriver;
   const sleep = window.ArcusShared?.sleep || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   const clamp = window.ArcusShared?.clamp || ((value, min, max) => Math.min(Math.max(value, min), max));
   const escapeHtml = window.ArcusShared?.escapeHtml || ((str) => String(str)
@@ -179,15 +180,23 @@
     return output;
   }
 
+  // Routed through the shared driver: trusted CDP clicks under turbo, synthetic
+  // events otherwise, and no unconditional scroll+sleep on every call.
   async function clickLikeUser(el) {
     if (!el) return false;
-    try { el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" }); } catch (_) {}
-    await sleep(120);
-    ["mouseover", "mouseenter", "mousedown", "mouseup", "click"].forEach((type) => {
-      el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }));
-    });
-    if (typeof el.click === "function") el.click();
-    return true;
+    const result = await Driver.click(el);
+    return !!result.ok;
+  }
+
+  async function clickAndSettle(el, maxMs = 8000) {
+    if (!el) return false;
+    const result = await Driver.clickAndSettle(el, { timeoutMs: maxMs });
+    return !!result.ok;
+  }
+
+  async function settle(maxMs = 4000) {
+    const result = await Driver.waitForSettle({ timeoutMs: maxMs });
+    return !!result.ok;
   }
 
   function setNativeValue(el, value) {
@@ -198,15 +207,9 @@
     el.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
-  async function waitFor(fn, timeoutMs = 15000, intervalMs = 250) {
-    const start = Date.now();
-    while (Date.now() - start < timeoutMs) {
-      if (state.stopRequested) return null;
-      const result = fn();
-      if (result) return result;
-      await sleep(intervalMs);
-    }
-    return null;
+  // Mutation-driven; resolves on the change itself instead of the next tick.
+  async function waitFor(fn, timeoutMs = 15000, _intervalMs = 250) {
+    return Driver.waitFor(fn, timeoutMs, { shouldAbort: () => state.stopRequested });
   }
 
   function setPanelDismissed(value) {
@@ -578,7 +581,7 @@
       const ok = await waitFor(() => isStartPage(), 20000, 300);
       if (!ok) throw new Error(`Cannot reach ${cfg.label} start page`);
     }
-    await sleep(800);
+    await settle(3000);
   }
 
   async function clickNewAndWaitDetail() {
@@ -588,13 +591,13 @@
       return isClickable(el) ? el : null;
     }, 15000, 300);
     if (!newBtn) throw new Error("#newipfill not found or not clickable");
-    await clickLikeUser(newBtn);
+    await clickAndSettle(newBtn, 12000);
 
     const cfg = getModeConfig();
     setStatus(`Step 3: waiting for ${cfg.detailRoute} URL`);
     const ok = await waitFor(() => isDetailPage(), 20000, 300);
     if (!ok) throw new Error(`Did not navigate to ${cfg.detailRoute} after New`);
-    await sleep(900);
+    await settle(3000);
   }
 
   async function findWardInput() {
@@ -620,7 +623,8 @@
     setNativeValue(input, wardText);
     input.dispatchEvent(new KeyboardEvent("keydown", { key: wardText.slice(-1) || "a", bubbles: true, cancelable: true }));
     input.dispatchEvent(new KeyboardEvent("keyup", { key: wardText.slice(-1) || "a", bubbles: true, cancelable: true }));
-    await sleep(900);
+    // The ward list is fetched; resume when that lookup returns.
+    await settle(3000);
 
     const option = await waitFor(() => {
       const opts = queryAll(SELECTORS.autocompleteOptions, document, true);
@@ -633,8 +637,7 @@
     }, 6000, 250);
 
     if (option) {
-      await clickLikeUser(option);
-      await sleep(600);
+      await clickAndSettle(option, 4000);
       pushLog("success", `Selected Ward option: ${textOf(option) || wardText}`);
     } else {
       // Fallback: press Enter. This may work when Arcus has already resolved a valid md-selected-item.
@@ -656,10 +659,9 @@
       return isClickable(el) ? el : null;
     }, 10000, 300);
     if (!searchBtn) throw new Error("#searchipfill not found or disabled");
-    await clickLikeUser(searchBtn);
+    await clickAndSettle(searchBtn, 20000);
 
     setStatus("Step 6: waiting for data / confirm button");
-    await sleep(1000);
     return waitForSearchOutcome(25000);
   }
 
@@ -749,8 +751,7 @@
     }
 
     setStatus("Step 7: click confirm button");
-    await clickLikeUser(outcome.el);
-    await sleep(1300);
+    await clickAndSettle(outcome.el, 15000);
 
     const dialog = findOpenDialog();
     if (dialog) {
@@ -839,7 +840,7 @@
   async function diagnose() {
     const wardInput = await findWardInput();
     const report = {
-      version: "3.9.3",
+      version: "4.3.0",
       mode: state.mode,
       modeLabel: getModeConfig().label,
       startRoute: getModeConfig().startRoute,

@@ -226,7 +226,16 @@ def apply_transition(data_dir, row_id, to, actor, atomic_write_json,
 
 def patch_fields(data_dir, row_id, fields, atomic_write_json, date_str=None):
     """Edit the few free-text fields a pharmacist may correct by hand."""
-    ALLOWED = {'preparedBy', 'checkedBy', 'note', 'priority'}
+    # Fields a pharmacist may correct by hand. `solvent` and `preparedAt` are
+    # here because the eMAR order states neither: the diluent comes from the
+    # preset but can be overridden at the hood, and the mix time is something
+    # only the person mixing knows.
+    #
+    # `expiresAt` is deliberately NOT accepted from the client — it is
+    # recomputed below from preparedAt + the drug's own stability, so a wrong
+    # or stale client can never write an expiry that contradicts the drug.
+    ALLOWED = {'preparedBy', 'checkedBy', 'note', 'priority',
+               'solvent', 'preparedAt'}
     date_str = date_str or today_str()
     with _lock:
         rows = load_day(data_dir, date_str)
@@ -235,8 +244,21 @@ def patch_fields(data_dir, row_id, fields, atomic_write_json, date_str=None):
             return None, 'Not found'
         row = rows[idx]
         for k, v in (fields or {}).items():
-            if k in ALLOWED:
+            if k not in ALLOWED:
+                continue
+            if k == 'solvent':
+                drug = row.get('drug') or {}
+                drug['solvent'] = v
+                row['drug'] = drug
+            else:
                 row[k] = v
+
+        # Expiry always follows the mix time and the drug's stability — never
+        # whatever the client sent.
+        if 'preparedAt' in (fields or {}):
+            stab = (row.get('drug') or {}).get('stabilityHours')
+            row['expiresAt'] = compute_expiry(row.get('preparedAt'), stab)
+
         row['updatedAt'] = _now_iso()
         rows[idx] = row
         save_day(data_dir, date_str, rows, atomic_write_json)
@@ -280,6 +302,38 @@ def sync_doses(data_dir, incoming, atomic_write_json, date_str=None):
 
         for inc in incoming or []:
             inc.setdefault('date', date_str)
+            # Apply the pharmacy's own presets, keyed on the ArcusAir item
+            # code. The eMAR order never states a diluent or a stability
+            # window, so both come from the master here rather than from
+            # whatever the client sent — one place to correct, and the board
+            # and the sticker can never disagree.
+            _d = inc.get('drug') or {}
+            _prep = find_prep(data_dir, _d.get('code'), _d.get('name'))
+            if _prep:
+                if _prep.get('wardPrepares'):
+                    continue          # ward mixes it; not pharmacy work
+                if not _d.get('solvent'):
+                    _d['solvent'] = pick_diluent(
+                        _prep,
+                        parse_dose_mg(_d.get('dose')),
+                        bool(inc.get('isChild')))
+                if _prep.get('stabilityHours'):
+                    _d['stabilityHours'] = _prep['stabilityHours']
+                elif _prep.get('shelfDays'):
+                    _d['stabilityHours'] = _prep['shelfDays'] * 24
+                _d['had'] = bool(_prep.get('had'))
+                # Short name for the sticker. The ArcusAir item name is written
+                # for an order screen ("Rocephin INJ (2 g) I.V.Vial #") and is
+                # far too long for an 8x3.5 cm label, where it wraps onto three
+                # lines and pushes the dose off the bottom. The workbook's own
+                # nickname is what the pharmacy calls the drug.
+                if _prep.get('nickname'):
+                    _d['nickname'] = _prep['nickname']
+                if not _d.get('freq') and _prep.get('defaultFreq'):
+                    _d['freq'] = _prep['defaultFreq']
+                if _prep.get('concMgPerMl'):
+                    _d['concMgPerMl'] = _prep['concMgPerMl']
+                inc['drug'] = _d
             k = dose_key(inc)
             seen.add(k)
             cur = by_key.get(k)
@@ -312,6 +366,160 @@ def sync_doses(data_dir, incoming, atomic_write_json, date_str=None):
 
         save_day(data_dir, date_str, existing, atomic_write_json)
         return {'total': len(existing), 'added': added, 'cancelled': cancelled}
+
+
+# ── Preset lookup (data/rx/iv-prep-db.json) ───────────────────────────────
+
+_PREP_CACHE = {'mtime': None, 'by_code': {}, 'by_name': []}
+
+
+def _load_prep_db(data_dir):
+    """The IV preparation master, cached by mtime.
+
+    Re-read when the file changes so a preset edited in the editor takes effect
+    on the next dose without restarting the server.
+    """
+    f = data_dir / 'rx' / 'iv-prep-db.json'
+    try:
+        m = f.stat().st_mtime
+    except OSError:
+        return _PREP_CACHE
+    if _PREP_CACHE['mtime'] == m:
+        return _PREP_CACHE
+    try:
+        with open(f, encoding='utf-8') as fh:
+            db = json.load(fh)
+    except (OSError, ValueError):
+        return _PREP_CACHE
+    by_code, by_name = {}, []
+    for it in db.get('items') or []:
+        if it.get('code'):
+            by_code[str(it['code'])] = it
+        nick = (it.get('nickname') or '').strip().lower()
+        if nick:
+            by_name.append((nick, it))
+    # Longest nickname first: "Meropenem 1 g" should prefer a longer, more
+    # specific entry over a short fragment that also matches.
+    by_name.sort(key=lambda kv: -len(kv[0]))
+    _PREP_CACHE.update({'mtime': m, 'by_code': by_code, 'by_name': by_name})
+    return _PREP_CACHE
+
+
+def find_prep(data_dir, code=None, name=None):
+    """Preset for ONE ordered item.
+
+    Keyed on the ArcusAir item code, because strength and pack size change the
+    preparation: Rocephin 1 g and Rocephin 2 g share the nickname "Rocephin"
+    but are separate entries with their own rules. Name matching is only a
+    fallback for an item whose code is not in the master yet, and can only ever
+    be approximate — two products can share a nickname.
+    """
+    c = _load_prep_db(data_dir)
+    if code and str(code) in c['by_code']:
+        return c['by_code'][str(code)]
+    if name:
+        k = str(name).strip().lower()
+        for nm, it in c['by_name']:
+            if nm and (nm in k or k in nm):
+                return it
+    return None
+
+
+def parse_dose_mg(dose):
+    """Ordered dose as milligrams, or None.
+
+    Accepts what the eMAR row actually says: "1000 Milligram", "1 g", "4.5 g",
+    "500 mg". Grams are converted, because the rules are written in mg.
+    """
+    if dose is None:
+        return None
+    t = str(dose).strip().lower().replace(',', '')
+    m = re.search(r'([\d.]+)\s*(gm|g|mg|milligram|gram)?', t)
+    if not m:
+        return None
+    try:
+        v = float(m.group(1))
+    except ValueError:
+        return None
+    unit = (m.group(2) or 'mg').strip()
+    if unit in ('g', 'gm', 'gram'):
+        v *= 1000.0
+    return v
+
+
+def pick_diluent(prep, dose_mg=None, is_child=False):
+    """First matching rule wins.
+
+    Rules are ordered by the pharmacy, so a narrow dose band placed above a
+    catch-all is honoured — e.g. ceftriaxone 1500 mg is SWI 15 mL for a child
+    but NSS 100 mL for an adult, which one flat value per drug cannot express.
+    """
+    if not prep:
+        return ''
+    want = 'child' if is_child else 'adult'
+    for r in prep.get('rules') or []:
+        when = (r.get('when') or 'any').lower()
+        if when not in ('any', want):
+            continue
+        lo, hi = r.get('minMg'), r.get('maxMg')
+        if dose_mg is not None:
+            if lo is not None and dose_mg < lo:
+                continue
+            if hi is not None and dose_mg > hi:
+                continue
+        elif lo is not None or hi is not None:
+            # A dose-bounded rule cannot be trusted when the dose is unknown.
+            continue
+        if r.get('diluent'):
+            return r['diluent']
+    return ''
+
+
+def refresh_presets(data_dir, date_str=None, atomic_write_json=None):
+    """Re-apply the preset database to a day's existing rows.
+
+    Rows created before a preset existed — or before the drug was added to the
+    master — keep whatever stability the client happened to send, which is a
+    24 h default. That is not a cosmetic problem: the expiry printed on a bag
+    is a clinical instruction, and 24 h on a drug good for 7 days makes the
+    ward discard usable medicine (or, the other way round, keep an expired one).
+    So the presets are re-applied on every load rather than only at sync.
+
+    Only the drug's own facts are refreshed. Workflow state, timestamps, who
+    prepared it and the audit trail are never touched. expiresAt is recomputed
+    only when the bag already has a mix time.
+    """
+    date_str = date_str or today_str()
+    rows = load_day(data_dir, date_str)
+    changed = 0
+    for r in rows:
+        d = r.get('drug') or {}
+        prep = find_prep(data_dir, d.get('code'), d.get('name'))
+        if not prep:
+            continue
+        before = (d.get('stabilityHours'), d.get('solvent'), d.get('had'))
+        hours = prep.get('stabilityHours') or ((prep.get('shelfDays') or 0) * 24)
+        if hours:
+            d['stabilityHours'] = hours
+        if not d.get('solvent'):
+            d['solvent'] = pick_diluent(prep, parse_dose_mg(d.get('dose')),
+                                        bool(r.get('isChild')))
+        d['had'] = bool(prep.get('had'))
+        if prep.get('nickname'):
+            d['nickname'] = prep['nickname']
+        # Do NOT back-fill the code from a NAME match. Rocephin 1 g and
+        # Rocephin 2 g share the nickname, so the name lookup returns whichever
+        # entry sorted first — writing that code would permanently mislabel the
+        # dose as the wrong strength. A code is only ever trusted when the
+        # extractor supplied it.
+        r['drug'] = d
+        if r.get('preparedAt'):
+            r['expiresAt'] = compute_expiry(r['preparedAt'], d.get('stabilityHours'))
+        if before != (d.get('stabilityHours'), d.get('solvent'), d.get('had')):
+            changed += 1
+    if changed and atomic_write_json:
+        save_day(data_dir, date_str, rows, atomic_write_json)
+    return rows, changed
 
 
 # ── ArcusAir order -> doses ────────────────────────────────────────────────

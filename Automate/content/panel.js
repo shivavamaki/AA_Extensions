@@ -15,6 +15,38 @@
     getEffectivePharmacyType,
   } = window.ArcusShared;
 
+  const TURBO_LABELS = {
+    on: "on",
+    off: "off",
+    connecting: "connecting...",
+    unavailable: "unavailable",
+  };
+
+  function setAutoOverrideState(mode, detail) {
+    const el = document.querySelector("#arcus-auto-override-state");
+    if (!el) return;
+    el.textContent = TURBO_LABELS[mode] || mode;
+    el.className = "arcus-turbo-state arcus-turbo-" + mode;
+    el.title = detail || "";
+  }
+
+  function setTurboState(mode, detail) {
+    const el = document.querySelector("#arcus-turbo-state");
+    if (!el) return;
+    el.textContent = TURBO_LABELS[mode] || mode;
+    el.className = "arcus-turbo-state arcus-turbo-" + mode;
+    el.title = detail || "";
+  }
+
+  // The driver announces its own downgrades (lost debugger session, refused
+  // attach), so the panel stays truthful without polling.
+  window.addEventListener("arcus-driver:mode", (event) => {
+    const mode = event.detail?.mode === "turbo" ? "on" : "off";
+    setTurboState(event.detail?.reason ? "unavailable" : mode, event.detail?.reason);
+    const toggle = document.querySelector("#arcus-turbo");
+    if (toggle) toggle.checked = event.detail?.mode === "turbo";
+  });
+
   function setStatus(message) {
     const el = document.querySelector("#arcus-auto-status");
     if (el) el.textContent = message;
@@ -72,6 +104,11 @@
   function updateButtonState() {
     const running = state.isRunning;
 
+    // Fade the panel only while idle. During a run it must stay fully legible,
+    // since that is when its status actually matters.
+    const panelEl = document.querySelector("#arcus-auto-panel");
+    if (panelEl) panelEl.classList.toggle("is-idle", !running);
+
     const allocateBtn = document.querySelector("#arcus-btn-allocate");
     const dispenseBtn = document.querySelector("#arcus-btn-dispense");
     const stopBtn = document.querySelector("#arcus-btn-stop");
@@ -98,7 +135,11 @@
     const minimized = panel.classList.contains("is-minimized");
     const rowFilters = readSelectedFilters(panel);
 
-    chrome.storage?.local?.set({
+    // Reloading the extension while this page stays open invalidates the
+    // context: chrome.storage still exists, but calling it throws. The optional
+    // chaining above only guards absence, not a dead connection.
+    try {
+      chrome.storage?.local?.set({
       [PANEL_STORAGE_KEY]: {
         top: panel.style.top || "",
         left: panel.style.left || "",
@@ -112,7 +153,10 @@
         automationMode: modeSelectEl?.value || state.settings.automationMode || "auto",
         pharmacyType: pharmacyTypeEl?.value || state.settings.pharmacyType || "auto",
       },
-    });
+      });
+    } catch (_) {
+      // Panel position is a convenience; losing it is not worth an exception.
+    }
   }
 
   function updateLocationLabel(panel) {
@@ -123,7 +167,8 @@
   }
 
   function restorePanelState(panel) {
-    chrome.storage?.local?.get(PANEL_STORAGE_KEY, (data) => {
+    try {
+      chrome.storage?.local?.get(PANEL_STORAGE_KEY, (data) => {
       const saved = data?.[PANEL_STORAGE_KEY];
       const waitOverrideEl = panel.querySelector("#arcus-manual-override");
       const modeSelectEl = panel.querySelector("#arcus-mode-select");
@@ -161,7 +206,11 @@
         const btn = panel.querySelector("#arcus-btn-minimize");
         if (btn) btn.textContent = "+";
       }
-    });
+      });
+    } catch (_) {
+      // Dead extension context; the panel just opens with its defaults.
+      updateLocationLabel(panel);
+    }
   }
 
   function removePanel() {
@@ -231,17 +280,156 @@
     restorePanelState(panel);
 
     const header = panel.querySelector("#arcus-auto-header");
+    const recordBtn = panel.querySelector("#arcus-btn-record");
+    let recording = false;
+
+    // Recording captures real selectors, disabled states and timings, so
+    // automation steps can be built from what the app actually does instead of
+    // from guesses at its markup.
+    recordBtn?.addEventListener("click", () => {
+      recording = !recording;
+      recordBtn.textContent = recording ? "Stop rec" : "Record";
+      recordBtn.style.background = recording ? "#c62828" : "";
+      try {
+        window.postMessage(
+          { source: "arcus-content", type: recording ? "recStart" : "recStop", redact: true },
+          location.origin
+        );
+      } catch (_) {}
+      setStatus(recording
+        ? "Recording. Do the steps by hand, then press Stop rec and Export."
+        : "Recording stopped. Press Export to copy it.");
+    });
+
+    panel.querySelector("#arcus-btn-export-rec")?.addEventListener("click", () => {
+      const onMessage = (event) => {
+        if (event.origin && event.origin !== location.origin) return;
+        const data = event.data;
+        if (!data || data.source !== "arcus-page-hook" || data.type !== "recording") return;
+        window.removeEventListener("message", onMessage);
+
+        const payload = JSON.stringify({
+          capturedAt: new Date().toISOString(),
+          redacted: data.redacted,
+          events: data.events,
+        }, null, 2);
+
+        navigator.clipboard?.writeText(payload)
+          .then(() => setStatus("Copied " + data.events.length + " events to the clipboard."))
+          .catch(() => {
+            console.log("[Arcus recording]", payload);
+            setStatus("Clipboard blocked. The recording is in the console instead.");
+          });
+      };
+      window.addEventListener("message", onMessage);
+      try {
+        window.postMessage({ source: "arcus-content", type: "recDump" }, location.origin);
+      } catch (_) {}
+    });
+
     const minimizeBtn = panel.querySelector("#arcus-btn-minimize");
     const closeBtn = panel.querySelector("#arcus-btn-close");
     const waitOverride = panel.querySelector("#arcus-manual-override");
     const modeSelect = panel.querySelector("#arcus-mode-select");
     const pharmacyTypeSelect = panel.querySelector("#arcus-pharmacy-type");
+    const turboToggle = panel.querySelector("#arcus-turbo");
+    const overrideToggle = panel.querySelector("#arcus-auto-override");
+
+    if (overrideToggle) {
+      const AutoOverride = window.ArcusAutoOverride;
+      const live = AutoOverride?.isEnabled?.() || false;
+      overrideToggle.checked = live;
+      setAutoOverrideState(live ? "on" : "off");
+
+      overrideToggle.addEventListener("change", () => {
+        if (!AutoOverride) {
+          overrideToggle.checked = false;
+          setAutoOverrideState("unavailable", "auto-override module not loaded");
+          return;
+        }
+
+        // This dismisses clinical alerts without a pharmacist reading them, so
+        // it is confirmed every time it is switched on.
+        if (overrideToggle.checked) {
+          const accepted = window.confirm(
+            "Turn on Auto override?\n\n" +
+            "The alert dialog will be filled in with \"" + AutoOverride.DEFAULT_REASON +
+            "\" and saved automatically, so nobody reads those alerts during a run.\n\n" +
+            "Drug allergy alerts are never handled automatically - the run pauses " +
+            "and waits for a pharmacist.\n\n" +
+            "Every alert that is auto-accepted is written to the panel log."
+          );
+          if (!accepted) {
+            overrideToggle.checked = false;
+            setAutoOverrideState("off");
+            return;
+          }
+        }
+
+        AutoOverride.setEnabled(overrideToggle.checked);
+        setAutoOverrideState(overrideToggle.checked ? "on" : "off");
+      });
+    }
+
+    if (turboToggle) {
+      // The driver attaches before the panel is built, so its mode event has
+      // already fired by now. Read the live state instead of trusting the
+      // markup default, which otherwise leaves the badge reading "off" while
+      // turbo is actually running.
+      const turboLive = window.ArcusDriver?.isTurbo() || false;
+      turboToggle.checked = turboLive;
+      setTurboState(turboLive ? "on" : "off");
+
+      turboToggle.addEventListener("change", async () => {
+        // Turbo attaches chrome.debugger, which makes Chrome display a banner
+        // across the tab for as long as it is on. Confirm before doing that, so
+        // the banner is never a surprise.
+        if (turboToggle.checked) {
+          const accepted = window.confirm(
+            "Turn on Turbo mode?\n\n" +
+            "Turbo uses the Chrome DevTools Protocol for faster, more reliable " +
+            "automation.\n\n" +
+            "While it is on, Chrome shows a yellow bar reading \"Arcus Toolkit " +
+            "started debugging this browser\". That bar cannot be hidden or " +
+            "moved, and it disappears when you turn Turbo off.\n\n" +
+            "Turbo also cannot start if DevTools is already open on this tab.\n\n" +
+            "It stays on only for this session."
+          );
+          if (!accepted) {
+            turboToggle.checked = false;
+            setTurboState("off");
+            return;
+          }
+        }
+
+        setTurboState(turboToggle.checked ? "connecting" : "off");
+        const result = await window.ArcusDriver?.setTurboPreference(turboToggle.checked);
+        // Attach can be refused (DevTools already open on this tab), so the
+        // checkbox has to follow the driver's real state, not the click.
+        if (turboToggle.checked && result && !result.ok) {
+          turboToggle.checked = false;
+          setTurboState("unavailable", result.error);
+        }
+      });
+    }
 
     let dragging = false;
     let startX = 0;
     let startY = 0;
     let startLeft = 0;
     let startTop = 0;
+
+    // A dragged position is persisted, so a panel parked over the search fields
+    // stays there across sessions. Double-clicking the header snaps it back to
+    // the default bottom-right corner.
+    header?.addEventListener("dblclick", (event) => {
+      if (event.target.closest("button")) return;
+      panel.style.left = "auto";
+      panel.style.top = "auto";
+      panel.style.right = "24px";
+      panel.style.bottom = "24px";
+      savePanelState(panel);
+    });
 
     header?.addEventListener("mousedown", (event) => {
       if (event.target.closest("button")) return;
@@ -383,6 +571,21 @@
           <input id="arcus-manual-override" type="checkbox" checked />
           <span>Wait manual override</span>
         </label>
+
+        <label class="checkbox-line compact-check" title="Uses Chrome DevTools Protocol for trusted clicks and network-idle waits. Chrome shows a debugging banner while active.">
+          <input id="arcus-turbo" type="checkbox" />
+          <span>Turbo mode <span id="arcus-turbo-state" class="arcus-turbo-state">off</span></span>
+        </label>
+
+        <label class="checkbox-line compact-check" title="Selects the pharmacy override reason and saves the alert dialog automatically. Drug allergy alerts are never handled automatically - the run pauses for a pharmacist.">
+          <input id="arcus-auto-override" type="checkbox" />
+          <span>Auto override <span id="arcus-auto-override-state" class="arcus-turbo-state">off</span></span>
+        </label>
+
+        <div class="btn-row compact-buttons">
+          <button id="arcus-btn-record" class="btn" title="Record what you click, so automation steps can be built from real selectors and timings instead of guesses. Patient identifiers are redacted.">Record</button>
+          <button id="arcus-btn-export-rec" class="btn" title="Copy the recording to the clipboard as JSON">Export</button>
+        </div>
 
         <div class="btn-row compact-buttons">
           <button id="arcus-btn-allocate" class="btn">Allocate</button>

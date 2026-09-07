@@ -7,14 +7,32 @@
 
     body {
       width: 320px;
+      /* Chrome caps popup height at 600px. Without this the six cards overflow
+         and the header scrolls out of view, so the user cannot tell what is
+         above. Pin header and footer; scroll only the card list. */
+      height: 580px;
+      display: flex;
+      flex-direction: column;
       font-family: 'Segoe UI', system-ui, sans-serif;
       font-size: 12px;
       background: #f8f9fa;
       color: #1a1a2e;
     }
 
+    .sections {
+      flex: 1;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    .sections::-webkit-scrollbar { width: 8px; }
+    .sections::-webkit-scrollbar-thumb {
+      background: #c7d0dd; border-radius: 4px;
+    }
+    .sections::-webkit-scrollbar-track { background: transparent; }
+
     /* ── Header ── */
     .header {
+      flex: 0 0 auto;
       background: linear-gradient(135deg, #1565c0, #1976d2);
       color: #fff;
       padding: 11px 14px 10px;
@@ -139,6 +157,9 @@
 
     /* ── Footer ── */
     .footer {
+      flex: 0 0 auto;
+      border-top: 1px solid #e6e9ef;
+      background: #f8f9fa;
       padding: 6px 12px 8px;
       font-size: 9.5px;
       color: #aaa;
@@ -150,8 +171,10 @@
 
   <div class="header">
     <span class="header-title">Arcus Toolkit</span>
-    <span class="header-version">v4.0.0</span>
+    <span class="header-version" id="headerVersion">v4.0.0</span>
   </div>
+
+  <div class="sections">
 
   <!-- Auto Dispense -->
   <div class="section">
@@ -256,6 +279,29 @@
       </div>
       <div id="orderItemStatus" class="status">Open Order Item - the scraper panel appears automatically.</div>
     </div>
+  </div>
+
+  <!-- HIS Translations Scraper -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-icon">TR</span>
+      <span class="section-title">HIS Translations</span>
+      <span class="section-badge">SCRAPER</span>
+    </div>
+    <div class="section-body">
+      <p class="desc">Export every translation (route, frequency, instruction) to JSON. API mode fetches all pages directly; DOM mode opens each row as a fallback. Pick the mode in the panel.</p>
+      <div class="btn-row">
+        <button id="openTranslation" class="btn btn-primary">
+          <span class="btn-icon">Open</span> Translation
+        </button>
+        <button id="closeTranslationPanel" class="btn btn-danger">
+          <span class="btn-icon">X</span> Close Panel
+        </button>
+      </div>
+      <div id="translationStatus" class="status">Open Translation - the scraper panel appears automatically.</div>
+    </div>
+  </div>
+
   </div>
 
   <div class="footer">arcusair.bdms.co.th &nbsp;·&nbsp; Pharmacy Automation</div>

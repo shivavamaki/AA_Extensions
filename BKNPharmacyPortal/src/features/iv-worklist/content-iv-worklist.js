@@ -191,7 +191,19 @@
         const th = /([฀-๿][฀-๿.\s]{2,59})$/.exec(before);
         const la = /([A-Za-z][A-Za-z.\s]{2,59})$/.exec(before);
         const hit = th || la;
-        if (hit) { name = norm(hit[1]); break; }
+        if (hit) {
+          /* The banner repeats a Latin name back to back ("MR. X Y MR. X Y").
+             Collapse an exact repeated tail so the stored row - and every label
+             printed from it - carries the name once. */
+          let v = norm(hit[1]);
+          const half = Math.floor(v.length / 2);
+          for (let L = half; L >= 6; L--) {
+            const a = v.slice(-L).trim(), b = v.slice(-2 * L, -L).trim();
+            if (a && a.toLowerCase() === b.toLowerCase()) { v = a; break; }
+          }
+          name = v;
+          break;
+        }
       }
     }
 
@@ -290,6 +302,19 @@
     }
     if (!ord.drug) return toast('ไม่พบชื่อยา · No drug name in the dialog', 'err');
     if (!slot)   return toast('ไม่พบเวลาให้ยา · No administration time set', 'err');
+
+    /* The IV master marks 14 drugs as mixed on the WARD, not by pharmacy.
+       Queueing one puts work on the board that nobody in the pharmacy will do,
+       and the bag would carry a default 24 h expiry with no preset behind it.
+       Warn and stop before anything is written. */
+    const db = window.IVDrugDB;
+    if (db && typeof db.isPharmacyIV === 'function' && !db.isPharmacyIV(ord.drug)) {
+      const d = db.find(ord.drug);
+      if (d && d.wardPrepares) {
+        return toast('ยานี้วอร์ดผสมเอง ไม่ต้องเข้าคิวห้องยา · ' + d.nickname +
+                     ' is mixed on the ward', 'warn');
+      }
+    }
 
     btn.disabled = true;
     btn.textContent = '…';

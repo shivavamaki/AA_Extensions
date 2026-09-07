@@ -2,7 +2,13 @@
   if (window.__ARCUS_SHARED_LOADED__) return;
   window.__ARCUS_SHARED_LOADED__ = true;
 
-  // Arcus Toolkit v4.0.0
+  // Arcus Toolkit v4.3.0
+
+  // Single interaction layer for every module. When turbo (chrome.debugger) is
+  // on this gives trusted input and true network-idle waits; otherwise it is
+  // synthetic events with MutationObserver/XHR-hook settle detection. Either
+  // way the fixed sleeps below become bounded waits on a real signal.
+  const Driver = window.ArcusDriver;
 
   const CONFIG = {
     routes: {
@@ -35,18 +41,33 @@
       allocateFromWorkbench: "#allocatedispense",
       dispenseFromWorkbench: "#dispensetodept",
 
+      // The Allocate confirm button carries aria-label="Allocate" and
+      // ng-click="vm.saveData()". Attribute selectors are CASE-SENSITIVE, so
+      // the old [ng-click*='save'] never matched saveData() and the search fell
+      // through to a bare button.md-primary, which can be a different button.
       allocateSaveButton: [
+        "button[aria-label='Allocate']",
+        "button[ng-click*='saveData'][aria-label='Allocate']",
+        "#actiondiv button[ng-click*='saveData']",
         "#actiondiv > button.md-primary.md-button.md-incustheme-theme.md-ink-ripple",
         "#actiondiv button.md-primary",
-        "button.md-primary[ng-click*='save']",
+        "button.md-primary[ng-click*='saveData']",
         "button.md-primary",
       ],
 
+      // The dispense confirm calls vm.verifyDispense(), NOT vm.saveData() like
+      // the allocate page, and the attribute carries a trailing semicolon
+      // (ng-click="vm.verifyDispense();") so exact-value selectors miss it.
+      // Match on aria-label first, then on the handler name as a substring.
       dispenseToDeptSaveButton: [
-        "body > div.full-height.ng-scope.layout-row > div > md-content > md-card > md-card-content > div.layout-xs-column.layout-sm-column.layout-row > div > div > button.md-primary.md-button.md-incustheme-theme.md-ink-ripple",
+        "button[aria-label='Dispense']",
+        "button[ng-click*='verifyDispense']",
+        "button[aria-label='Save'][ng-click*='saveData']",
+        "md-card-content button.md-primary[ng-click*='verify']",
+        "#actiondiv button[ng-click*='saveData']",
         "#actiondiv button.md-primary",
         "md-card-content button.md-primary",
-        "button.md-primary[ng-click*='save']",
+        "button.md-primary[ng-click*='saveData']",
         "button.md-primary",
       ],
 
@@ -88,6 +109,12 @@
       "md-content.stickydiv button",
     ],
 
+    // Upper bounds for settle waits. These are ceilings, not delays: with turbo
+    // on, a step returns as soon as its XHR completes, typically well under
+    // these values. They only matter when the server is slow or unreachable.
+    maxSaveSettleMs: 15000,
+    maxRowSettleMs: 8000,
+
     maxActionWaitMs: 18000,
     maxRouteWaitMs: 20000,
     maxDialogSettleMs: 12000,
@@ -97,7 +124,7 @@
     settleAfterActionClickMs: 1500,
     settleAfterSaveClickMs: 1800,
     settleAfterPaneCloseMs: 400,
-    loopDelayMs: 900,
+    loopDelayMs: 250,
     autoNoMatchIntervalMs: 30000,
     rowMatchTextLength: 240,
     maxRetriesPerRow: 2,
@@ -241,7 +268,7 @@
   }
 
   window.ArcusStore = window.ArcusStore || {};
-  window.ArcusStore.core = { state, CONFIG, version: "4.0.0" };
+  window.ArcusStore.core = { state, CONFIG, version: "4.3.0" };
 
   function getMainContainer() {
     for (const selector of CONFIG.containerSelectors) {
@@ -505,15 +532,11 @@
     });
   }
 
-  async function waitFor(fn, timeout = 10000, interval = 250) {
-    const start = Date.now();
-    while (Date.now() - start < timeout) {
-      const result = fn();
-      if (result) return result;
-      if (state.stopRequested) return null;
-      await sleep(interval);
-    }
-    return null;
+  // Delegates to the driver, which resolves on the mutation that satisfies the
+  // predicate instead of on the next 250ms poll tick. The `interval` argument is
+  // accepted for call-site compatibility and ignored.
+  async function waitFor(fn, timeout = 10000, _interval = 250) {
+    return Driver.waitFor(fn, timeout, { shouldAbort: () => state.stopRequested });
   }
 
   function isVisible(el) {
@@ -525,24 +548,28 @@
     return rect.width > 0 && rect.height > 0;
   }
 
+  // Trusted CDP input when turbo is on, synthetic events otherwise. The old
+  // unconditional smooth-scroll + sleep(250) on every click is gone; the driver
+  // only scrolls when the element is actually outside the viewport.
   async function clickLikeUser(el) {
     if (!el) return false;
-    el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
-    await sleep(250);
+    const result = await Driver.click(el);
+    return !!result.ok;
+  }
 
-    const events = ["mouseover", "mouseenter", "mousedown", "mouseup", "click"];
-    for (const type of events) {
-      el.dispatchEvent(
-        new MouseEvent(type, {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-        })
-      );
-    }
+  // Click, then return once the page's own XHRs have gone quiet. Replaces the
+  // "click then sleep(1500..1800) and hope" pattern.
+  async function clickAndSettle(el, options) {
+    if (!el) return false;
+    const result = await Driver.clickAndSettle(el, options);
+    return !!result.ok;
+  }
 
-    if (typeof el.click === "function") el.click();
-    return true;
+  // Wait for the app to stop talking to the server. Callers pass the old fixed
+  // delay as `maxMs` so a page that never settles still bounds the wait.
+  async function settle(maxMs = 4000, idleMs = 200) {
+    const result = await Driver.waitForSettle({ idleMs, timeoutMs: maxMs });
+    return !!result.ok;
   }
 
   function findOpenDialog() {
@@ -573,28 +600,256 @@
       300
     );
     if (!container) return null;
-    await sleep(700);
+    // The route is up; wait for the grid's own XHRs rather than a flat 700ms.
+    await settle(2500);
     return container;
   }
 
+  /**
+   * Find a submit button that exists before it is usable.
+   *
+   * The Allocate/Dispense confirm buttons carry ng-disabled and start disabled
+   * while the page loads its lines. findActionButton() asks for a *visible*
+   * element and isVisible() rejects anything disabled, so searching for it
+   * directly reports "not found" for what is really "not ready yet" — and the
+   * run stalls at the confirm step.
+   *
+   * Locate it ignoring disabled state, then wait for it to become clickable.
+   */
+  async function waitForSubmitButton(selectorName, timeoutMs) {
+    const selectors = asSelectorList(CONFIG.actionSelectors[selectorName]);
+
+    const find = () => {
+      for (const selector of selectors) {
+        try {
+          const el = document.querySelector(selector);
+          if (!el) continue;
+          const style = getComputedStyle(el);
+          if (style.display === "none" || style.visibility === "hidden") continue;
+          const rect = el.getBoundingClientRect();
+          if (rect.width <= 0 || rect.height <= 0) continue;
+          return el;
+        } catch (_) {}
+      }
+      return null;
+    };
+
+    const btn = await waitFor(find, timeoutMs, 200);
+    if (!btn) return { ok: false, el: null, reason: `${selectorName} not found in the DOM` };
+
+    const enabled = await waitFor(() => {
+      const el = find() || btn;
+      const blocked = el.disabled
+        || el.getAttribute("aria-disabled") === "true"
+        || !!el.closest("[disabled]");
+      return blocked ? null : el;
+    }, timeoutMs, 200);
+
+    if (!enabled) {
+      return { ok: false, el: btn, reason: `${selectorName} stayed disabled` };
+    }
+    return { ok: true, el: enabled };
+  }
+
   async function waitForAllocatePageReady() {
-    const saveBtn = await waitFor(() => {
-      if (!isAllocatePage()) return null;
-      return findActionButton("allocateSaveButton");
-    }, CONFIG.maxRouteWaitMs, 300);
-    if (!saveBtn) return null;
-    await sleep(700);
-    return saveBtn;
+    const onRoute = await waitFor(() => (isAllocatePage() ? true : null), CONFIG.maxRouteWaitMs, 200);
+    if (!onRoute) return null;
+
+    // Let the page's own requests finish before judging the button: it is
+    // disabled until the allocate lines have loaded.
+    await settle(4000);
+
+    const result = await waitForSubmitButton("allocateSaveButton", CONFIG.maxRouteWaitMs);
+    if (!result.ok) {
+      window.ArcusPanel?.pushLog?.("fail", "Allocate confirm button unavailable", result.reason);
+      return null;
+    }
+    return result.el;
+  }
+
+  /**
+   * True once the dispense page has actually loaded its order.
+   *
+   * The Dispense button carries no ng-disabled, so it is clickable the moment
+   * it renders — before the controller has its data. Clicking then throws
+   * inside Arcus itself:
+   *
+   *   TypeError: Cannot read properties of undefined (reading 'patientorderitems')
+   *     at DispenseToDeptController.verifyDispense
+   *
+   * The order-item rows are rendered from that same model, so their presence is
+   * the signal that vm.selecteddispense exists and the handler is safe to call.
+   */
+  /**
+   * Ask Angular directly whether the controller has its order.
+   *
+   * The DOM is an unreliable proxy here: the table lives inside md-table
+   * wrappers that vary by layout, and a fixed-header clone can duplicate rows.
+   * The controller's own scope is the thing verifyDispense() actually reads, so
+   * check that when Angular is reachable and fall back to the DOM when not.
+   */
+  // Latest controller state reported by the MAIN-world page hook.
+  let lastDispenseScope = null;
+
+  try {
+    window.addEventListener("message", (event) => {
+      if (event.origin && event.origin !== location.origin) return;
+      if (event.source && event.source !== window) return;
+      const data = event.data;
+      if (!data || data.source !== "arcus-page-hook" || data.type !== "dispenseScope") return;
+      lastDispenseScope = data.state || null;
+    });
+  } catch (_) {}
+
+  /**
+   * Ask the page hook for the dispense controller's model.
+   *
+   * This CANNOT be read from the content script: it runs in an isolated world
+   * where window.angular is undefined, so a direct read always failed and the
+   * caller silently fell back to counting DOM rows — which are present well
+   * before vm.selecteddispense is, hence the click into a TypeError.
+   */
+  function requestDispenseScope() {
+    try {
+      window.postMessage({ source: "arcus-content", type: "requestDispenseScope" }, location.origin);
+    } catch (_) {}
+  }
+
+  /** The last reported controller state, or null if the hook has not answered. */
+  function readDispenseScopeState() {
+    requestDispenseScope();
+    return lastDispenseScope;
+  }
+
+  /** Ask, then give the hook a moment to answer over postMessage. */
+  async function fetchDispenseScopeState(timeoutMs = 1200) {
+    lastDispenseScope = null;
+    requestDispenseScope();
+    const started = Date.now();
+    while (Date.now() - started < timeoutMs) {
+      if (lastDispenseScope) return lastDispenseScope;
+      await sleep(50);
+    }
+    return null;
+  }
+
+  /** Count order-item rows across the layouts Arcus uses for this table. */
+  function countDispenseRows() {
+    const seen = new Set();
+    let count = 0;
+    const rows = document.querySelectorAll(
+      "md-table-container tbody tr, table.md-table tbody tr, tbody tr[md-row], tbody tr"
+    );
+    for (const row of rows) {
+      if (seen.has(row)) continue;
+      seen.add(row);
+      if (!row.querySelector("td")) continue;      // header rows carry <th>
+      if (textOf(row).length <= 3) continue;       // placeholder / spacer
+      count += 1;
+    }
+    return count;
+  }
+
+  /**
+   * True once the dispense page has loaded the order that verifyDispense()
+   * needs. Prefers the controller scope; falls back to counting rows.
+   */
+  /**
+   * True once the controller actually holds the order.
+   *
+   * The DOM row count is deliberately NOT a fallback for "ready": the rows are
+   * rendered from a different binding and appear while vm.selecteddispense is
+   * still undefined, which is exactly the state that crashes verifyDispense().
+   * If the model cannot be confirmed, we wait rather than guess.
+   */
+  async function dispenseModelReady() {
+    const scope = await fetchDispenseScopeState();
+    if (!scope) return false;                    // hook did not answer yet
+    if (!scope.scopeReachable) return false;     // Angular not up yet
+    if (!scope.hasVm) return false;              // controller not attached yet
+    return scope.hasSelected && scope.itemCount > 0;
+  }
+
+  /** Synchronous best-effort view, used only for diagnostics. */
+  function dispensePageHasOrderItems() {
+    const scope = lastDispenseScope;
+    if (scope && scope.hasVm) return scope.hasSelected && scope.itemCount > 0;
+    return false;
+  }
+
+  /**
+   * Trace one step of a multi-stage wait.
+   *
+   * Each stage prints what it observed, so a stall can be attributed to a
+   * specific condition instead of a generic "not ready".
+   */
+  function traceStep(stage, ok, detail) {
+    const line = `[dispense-ready] ${stage}: ${ok ? "OK" : "WAITING"}${detail ? " — " + detail : ""}`;
+    console.log(line);
+    window.ArcusPanel?.pushLog?.(ok ? "info" : "warn", line);
+  }
+
+  /** A snapshot of everything that gates the dispense confirm click. */
+  function describeDispensePage() {
+    // Uses the last state the page hook reported; the wait loop keeps it fresh.
+    const scope = lastDispenseScope;
+    const btn = queryFirst(CONFIG.actionSelectors.dispenseToDeptSaveButton, document, false);
+    return {
+      route: isDispenseToDeptPage(),
+      href: currentHref(),
+      scopeReachable: !!scope,
+      hasVm: scope ? scope.hasVm : false,
+      hasSelected: scope ? scope.hasSelected : false,
+      itemCount: scope ? scope.itemCount : -1,
+      domRows: countDispenseRows(),
+      buttonFound: !!btn,
+      buttonDisabled: btn ? (!!btn.disabled || btn.getAttribute("aria-disabled") === "true") : null,
+    };
   }
 
   async function waitForDispenseToDeptPageReady() {
-    const saveBtn = await waitFor(() => {
-      if (!isDispenseToDeptPage()) return null;
-      return findActionButton("dispenseToDeptSaveButton");
-    }, CONFIG.maxRouteWaitMs, 300);
-    if (!saveBtn) return null;
-    await sleep(700);
-    return saveBtn;
+    const onRoute = await waitFor(
+      () => (isDispenseToDeptPage() ? true : null), CONFIG.maxRouteWaitMs, 200);
+    traceStep("1 route", !!onRoute, currentHref());
+    if (!onRoute) return null;
+
+    await settle(4000);
+    traceStep("2 network settled", true);
+
+    // Wait for the controller's model, not just the button: the button has no
+    // ng-disabled, so it is clickable before verifyDispense() has anything to
+    // read, and clicking then throws inside Arcus itself.
+    let loaded = false;
+    const modelDeadline = Date.now() + CONFIG.maxRouteWaitMs;
+    while (Date.now() < modelDeadline) {
+      if (state.stopRequested) break;
+      if (await dispenseModelReady()) { loaded = true; break; }
+      await sleep(250);
+    }
+
+    const snap = describeDispensePage();
+    traceStep("3 order loaded", !!loaded, JSON.stringify(snap));
+
+    if (!loaded) {
+      window.ArcusPanel?.pushLog?.(
+        "fail",
+        "Dispense page did not load its order items",
+        JSON.stringify(snap)
+      );
+      return null;
+    }
+
+    // The rows can paint slightly before the model is complete.
+    await settle(2000);
+
+    const result = await waitForSubmitButton("dispenseToDeptSaveButton", CONFIG.maxRouteWaitMs);
+    traceStep("4 confirm button", result.ok, result.ok ? "clickable" : result.reason);
+
+    if (!result.ok) {
+      window.ArcusPanel?.pushLog?.("fail", "Dispense confirm button unavailable", result.reason);
+      return null;
+    }
+    return result.el;
   }
 
   async function waitForSelectorVisible(selector, timeout = 10000) {
@@ -605,23 +860,41 @@
     return waitFor(() => (currentHref().includes(routeKeyword) ? currentHref() : null), timeout, 250);
   }
 
+  /**
+   * Close the alert popup.
+   *
+   * Bounded to three attempts. A recording caught #closeBtn being pressed ~70
+   * times in one second because callers re-entered this while the dialog stayed
+   * open; every one of those reached Arcus. If it will not close, say so and
+   * leave it for a human rather than hammering it.
+   */
   async function closeAlertDialogIfPresent(logMeta = "") {
-    const dialog = findOpenDialog();
-    if (!dialog || !isAlertDialog(dialog)) return false;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const dialog = findOpenDialog();
+      if (!dialog || !isAlertDialog(dialog)) return attempt > 1;
 
-    const closeBtn =
-      (await waitForSelectorVisible(CONFIG.actionSelectors.closeBtn, 1200)) ||
-      dialog.querySelector(CONFIG.actionSelectors.closeBtn) ||
-      dialog.querySelector("button[aria-label='Close']");
+      const closeBtn =
+        dialog.querySelector(CONFIG.actionSelectors.closeBtn) ||
+        dialog.querySelector("button[aria-label='Close']") ||
+        (await waitForSelectorVisible(CONFIG.actionSelectors.closeBtn, 800));
 
-    if (closeBtn) {
-      await clickLikeUser(closeBtn);
-      window.ArcusPanel?.pushLog("info", "Closed alert popup", logMeta);
-      await sleep(CONFIG.settleAfterDialogCloseMs);
-      await waitFor(() => !findOpenDialog(), CONFIG.maxDialogSettleMs, 250);
-      return true;
+      if (!closeBtn) return false;
+
+      // allowRepeat: this is a deliberate, bounded retry on the same button.
+      await Driver.click(closeBtn, { allowRepeat: attempt > 1 });
+
+      const closed = await waitFor(() => !findOpenDialog(), 2500, 150);
+      if (closed) {
+        window.ArcusPanel?.pushLog("info", "Closed alert popup", logMeta);
+        return true;
+      }
     }
 
+    window.ArcusPanel?.pushLog(
+      "fail",
+      "Alert popup would not close after 3 attempts",
+      logMeta
+    );
     return false;
   }
 
@@ -645,11 +918,19 @@
     const dialog = findOpenDialog();
     if (!dialog || !isAlertDialog(dialog)) return false;
 
-    const hideAll = document.querySelector(CONFIG.actionSelectors.hideAllAlerts);
+    // "Mark all as viewed" is the app's own bulk action and is far more reliable
+    // than closing a many-row alert dialog one button at a time. Look for it
+    // inside the dialog as well as document-wide.
+    const hideAll =
+      dialog.querySelector(CONFIG.actionSelectors.hideAllAlerts) ||
+      dialog.querySelector("button[aria-label='Mark all as viewed']") ||
+      dialog.querySelector("button[ng-click*='hideAllAlerts']") ||
+      document.querySelector(CONFIG.actionSelectors.hideAllAlerts);
+
     if (hideAll && isVisible(hideAll)) {
-      await clickLikeUser(hideAll);
+      await Driver.click(hideAll);
       window.ArcusPanel?.pushLog("info", "Marked all alerts as viewed", logMeta);
-      await sleep(500);
+      await settle(2000);
       return true;
     }
 
@@ -848,10 +1129,20 @@
     waitFor,
     isVisible,
     clickLikeUser,
+    clickAndSettle,
+    settle,
+    Driver,
     findOpenDialog,
     isAlertDialog,
     dialogLooksLikeManualOverride,
     waitForWorkbenchReady,
+    waitForSubmitButton,
+    dispensePageHasOrderItems,
+    dispenseModelReady,
+    fetchDispenseScopeState,
+    describeDispensePage,
+    readDispenseScopeState,
+    countDispenseRows,
     waitForAllocatePageReady,
     waitForDispenseToDeptPageReady,
     waitForSelectorVisible,

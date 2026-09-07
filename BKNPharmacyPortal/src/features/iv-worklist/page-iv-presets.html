@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>IV Preparation Presets</title>
+<link rel="stylesheet" href="page-iv-worklist.css">
+<style>
+  /* Preset editor — reuses the board's tokens, adds a table-editing layer. */
+  .ivp-wrap{max-width:1180px;margin:0 auto;padding:0 20px 40px}
+  .ivp-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 0}
+  .item{background:var(--ivw-panel);border:1px solid var(--ivw-line);border-radius:var(--ivw-radius);
+    box-shadow:var(--ivw-shadow);margin-bottom:11px;overflow:hidden}
+  .item.is-ward{opacity:.6}
+  .item.is-dirty{border-color:var(--ivw-soon);box-shadow:0 0 0 1px var(--ivw-soon) inset}
+  .item-head{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;
+    padding:11px 14px;background:var(--ivw-panel-2);border-bottom:1px solid var(--ivw-line-2)}
+  .item-nick{font-weight:700;font-size:14px}
+  .item-code{font-size:11.5px;color:var(--ivw-faint);font-variant-numeric:tabular-nums;margin-top:2px}
+  .item-meta{margin-left:auto;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .f{display:flex;flex-direction:column;gap:2px}
+  .f-l{font-size:10px;color:var(--ivw-dim);letter-spacing:.3px}
+  .f-check{flex-direction:row;align-items:center;gap:5px}
+  .rules{padding:11px 14px;display:flex;flex-direction:column;gap:7px;align-items:flex-start}
+  .rule{display:flex;gap:7px;align-items:center;flex-wrap:wrap;width:100%}
+  .rule-dash{color:var(--ivw-faint)}
+  .rules-empty{font-size:12.5px;color:var(--ivw-faint)}
+  .ivp-in{background:var(--ivw-panel);border:1px solid var(--ivw-line);border-radius:6px;
+    color:var(--ivw-text);padding:5px 8px;font:inherit;font-size:13px}
+  .ivp-in:focus-visible{outline:2px solid var(--ivw-preparing);outline-offset:1px}
+  .ivp-in.num{width:82px;text-align:right;font-variant-numeric:tabular-nums}
+  .ivp-in.dil{flex:1;min-width:150px}
+  .ivp-in.freq{width:100px}
+  .mini{background:var(--ivw-panel);border:1px solid var(--ivw-line);border-radius:6px;
+    color:var(--ivw-dim);width:28px;height:28px;cursor:pointer;font:inherit;flex-shrink:0}
+  .mini:hover:not([disabled]){background:var(--ivw-panel-2);color:var(--ivw-text)}
+  .mini[disabled]{opacity:.35;cursor:default}
+  .mini.danger:hover{color:var(--ivw-stat);border-color:var(--ivw-stat)}
+  .ivp-count{font-size:12px;color:var(--ivw-dim);font-variant-numeric:tabular-nums}
+  .ivp-save-bar{position:sticky;bottom:0;background:var(--ivw-panel);border-top:1px solid var(--ivw-line);
+    padding:12px 20px;display:flex;gap:12px;align-items:center;box-shadow:0 -2px 12px rgba(26,37,48,.08);z-index:5}
+  .ivp-msg{font-size:13px;font-weight:600}
+  .ivp-msg.ok{color:var(--ivw-checked)} .ivp-msg.err{color:var(--ivw-stat)}
+  .badge{font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:6px;white-space:nowrap}
+  .badge.had{background:#fce8ef;color:var(--ivw-had);border:1px solid #f0c2d3}
+  .badge.ward{background:#fdf2e4;color:var(--ivw-urgent);border:1px solid #eed6b0}
+</style>
+</head>
+<body>
+
+<div class="ivw-header">
+  <span class="ivw-header-icon">🧪</span>
+  <div>
+    <div class="ivw-title">IV Preparation Presets — ค่าตั้งต้นการเตรียมยาฉีด</div>
+    <div class="ivw-subtitle">ตัวทำละลายเริ่มต้น อายุยา และความเข้มข้น ของยาแต่ละตัว</div>
+  </div>
+  <div class="ivw-spacer"></div>
+  <a class="ivw-btn" href="page-iv-worklist.html">💉 กลับไปที่คิว · Back to board</a>
+</div>
+
+<div class="ivp-wrap">
+  <div class="ivp-toolbar">
+    <input type="search" class="ivw-search" id="q" placeholder="ค้นหายา / รหัส · Search drug or code">
+    <div class="ivw-seg" id="filter">
+      <button data-f="all" class="is-active">ทั้งหมด · All</button>
+      <button data-f="pharm">เภสัชเตรียม · Pharmacy</button>
+      <button data-f="had">High-alert</button>
+      <button data-f="nodil">ยังไม่ตั้งค่า · No diluent</button>
+    </div>
+    <div class="ivw-spacer"></div>
+    <span class="ivp-count" id="count"></span>
+  </div>
+
+  <div id="rows"></div>
+</div>
+
+<div class="ivp-save-bar">
+  <button class="ivw-btn ivw-btn-primary" id="save">💾 บันทึก · Save changes</button>
+  <button class="ivw-btn" id="revert">↺ ยกเลิก · Discard</button>
+  <span class="ivp-msg" id="msg"></span>
+  <div class="ivw-spacer"></div>
+  <span class="ivp-count" id="dirty"></span>
+</div>
+
+<script src="../../shared/shared-data-client.js"></script>
+<script src="iv-version.js"></script>
+<script src="page-iv-presets.js"></script>
+</body>
+</html>

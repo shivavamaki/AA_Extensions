@@ -25,6 +25,22 @@
   display: none;
 }
 
+/* Minimized, the panel is only a title bar, so it should not keep reserving
+   the full 360px over the page behind it. */
+#arcus-auto-panel.is-minimized {
+  width: 210px;
+}
+
+/* Dragging can park the panel over the search fields. Keeping it semi-
+   transparent until hovered means the page stays readable underneath. */
+#arcus-auto-panel {
+  transition: opacity 0.15s ease;
+}
+
+#arcus-auto-panel.is-idle:not(:hover):not(:focus-within) {
+  opacity: 0.45;
+}
+
 .arcus-panel-header {
   display: flex;
   align-items: flex-start;
@@ -889,3 +905,35 @@
 .arcus-scraper-metric-value.ok    { color: #2e7d32; }
 .arcus-scraper-metric-value.fail  { color: #c62828; }
 .arcus-scraper-metric-value.saved { color: #00695c; }
+
+/* ── Turbo mode (CDP) indicator ──────────────────────────────────────── */
+
+.arcus-turbo-state {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  vertical-align: middle;
+  background: #eceff1;
+  color: #607d8b;
+}
+
+.arcus-turbo-on {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.arcus-turbo-connecting {
+  background: #fff8e1;
+  color: #f57c00;
+}
+
+.arcus-turbo-unavailable {
+  background: #ffebee;
+  color: #c62828;
+  cursor: help;
+}

@@ -13,6 +13,9 @@ const ARCUS_FREQUENCY_MASTER_URL =
 const ARCUS_ORDER_ITEM_URL =
   "https://arcusair.bdms.co.th/#!/ordermanagement/orderitem";
 
+const ARCUS_TRANSLATION_URL =
+  "https://arcusair.bdms.co.th/#!/ordermanagement/translation";
+
 function setStatus(id, msg, state = "") {
   const el = document.getElementById(id);
   if (!el) return;
@@ -163,3 +166,102 @@ document.getElementById("closeOrderItemPanel")?.addEventListener("click", async 
     setStatus("orderItemStatus", `Failed: ${err?.message || "unknown error"}`, "error");
   }
 });
+
+document.getElementById("openTranslation")?.addEventListener("click", async () => {
+  const tabId = await openOrNavigate(ARCUS_TRANSLATION_URL);
+
+  // Show the panel by calling into the content script. If the content script is
+  // not present (the page was open before the extension was loaded/reloaded, so
+  // it holds a stale context), the event goes nowhere — so verify, and inject
+  // on demand rather than silently doing nothing.
+  let shown = false;
+  let lastResult = null;
+  for (let attempt = 1; attempt <= 3 && !shown; attempt++) {
+    try {
+      const result = await executeInTab(tabId, () => {
+        // Clear the dismissed flag in storage as well as in memory. The content
+        // script restores it asynchronously at load, so a stale stored `true`
+        // can clobber the in-memory false and silently suppress the panel.
+        try { chrome.storage?.local?.set({ arcusTranslationPanelDismissed: false }); } catch (_) {}
+
+        window.dispatchEvent(new CustomEvent("arcus-toolkit:show-translation-panel"));
+
+        const store = window.ArcusStore && window.ArcusStore.translation;
+        return {
+          loaded: !!window.__ARCUS_TRANSLATION_LOADED__,
+          panel: !!document.querySelector("#arcus-tr-panel"),
+          href: location.href,
+          // Diagnostics, surfaced in the popup when the panel does not appear.
+          dismissed: store ? !!store.state.dismissed : null,
+          driver: !!window.ArcusDriver,
+          api: !!window.ArcusApi,
+          onTranslationRoute: location.href.indexOf("!/ordermanagement/translation") !== -1,
+        };
+      });
+
+      lastResult = result || lastResult;
+      if (result && result.panel) { shown = true; break; }
+
+      if (result && !result.loaded) {
+        // Content script missing: inject the whole chain in manifest order.
+        await chrome.scripting.insertCSS({ target: { tabId }, files: ["styles.css"] }).catch(() => {});
+        await chrome.scripting.executeScript({
+          target: { tabId },
+          files: [
+            "content/api-client.js",
+            "content/driver.js",
+            "content/shared.js",
+            "content/translation.js",
+          ],
+        });
+      }
+    } catch (err) {
+      setStatus("translationStatus", `Failed: ${err?.message || "unknown error"}`, "error");
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  if (!shown) {
+    // Say what is actually wrong rather than a generic failure.
+    let why = "Reload the Arcus tab (F5), then try again.";
+    if (lastResult) {
+      // Only claim a wrong-route problem when we actually observed the route.
+      // Treating an absent field as "off route" produces a misleading message
+      // telling the user to navigate to the page they are already on.
+      if (lastResult.onTranslationRoute === false) {
+        why = `Tab is on ${lastResult.href || "another page"}. Navigate to Order Management > Translation.`;
+      } else if (lastResult.loaded === false) {
+        why = "Content script did not load. Reload the Arcus tab (F5).";
+      } else if (lastResult.dismissed === true) {
+        why = "Panel is marked dismissed. Reload the Arcus tab (F5).";
+      } else if (lastResult.driver === false || lastResult.api === false) {
+        why = `Missing dependency (driver:${lastResult.driver} api:${lastResult.api}). Reload the Arcus tab.`;
+      }
+    }
+    setStatus("translationStatus", `Could not open the panel. ${why}`, "error");
+    return;
+  }
+
+  window.close();
+});
+
+document.getElementById("closeTranslationPanel")?.addEventListener("click", async () => {
+  const tab = await getActiveArcusTab();
+  if (!tab) { setStatus("translationStatus", "No active tab found.", "error"); return; }
+  if (!tab.url?.includes("arcusair.bdms.co.th")) { setStatus("translationStatus", "Active tab is not Arcus Air.", "error"); return; }
+
+  try {
+    await executeInTab(tab.id, () => window.dispatchEvent(new CustomEvent("arcus-toolkit:remove-translation-panel")));
+    setStatus("translationStatus", "HIS Translations panel closed.", "done");
+  } catch (err) {
+    setStatus("translationStatus", `Failed: ${err?.message || "unknown error"}`, "error");
+  }
+});
+
+// Read the version from the manifest so the header cannot drift out of sync
+// with the actual build.
+try {
+  const el = document.getElementById("headerVersion");
+  if (el) el.textContent = "v" + chrome.runtime.getManifest().version;
+} catch (_) {}

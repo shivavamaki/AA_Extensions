@@ -207,9 +207,28 @@ def _ext_id_from_key():
         return ''
 
 def _ext_pkg_info():
-    """{version, name, id} the server is currently publishing."""
-    return {'version': _ext_manifest_version(), 'name': 'BKNPharmacyPortal',
+    """{version, name, id, sha256, size} the server is publishing.
+
+    sha256 is over the built ZIP so the update page can show a checksum a
+    pharmacist (or you) can verify the download against — the download
+    arrives over plain http, so a published hash is what makes it checkable.
+    Hashing is skipped silently if the package cannot be built; the version
+    fields must keep working either way.
+    """
+    info = {'version': _ext_manifest_version(), 'name': 'BKNPharmacyPortal',
             'id': _ext_id_from_key()}
+    try:
+        zp = _ext_build_zip()
+        if zp and Path(zp).exists():
+            h = hashlib.sha256()
+            with open(zp, 'rb') as f:
+                for chunk in iter(lambda: f.read(1 << 20), b''):
+                    h.update(chunk)
+            info['sha256'] = h.hexdigest()
+            info['size'] = Path(zp).stat().st_size
+    except Exception:
+        pass
+    return info
 
 def _ext_build_zip():
     """Build (or reuse) the packaged extension ZIP; returns its Path.
@@ -236,6 +255,14 @@ def _ext_build_zip():
             if p.suffix.lower() in EXT_SKIP_EXT:
                 continue
             z.write(p, rel.as_posix())
+        # Ship the installer INSIDE the package too. After the first
+        # install it then lives at D:\pharmacy\BKNPharmacyPortal\, so the
+        # next update can be run straight from the local install and
+        # nobody has to revisit the page — or, worse, fall back to the
+        # copy on the shared drive.
+        installer = WWW_DIR / 'bkn-install.bat'
+        if installer.exists():
+            z.write(installer, 'bkn-install.bat')
     os.replace(tmp, out)          # atomic publish, like _atomic_write_json
     # Keep only the current version's ZIP — old builds are dead weight.
     for old in EXT_PKG_DIR.glob('BKNPharmacyPortal-*.zip'):
@@ -428,12 +455,15 @@ def _ext_sync_bat(host_header=''):
 
 KS_COLS       = {'faqs', 'items', 'vdos'}
 # All rx collections — GET is public; PUT requires editor/admin auth
-RX_COLS       = {'premix-drugs', 'mixing-protocols', 'medication-db', 'iv-drugs', 'iv-staff', 'pattern-overrides', 'chemo-drugs', 'pending-code'}
+RX_COLS       = {'premix-drugs', 'mixing-protocols', 'medication-db', 'iv-drugs', 'iv-staff', 'pattern-overrides', 'chemo-drugs', 'pending-code', 'iv-prep-db'}
 # RX collections whose PUT requires an authenticated admin/editor (Bearer token),
 # NOT just a trusted extension origin. The IV-Sticker master data is edited only
 # through the admin editor (Pattern Editor → "IV Sticker DB" tab); the sticker
 # page itself is read-only. Reads (GET) stay open so the sticker can load them.
-RX_ADMIN_WRITE_COLS = {'iv-drugs', 'iv-staff'}
+# iv-prep-db is the IV preparation master (drug -> diluent, stability, HAD,
+# ArcusAir codes). It decides what a pharmacist mixes and how long the bag
+# lives, so it is edited only by an admin/editor through the preset editor.
+RX_ADMIN_WRITE_COLS = {'iv-drugs', 'iv-staff', 'iv-prep-db'}
 # One-time seed for the IV-Sticker master data: written on first startup only
 # (if data/rx/iv-drugs.json / iv-staff.json is absent), so the server — not the
 # extension's hard-coded list — is the source of truth. Extracted from the
@@ -2906,6 +2936,89 @@ def _seconds_until_2300():
         target += timedelta(days=1)
     return max(60, (target - now).total_seconds())
 
+# ── Retention: patient-identifiable data is purged after 60 days ──────────
+# patients/, hmr/ and hmq/ all carry HN and patient name. Pharmacy has no
+# clinical need for them beyond the admission they belong to, and holding
+# identifiable records indefinitely only increases the damage of any breach.
+# 60 days covers a long stay plus follow-up queries, then the file goes.
+#
+# Deliberately conservative:
+#   * a record with no usable timestamp is KEPT, never guessed at
+#   * only whole per-record files are removed, never edited in place
+#   * kpi/ (aggregate, no identifiers) and med-images/ are untouched
+RETENTION_DAYS = 60
+RETENTION_DIRS = ('patients', 'hmr', 'hmq')
+
+
+def _record_age_days(doc, fallback_mtime):
+    """Age in days from the record's own timestamps, else the file mtime."""
+    for key in ('updatedAt', 'completedAt', 'createdAt', 'date'):
+        v = doc.get(key) if isinstance(doc, dict) else None
+        if not v:
+            continue
+        try:
+            t = datetime.fromisoformat(str(v).replace('Z', '+00:00'))
+        except (ValueError, TypeError):
+            continue
+        if t.tzinfo:
+            t = t.replace(tzinfo=None)
+        return (datetime.now() - t).total_seconds() / 86400.0
+    if fallback_mtime:
+        return (time.time() - fallback_mtime) / 86400.0
+    return None
+
+
+def purge_expired_records(dry_run=False):
+    """Delete identifiable records older than RETENTION_DAYS. Returns a summary."""
+    out = {}
+    for name in RETENTION_DIRS:
+        folder = DATA_DIR / name
+        removed = kept = skipped = 0
+        if not folder.exists():
+            out[name] = {'removed': 0, 'kept': 0, 'skipped': 0}
+            continue
+        for f in folder.glob('*.json'):
+            try:
+                st = f.stat()
+                with open(f, encoding='utf-8') as fh:
+                    doc = json.load(fh)
+            except (OSError, ValueError):
+                skipped += 1          # unreadable: leave it alone
+                continue
+            age = _record_age_days(doc, st.st_mtime)
+            if age is None:
+                skipped += 1
+                continue
+            if age > RETENTION_DAYS:
+                if not dry_run:
+                    try:
+                        f.unlink()
+                    except OSError:
+                        skipped += 1
+                        continue
+                removed += 1
+            else:
+                kept += 1
+        out[name] = {'removed': removed, 'kept': kept, 'skipped': skipped}
+    return out
+
+
+def _retention_job():
+    try:
+        res = purge_expired_records()
+        total = sum(v['removed'] for v in res.values())
+        if total:
+            print(f'[RETENTION] purged {total} records older than '
+                  f'{RETENTION_DAYS} days: {res}', file=sys.stderr)
+    except Exception as e:
+        print(f'[RETENTION] error: {e}', file=sys.stderr)
+    threading.Timer(_seconds_until_2300(), _retention_job).start()
+
+
+def _start_retention_scheduler():
+    threading.Timer(_seconds_until_2300(), _retention_job).start()
+
+
 def _hmr_nightly_job():
     try:
         _hmr_nightly_merge()
@@ -3964,6 +4077,21 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_file_under(WWW_DIR, urllib.parse.unquote(clean.lstrip('/')), None); return
 
         # ── Extension sync (see "Extension sync" in README) ────
+        # /api/releases → curated release notes for the update page.
+        # Read from disk per request (not cached): the pharmacy edits this
+        # file when publishing, and a stale cache would show staff the wrong
+        # notes until the next restart.
+        if clean == '/api/releases':
+            f = RX_DIR / 'releases.json'
+            if not f.exists():
+                self.send_json(200, {'releases': []}); return
+            try:
+                with open(f, encoding='utf-8') as fh:
+                    self.send_json(200, json.load(fh))
+            except (OSError, ValueError):
+                self.send_json(200, {'releases': []})
+            return
+
         # /api/ext-version → the version the server is publishing, so a client
         # can skip the download when it is already current.
         if clean == '/api/ext-version':
@@ -3995,6 +4123,16 @@ class Handler(BaseHTTPRequestHandler):
         if clean in ('/reload-extension', '/reload-extension.html'):
             self._serve_file(WWW_DIR / 'reload-extension.html',
                              'text/html; charset=utf-8'); return
+        # /update-extension(.html) → the page staff use to update the
+        # extension: current version, release notes, and the installer they
+        # download and run on their OWN PC. Must be matched BEFORE the
+        # legacy .bat route below, which also claims '/update-extension'.
+        if clean in ('/update-extension', '/update-extension.html'):
+            page = WWW_DIR / 'update-extension.html'
+            if page.exists():
+                self._serve_file(page, 'text/html; charset=utf-8'); return
+            # fall through to the legacy .bat handler when the page is absent
+
         # /update-extension → the one-click updater a workstation keeps on its
         # Desktop. It is a tiny bootstrap that re-downloads /ext-sync.bat each
         # run, so the copy on the PC never goes stale. Served with this server's
@@ -4019,6 +4157,24 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body); return
         # /ext-sync.bat → the client sync script, pre-filled with this server's
         # own URL so a workstation needs no hand-editing.
+        # /bkn-install.bat → the installer a workstation saves and runs
+        # LOCALLY. Served as an attachment so the browser downloads it
+        # rather than showing it as text; staff must never run a script
+        # straight off the file share, where anyone with write access to
+        # that folder could replace it.
+        if clean in ('/bkn-install.bat', '/install.bat'):
+            p = WWW_DIR / 'bkn-install.bat'
+            if not p.exists():
+                self.send_json(404, {'error': 'installer not found'}); return
+            body = p.read_bytes()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/octet-stream')
+            self.send_header('Content-Length', str(len(body)))
+            self.send_header('Content-Disposition', 'attachment; filename="bkn-install.bat"')
+            self._cors()
+            self.end_headers()
+            self.wfile.write(body); return
+
         if clean in ('/ext-sync.bat', '/ext-sync'):
             body = _ext_sync_bat(self.headers.get('Host', '')).encode('utf-8')
             self.send_response(200)
@@ -4217,7 +4373,13 @@ class Handler(BaseHTTPRequestHandler):
             if d_from or d_to:
                 rows = iv_worklist.load_range(IV_WORKLIST_DIR.parent, d_from or d_to, d_to or d_from)
             else:
-                rows = iv_worklist.load_day(IV_WORKLIST_DIR.parent, date or iv_worklist.today_str())
+                # Re-apply the presets on read: a row created before its drug
+                # was in the master would otherwise keep a 24 h default expiry,
+                # and a wrong expiry on a bag is a clinical error, not a display
+                # bug. Cheap — the preset file is mtime-cached.
+                rows, _fixed = iv_worklist.refresh_presets(
+                    IV_WORKLIST_DIR.parent, date or iv_worklist.today_str(),
+                    _atomic_write_json)
             self.send_json(200, rows)
         elif rtype == 'iv-worklist-visit':
             qs = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
@@ -4235,6 +4397,10 @@ class Handler(BaseHTTPRequestHandler):
             q = list_opd_queue(from_date, to_date)
             self.send_json(200, {'ok': True, 'queue': q, 'stats': opd_queue_stats(q)})
         elif rtype == 'opd-logs':
+            # Admin-only: this log carries HN alongside the timing data, so it
+            # is the one log type that can identify a patient. Reading it is
+            # an administrative act, not part of the dispensing workflow.
+            if not self._require('admin', 'super_admin'): return
             qs        = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
             from_date = (qs.get('from') or [''])[0]
             to_date   = (qs.get('to')   or [''])[0]
@@ -4295,6 +4461,11 @@ class Handler(BaseHTTPRequestHandler):
             'med-image-upload', 'ks-file-upload', 'schedule',
             'patient', 'patient-context', 'patient-adr', 'patient-medcache',
             'patient-captures', 'report-cache', 'hmr', 'hmq', 'opd-queue',
+            # The IV board is ordinary ward work, like hmr/hmq: the trusted
+            # extension writes it without a login. Leaving it out of this list
+            # made every edit fall through to the role check and pop
+            # 'Authentication required' at the hood.
+            'iv-worklist', 'iv-worklist-sync',
         )
         # IV-Sticker master data (iv-drugs / iv-staff) is admin-only: editable
         # solely through the Pattern Editor's "IV Sticker DB" tab by a logged-in
@@ -4352,8 +4523,11 @@ class Handler(BaseHTTPRequestHandler):
             # curated note that auto-translate will never overwrite.
             if not isinstance(body, dict):
                 self.send_json(400, {'error': 'Body must be a JSON object'}); return
-            th = _hm_norm(body.get('TH') or '')
-            en = _hm_norm(body.get('EN') or '')
+            # Accept either case for the language keys: the dashboard
+            # (www/index.html) posts TH/EN, the Pattern Editor posts th/en.
+            # Taking both means neither client has to care.
+            th = _hm_norm(body.get('TH') or body.get('th') or '')
+            en = _hm_norm(body.get('EN') or body.get('en') or '')
             if not key or not th:
                 self.send_json(400, {'error': 'code (URL) and TH (body) required'}); return
             manual = bool(body.get('manual'))
@@ -5213,6 +5387,7 @@ def start_server_background(port=None):
     # Schedule HMR / HMQ nightly merges at 23:00
     _start_hmr_scheduler()
     _start_hmq_scheduler()
+    _start_retention_scheduler()   # 60-day purge of identifiable records
     return server, ip, port
 
 

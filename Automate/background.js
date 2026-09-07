@@ -1,5 +1,8 @@
 "use strict";
 
+// The CDP bridge registers its own onMessage listener for cdp* message types.
+importScripts("cdp-bridge.js");
+
 // Stores the desired filename for the next download triggered by the content script.
 let nextDownloadName = null;
 

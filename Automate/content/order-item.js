@@ -11,6 +11,8 @@
   const PANEL_DISMISSED_KEY = "arcusOrderItemPanelDismissed";
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const Driver = window.ArcusDriver;
   const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
   const state = {
@@ -46,26 +48,31 @@
     return rect.width > 0 && rect.height > 0;
   }
 
-  async function waitFor(fn, timeoutMs = 12000, intervalMs = 250) {
-    const start = Date.now();
-    while (Date.now() - start < timeoutMs) {
-      if (state.stopRequested) return null;
-      const result = fn();
-      if (result) return result;
-      await sleep(intervalMs);
-    }
-    return null;
+  // Mutation-driven via the shared driver: resolves on the DOM change that
+  // satisfies the predicate rather than on the next 250ms poll.
+  async function waitFor(fn, timeoutMs = 12000, _intervalMs = 250) {
+    return Driver.waitFor(fn, timeoutMs, { shouldAbort: () => state.stopRequested });
   }
 
+  // Trusted CDP click under turbo, synthetic events otherwise. The driver
+  // only scrolls when the element is off-screen, so the old unconditional
+  // scroll + sleep(150) per click is gone.
   async function clickLikeUser(el) {
     if (!el) return false;
-    try { el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" }); } catch (_) {}
-    await sleep(150);
-    for (const type of ["mouseover", "mouseenter", "mousedown", "mouseup", "click"]) {
-      el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }));
-    }
-    if (typeof el.click === "function") el.click();
-    return true;
+    const result = await Driver.click(el);
+    return !!result.ok;
+  }
+
+  // Click, then resume when the resulting request finishes.
+  async function clickAndSettle(el, maxMs = 10000) {
+    if (!el) return false;
+    const result = await Driver.clickAndSettle(el, { timeoutMs: maxMs });
+    return !!result.ok;
+  }
+
+  async function settle(maxMs = 4000) {
+    const result = await Driver.waitForSettle({ timeoutMs: maxMs });
+    return !!result.ok;
   }
 
   function angularClick(el) {
@@ -126,7 +133,7 @@
       location.hash = ORDER_ITEM_HASH;
       const ok = await waitFor(() => isOrderItemListPage(), 15000, 200);
       if (!ok) throw new Error("Cannot navigate to Order Item page");
-      await sleep(700);
+      await settle(3000);
     }
   }
 
@@ -180,7 +187,7 @@
     }, 8000);
     if (!searchBtn) throw new Error("#orderitemFormSearch not found");
 
-    await clickLikeUser(searchBtn);
+    await clickAndSettle(searchBtn, 15000);
 
     const found = await waitFor(() => {
       const row = findMatchingResultRow(code);
@@ -243,10 +250,10 @@
     const modifyBtn = row.querySelector("button[id^='orderitemFormModify']");
     if (!modifyBtn) throw new Error(`Modify button not found for ${code}`);
     setMilestone("Open CRUD", code);
-    await clickLikeUser(modifyBtn);
+    await clickAndSettle(modifyBtn, 15000);
     const ok = await waitFor(() => isOrderItemCrudPage(), 15000, 250);
     if (!ok) throw new Error(`CRUD page did not open for ${code}`);
-    await sleep(700);
+    await settle(3000);
   }
 
   function readSelectText(root, selector) {

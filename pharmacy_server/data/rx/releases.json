@@ -1,0 +1,79 @@
+{
+  "_note": [
+    "Release notes shown on /update-extension. EDIT THIS FILE when you publish.",
+    "The page reads it live — no server restart needed.",
+    "",
+    "Each entry:",
+    "  version   must match manifest.json for that release",
+    "  date      YYYY-MM-DD",
+    "  title_th  one line, Thai — what staff see first",
+    "  title_en  one line, English",
+    "  items     bullet points; keep them about what CHANGED for the user,",
+    "            not how it was implemented",
+    "  kind      feature | fix | data   (only changes the colour of the chip)",
+    "",
+    "Newest first. The top entry is shown as 'What's new'."
+  ],
+
+  "releases": [
+    {
+      "version": "3.57.0",
+      "date": "2026-08-31",
+      "kind": "feature",
+      "title_th": "IV Queue — อ่านขนาดยา ความถี่ และวิธีให้ จากหน้า eMAR",
+      "title_en": "IV Queue — reads dose, frequency and route from the eMAR row",
+      "items": [
+        "เพิ่มเคสเข้าคิว IV ได้จากหน้าต่าง Edit Administration Timings ใน eMAR",
+        "ดึงชื่อยา ขนาด ความถี่ วิธีให้ และเวลาให้ยา อัตโนมัติ",
+        "แจ้งเตือนถ้ารายการนั้นอยู่ในคิวแล้ว ไม่เพิ่มซ้ำ"
+      ]
+    },
+    {
+      "version": "3.56.0",
+      "date": "2026-08-30",
+      "kind": "feature",
+      "title_th": "ปุ่ม Add to IV Queue ในหน้า eMAR",
+      "title_en": "Add to IV Queue button in the eMAR dialog",
+      "items": [
+        "ปุ่มเพิ่มเคสเข้าคิวเตรียมยาฉีด แสดงข้าง ๆ ชื่อยาในหน้าต่างแก้เวลาให้ยา",
+        "อ่าน HN ชื่อ หอผู้ป่วย และห้อง จากแถบข้อมูลผู้ป่วย"
+      ]
+    },
+    {
+      "version": "3.55.0",
+      "date": "2026-08-30",
+      "kind": "feature",
+      "title_th": "IV Worklist — กระดานคิวเตรียมยาฉีด IPD (รุ่นทดลอง)",
+      "title_en": "IV Worklist — IPD injection preparation board (alpha)",
+      "items": [
+        "กระดานคิวแยกตามหอผู้ป่วย เรียงตามเลขห้อง",
+        "การ์ดผู้ป่วย 1 ใบ แสดงยาฉีดทุกมื้อของผู้ป่วยรายนั้น",
+        "ตัวกรอง: เวลาให้ยา / หอผู้ป่วย / ยา / สถานะ",
+        "พิมพ์สติกเกอร์ IPD 8×3.5 ซม. และใบส่งยาได้จากกระดาน",
+        "ยังเป็นรุ่นทดลอง (alpha) — ยังไม่ใช้แทนกระดาน IV เดิม"
+      ]
+    },
+    {
+      "version": "3.54.0",
+      "date": "2026-08-29",
+      "kind": "fix",
+      "title_th": "Pattern Editor — แก้ปัญหาการโหลดผิดพลาดแล้วลบค่าที่บันทึกไว้",
+      "title_en": "Pattern Editor could wipe saved overrides on a failed load",
+      "items": [
+        "ถ้าโหลดข้อมูลไม่สำเร็จ จะไม่ลบค่าที่เคยบันทึกไว้อีกต่อไป",
+        "ไฟล์ข้อมูล rx เก็บสำรองอัตโนมัติทุกครั้งที่บันทึก"
+      ]
+    },
+    {
+      "version": "3.53.0",
+      "date": "2026-08-28",
+      "kind": "feature",
+      "title_th": "HM Process / HM Queue — บันทึกของเภสัชกร และบรรทัดล่าสุดบน Dashboard",
+      "title_en": "HMR/HMQ — pharmacist note and latest log line on the Dashboard",
+      "items": [
+        "เพิ่มช่องบันทึกของเภสัชกรในแต่ละเคส",
+        "Dashboard แสดงบรรทัดล่าสุดของแต่ละเคส"
+      ]
+    }
+  ]
+}

@@ -1,11 +1,11 @@
 {
   "patientuid": "5fda0809b1dfca0783ffbb00",
   "createdAt": "2026-06-01T03:13:49.166581+00:00",
-  "updatedAt": "2026-06-01T03:13:49.166581+00:00",
+  "updatedAt": "2026-09-01T07:31:41.195206+00:00",
   "context": {
     "patientuid": "5fda0809b1dfca0783ffbb00",
-    "patientvisituid": "6a1ae67c214982274abcb62d",
-    "hn": "48-15-015763",
+    "patientvisituid": "6a92b21f9060d5b4d3e6efa9",
+    "hn": "48-20-012212",
     "patientName": "MISS TIPTARA  SENKEN"
   },
   "adrTimeline": {
@@ -13,5 +13,117 @@
     "customMedications": [],
     "adrEvent": null
   },
-  "medicationCache": {}
+  "medicationCache": {},
+  "captures": {
+    "6a92b21f9060d5b4d3e6efa9": {
+      "medreconcileSnapshot": {
+        "medreconcile": {
+          "_id": "6a2be8c78ab2faf3603f8fdb",
+          "medicationitems": [],
+          "reviewedbyusers": [
+            {
+              "useruid": {
+                "_id": "5bb325cb3e4efabebd8ea441",
+                "code": "048170903",
+                "name": "รัฐพล อุปลา, ศ. นพ.",
+                "iscareprovider": true,
+                "licensenumber": "30386"
+              },
+              "reviewdate": "2026-06-13T23:58:23.637Z",
+              "comments": null,
+              "_id": "6a2dee9fee280aa9c34b021a"
+            }
+          ],
+          "reconciledbyusers": [
+            {
+              "useruid": {
+                "_id": "5bb325cb3e4efabebd8ea441",
+                "code": "048170903",
+                "name": "รัฐพล อุปลา, ศ. นพ.",
+                "iscareprovider": true,
+                "licensenumber": "30386"
+              },
+              "reconciledate": "2026-06-13T23:58:26.006Z",
+              "comments": null,
+              "_id": "6a2deea2cbba310bf2ffaccb"
+            }
+          ],
+          "medreconcilelogs": [
+            {
+              "modifiedat": "2026-06-12T11:08:55.395Z",
+              "useruid": "64a7c704102fb2063c74b5b6",
+              "comments": "PREPARED",
+              "_id": "6a2be8c78ab2faf3603f8fdc"
+            },
+            {
+              "modifiedat": "2026-06-13T23:58:23.581Z",
+              "useruid": "5bb325cb3e4efabebd8ea441",
+              "comments": "MODIFIED MEDICINE ITEM",
+              "reasonuid": null,
+              "_id": "6a2dee9fcbba310bf2ffac40"
+            },
+            {
+              "modifiedat": "2026-06-13T23:58:23.638Z",
+              "useruid": "5bb325cb3e4efabebd8ea441",
+              "comments": "REVIEWED",
+              "reasonuid": null,
+              "_id": "6a2dee9fee280aa9c34b021b"
+            },
+            {
+              "modifiedat": "2026-06-13T23:58:25.948Z",
+              "useruid": "5bb325cb3e4efabebd8ea441",
+              "comments": "MODIFIED MEDICINE ITEM",
+              "reasonuid": null,
+              "_id": "6a2deea1cbba310bf2ffacbb"
+            },
+            {
+              "modifiedat": "2026-06-13T23:58:26.007Z",
+              "useruid": "5bb325cb3e4efabebd8ea441",
+              "comments": "RECONCILED",
+              "reasonuid": null,
+              "_id": "6a2deea2cbba310bf2ffaccc"
+            }
+          ],
+          "patientuid": "5fda0809b1dfca0783ffbb00",
+          "patientvisituid": "6a2be3e1c646501690e0f2a8",
+          "reconciledate": "2026-06-12T11:08:55.395Z",
+          "userdepartmentuid": {
+            "_id": "5b857e32136d276403482bc9",
+            "name": "Pediatrics"
+          },
+          "preparedbyuseruid": {
+            "_id": "64a7c704102fb2063c74b5b6",
+            "name": "เกศริน ดลละวิจิตร, RN.",
+            "iscareprovider": false,
+            "licensenumber": ""
+          },
+          "comments": null,
+          "isactive": true,
+          "createdby": "64a7c704102fb2063c74b5b6",
+          "createdat": "2026-06-12T11:08:55.395Z",
+          "modifiedby": "64a7c704102fb2063c74b5b6",
+          "modifiedat": "2026-06-12T11:08:55.395Z",
+          "statusflag": "A",
+          "orguid": "5b20f438d1202e29ce16f710",
+          "sourceofdatapatient": null,
+          "sourceofdatarelative": true,
+          "sourceofdatarelativedetails": "มารดา",
+          "sourceofdataother": null,
+          "sourceofdataotherdetails": null,
+          "currentmedicationusing": "NOTMEDREUSE",
+          "reconciletypeuid": {
+            "_id": "691f13df73ed91126bf60f06",
+            "valuedescription": "Admission",
+            "valuecode": "RECADM",
+            "relatedvalue": "Admission",
+            "domaincode": "RECONTYPE"
+          },
+          "__v": 4
+        }
+      },
+      "incusToken": "6a9637ad64ef92628843a442",
+      "ts": 1788247901194,
+      "tokenTs": 1788247901194
+    }
+  }
 }

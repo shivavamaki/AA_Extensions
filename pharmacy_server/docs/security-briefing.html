@@ -1,0 +1,444 @@
+<title>คุยกับ IT Security — Pharmacy Portal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --bg:#fbfaf7; --card:#fff; --line:#ddd8cf; --line2:#eeebe5;
+    --tx:#23201c; --dim:#6b655c; --faint:#9c958a;
+    --blue:#2f6690; --red:#b23a2e; --amber:#b07818; --green:#3f7d54;
+    --amberbg:#fbf3e4; --greenbg:#eef4ef;
+    --s:"Sarabun",system-ui,sans-serif;
+    --m:"JetBrains Mono",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+    --bg:#191714; --card:#211e1a; --line:#3a352e; --line2:#2c2823;
+    --tx:#e8e3da; --dim:#a39c90; --faint:#756e63;
+    --blue:#6ba3cc; --red:#e0806f; --amber:#d6a355; --green:#71b189;
+    --amberbg:#2a2116; --greenbg:#1a2620;
+  }}
+  :root[data-theme=dark]{
+    --bg:#191714; --card:#211e1a; --line:#3a352e; --line2:#2c2823;
+    --tx:#e8e3da; --dim:#a39c90; --faint:#756e63;
+    --blue:#6ba3cc; --red:#e0806f; --amber:#d6a355; --green:#71b189;
+    --amberbg:#2a2116; --greenbg:#1a2620;
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);font:15.5px/1.75 var(--s)}
+  .w{max-width:820px;margin:0 auto;padding:26px 22px 70px}
+
+  .top{border-bottom:2px solid var(--tx);padding-bottom:14px}
+  h1{margin:0;font-size:23px;font-weight:700;letter-spacing:-.01em}
+  .sub{color:var(--dim);font-size:14px;margin-top:3px}
+  .who{font:500 12px var(--m);color:var(--faint);margin-top:9px}
+
+  h2{font-size:18px;font-weight:700;margin:38px 0 3px;
+     padding-top:16px;border-top:2px solid var(--tx)}
+  h2 .n{font:500 12px var(--m);color:var(--faint);margin-right:8px}
+  h3{font-size:14.5px;font-weight:700;margin:24px 0 6px}
+  p{margin:9px 0;max-width:66ch}
+  .en{color:var(--dim);font-size:14px}
+
+  code{font:500 12.5px var(--m);background:var(--line2);padding:1px 5px;border-radius:3px}
+  b.t{font-weight:700}
+  ul{margin:8px 0;padding-left:19px}
+  li{margin-bottom:5px;max-width:66ch}
+
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line2)}
+  th{font:600 11.5px var(--m);letter-spacing:.04em;text-transform:uppercase;
+     color:var(--faint);border-bottom:1px solid var(--line)}
+  td.n{text-align:right;font:500 13px var(--m);white-space:nowrap}
+  .tw{overflow-x:auto}
+
+  .box{background:var(--card);border:1px solid var(--line);border-radius:5px;
+       padding:13px 15px;margin:12px 0}
+  .box.g{border-left:3px solid var(--green);background:var(--greenbg)}
+  .box p:first-child{margin-top:0} .box p:last-child{margin-bottom:0}
+
+  .tag{display:inline-block;font:600 10.5px var(--m);letter-spacing:.04em;
+       padding:1px 7px;border-radius:3px;vertical-align:2px}
+  .tag.a{background:var(--amber);color:#fff}
+  .tag.g{background:var(--green);color:#fff}
+
+  details{border:1px solid var(--line);border-radius:5px;margin-bottom:8px;background:var(--card)}
+  details[open]{border-color:var(--dim)}
+  summary{padding:11px 14px;cursor:pointer;font-weight:600;font-size:14.5px;
+          display:flex;gap:9px;align-items:baseline;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:'+';margin-left:auto;color:var(--faint);font:400 16px var(--m)}
+  details[open] summary::after{content:'–'}
+  summary:hover{background:var(--line2)}
+  .dbody{padding:0 14px 13px;font-size:14px}
+  .dbody dt{font:600 11px var(--m);text-transform:uppercase;letter-spacing:.04em;
+            color:var(--faint);margin-top:10px}
+  .dbody dd{margin:1px 0 0}
+
+  .fig{margin:14px 0}
+  .fig svg{display:block;width:100%;height:auto;background:var(--card);
+           border:1px solid var(--line);border-radius:5px;padding:10px}
+  .fig figcaption{font-size:12.5px;color:var(--dim);margin-top:7px;max-width:70ch}
+
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 8px}
+  .chips button{background:var(--card);border:1px solid var(--line);border-radius:999px;
+    padding:3px 12px;font:500 12.5px var(--m);color:var(--dim);cursor:pointer}
+  .chips button[aria-pressed=true]{background:var(--blue);border-color:var(--blue);color:#fff}
+  .chips button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  .log{background:#16140f;color:#cfc7b8;border-radius:5px;padding:12px 14px;
+       font:400 12px/1.7 var(--m);overflow-x:auto;white-space:pre-wrap}
+  .log .c{color:#7d7466}
+  .log .w{color:#d9a355}
+
+  .ask{counter-reset:a;padding-left:0;list-style:none}
+  .ask li{counter-increment:a;padding-left:30px;position:relative;margin-bottom:10px}
+  .ask li::before{content:counter(a);position:absolute;left:0;top:1px;
+    width:20px;height:20px;border-radius:50%;background:var(--tx);color:var(--bg);
+    font:600 11px/20px var(--m);text-align:center}
+  footer{margin-top:40px;padding-top:12px;border-top:1px solid var(--line);
+         font:400 12px var(--m);color:var(--faint)}
+
+  /* พิมพ์ออกกระดาษ: คนอ่านกระดาษกดอะไรไม่ได้ ต้องกางรายละเอียดทุกข้อให้ */
+  @media print{
+    body{background:#fff;color:#000;font-size:11pt}
+    .w{max-width:none;padding:0}
+    details>.dbody{display:block!important}
+    summary::after{content:''}
+    details{border-color:#999}
+    .log{background:#fff;color:#000;border:1px solid #999}
+    .fig svg{border:1px solid #999}
+    h2{page-break-before:always;page-break-after:avoid}
+    tr,details,figure{page-break-inside:avoid}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="w">
+
+<div class="top">
+  <h1>Pharmacy Portal — คุยกับ IT Security</h1>
+  <div class="sub">เครื่องมือที่ห้องยา IPD ทำใช้เอง · ขอคุยเรื่องความปลอดภัยข้อมูล</div>
+  <div class="who">ห้องยาผู้ป่วยใน · รพ.กรุงเทพขอนแก่น · 31 ส.ค. 2026</div>
+</div>
+
+<h2><span class="n">01</span>ระบบคืออะไร</h2>
+
+<p>มี 2 ส่วน อยู่ในเครือข่ายโรงพยาบาลทั้งคู่ ไม่ได้ซื้อมา — ห้องยาเขียนเอง</p>
+
+<div class="box">
+<p><b class="t">Chrome extension</b> — ลงที่เครื่องเภสัชกร ทำงานทับหน้าจอ ArcusAir
+เพิ่มเครื่องมือที่ ArcusAir ไม่มี เช่น ใบยากลับบ้านภาษาไทย สติกเกอร์ยาฉีด คิวเตรียม IV
+<span class="en">ติดตั้งแบบ unpacked ไม่ได้ผ่าน Chrome Web Store</span></p>
+</div>
+
+<div class="box">
+<p><b class="t">Pharmacy server</b> — Python ตัวเดียว รันอยู่บนเครื่อง PC ในห้องยา
+ที่ <code>10.134.110.81:8765</code> เก็บข้อมูลที่ต้องแชร์กันระหว่างเครื่อง
+<span class="en">ไม่มี database engine — เก็บเป็นไฟล์ JSON บนดิสก์เฉย ๆ</span></p>
+</div>
+
+<h3>ใครใช้ได้บ้าง</h3>
+<div class="tw"><table>
+<thead><tr><th>ใคร</th><th class="n">กี่คน</th><th>ทำอะไรได้</th></tr></thead>
+<tbody>
+<tr><td>เภสัชกร / ผู้ช่วย</td><td class="n">~38</td>
+    <td>ใช้ extension บนเครื่องห้องยา — ทำงานเฉพาะตอนเปิดหน้า ArcusAir</td></tr>
+<tr><td><code>editor</code></td><td class="n">1</td><td>แก้ฐานข้อมูลยา, IV preset, ตารางเวร</td></tr>
+<tr><td><code>admin</code></td><td class="n">1</td><td>เหมือน editor + ตั้งค่า server + อ่าน log</td></tr>
+<tr><td><code>super_admin</code></td><td class="n">1</td><td>ทุกอย่าง + จัดการ user</td></tr>
+</tbody></table></div>
+
+<h3>ใช้ของอะไรบ้าง</h3>
+<ul>
+<li><b class="t">Server</b> — Python 3.12 <span class="en">standard library ล้วน ไม่มี framework ไม่มี third-party package เลย</span></li>
+<li><b class="t">Password</b> — <code>PBKDF2-HMAC-SHA256</code> มี salt ต่อ user <span class="en">ไม่เก็บ plaintext</span></li>
+<li><b class="t">ต่อออกนอกที่ไหนบ้าง</b> — <code>arcusair.bdms.co.th</code>, <code>aa-report.bdms.co.th</code> (BDMS ทั้งคู่) และ Google Fonts แค่นั้น</li>
+<li><b class="t">Source code</b> — อยู่บน GitHub <span class="en">(ดูข้อ 3.1)</span></li>
+</ul>
+
+<h3>ทำมาถึงไหนแล้ว <span class="en" style="font-weight:400">(ใหม่ → เก่า)</span></h3>
+<div class="tw"><table>
+<thead><tr><th class="n">วันที่</th><th>อะไร</th></tr></thead>
+<tbody>
+<tr><td class="n">31 ส.ค.</td><td><b class="t">ตั้งอายุข้อมูล 60 วัน</b> — patients / hmr / hmq ลบอัตโนมัติทุกคืน 23:00</td></tr>
+<tr><td class="n">31 ส.ค.</td><td><b class="t">จำกัดสิทธิ์อ่าน log</b> — <code>/api/opd-logs</code> ต้องเป็น admin เท่านั้น</td></tr>
+<tr><td class="n">31 ส.ค.</td><td><b class="t">เลิกรัน .bat จาก share</b> — เปลี่ยนเป็นหน้าเว็บ + checksum ให้โหลดไปรันที่เครื่องตัวเอง</td></tr>
+<tr><td class="n">31 ส.ค.</td><td>IV preset ผูกกับรหัสยา ArcusAir แทนการ match ชื่อ (หลังเจอเคส Ambisome/Lipo-dox)</td></tr>
+<tr><td class="n">30 ส.ค.</td><td><b class="t">ทำ backup</b> หลังรูปยา 1,960 ไฟล์หายเพราะคำสั่ง git — กู้กลับครบแล้ว</td></tr>
+<tr><td class="n">30 ส.ค.</td><td>IV Worklist เชื่อมกับ server จริง เลิกใช้ข้อมูล demo ทั้งหมด</td></tr>
+<tr><td class="n">30 ส.ค.</td><td>ปุ่ม Add to IV Queue ในหน้า eMAR</td></tr>
+<tr><td class="n">29 ส.ค.</td><td><b class="t">ตรวจย้อนหลังทั้งระบบ</b> — เจอไฟล์คนไข้ + password hash ติดใน git history · ใส่ ignore rule + เปลี่ยน password</td></tr>
+<tr><td class="n">29 ส.ค.</td><td>IV Worklist เริ่มพัฒนา (alpha) + ดึงฐานข้อมูลยาฉีดจากไฟล์ master ห้องยา</td></tr>
+<tr><td class="n">17 ส.ค.</td><td>ใบยากลับบ้าน — ติดป้าย "ยาเดิม" ให้ยาที่คนไข้เอามาเองอัตโนมัติ</td></tr>
+<tr><td class="n">16 ส.ค.</td><td>HMR เก็บ ArcusAir session ตอน Allocate/Dispense · ล็อกปุ่ม Sheet จนกว่าจะทำขั้นนั้น</td></tr>
+<tr><td class="n">ส.ค.</td><td>HM Queue — สถิติ, บันทึกเภสัชกร, log การคืนยา/หยุดยาต่อเนื่อง</td></tr>
+<tr><td class="n">ก.ค.</td><td>KPI IPD/OPD + ตารางเวร (99 commits)</td></tr>
+<tr><td class="n">มิ.ย.</td><td>ใส่ตัวกัน git เขียนทับข้อมูลจริง (<code>merge=ours</code>, <code>skip-worktree</code>)</td></tr>
+<tr><td class="n">มิ.ย.</td><td>ใบยากลับบ้าน, ADR timeline, HMR/HMQ → <b class="t">เริ่มมีข้อมูลคนไข้สะสม</b> (152 commits)</td></tr>
+<tr><td class="n">พ.ค.</td><td>ตั้ง pharmacy server — ย้ายข้อมูลจากเครื่องใครเครื่องมันมารวมที่เดียว (107 commits)</td></tr>
+<tr><td class="n">24 เม.ย.</td><td>commit แรก — เริ่มจากสติกเกอร์ยา แทนไฟล์ Excel ที่แชร์กัน</td></tr>
+</tbody></table></div>
+
+
+<h2><span class="n">02</span>ข้อมูลไหลยังไง</h2>
+
+<p>ข้อมูลคนไข้ทุกอย่าง<b class="t">ต้นทางมาจาก ArcusAir</b>
+เราแค่อ่านมา แล้วเก็บสำเนาไว้ให้เครื่องอื่นเห็นคิวเดียวกัน
+<span class="en">ไม่มีอะไรออกนอกเครือข่ายโรงพยาบาล</span></p>
+
+<figure class="fig">
+<svg viewBox="0 0 840 330" role="img" aria-label="ข้อมูลไหลจาก ArcusAir ผ่าน extension ไป pharmacy server แล้วเก็บลงดิสก์ มีจุดตรวจสิทธิ์ 3 จุด">
+ <defs>
+  <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+   <polygon points="0,0 10,5 0,10" fill="currentColor"/>
+  </marker>
+ </defs>
+ <g font-family="Sarabun, sans-serif" font-size="12" fill="currentColor">
+  <rect x="14" y="14" width="812" height="300" rx="7" fill="none"
+        stroke="currentColor" stroke-dasharray="5 4" opacity=".28"/>
+  <text x="27" y="33" font-size="10.5" opacity=".55">เครือข่ายโรงพยาบาล — ไม่มีอะไรออกนอกเส้นนี้</text>
+
+  <rect x="34" y="118" width="132" height="72" rx="5" fill="none" stroke="currentColor" opacity=".75"/>
+  <text x="100" y="147" text-anchor="middle" font-weight="700">ArcusAir</text>
+  <text x="100" y="164" text-anchor="middle" font-size="10.5" opacity=".7">BDMS</text>
+  <text x="100" y="179" text-anchor="middle" font-size="10.5" opacity=".7">ต้นทางข้อมูล</text>
+
+  <rect x="236" y="118" width="146" height="72" rx="5" fill="none" stroke="currentColor" opacity=".75"/>
+  <text x="309" y="143" text-anchor="middle" font-weight="700">Chrome extension</text>
+  <text x="309" y="160" text-anchor="middle" font-size="10.5" opacity=".7">เครื่องเภสัชกร</text>
+  <text x="309" y="175" text-anchor="middle" font-size="10.5" opacity=".7">ไม่เก็บถาวร</text>
+
+  <rect x="452" y="110" width="150" height="88" rx="5" fill="none" stroke="#c9761c" stroke-width="1.6"/>
+  <text x="527" y="135" text-anchor="middle" font-weight="700">Pharmacy server</text>
+  <text x="527" y="152" text-anchor="middle" font-size="10.5" opacity=".7">10.134.110.81:8765</text>
+  <text x="527" y="167" text-anchor="middle" font-size="10.5" opacity=".7">Python · JSON</text>
+  <text x="527" y="185" text-anchor="middle" font-size="10.5" fill="#c9761c">HTTP · ยังไม่มี TLS</text>
+
+  <rect x="672" y="62" width="140" height="76" rx="5" fill="none" stroke="currentColor" opacity=".75"/>
+  <text x="742" y="86" text-anchor="middle" font-weight="700">ข้อมูลบนดิสก์</text>
+  <text x="742" y="103" text-anchor="middle" font-size="10.5" opacity=".7">patients / hmr / hmq</text>
+  <text x="742" y="120" text-anchor="middle" font-size="10.5" fill="#3f7d54">ลบเองเมื่อครบ 60 วัน</text>
+
+  <rect x="672" y="172" width="140" height="60" rx="5" fill="none" stroke="currentColor" opacity=".5"/>
+  <text x="742" y="196" text-anchor="middle" font-weight="700">Backup</text>
+  <text x="742" y="213" text-anchor="middle" font-size="10.5" opacity=".7">D:\PharmacyBackup</text>
+
+  <g stroke="currentColor" fill="none" marker-end="url(#a1)" opacity=".8">
+   <path d="M166,154 L232,154"/>
+   <path d="M382,154 L448,154"/>
+   <path d="M602,138 L668,108"/>
+   <path d="M602,174 L668,197"/>
+  </g>
+  <g font-size="10" opacity=".62">
+   <text x="199" y="148" text-anchor="middle">อ่าน</text>
+   <text x="415" y="148" text-anchor="middle">เขียน</text>
+   <text x="648" y="116" text-anchor="end">บันทึก</text>
+   <text x="648" y="192" text-anchor="end">สำรอง</text>
+  </g>
+
+  <g>
+   <circle cx="199" cy="174" r="9" fill="none" stroke="#2f6690" stroke-width="1.6"/>
+   <text x="199" y="178" text-anchor="middle" font-size="10" font-weight="700" fill="#2f6690">1</text>
+   <text x="199" y="205" text-anchor="middle" font-size="10" fill="#2f6690">ทำงานเฉพาะ</text>
+   <text x="199" y="218" text-anchor="middle" font-size="10" fill="#2f6690">หน้า arcusair</text>
+  </g>
+  <g>
+   <circle cx="415" cy="174" r="9" fill="none" stroke="#2f6690" stroke-width="1.6"/>
+   <text x="415" y="178" text-anchor="middle" font-size="10" font-weight="700" fill="#2f6690">2</text>
+   <text x="415" y="205" text-anchor="middle" font-size="10" fill="#2f6690">เช็ค origin</text>
+   <text x="415" y="218" text-anchor="middle" font-size="10" fill="#2f6690">ของ extension</text>
+  </g>
+  <path d="M527,198 L527,217" stroke="#2f6690" fill="none" opacity=".55"/>
+  <g>
+   <circle cx="527" cy="226" r="9" fill="none" stroke="#2f6690" stroke-width="1.6"/>
+   <text x="527" y="230" text-anchor="middle" font-size="10" font-weight="700" fill="#2f6690">3</text>
+   <text x="527" y="254" text-anchor="middle" font-size="10" fill="#2f6690">ต้อง login admin</text>
+   <text x="527" y="267" text-anchor="middle" font-size="10" fill="#2f6690">แก้ master data / อ่าน log</text>
+  </g>
+
+  <text x="34" y="300" font-size="10.5" opacity=".55">ArcusAir token ที่ยืมมาใช้ เก็บไม่เกิน 24 ชม. · ไม่มี service account</text>
+ </g>
+</svg>
+<figcaption>ข้อมูลเดินทางทางเดียว — มาจาก ArcusAir ไม่เคยส่งกลับ ไม่ออกนอกโรงพยาบาล
+มีจุดตรวจสิทธิ์ 3 จุด <span class="en">(1) extension ทำงานเฉพาะหน้า ArcusAir
+(2) server รับเฉพาะ origin ของ extension (3) งาน admin ต้อง login</span></figcaption>
+</figure>
+
+<h3>เก็บอะไรไว้บ้าง</h3>
+<div class="tw"><table>
+<thead><tr><th>เก็บอะไร</th><th class="n">กี่ไฟล์</th><th class="n">ขนาด</th><th>มีอะไรอยู่ข้างใน</th><th>ลบเมื่อไหร่</th></tr></thead>
+<tbody>
+<tr><td><code>patients/</code></td><td class="n">2,819</td><td class="n">68 MB</td><td>HN, ชื่อ, ADR, ยาที่เคยได้</td><td><b class="t">60 วัน</b></td></tr>
+<tr><td><code>hmr/</code></td><td class="n">2,059</td><td class="n">14 MB</td><td>HN, ward, ยากลับบ้าน, ชื่อเภสัช</td><td><b class="t">60 วัน</b></td></tr>
+<tr><td><code>hmq/</code></td><td class="n">1,992</td><td class="n">8 MB</td><td>HN, ชื่อ, ward, ห้อง</td><td><b class="t">60 วัน</b></td></tr>
+<tr><td><code>med-images/</code></td><td class="n">2,853</td><td class="n">297 MB</td><td>รูปยา (ไม่ใช่รูปคนไข้)</td><td>ไม่ลบ</td></tr>
+<tr><td><code>logs/</code></td><td class="n">8,951</td><td class="n">51 MB</td><td>path, origin, IP เครื่อง</td><td>ไม่ลบ</td></tr>
+<tr><td><code>kpi/</code></td><td class="n">126</td><td class="n">4 MB</td><td>ตัวเลขรวม ไม่มีชื่อ ไม่มี HN</td><td>ไม่ลบ</td></tr>
+<tr><td><code>rx/</code> <code>ks/</code></td><td class="n">34</td><td class="n">28 MB</td><td>ข้อมูลยา ไม่มีคนไข้</td><td>ไม่ลบ</td></tr>
+<tr><td><code>report-cache/</code></td><td class="n">2</td><td class="n">&lt;1 MB</td><td>rows ที่ parse แล้ว</td><td><b class="t">1 วัน</b></td></tr>
+</tbody></table></div>
+
+<div class="box g">
+<p><b class="t">เพิ่งแก้ไป</b> — ตอนนี้ <code>patients/</code> <code>hmr/</code> <code>hmq/</code>
+ตั้งไว้ <b class="t">เก็บ 60 วัน</b> แล้วลบอัตโนมัติ รันทุกคืน 23:00 พร้อมงาน nightly เดิม
+<span class="en">(<code>purge_expired_records()</code> — อ่าน <code>updatedAt</code> ของแต่ละ record
+ถ้าอ่านไม่ได้จะเก็บไว้ ไม่เดา)</span></p>
+<p>ทดสอบแบบ dry-run แล้ว: จะลบ <b class="t">621 record</b> ที่เกิน 60 วัน (patients 595, hmr 26)</p>
+<p>60 วันเป็นตัวเลขที่เราตั้งเอง <b class="t">ถ้าควรสั้นหรือยาวกว่านี้ บอกได้ แก้ตัวเลขเดียว</b></p>
+</div>
+
+<figure class="fig">
+<svg viewBox="0 0 720 178" role="img" aria-label="เทียบก่อนและหลังตั้งอายุข้อมูล 60 วัน">
+ <g font-family="Sarabun, sans-serif" font-size="12" fill="currentColor">
+  <text x="12" y="22" font-weight="700" font-size="12.5">เดิม</text>
+  <line x1="12" y1="58" x2="694" y2="58" stroke="currentColor" opacity=".28"/>
+  <path d="M12,58 L694,24" stroke="#b23a2e" stroke-width="2" fill="none"/>
+  <text x="690" y="18" text-anchor="end" font-size="10.5" fill="#b23a2e">สะสมเรื่อย ๆ ไม่มีที่สิ้นสุด</text>
+
+  <text x="12" y="104" font-weight="700" font-size="12.5">ตอนนี้</text>
+  <line x1="12" y1="150" x2="694" y2="150" stroke="currentColor" opacity=".28"/>
+  <path d="M12,150 L246,118 L246,150 L480,118 L480,150 L694,118"
+        stroke="#3f7d54" stroke-width="2" fill="none"/>
+  <g stroke="#3f7d54" stroke-dasharray="3 3" opacity=".5">
+   <line x1="246" y1="112" x2="246" y2="156"/>
+   <line x1="480" y1="112" x2="480" y2="156"/>
+  </g>
+  <text x="246" y="170" text-anchor="middle" font-size="10" fill="#3f7d54">ครบ 60 วัน → ลบ</text>
+  <text x="480" y="170" text-anchor="middle" font-size="10" fill="#3f7d54">ครบ 60 วัน → ลบ</text>
+  <text x="690" y="112" text-anchor="end" font-size="10.5" fill="#3f7d54">ถือไว้เท่าที่จำเป็น</text>
+ </g>
+</svg>
+<figcaption>ปริมาณข้อมูลคนไข้ที่ถือไว้ · งานลบรันทุกคืน 23:00
+<span class="en">— ถือไว้น้อยลง ความเสียหายถ้าหลุดก็น้อยลง</span></figcaption>
+</figure>
+
+<h3>Token กับ password จัดการยังไง</h3>
+<ul>
+<li><b class="t">Password ของ portal</b> — <code>PBKDF2-HMAC-SHA256</code> + salt, มี 3 account</li>
+<li><b class="t">ArcusAir token</b> — extension จะ capture <code>incus-token</code> ของเภสัชกรที่ login อยู่
+มาให้ server ดึง report แทน <b class="t">เก็บไว้ไม่เกิน 24 ชม.</b> แล้วใช้ไม่ได้</li>
+<li><b class="t">ไม่มี service account</b> — server ทำงานได้เฉพาะตอนที่มี session ของคนจริง ๆ อยู่</li>
+</ul>
+
+<h3>Log เก็บอะไรจริง ๆ</h3>
+<p class="en">กดดูตัวอย่างจริงได้ (ปิดข้อมูลบางส่วนแล้ว)</p>
+<div class="chips" id="chips"></div>
+<div class="log" id="logbox"></div>
+
+<div class="box">
+<p><b class="t">ข้อจำกัดที่ต้องบอกตรง ๆ</b> — log เก็บเฉพาะ<b class="t">เหตุผิดปกติ</b>กับ event การทำงาน
+ไม่ได้เก็บว่าใครเปิดดูอะไรสำเร็จบ้าง
+แปลว่าตอนนี้<b class="t">ตอบไม่ได้</b>ว่า "ใครเปิดดูคนไข้รายนี้"</p>
+</div>
+
+
+<h2><span class="n">03</span>ความเสี่ยงที่เจอ</h2>
+<p>เราตรวจเองแล้วเอามาบอกก่อน ไม่ได้รอให้ตรวจเจอ
+<span class="en">กดที่หัวข้อเพื่อดูรายละเอียด</span></p>
+
+<p style="font:500 13px var(--m);color:var(--dim)">
+<span class="tag a">ยังค้าง</span> 2 ข้อ &nbsp;
+<span class="tag g">แก้แล้ว</span> 7 ข้อ</p>
+
+<div id="risks"></div>
+
+<h3>สิ่งที่อยากขอจากทีม Security</h3>
+<ol class="ask">
+<li><b class="t">60 วันโอเคไหม</b> — เราตั้งเองสำหรับ <code>patients/</code> <code>hmr/</code> <code>hmq/</code> ถ้าควรสั้นหรือยาวกว่านี้บอกได้</li>
+<li><b class="t">GitHub</b> — เปลี่ยน password แล้ว แต่ history ลบไม่ได้ ต้อง rewrite หรือแจ้งเป็น disclosure ไหม</li>
+<li><b class="t">TLS</b> — ขอ certificate สำหรับ host ภายในได้ไหม</li>
+<li><b class="t">ยังต้องทำอะไรอีก</b> — มีอะไรที่เรายังมองไม่เห็น ช่วยชี้ให้หน่อย</li>
+</ol>
+
+<footer>ตัวเลขทั้งหมดดึงจากระบบจริงวันที่ 31 ส.ค. 2026 · extension v3.59.1</footer>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(i){return document.getElementById(i)};
+
+  // ── ตัวอย่าง log ──
+  var LOGS={
+    'bad-route':['path แปลก ๆ ส่วนใหญ่เป็น bug ของ client แต่ก็เป็นหน้าตาเดียวกับการ probe',
+      '{"at":"2026-08-10T17:14:23","method":"PUT",\n "path":"/api/patients/%5Bobject%20Object%5D/...",\n "origin":"chrome-extension://ajegcog...","ip":"10.134.110.63"}'],
+    'untrusted-write':['มีการเขียนจาก origin ที่ไม่ใช่ extension ของเรา — ยังไม่เคยเจอจากนอกเครือข่าย',
+      '{"at":"2026-08-14T09:02:11","method":"PUT",\n "path":"/api/rx/medication-db","origin":"null",\n "ip":"10.134.110.44","result":"rejected"}\n<span class="w">→ ถูกปฏิเสธก่อนแตะข้อมูล</span>'],
+    'home-med-fetch':['ดึง report จาก ArcusAir แทนเภสัชกร เก็บแค่ว่า visit ไหน ไม่เก็บเนื้อหา',
+      '{"at":"2026-08-21T11:40:55","patientvisituid":"6a93...",\n "rows":14,"ms":812,"ok":true}\n<span class="c">// ไม่มีชื่อยา ไม่มีชื่อคนไข้ใน log</span>'],
+    'opd-queue':['คิวจ่ายยา OPD ใช้ทำ KPI',
+      '{"at":"2026-08-27T14:03:09","action":"complete",\n "hn":"48-XX-XXXXXX","counter":3,"waited_s":420}\n<span class="w">→ log ตัวนี้มี HN — ตอนนี้ต้องเป็น admin ถึงอ่านได้</span>']
+  };
+  var chips=$('chips'), box=$('logbox');
+  Object.keys(LOGS).forEach(function(k,i){
+    var b=document.createElement('button');
+    b.textContent=k; b.setAttribute('aria-pressed',String(i===0));
+    b.addEventListener('click',function(){
+      [].slice.call(chips.children).forEach(function(c){c.setAttribute('aria-pressed','false')});
+      b.setAttribute('aria-pressed','true'); paint(k);
+    });
+    chips.appendChild(b);
+  });
+  function paint(k){
+    box.innerHTML='<span class="c">// '+LOGS[k][0]+'</span>\n\n'+LOGS[k][1];
+  }
+  paint('bad-route');
+
+  // ── ความเสี่ยง ──
+  var R=[
+   ['g','ข้อมูลคนไข้เคยติดขึ้น GitHub — แก้แล้ว แต่ history ลบไม่ได้',
+    'ช่วง<b class="t">พัฒนาระบบ</b>ก่อนใส่กฎกัน มีไฟล์ record คนไข้กับ password hash ของ server ถูก commit ขึ้น repo <code>github.com/shivavamaki/AA_Extensions</code> รวม 28 ไฟล์',
+    'Git history ลบแบบเลือกไม่ได้ ลบ repo ทิ้งก็ไม่ช่วย เพราะ fork/clone/cache ยังอยู่ — ของที่ขึ้นไปแล้วถือว่าออกไปแล้ว',
+    '<b class="t">ใส่ ignore rule แล้ว</b> ของใหม่ขึ้นไปไม่ได้อีก · <b class="t">เปลี่ยน password ทั้ง 3 account แล้ว</b> ของเก่าที่หลุดใช้ไม่ได้แล้ว · ข้อมูลใน history เป็นของช่วง dev ไม่ใช่ข้อมูลปัจจุบัน',
+    'ถ้าเห็นว่าต้อง rewrite history หรือต้องแจ้งเป็น disclosure บอกได้ เราทำตาม'],
+   ['g','ใช้งานไม่ต้อง login — จำกัดด้วย URL แทน',
+    'server เชื่อ <code>chrome-extension://</code> origin ไม่ได้บังคับ login รายคน',
+    'ถ้า extension ทำงานได้ทุกหน้า เครื่องที่เปิดค้างไว้ก็เข้าถึงข้อมูลได้',
+    '<b class="t">extension ทำงานเฉพาะ URL ที่กำหนดไว้</b> — <code>content_scripts.matches</code> ล็อกไว้ที่ <code>https://arcusair.bdms.co.th/*</code> เท่านั้น แปลว่าใช้ได้เฉพาะตอนที่เภสัชกร login ArcusAir อยู่แล้ว · การแก้ master data ยังต้อง login admin/editor แยกอีกชั้น',
+    'ถ้ายังอยากให้บังคับ login รายคนอีกชั้น บอกได้'],
+   ['a','ยังเป็น HTTP ไม่ใช่ HTTPS',
+    'server พูด HTTP ที่ <code>10.134.110.81:8765</code> ข้อมูลคนไข้กับ ArcusAir token วิ่งใน LAN แบบไม่เข้ารหัส',
+    'ถ้าใครดักดู traffic ในเครือข่ายได้ ก็อ่านข้อมูลคนไข้ได้ หรือเอา token ไปใช้ต่อได้ภายใน 24 ชม.',
+    'traffic ไม่เคยออกนอกเครือข่ายโรงพยาบาล และ server ไม่รับ connection จากข้างนอก',
+    '<b class="t">ขอ certificate สำหรับ host ภายในได้ไหม</b> ถ้าได้เราใส่ TLS ให้'],
+   ['g','กำหนดอายุข้อมูลแล้ว — 60 วัน',
+    'เดิมเก็บทุกอย่างไว้ตลอด ไม่มีกำหนดลบ',
+    'ข้อมูลที่ระบุตัวตนได้ ยิ่งเก็บนานยิ่งเสียหายมากถ้าหลุด',
+    '<b class="t">เขียนโค้ดแล้ว</b> — <code>patients/</code> <code>hmr/</code> <code>hmq/</code> เก็บ 60 วันแล้วลบอัตโนมัติ รันทุกคืน 23:00 · อ่าน <code>updatedAt</code> ของแต่ละ record ถ้าอ่านไม่ได้จะเก็บไว้ ไม่เดา · dry-run แล้วจะลบ 621 record',
+    '60 วันเราตั้งเอง ถ้าควรสั้นหรือยาวกว่านี้ บอกได้ แก้ตัวเลขเดียว'],
+   ['g','log ที่มี HN — จำกัดสิทธิ์แล้ว',
+    'log ของคิว OPD เก็บ HN ไว้ด้วย เดิมใครเรียก API ก็อ่านได้',
+    'ถ้าส่ง log ให้ใครดูตอน troubleshoot อาจหลุด HN โดยไม่ตั้งใจ',
+    '<b class="t">ตอนนี้ต้องเป็น admin เท่านั้น</b> — endpoint <code>/api/opd-logs</code> บังคับ role <code>admin</code>/<code>super_admin</code> · log เก็บอยู่บน server ไม่ได้แชร์ออกไปไหน · log ประเภทอื่นเก็บแค่ path / origin / IP ไม่มี HN',
+    'ถ้าต้องการให้ hash HN ใน log ด้วย ทำเพิ่มได้'],
+   ['a','extension เป็นแบบ unpacked แจกเอง',
+    'ไม่ได้ลงผ่าน Chrome Web Store หรือ enterprise policy เภสัชกรอัปเดตเอง',
+    'ไม่มีการเช็ค signature เครื่องไหนรันของที่ถูกแก้ไว้ก็ไม่มีใครรู้',
+    'อัปเดตผ่านหน้าเว็บของ server มี SHA-256 ให้เทียบ และให้โหลด installer ไปรันที่เครื่องตัวเอง',
+    'ทางแก้จริงคือ Chrome enterprise policy แต่ต้องมีสิทธิ admin บนเครื่อง ward ซึ่งเราไม่มี'],
+   ['g','เคยให้รัน .bat จาก shared drive — แก้แล้ว',
+    'ก่อน 31 ส.ค. เภสัชกรรัน <code>BKN-Update-Extension.bat</code> จาก share ตรง ๆ ใครเขียนไฟล์ในโฟลเดอร์นั้นได้ ก็แก้ไฟล์นั้นได้ แล้วมันจะรันบนทุกเครื่องที่เปิด',
+    'เท่ากับ supply-chain risk ภายใน — ไฟล์เดียว รันด้วยสิทธิ์เภสัชกร บนหลายเครื่อง',
+    '<b class="t">แก้แล้ว</b> เปลี่ยนเป็นหน้าเว็บที่ประกาศ checksum แล้วให้โหลด installer ไปรันที่เครื่องตัวเอง',
+    'เหลือลบไฟล์เก่าทิ้ง และล็อกสิทธิ์เขียนบน share'],
+   ['g','git ลบข้อมูลจริงบน server — แก้แล้ว',
+    'คำสั่ง git ลบรูปยา 1,960 ไฟล์ออกจาก server จริง เพราะไฟล์พวกนั้นถูก track ไว้ใน git',
+    'รูปยาหายจากระบบที่ใช้งานอยู่ กู้คืนได้เพราะยังอยู่ใน git history',
+    '<b class="t">แก้แล้ว</b> กู้กลับครบและเทียบ checksum แล้ว · เอาโฟลเดอร์ข้อมูลออกจาก git และทำ backup ลงไดรฟ์แยก',
+    'ควรย้าย backup ไป NAS หรือเครื่องอื่น ไม่ใช่เครื่องเดียวกัน'],
+   ['g','จับคู่ยาผิดในฐานข้อมูล IV — แก้แล้ว',
+    'ตอนสร้างฐานข้อมูล IV การ match ชื่ออัตโนมัติจับ <b class="t">Ambisome (ยาฆ่าเชื้อรา)</b> รวมกับ <b class="t">Lipo-dox (ยาเคมีบำบัด)</b> ไว้ preset เดียวกัน เพราะชื่อมีคำว่า "lipo" เหมือนกัน',
+    'ถ้าหลุดไปถึงหน้างาน ยา 2 ตัวที่ไม่เกี่ยวกันจะใช้ตัวทำละลายและอายุยาเดียวกัน',
+    '<b class="t">แก้แล้ว</b> เจอตอนตรวจก่อนปล่อยใช้ · ตอนนี้ preset ผูกกับรหัสยา ArcusAir ตรง ๆ ไม่ใช้ชื่อ match',
+    'เป็นตัวอย่างว่าการ match ชื่อยาอัตโนมัติต้องให้คนตรวจก่อนเสมอ']
+  ];
+  var LBL={a:'ยังค้าง',g:'แก้แล้ว'};
+  $('risks').innerHTML=R.map(function(x){
+    return '<details><summary><span class="tag '+x[0]+'">'+LBL[x[0]]+'</span>'+x[1]+'</summary>'+
+      '<div class="dbody"><dl>'+
+      '<dt>คืออะไร</dt><dd>'+x[2]+'</dd>'+
+      '<dt>เสี่ยงยังไง</dt><dd>'+x[3]+'</dd>'+
+      '<dt>ตอนนี้ทำอะไรไปแล้ว</dt><dd>'+x[4]+'</dd>'+
+      '<dt>อยากขออะไร</dt><dd>'+x[5]+'</dd>'+
+      '</dl></div></details>';
+  }).join('');
+})();
+</script>

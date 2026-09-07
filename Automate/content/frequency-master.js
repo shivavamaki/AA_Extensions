@@ -9,6 +9,8 @@
   const PANEL_DISMISSED_KEY = "arcusFrequencyPanelDismissed";
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const Driver = window.ArcusDriver;
   const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
   const state = {
@@ -35,26 +37,31 @@
     return ((el && (el.innerText || el.textContent)) || "").replace(/\s+/g, " ").trim();
   }
 
-  async function waitFor(fn, timeoutMs = 12000, intervalMs = 250) {
-    const start = Date.now();
-    while (Date.now() - start < timeoutMs) {
-      if (state.stopRequested) return null;
-      const result = fn();
-      if (result) return result;
-      await sleep(intervalMs);
-    }
-    return null;
+  // Mutation-driven via the shared driver: resolves on the DOM change that
+  // satisfies the predicate rather than on the next 250ms poll.
+  async function waitFor(fn, timeoutMs = 12000, _intervalMs = 250) {
+    return Driver.waitFor(fn, timeoutMs, { shouldAbort: () => state.stopRequested });
   }
 
+  // Trusted CDP click under turbo, synthetic events otherwise. The driver
+  // only scrolls when the element is off-screen, so the old unconditional
+  // scroll + sleep(180) per click is gone.
   async function clickLikeUser(el) {
     if (!el) return false;
-    try { el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" }); } catch (_) {}
-    await sleep(180);
-    for (const type of ["mouseover", "mouseenter", "mousedown", "mouseup", "click"]) {
-      el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }));
-    }
-    if (typeof el.click === "function") el.click();
-    return true;
+    const result = await Driver.click(el);
+    return !!result.ok;
+  }
+
+  // Click, then resume when the resulting request finishes.
+  async function clickAndSettle(el, maxMs = 10000) {
+    if (!el) return false;
+    const result = await Driver.clickAndSettle(el, { timeoutMs: maxMs });
+    return !!result.ok;
+  }
+
+  async function settle(maxMs = 4000) {
+    const result = await Driver.waitForSettle({ timeoutMs: maxMs });
+    return !!result.ok;
   }
 
   function angularClick(el) {
@@ -92,7 +99,7 @@
       location.hash = ROUTE_HASH;
       const ok = await waitFor(() => isFrequencyPage(), 15000, 200);
       if (!ok) throw new Error("Cannot navigate to Frequency Master page");
-      await sleep(700);
+      await settle(3000);
     }
   }
 
@@ -103,10 +110,11 @@
     }, 15000);
     if (!searchBtn) throw new Error("#frequenctMasterFormSearch not found");
     setStatus("Clicking search...");
-    await clickLikeUser(searchBtn);
+    // The table is the point of this click, so wait for its fetch, then for the
+    // rows themselves to paint.
+    await clickAndSettle(searchBtn, 18000);
     const rows = await waitFor(() => getDataRows().length ? getDataRows() : null, 18000, 300);
     if (!rows) throw new Error("Frequency table did not render rows");
-    await sleep(500);
   }
 
   function findRowByKey(key) {
