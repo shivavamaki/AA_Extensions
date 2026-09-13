@@ -17,6 +17,8 @@ const OPD_CHECKS = [
   { key:'it',      label:'สำรวจอุปกรณ์ IT', sub:'ไอแพด / โทรศัพท์ / สายชาร์ท / โน้ตบุ้ค — ครบ/ไม่ครบ' },
   { key:'narc1',   label:'รายงานยอดยาเสพติด - วัตถุออกฤทธิ์ (ชั้น 1)', sub:'ตรง / ถ้าไม่ตรง ระบุสาเหตุ' },
   { key:'narc2',   label:'รายงานยอดยาเสพติด - วัตถุออกฤทธิ์ (ชั้น 2)', sub:'ตรง / ถ้าไม่ตรง ระบุสาเหตุ' },
+  { key:'air_clean', label:'ช่องแอร์สะอาด ไม่มีฝุ่น' },
+  { key:'daily_stock_count', label:'ตรวจสอบรายการยา stock daily count' },
 ];
 
 const IPD_CHECKS = [
@@ -31,6 +33,8 @@ const IPD_CHECKS = [
   { key:'narc',    label:'รายงานยาเสพติด - วัตถุออกฤทธิ์', sub:'ตรง / ถ้าไม่ตรง อธิบายสาเหตุ' },
   { key:'std',     label:'ตรวจสอบยา STD. ก่อนส่ง Ward', sub:'ผิด / ไม่ผิด' },
   { key:'it',      label:'สำรวจอุปกรณ์ IT', sub:'ไอแพด / ปากกา / โทรศัพท์ / สายชาร์ท — ครบ/ไม่ครบ' },
+  { key:'air_clean', label:'ช่องแอร์สะอาด ไม่มีฝุ่น' },
+  { key:'daily_stock_count', label:'ตรวจสอบรายการยา stock daily count' },
 ];
 
 const OPD_DEPTS = ['PED','OBG','MED','SUR','ENT','EYE','ORT','DER','PSY','ER','Other'];
@@ -38,6 +42,7 @@ const IPD_WARDS = ['ward 4','ward 5','ward 6','ward 7','ward 8','ward 9','ICU','
 
 let savedRecords=[], reportRecords=[], opdStatRows=[], ipdStatRows=[];
 let opdBriefState={}, ipdBriefState={};
+let opdManualChecks=[], ipdManualChecks=[];
 
 // ── DRAFT AUTOSAVE ──
 const DRAFT_KEY = 'kpi_draft';
@@ -45,7 +50,8 @@ function saveDraft(){
   try {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({
       date: new Date().toISOString().split('T')[0],
-      opdStatRows, ipdStatRows, opdBriefState, ipdBriefState
+      opdStatRows, ipdStatRows, opdBriefState, ipdBriefState,
+      opdManualChecks, ipdManualChecks
     }));
   } catch(_) {}
 }
@@ -59,6 +65,8 @@ function restoreDraft(){
     if (Array.isArray(draft.ipdStatRows) && draft.ipdStatRows.some(r => isRowStarted(r))) ipdStatRows = draft.ipdStatRows;
     if (draft.opdBriefState && typeof draft.opdBriefState === 'object') opdBriefState = draft.opdBriefState;
     if (draft.ipdBriefState && typeof draft.ipdBriefState === 'object') ipdBriefState = draft.ipdBriefState;
+    if (Array.isArray(draft.opdManualChecks)) opdManualChecks = draft.opdManualChecks;
+    if (Array.isArray(draft.ipdManualChecks)) ipdManualChecks = draft.ipdManualChecks;
     return true;
   } catch(_) { return false; }
 }
@@ -112,8 +120,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   const hasDraft = restoreDraft();
 
-  buildChecklist(OPD_CHECKS,'opd-brief-checks',opdBriefState);
-  buildChecklist(IPD_CHECKS,'ipd-brief-checks',ipdBriefState);
+  renderBriefChecklist('opd');
+  renderBriefChecklist('ipd');
 
   ensureSingleTrailingRow('opd-stat-body');
   const opdCfg = statConfig('opd-stat-body');
@@ -147,6 +155,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-clear-opd-brief').addEventListener('click', () => clearOPDBrief());
   document.getElementById('btn-save-ipd-brief').addEventListener('click', () => saveIPDBrief());
   document.getElementById('btn-clear-ipd-brief').addEventListener('click', () => clearIPDBrief());
+  document.getElementById('btn-add-opd-check').addEventListener('click', () => addManualCheck('opd'));
+  document.getElementById('btn-add-ipd-check').addEventListener('click', () => addManualCheck('ipd'));
+  document.getElementById('opd-manual-check').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addManualCheck('opd'); } });
+  document.getElementById('ipd-manual-check').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addManualCheck('ipd'); } });
   document.getElementById('btn-save-opd-stat').addEventListener('click', () => saveOPDStat());
   document.getElementById('btn-save-ipd-stat').addEventListener('click', () => saveIPDStat());
   document.getElementById('btn-save-med-error').addEventListener('click', () => saveMedError());
@@ -184,12 +196,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('opd-brief-checks').addEventListener('click', e => {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
-    setCheck(btn.dataset.container, btn.dataset.key, btn.dataset.action === 'check-ok');
+    if (btn.dataset.action === 'delete-check') deleteManualCheck('opd', btn.dataset.key);
+    else setCheck(btn.dataset.container, btn.dataset.key, btn.dataset.action === 'check-ok');
   });
   document.getElementById('ipd-brief-checks').addEventListener('click', e => {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
-    setCheck(btn.dataset.container, btn.dataset.key, btn.dataset.action === 'check-ok');
+    if (btn.dataset.action === 'delete-check') deleteManualCheck('ipd', btn.dataset.key);
+    else setCheck(btn.dataset.container, btn.dataset.key, btn.dataset.action === 'check-ok');
   });
 
   // ── Stat table delegation ──
@@ -277,13 +291,63 @@ function buildChecklist(checks, containerId, stateObj) {
     div.id = containerId+'-'+c.key;
     div.innerHTML = `
       <div class="check-num">${i+1}</div>
-      <div class="check-label">${c.label}${c.sub?`<div class="check-sub">${c.sub}</div>`:''}</div>
+      <div class="check-label">${escapeHTML(c.label)}${c.sub?`<div class="check-sub">${escapeHTML(c.sub)}</div>`:''}</div>
       <div class="check-toggle">
         <button class="toggle-btn${v===true?' selected-ok':''}" data-action="check-ok" data-container="${containerId}" data-key="${c.key}">✓ ปกติ</button>
         <button class="toggle-btn${v===false?' selected-x':''}" data-action="check-x" data-container="${containerId}" data-key="${c.key}">✗ ผิดปกติ</button>
+        ${c.manual ? `<button class="delete-check-btn" data-action="delete-check" data-key="${c.key}" title="ลบรายการ" aria-label="ลบ ${escapeHTML(c.label)}">×</button>` : ''}
       </div>`;
     container.appendChild(div);
   });
+}
+
+function briefChecklistConfig(service) {
+  const isOPD = service === 'opd';
+  return {
+    checks: isOPD ? OPD_CHECKS : IPD_CHECKS,
+    manualChecks: isOPD ? opdManualChecks : ipdManualChecks,
+    state: isOPD ? opdBriefState : ipdBriefState,
+    containerId: `${service}-brief-checks`,
+    inputId: `${service}-manual-check`,
+  };
+}
+
+function renderBriefChecklist(service) {
+  const cfg = briefChecklistConfig(service);
+  buildChecklist([...cfg.checks, ...cfg.manualChecks], cfg.containerId, cfg.state);
+}
+
+function addManualCheck(service) {
+  const cfg = briefChecklistConfig(service);
+  const input = document.getElementById(cfg.inputId);
+  const label = input.value.trim().replace(/\s+/g, ' ');
+  if (!label) return;
+
+  const duplicate = [...cfg.checks, ...cfg.manualChecks]
+    .some(check => check.label.toLocaleLowerCase('th-TH') === label.toLocaleLowerCase('th-TH'));
+  if (duplicate) {
+    showToast('📋', 'มีรายการตรวจสอบนี้แล้ว');
+    input.focus();
+    return;
+  }
+
+  const key = `manual_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  cfg.manualChecks.push({ key, label, manual:true });
+  cfg.state[key] = null;
+  input.value = '';
+  renderBriefChecklist(service);
+  saveDraft();
+  input.focus();
+}
+
+function deleteManualCheck(service, key) {
+  const cfg = briefChecklistConfig(service);
+  const index = cfg.manualChecks.findIndex(check => check.key === key);
+  if (index === -1) return;
+  cfg.manualChecks.splice(index, 1);
+  delete cfg.state[key];
+  renderBriefChecklist(service);
+  saveDraft();
 }
 
 function setCheck(containerId, key, val) {
@@ -641,6 +705,7 @@ function collectOPDBrief(){
   return createRecordEnvelope('opd-brief', document.getElementById('opd-brief-date').value, {
     signature: document.getElementById('opd-brief-sign').value,
     checks: {...opdBriefState},
+    checkLabels: Object.fromEntries([...OPD_CHECKS, ...opdManualChecks].map(check => [check.key, check.label])),
     issues: document.getElementById('opd-brief-issues').value
   });
 }
@@ -648,6 +713,7 @@ function collectIPDBrief(){
   return createRecordEnvelope('ipd-brief', document.getElementById('ipd-brief-date').value, {
     signature: document.getElementById('ipd-brief-sign').value,
     checks: {...ipdBriefState},
+    checkLabels: Object.fromEntries([...IPD_CHECKS, ...ipdManualChecks].map(check => [check.key, check.label])),
     issues: document.getElementById('ipd-brief-issues').value
   });
 }
@@ -983,7 +1049,7 @@ function formatReportRecordDetails(record){
     const passed = Object.entries(record.checks).filter(([,v]) => v === true).length;
     body += `<div class="report-issues"><strong>Checklist:</strong> ผ่าน ${passed} รายการ${failed.length ? ` · ผิดปกติ ${failed.length} รายการ` : ''}</div>`;
     if (failed.length) {
-      body += `<ul class="report-list">${failed.map(([k]) => `<li>${escapeHTML(k)}</li>`).join('')}</ul>`;
+      body += `<ul class="report-list">${failed.map(([k]) => `<li>${escapeHTML(record.checkLabels?.[k] || k)}</li>`).join('')}</ul>`;
     }
   }
 
@@ -1507,8 +1573,8 @@ function downloadBlob(filename, content, mime){
 
 
 // ── CLEAR ──
-function clearOPDBrief(){if(!requireFolderSetup()) return; opdBriefState={};buildChecklist(OPD_CHECKS,'opd-brief-checks',opdBriefState);document.getElementById('opd-brief-issues').value='';document.getElementById('opd-brief-sign').value='';}
-function clearIPDBrief(){if(!requireFolderSetup()) return; ipdBriefState={};buildChecklist(IPD_CHECKS,'ipd-brief-checks',ipdBriefState);document.getElementById('ipd-brief-issues').value='';document.getElementById('ipd-brief-sign').value='';}
+function clearOPDBrief(){if(!requireFolderSetup()) return; opdBriefState={};opdManualChecks=[];renderBriefChecklist('opd');document.getElementById('opd-brief-issues').value='';document.getElementById('opd-brief-sign').value='';saveDraft();}
+function clearIPDBrief(){if(!requireFolderSetup()) return; ipdBriefState={};ipdManualChecks=[];renderBriefChecklist('ipd');document.getElementById('ipd-brief-issues').value='';document.getElementById('ipd-brief-sign').value='';saveDraft();}
 function clearMedError(){if(!requireFolderSetup()) return;
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('med-error-date').value=today;

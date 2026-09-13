@@ -129,6 +129,15 @@
   .toggle-btn:hover { border-color: var(--text2); color: var(--text); }
   .toggle-btn.selected-ok { background: var(--green-bg); border-color: #8ecfab; color: var(--green-txt); }
   .toggle-btn.selected-x  { background: var(--red-bg);   border-color: #e8a0a0; color: var(--red-txt); }
+  .manual-check-row { display: flex; gap: 8px; margin-top: 10px; }
+  .manual-check-row input { flex: 1; min-width: 0; }
+  .delete-check-btn { width: 30px; height: 30px; border: 0; border-radius: 6px; background: transparent; color: var(--text3); cursor: pointer; font-size: 20px; line-height: 1; }
+  .delete-check-btn:hover { background: var(--red-bg); color: var(--red-txt); }
+  @media (max-width: 640px) {
+    .manual-check-row { flex-direction: column; }
+    .check-item { align-items: flex-start; flex-wrap: wrap; }
+    .check-toggle { margin-left: 36px; }
+  }
 
   /* STAT TABLE */
   .entries-table { width: 100%; border-collapse: collapse; }

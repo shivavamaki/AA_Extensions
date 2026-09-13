@@ -1,11 +1,11 @@
 {
   "patientuid": "5b8a574d3238d86bf0c23c05",
   "createdAt": "2026-05-31T08:18:51.786556+00:00",
-  "updatedAt": "2026-09-04T13:47:19.516387+00:00",
+  "updatedAt": "2026-09-08T02:55:34.017676+00:00",
   "context": {
     "patientuid": "5b8a574d3238d86bf0c23c05",
-    "patientvisituid": "6a195cc45c4a187ddbc97d80",
-    "hn": "48-16-001894",
+    "patientvisituid": "6a9ab2ba1e0c428cc50ad27f",
+    "hn": "48-15-006778",
     "patientName": "MISS RUNGYADA  PANOMTHORNNIJAKUL"
   },
   "adrTimeline": {
@@ -138,6 +138,7 @@
               "startdate": "2026-09-04T13:32:06.444Z",
               "enddate": null,
               "duration": 1,
+              "reconcilestatus": "CHANGE",
               "ordertypeuid": {
                 "_id": "5796e65d1526f6ebabe3b4a5",
                 "valuecode": "ORDTYP2",
@@ -266,14 +267,29 @@
               "infusionrate": null,
               "infusionduration": null,
               "broughtinquantity": 1,
+              "patientorderuid": "6a9ac85d53295efc2df7e37a",
+              "patientorderitemuid": "6a9ac85d53295efc2df7e37a",
               "dosagefrequency": null,
               "daysofweek": null,
               "durationuom": null,
-              "_id": "6a9ac85d53295efc2df7e37a",
+              "_id": "6a9af8606abdd01a53d2610d",
               "patientorderalerts": []
             }
           ],
-          "reviewedbyusers": [],
+          "reviewedbyusers": [
+            {
+              "useruid": {
+                "_id": "63101b44567e610637d41b04",
+                "code": "048583323",
+                "name": "นาตญา จารย์แปะ, ภญ.",
+                "iscareprovider": false,
+                "licensenumber": ""
+              },
+              "reviewdate": "2026-09-04T16:57:04.667Z",
+              "comments": "ไม่ได้ส่งยามาห้องยา",
+              "_id": "6a9af8606abdd01a53d2611a"
+            }
+          ],
           "reconciledbyusers": [],
           "medreconcilelogs": [
             {
@@ -281,6 +297,20 @@
               "useruid": "62c3a2797338a9064b827683",
               "comments": "PREPARED",
               "_id": "6a9ac85d53295efc2df7e37b"
+            },
+            {
+              "modifiedat": "2026-09-04T16:57:04.601Z",
+              "useruid": "63101b44567e610637d41b04",
+              "comments": "MODIFIED MEDICINE ITEM",
+              "reasonuid": null,
+              "_id": "6a9af8606abdd01a53d2610e"
+            },
+            {
+              "modifiedat": "2026-09-04T16:57:04.667Z",
+              "useruid": "63101b44567e610637d41b04",
+              "comments": "REVIEWED",
+              "reasonuid": null,
+              "_id": "6a9af8606abdd01a53d2611b"
             }
           ],
           "patientuid": "5b8a574d3238d86bf0c23c05",
@@ -296,7 +326,7 @@
             "iscareprovider": false,
             "licensenumber": ""
           },
-          "comments": null,
+          "comments": "ไม่ได้ส่งยามาห้องยา",
           "isactive": true,
           "createdby": "62c3a2797338a9064b827683",
           "createdat": "2026-09-04T13:32:13.530Z",
@@ -317,12 +347,12 @@
             "relatedvalue": "Admission",
             "domaincode": "RECONTYPE"
           },
-          "__v": 0
+          "__v": 2
         }
       },
-      "incusToken": "6a9ac20292fdc74a0f2a0896",
-      "ts": 1788529639516,
-      "tokenTs": 1788529639516
+      "incusToken": "6a9f6f5c50383e51c83ec5da",
+      "ts": 1788836134017,
+      "tokenTs": 1788836134017
     }
   }
 }
