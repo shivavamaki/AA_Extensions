@@ -378,6 +378,38 @@
     syncButton();
   }
 
+  // Capture before Angular's allocation navigation tears down the order banner.
+  let allocationContext = null;
+  const prebuildJobs = new Set();
+  function capturePrebuildContext(event) {
+    if (!event.target.closest?.('#allocatedispense')) return;
+    allocationContext = null;
+    if (!location.hash.startsWith('#!/pharmacy/dispenseworkbench/pharmacy/dispense')) return;
+    const discharge = Array.from(document.querySelectorAll('#orderdetailtable td, #ordertable td')).some(td =>
+      (td.textContent || '').trim().toUpperCase() === 'DISCHARGE MEDICATION');
+    if (discharge) allocationContext = extractContext().catch(() => null);
+  }
+  document.addEventListener('pointerdown', capturePrebuildContext, true);
+  document.addEventListener('click', async event => {
+    if (!event.target.closest?.('#allocatedispense')) return;
+    if (!allocationContext) capturePrebuildContext(event); // keyboard/programmatic click
+    const pending = allocationContext;
+    allocationContext = null;
+    if (!pending) return;
+    const context = await pending;
+    if (!context?.patientuid || !context?.patientvisituid || !context?.incusToken || !window.BKNData) return;
+    const key = `${context.patientuid}|${context.patientvisituid}`;
+    if (prebuildJobs.has(key)) return;
+    prebuildJobs.add(key);
+    try {
+      // Speculative only: the server checks live orders again before cache reuse.
+      await window.BKNData.serverFetch('/api/report/home-med-api', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({context, prebuild:true}),
+      });
+    } catch (_) { /* Opening the sheet still uses the normal live fallback. */ }
+    finally { prebuildJobs.delete(key); }
+  }, true);
   syncAll();
 
   // Debounce to one run per animation frame. syncButton() mutates the DOM, which

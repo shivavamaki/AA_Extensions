@@ -1225,7 +1225,7 @@
       .col-head-row { break-after: avoid; page-break-after: avoid; break-inside: avoid; }
     }
   </style>
-</head>
+<link rel="stylesheet" href="page-home-med-a4.css"></head>
 
 <body>
   <button class="toolbar-ribbon" id="toolbarRibbon" type="button" title="เปิดแผงตั้งค่า">⚙️ ตั้งค่า ›</button>
@@ -1277,20 +1277,17 @@
     </div>
 
     <div class="toolbar-group" aria-label="Page format controls">
-      <label>Margin
-        <select id="printMargin">
-          <option value="6">6 mm</option>
-          <option value="8" selected>8 mm</option>
-          <option value="10">10 mm</option>
-          <option value="12">12 mm</option>
-        </select>
-      </label>
-      <label>Preview scale
-        <select id="previewScale">
+<label>Preview scale
+        <select id="a4PreviewScale">
+          <option value="fit" selected>Fit A4 page</option>
+          <option value="0.5">50%</option>
+          <option value="0.75">75%</option>
           <option value="0.85">85%</option>
           <option value="0.9">90%</option>
-          <option value="0.95">95%</option>
-          <option value="1" selected>100%</option>
+          <option value="1">100%</option>
+          <option value="1.25">125%</option>
+          <option value="1.5">150%</option>
+          <option value="2">200%</option>
         </select>
       </label>
     </div>
@@ -1310,11 +1307,9 @@
           <option value="large">Large</option>
         </select>
       </label>
-      <label><input id="compactMode" type="checkbox" checked /> Compact rows</label>
     </div>
 
     <div class="toolbar-group" aria-label="By-meal page">
-      <label><input id="includeMealCard" type="checkbox" checked /> แนบหน้า จัดตามมื้อ</label>
     </div>
 
     <div class="print-status" id="printStatus">A4 portrait · margin 8 mm</div>
@@ -1366,7 +1361,7 @@
               </div>
             </section>
 
-            <div class="patient-clinical-card">
+            <div class="a4-patient-summary"><div class="patient-clinical-card">
               <section class="patient-card">
                 <div class="patient-field">
                   <span class="label">Patient name</span>
@@ -1400,7 +1395,22 @@
                   <span class="allergy-value" id="allergyValue">No Known Drug Allergies (ไม่มีประวัติแพ้ยา)</span>
                 </div>
               </section>
-            </div>
+            </div><div class="hmproc-box" id="hmprocBox">
+        <div class="hmproc-hdr">💊 Checklist</div>
+        <div class="hmproc-body">
+          <div class="hmproc-checks">
+            <div class="hmproc-check-row" data-check="hasAtb"><span class="chk-dot">—</span> รับยาปฏิชีวนะก่อนกลับบ้าน</div>
+            <div class="hmproc-check-row" data-check="medReturned"><span class="chk-dot">—</span> คืนยาเหลือแล้ว</div>
+            <div class="hmproc-check-row" data-check="controlledRemaining"><span class="chk-dot">—</span> ไม่มียาเสพติดค้าง</div>
+            <div class="hmproc-meta" id="hmprocMeta">HM Process not started for this visit</div>
+
+            <div class="foot-semi-line"></div>
+
+            <div class="hmproc-check-row"><span class="chk-box"></span> อธิบายยากลับบ้าน</div>
+          </div>
+          <div class="hmproc-signature">ลงชื่อผู้จ่ายยา <span class="hmproc-signature-line"></span></div>
+        </div>
+      </div></div>
           </td>
         </tr>
       </thead>
@@ -1426,14 +1436,7 @@
            heading row. JS fills #mealCardInfo / #mealcardContinue / #mealcardGrid
            by id, exactly as before. -->
       <tbody class="mealcard-tbody" id="mealcardTbody" data-no-translate translate="no">
-        <tr class="mc-topic-row">
-          <td colspan="5">
-            <div class="mc-topic">
-              <h2>ยากลับบ้าน — จัดตามเวลาในการรับประทาน</h2>
-              <span class="sub">Daily Pill Journey Card · เวลาในการรับประทานยาที่บ้าน</span>
-            </div>
-          </td>
-        </tr>
+
         <tr class="mc-info-row">
           <td colspan="5">
             <div class="mc-info" id="mealCardInfo">ℹ️ มียาหลายตัวในมื้อเดียวกัน โปรดสังเกตว่าตัวใดกินก่อนอาหาร และตัวใดกินหลังอาหาร</div>
@@ -1444,43 +1447,7 @@
       </tbody>
     </table>
 
-    <section class="footer-note">
-      <div class="sign-box appt-box">
-        <span class="label-ul">นัดหมายติดตามอาการ</span>
-        <div class="appt-list" id="appointmentList"></div>
-      </div>
 
-      <div class="hmproc-box" id="hmprocBox">
-        <div class="hmproc-hdr">💊 Checklist</div>
-        <div class="hmproc-body">
-          <div class="hmproc-checks">
-            <div class="hmproc-check-row" data-check="hasAtb"><span class="chk-dot">—</span> รับยาปฏิชีวนะก่อนกลับบ้าน</div>
-            <div class="hmproc-check-row" data-check="medReturned"><span class="chk-dot">—</span> คืนยาเหลือแล้ว</div>
-            <div class="hmproc-check-row" data-check="controlledRemaining"><span class="chk-dot">—</span> ไม่มียาเสพติดค้าง</div>
-
-            <div class="foot-semi-line"></div>
-
-            <div class="hmproc-check-row"><span class="chk-box"></span> อธิบายยากลับบ้าน</div>
-            <div class="hmproc-check-row"><span class="chk-box"></span> ผู้ป่วย/ผู้ปกครอง ทราบและเข้าใจการใช้ยาดีแล้ว</div>
-          </div>
-          <div class="hmproc-meta" id="hmprocMeta">HM Process not started for this visit</div>
-        </div>
-      </div>
-
-      <div class="sign-box providers-box">
-        <div class="providers-hdr">ลงชื่อเภสัชกร</div>
-        <div class="providers-body">
-          <div class="provider-block">
-            <span class="label-ul">ผู้ตรวจสอบรายการยา</span>
-            <div class="provider-value" id="pharmacistCheckedName">-</div>
-          </div>
-          <div class="provider-block">
-            <span class="label-ul">ผู้จ่ายยา</span>
-            <div class="provider-value provider-signature">&nbsp;</div>
-          </div>
-        </div>
-      </div>
-    </section>
 
   </main>
   </div>
@@ -1498,6 +1465,6 @@
   <script src="../../shared/translate-core.js"></script>
   <script src="../../shared/medical-glossary.js"></script>
   <script src="../../shared/meal-slots.js"></script>
-  <script src="page-home-med.js"></script>
+  <input type="checkbox" id="compactMode" checked hidden><input type="checkbox" id="includeMealCard" checked hidden><script src="page-home-med.js"></script><script src="page-home-med-a4.js"></script>
 </body>
 </html>

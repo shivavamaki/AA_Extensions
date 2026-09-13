@@ -101,6 +101,7 @@ Data layout:
                                        downloaded Jasper XLS, home-med fetch logs
 """
 
+import hm_report_cache
 import base64
 import copy
 import hashlib
@@ -138,6 +139,7 @@ from pathlib import Path
 # ── Config ─────────────────────────────────────────────────────
 DEFAULT_PORT  = 8765
 DATA_DIR      = Path(__file__).parent / 'data'
+HM_PREBUILT_DIR = DATA_DIR / 'home-med-prebuilt'
 KPI_DIR       = DATA_DIR / 'kpi'
 KS_DIR        = DATA_DIR / 'ks'
 RX_DIR        = DATA_DIR / 'rx'
@@ -2461,7 +2463,7 @@ def _now_iso():
 #     bearer token sits at rest. A stale token just means the server falls back
 #     to the stored snapshot — the panel still works.
 CAPTURE_TTL_MS       = 7 * 24 * 60 * 60 * 1000   # 7 days  (uid + snapshot)
-CAPTURE_TOKEN_TTL_MS = 24 * 60 * 60 * 1000       # 24 hours (incus-token copy)
+CAPTURE_TOKEN_TTL_MS = 96 * 60 * 60 * 1000       # 96 hours (incus-token copy)
 
 def _capture_is_fresh(entry):
     """True while the record (uid/snapshot) is within its window."""
@@ -2489,7 +2491,7 @@ def _capture_token_is_fresh(entry):
 def _capture_view(entry):
     """A read-safe copy of a capture entry: drops the incus-token once its
     shorter TTL has passed, so an at-rest credential is never handed back after
-    24h even though the record itself is retained for 7 days."""
+    96h even though the record itself is retained for 7 days."""
     if not isinstance(entry, dict):
         return {}
     view = dict(entry)
@@ -5017,6 +5019,16 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(502, {'error': f'ArcusAir HTTP {e.code} — token may be expired'}); return
             except Exception as e:
                 self.send_json(500, {'error': f'ArcusAir fetch error: {e}'}); return
+            if not body.get('forceLive') and not body.get('prebuild'):
+                cached = hm_report_cache.load(HM_PREBUILT_DIR, ctx, data)
+                if cached is not None:
+                    try:
+                        cached['allergies'] = build_allergies_from_arcus(fetch_arcus_allergies(ctx))
+                    except Exception:
+                        cached['allergies'] = {'nkda': False, 'items': [], 'hasRecord': False, 'error': 'fetch failed'}
+                    cached['cacheStatus'] = 'validated-hit'
+                    self.send_json(200, cached)
+                    return
             try:
                 result = build_home_med_from_arcus(data)
             except Exception as e:
@@ -5049,6 +5061,11 @@ class Handler(BaseHTTPRequestHandler):
             result['hasReconcile'] = bool(result['reconcileMeds'])
             result['ok'] = True
             result['source'] = 'arcus-api'
+            result['cacheStatus'] = 'prebuilt' if body.get('prebuild') else 'live'
+            try:
+                hm_report_cache.save(HM_PREBUILT_DIR, ctx, data, result)
+            except Exception as exc:
+                print('[home-med cache] save failed: ' + type(exc).__name__, file=sys.stderr)
             self.send_json(200, result)
             return
 
@@ -5334,6 +5351,7 @@ _CTRL_HANDLER_REF = None
 # ── Server bootstrap (shared by CLI main + GUI app) ─────────────
 def _init_data_dirs():
     """Create data folders + seed empty collections. Idempotent."""
+    HM_PREBUILT_DIR.mkdir(parents=True, exist_ok=True)
     KPI_DIR.mkdir(parents=True, exist_ok=True)
     KS_DIR.mkdir(parents=True, exist_ok=True)
     RX_DIR.mkdir(parents=True, exist_ok=True)

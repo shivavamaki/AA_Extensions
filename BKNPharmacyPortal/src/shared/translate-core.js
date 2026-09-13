@@ -8,7 +8,7 @@
  - Drug name protection
  - Prescription sentence normalizer
  - Medical glossary override
- - Google translate fallback
+ - Local pattern and text-replacement fallback (no external translation requests)
  - Skip protected nodes
  - Restore original text
 *************************************************/

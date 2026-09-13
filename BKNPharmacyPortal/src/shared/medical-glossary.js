@@ -889,7 +889,7 @@ window.matchQtyNoLabel = function (text, lang) {
  * Common Thai pharmacy auxiliary stickers (BKN convention).
  * Each entry is a full phrase, matched verbatim after the master regex
  * fails. Keys are lowercase canonical English; values are per-language
- * translations. Falls through to glossary/Google if not matched.
+ * translations. Falls through to local glossary replacements if not matched.
  * ═══════════════════════════════════════════════════════════════ */
 const AUXILIARY_PHRASES = {
   "shake well before use": {

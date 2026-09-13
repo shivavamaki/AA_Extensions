@@ -9,7 +9,7 @@
  *
  * This listener receives the tap's postMessage and writes the capture to the
  * PHARMACY SERVER via BKNData.saveCapture(), keyed by patientuid + visituid.
- * The server merges non-empty fields and enforces a 24h TTL, so:
+ * The server merges non-empty fields and retains tokens for 96h and snapshots for 7 days, so:
  *   • one capture on any PC serves every PC, and
  *   • the same data is never re-snapshotted repeatedly.
  *
@@ -26,21 +26,22 @@
   // Coalesce rapid duplicate captures (the tap can fire request- and
   // response-path captures for the same visit within a few ms) so we don't
   // hammer the server with identical writes.
-  const _lastSent = new Map();   // "puid|vid" → JSON of last payload
+  const _pending = new Map(); // merge token and snapshot events for each visit
   const _debounce = new Map();   // "puid|vid" → timer
 
   function _persist(puid, vid, payload) {
     if (!window.BKNData || !window.BKNData.saveCapture) return;
     if (!puid || !vid) return;
     const mapKey = `${puid}|${vid}`;
-    const sig = JSON.stringify(payload);
-    if (_lastSent.get(mapKey) === sig) return;   // identical to last write — skip
+    _pending.set(mapKey, { ...(_pending.get(mapKey) || {}), ...payload });
+    // Re-observed tokens refresh tokenTs even when the session token is unchanged.
 
     clearTimeout(_debounce.get(mapKey));
     _debounce.set(mapKey, setTimeout(async () => {
       try {
-        const ok = await window.BKNData.saveCapture(puid, vid, payload);
-        if (ok) _lastSent.set(mapKey, sig);
+        const combined = _pending.get(mapKey);
+        _pending.delete(mapKey);
+        await window.BKNData.saveCapture(puid, vid, combined);
       } catch (_) { /* best-effort */ }
     }, 300));
   }

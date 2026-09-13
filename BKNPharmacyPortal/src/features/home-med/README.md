@@ -369,3 +369,17 @@ The editing UI lives in `src/features/pattern-editor/` (`page-pattern-editor.htm
 - The whole `tbody` re-renders on add/remove; the `MutationObserver` is debounced (one run per animation frame) and the translation cache keeps it cheap — don't reintroduce per-tick re-translation.
 - Saved edits (`loadMedCache`) win over freshly-fetched meds; a manual note edit overrides both TH and EN values.
 - The tool group is shared — append buttons into `.bkn-tool-flyout`, never as siblings of `#paprint`.
+
+## Server prebuild workflow (2026-09-13)
+
+1. On the dispense workbench, clicking `#allocatedispense` while the order table contains `DISCHARGE MEDICATION` captures the existing patient context before navigation. A background POST to `/api/report/home-med-api` with `prebuild: true` builds report data without opening a sheet or changing the allocation action. Duplicate in-flight requests from this page are suppressed per patient/visit.
+2. The server uses the existing ArcusAir getter and report builder. It atomically saves the result under `pharmacy_server/data/home-med-prebuilt/`, keyed by hashed patient UID + visit UID, with a 15-minute reuse window. Session credentials are not saved in this cache. Files contain patient report data; expiry prevents reuse, but does not delete old files.
+3. Opening Home Medication Sheet calls the same endpoint. The server first fetches live order data and compares its complete fingerprint with the cached source fingerprint. Equal item counts alone are insufficient: changed doses, quantities, instructions, statuses, or orders invalidate reuse. A valid hit returns the prebuilt report with freshly fetched allergies. The sheet continues its separate reconciliation/checklist refresh and saved-edit handling.
+4. Missing, expired, corrupt, or changed cache entries cause a normal live build. A cache-write failure does not prevent opening the sheet. Live fetch/authentication failures are reported rather than returning an unvalidated report.
+5. **Revert** bypasses saved edits and sends `forceLive: true`, forcing a fresh build and replacing the server cache.
+
+Allocation click starts navigation, not confirmed allocation completion. Prebuild is therefore speculative; validation at sheet opening is mandatory. This caches report JSON, not rendered HTML/PDF. A4 layout and editing still run in the browser. Opening still waits for live order validation and allergies, so performance gains must be measured in the real workflow.
+
+The response `cacheStatus` is `prebuilt`, `validated-hit`, or `live`. Deploy `hm_report_cache.py` alongside `bkn_ks_server.py`, restart the pharmacy server, reload the extension, and refresh ArcusAir. Verify an allocation click produces a prebuild request, unchanged orders produce a hit, a same-count dose edit produces a live build, and Revert always produces a live build.
+
+The prebuilt cache directory is created by _init_data_dirs() at server startup (CLI and GUI), even before the first report is built. JSON files appear only after a successful report build.

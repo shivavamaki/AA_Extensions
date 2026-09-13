@@ -285,9 +285,27 @@
   };
   /* Dispense Workbench passes patientuid/patientvisituid in the XHR request
      BODY (e.g. getallorderitem), not the URL — scan send() bodies too. */
+  // Arm on every Med Reconcile navigation. The token is on request headers,
+  // not in page HTML; persist after successful API traffic has loaded.
+  var _reconCapturePending = /\/emr\/emrview\/emr\/medreconcile(?:[/?]|$)/i.test(location.hash);
+  window.addEventListener('hashchange', function () {
+    _reconCapturePending = /\/emr\/emrview\/emr\/medreconcile(?:[/?]|$)/i.test(location.hash);
+  });
   var _origSend = XMLHttpRequest.prototype.send;
   XMLHttpRequest.prototype.send = function (body) {
     try { _scanBody(typeof body === 'string' ? body : null); } catch (_) {}
+    if (_reconCapturePending && /\/emr\/emrview\/emr\/medreconcile(?:[/?]|$)/i.test(location.hash)) {
+      var captureVisit = window.__arcus_pctx__.patientvisituid;
+      var capturePatient = window.__arcus_pctx__.patientuid;
+      var captureToken = (window.__arcus_hdrs__ || {})['incus-token'];
+      this.addEventListener('load', function () {
+        if (!_reconCapturePending || this.status < 200 || this.status >= 300) return;
+        if (!captureToken || !captureVisit || !capturePatient) return;
+        if (captureVisit !== window.__arcus_pctx__.patientvisituid || capturePatient !== window.__arcus_pctx__.patientuid) return;
+        _reconCapturePending = false;
+        window.postMessage({__bkn_medrecon__:1, puid:capturePatient, vid:captureVisit, token:captureToken}, '*');
+      }, {once:true});
+    }
     // Scan inpatient API *responses* for patient UIDs (path-param URLs)
     if (this.__bkn_scan_resp) {
       var _xhr = this;

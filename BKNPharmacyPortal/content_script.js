@@ -291,15 +291,11 @@
   function isDispensePage() {
     const targetHash = '#!/pharmacy/dispenseworkbench/pharmacy/dispense';
     return location.hostname === 'arcusair.bdms.co.th' &&
-      (location.hash === targetHash || location.href.includes(targetHash));
+      location.hash === targetHash;
   }
 
-  // Exact anchor requested for IV Label button injection.
-  const IV_INJECT_ANCHOR_SEL =
-    'body > div.full-height.ng-scope.layout-row > div > md-content > md-content > div > md-card > ' +
-    'md-content.md-whiteframe-z2.padding-left-14-imp.margin-5.stickydiv.incus-border-1.overflow-x-hide.ng-scope._md.md-incustheme-theme.width-70-per > ' +
-    'div.ng-isolate-scope.flex-initial > div:nth-child(1) > patient-emr-banner > div > div.sec-banner.ng-scope > ' +
-    'div.sec-first-section.layout-row.layout-align-start-center > div:nth-child(4) > span';
+  // Shared Pharmacy tools flyout owns placement; no patient-banner anchor required.
+  const IV_TOOL_FLYOUT_SEL = ".bkn-tool-group .bkn-tool-flyout";
 
   /**
    * Parse the patient banner and #ordertable, return structured JSON.
@@ -518,10 +514,10 @@
   }
 
   /**
-   * Inject the 💉 button after the exact patient banner selector requested.
+   * Inject the 💉 button inside the shared Pharmacy tools flyout.
    * Conditions:
    * 1) Only on https://arcusair.bdms.co.th/#!/pharmacy/dispenseworkbench/pharmacy/dispense
-   * 2) Insert after IV_INJECT_ANCHOR_SEL only
+   * 2) Append inside the shared .bkn-tool-flyout when it is rendered
    */
   function injectIvLabelButton() {
     try {
@@ -531,14 +527,14 @@
         return;
       }
 
-      const anchor = document.querySelector(IV_INJECT_ANCHOR_SEL);
-      if (!anchor) return;
+      const flyout = document.querySelector(IV_TOOL_FLYOUT_SEL);
+      if (!flyout) return;
 
     const existing = document.getElementById(IV_BTN_ID);
     if (existing) {
-      // If Angular re-render moved the anchor/button, keep button next to requested span.
-      if (existing.previousElementSibling !== anchor) {
-        anchor.insertAdjacentElement('afterend', existing);
+      // If Angular re-render moved the anchor/button, keep the button inside the current flyout.
+      if (existing.parentElement !== flyout) {
+        flyout.appendChild(existing);
       }
       return;
     }
@@ -577,8 +573,8 @@
     btn.addEventListener('mouseleave', () => { btn.style.background = '#0d6e3f'; });
     btn.addEventListener('click', () => handleSendToIvLabel(btn));
 
-    anchor.insertAdjacentElement('afterend', btn);
-    console.log('[BKN IV Scraper] IV Label button injected after requested anchor selector.');
+    flyout.appendChild(btn);
+    console.log('[BKN IV Scraper] IV Label button added to Pharmacy tools flyout.');
     } catch (err) {
       console.warn('[BKN IV Scraper] injectIvLabelButton failed', err);
     }
@@ -589,7 +585,7 @@
       const oldBtn = document.getElementById(IV_BTN_ID);
       if (oldBtn) oldBtn.remove();
     } else {
-      waitForElement(IV_INJECT_ANCHOR_SEL, injectIvLabelButton);
+      injectIvLabelButton();
     }
 
     if (!isStockTransferPage()) {
@@ -611,6 +607,16 @@
 
     onBodyReady(() => {
       handleArcusAirRouteChange();
+      // Patient changes can recreate the flyout without changing the SPA route.
+      let ivButtonUpdatePending = false;
+      new MutationObserver(() => {
+        if (ivButtonUpdatePending) return;
+        ivButtonUpdatePending = true;
+        requestAnimationFrame(() => {
+          ivButtonUpdatePending = false;
+          injectIvLabelButton();
+        });
+      }).observe(document.body, { childList: true, subtree: true });
     });
   }
 

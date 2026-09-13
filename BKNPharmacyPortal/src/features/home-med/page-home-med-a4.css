@@ -1,0 +1,59 @@
+.a4-patient-summary{display:grid;grid-template-columns:minmax(0,1fr) 53mm;gap:3mm;align-items:stretch;margin:7px 0 8px}.a4-patient-summary .patient-clinical-card{margin:0}.a4-patient-summary .hmproc-box{min-width:0;margin:0}.a4-patient-summary .patient-card{grid-template-columns:1.5fr 1fr 1fr .5fr}.a4-patient-summary .value{overflow-wrap:anywhere}.a4-banner{padding:10px;background:#fff0c2;border:1px solid #ddb952;border-radius:8px;font-size:12px}.a4-preview{margin:18px auto;transform-origin:top center}.a4-page{box-sizing:border-box;width:210mm;height:297mm;padding:8mm 8mm 12mm;background:white;margin:0 auto 24px;box-shadow:0 3px 16px #24375426;position:relative;overflow:hidden}.a4-page-content{height:277mm;overflow:hidden}.a4-page table{width:100%;table-layout:fixed;border-collapse:collapse}.a4-page .no-print,.a4-page .add-row,.a4-page .row-remove,.a4-page .row-continue-btn{display:none!important}.a4-page .mc-grid{display:grid!important;grid-template-columns:1fr 1fr;gap:8px;column-count:auto!important}.a4-page .mc-slot{margin-bottom:0}.a4-page-footer{position:absolute;left:8mm;right:8mm;bottom:5mm;font-size:10px;color:#64748b;display:flex;justify-content:space-between}.a4-page-label{text-align:center;color:#64748b;font-size:12px;padding:6px}.a4-source .mc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;column-count:auto}.a4-source.sheet-wrap{position:absolute;left:-20000px;top:0;transform:none!important;width:210mm}.a4-source .sheet{width:210mm;padding:8mm 8mm 12mm}.a4-editing .a4-source.sheet-wrap{position:static;transform:none!important;margin:auto}.a4-editing .a4-preview{display:none}.a4-preview [contenteditable]{outline:none}.a4-preview .mc-dose{white-space:nowrap}.a4-preview .a4-patient-summary{font-size:11px}@media print{@page{size:A4 portrait;margin:0!important}.a4-source.sheet-wrap,.a4-banner,.a4-page-label,.page-counter{display:none!important}.a4-preview{display:block!important;transform:none!important;margin:0!important;width:auto!important;zoom:1!important}.a4-page{margin:0;box-shadow:none;break-after:page}.a4-page:last-child{break-after:auto}.a4-page-content{overflow:visible}.a4-page{overflow:visible}.a4-page-footer{display:flex}body{padding:0!important}}
+/* A4 checklist sizes to its contents instead of a fixed 53mm column. */
+.a4-patient-summary{grid-template-columns:minmax(0,1fr) fit-content(53mm);align-items:stretch}
+.a4-patient-summary .hmproc-box{width:max-content;max-width:53mm;justify-self:end;align-self:stretch}
+.a4-patient-summary .hmproc-body{padding:5px 7px;gap:3px}
+.a4-patient-summary .hmproc-checks{gap:2px}
+.a4-patient-summary .hmproc-meta{margin-top:1px;overflow-wrap:anywhere}
+.hmproc-signature{display:flex;gap:5px;align-items:baseline;font-size:10px;color:#374151;margin-top:3px}
+.hmproc-signature-line{flex:1;min-width:16mm;border-bottom:1px dotted #78909c}
+/* Four visible medicine columns; identical sizing in preview and print. */
+.a4-page table.a4-print-table{width:100%!important;table-layout:fixed}
+.a4-print-table > colgroup > col.cg-no{width:7%!important}
+.a4-print-table > colgroup > col.cg-med{width:38%!important}
+.a4-print-table > colgroup > col.cg-how{width:46.6%!important}
+.a4-print-table > colgroup > col.cg-qty{width:8.4%!important}
+.a4-print-table > tbody > tr > .col-no{border-left:1px solid #111827}
+/* Both header cards share the height of the taller card, in preview and print. */
+.a4-patient-summary > .patient-clinical-card,.a4-patient-summary > .hmproc-box{align-self:stretch;height:auto}
+
+/* Remove controls occupy the existing number cell; never change print columns. */
+.a4-print-table > tbody > tr.med-row > .col-no{position:relative}
+.a4-remove-med{position:absolute;top:24px;left:50%;transform:translateX(-50%);width:22px;height:22px;padding:0;border:1px solid #cbd5e1;border-radius:50%;background:#fff;color:#b91c1c;font:700 18px/18px Arial;cursor:pointer}
+.a4-remove-med:hover{background:#fee2e2;border-color:#ef4444}
+.a4-remove-med:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+@media print{.a4-remove-med{display:none!important}}
+.a4-preview .continuity-select{display:inline-block;max-width:100%;cursor:pointer}
+.a4-preview .continuity-print{display:none}
+@media print{.a4-preview .continuity-select{display:none!important}.a4-preview .continuity-print{display:inline!important}}
+.a4-continue-med{position:absolute;top:49px;left:50%;transform:translateX(-50%);width:22px;height:22px;padding:0;border:1px solid #cbd5e1;border-radius:50%;background:#fff;font-size:12px;cursor:pointer}
+.a4-continue-med[aria-pressed="true"]{background:#fff1f2;border-color:#e11d48}
+.a4-continue-med:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.a4-preview .med-row > .col-no{height:76px}
+@media print{.a4-continue-med{display:none!important}.a4-preview .med-row > .col-no{height:auto}}
+.a4-meal-piece > td{padding:6px 0;border:0!important}
+.a4-flow-page{height:auto;min-height:297mm;overflow:visible}
+.a4-flow-page .a4-page-content{height:auto;min-height:277mm;overflow:visible}
+.a4-flow-page .a4-page-footer{position:static;margin-top:8px}
+@media print{.a4-meal-piece{break-inside:avoid}.a4-flow-page .a4-page-footer{display:none}}
+/* Each generated sheet owns one physical page. Use one break between sheets,
+   not a trailing break after a box exactly equal to the printer page height. */
+@media print {
+  html,body{margin:0!important;padding:0!important;height:auto!important;min-height:0!important}
+  body > :not(.a4-preview){display:none!important}
+  .a4-preview{display:block!important;margin:0!important;padding:0!important}
+  .a4-preview > .a4-page{
+    box-sizing:border-box;height:296.8mm;min-height:0;
+    margin:0!important;break-before:auto;break-after:auto!important;
+    page-break-after:auto!important;break-inside:avoid-page;
+  }
+  .a4-preview > .a4-page + .a4-page{break-before:page;page-break-before:always}
+  .a4-page-content{height:276.8mm;min-height:0}
+  .a4-preview > .a4-flow-page{height:auto;break-inside:auto}
+  .a4-flow-page .a4-page-content{height:auto}
+}
+/* Reserve a real label column; the remaining width belongs to date columns. */
+.a4-page .mcc-table{width:100%;table-layout:fixed}
+.a4-page .mcc-table .mcc-mealhead,.a4-page .mcc-table .mcc-meal{width:38mm;white-space:normal;overflow-wrap:anywhere;padding-right:3mm}
+.a4-page .mcc-table .mcc-dayhead,.a4-page .mcc-table .mcc-tick{width:auto;text-align:center;padding:3px 2px}
+.a4-preview{overflow-anchor:none}

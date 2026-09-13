@@ -48,6 +48,11 @@ const CONTINUE_MAX_DAYS = 10;
 /** Enumerate the day columns of a start→end run as { day, mon } labels.
  * Falls back to a short blank run when dates are missing/invalid so the header
  * still renders empty tick columns for the patient to fill in by hand. */
+function _continueWeekBlocks(days) {
+  const blocks = [];
+  for (let i = 0; i < days.length; i += 7) blocks.push(days.slice(i, i + 7));
+  return blocks;
+}
 function _continueDayColumns(startIso, endIso) {
   const parse = (s) => {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || "").trim());
@@ -63,8 +68,8 @@ function _continueDayColumns(startIso, endIso) {
     iso: isoOf(d),
   });
   if (start && end && end >= start) {
-    // Full labelled run start → end (clamped to the max width).
-    for (let d = new Date(start); d <= end && cols.length < CONTINUE_MAX_DAYS; d.setDate(d.getDate() + 1)) pushDay(d);
+    // Full date range; rendering wraps it into blocks of at most seven days.
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) pushDay(d);
   } else if (start) {
     // Start only, no end: label a default span forward from the start date.
     const d = new Date(start);
@@ -265,7 +270,10 @@ function populateHeader(header, context, meds) {
   safeSetText("patientAN",   h.an || c.an || c.patientVisitId || "-");
   safeSetText("patientRoom", h.room || c.bed || "-");
   safeSetText("sheetDate",   h.visitDate || new Date().toLocaleDateString("th-TH"));
-  safeSetText("pharmacistCheckedName", c.pharmacistName || "-");
+  // The A4 layout omits this optional signature field; other sheets may keep it.
+  if (document.getElementById("pharmacistCheckedName")) {
+    safeSetText("pharmacistCheckedName", c.pharmacistName || "-");
+  }
   safeSetText("physicianNameTop", physicians.length ? physicians.join(", ") : "-");
 }
 
@@ -499,6 +507,7 @@ const CONTINUITY_OPTIONS = [
   { value: "continued", label: "🟢 รับยาต่อเนื่อง" },
   { value: "adjusted",  label: "🟡 ปรับขนาดยา" },
   { value: "new",       label: "🔵 ยาใหม่" },
+  { value: "pom",       label: "POM / ยาผู้ป่วยนำมาเอง" },
 ];
 
 function _continuityLabelFor(value) {
@@ -690,6 +699,12 @@ ${photo}
   return tr;
 }
 
+function _medicationDisplayGroup(med) {
+  if (med.takeUntilFinished) return 0;
+  if (med.continuity === "pom" || med.source === "pom" || med.source === "own") return 5;
+  const types = { continued: 1, new: 2, adjusted: 3 };
+  return types[med.continuity] ?? 4;
+}
 async function renderMeds() {
   const tbody = document.querySelector("#medTable tbody");
   if (!tbody) return;
@@ -699,25 +714,17 @@ async function renderMeds() {
   // now lives at the top of <tbody> (so it prints once, not per page).
   tbody.querySelectorAll("tr:not(.col-head-row)").forEach((tr) => tr.remove());
 
-  // Display order (keys, in priority):
-  //   1) "take until finished" meds first
-  //   2) then grouped by dosage form (the 💊/🧪/💉… icon)
-  //   3) then by drug code — so identical-code items (e.g. the same drug added
-  //      twice) always sit next to each other.
-  // dataset.index still points at each med's ORIGINAL position in _meds so
-  // edits/removes/meal-card lookups stay correct regardless of display order.
-  const order = _meds
-    .map((med, i) => ({ med, i }))
-    .sort((a, b) => {
-      const ac = a.med.takeUntilFinished ? 0 : 1;
-      const bc = b.med.takeUntilFinished ? 0 : 1;
-      if (ac !== bc) return ac - bc;
-      const af = _medicineFormRank(a.med), bf = _medicineFormRank(b.med);
-      if (af !== bf) return af - bf;
-      const ak = norm(a.med.code || ""), bk = norm(b.med.code || "");
-      if (ak !== bk) return ak < bk ? -1 : 1;
-      return a.i - b.i;   // stable within the same code
-    });
+  // Display grouping: finish-course first; continued/new/adjusted groups;
+  // untyped; then POM. Keep original indices for edits and removal.
+  const order = _meds.map((med, i) => ({ med, i })).sort((a, b) => {
+    const group = _medicationDisplayGroup(a.med) - _medicationDisplayGroup(b.med);
+    if (group) return group;
+    const form = _medicineFormRank(a.med) - _medicineFormRank(b.med);
+    if (form) return form;
+    const ak = norm(a.med.code || ""), bk = norm(b.med.code || "");
+    if (ak !== bk) return ak < bk ? -1 : 1;
+    return a.i - b.i;
+  });
   order.forEach(({ med, i }, pos) => tbody.appendChild(_buildMedRow(med, i, pos + 1)));
 
   // Always append the "add medicine" row at the bottom (hidden when printing).
@@ -973,7 +980,8 @@ function renderMealCard() {
           const endLbl = _currentLang === "en" ? "End" : "จนถึง";
 
           // Calendar columns: one per day of the start→end run.
-          const dayCols = _continueDayColumns(startIso, endIso);
+          const allDays = _continueDayColumns(startIso, endIso);
+          const calendarTables = _continueWeekBlocks(allDays).map((dayCols) => {
           const nCols = dayCols.length;
           // Header row: empty meal cell + one date label per day (no tick — the
           // checkboxes live in the meal rows below).
@@ -995,6 +1003,8 @@ function renderMealCard() {
                 }).join("")}
               </tr>`).join("")
             : `<tr><td class="mcc-meal mcc-nomeal" colspan="${nCols + 1}">${escapeHtml(_currentLang === "en" ? "As directed" : "ตามแพทย์สั่ง")}</td></tr>`;
+            return `<table class="mcc-table"><tbody>${headRow}${mealRows}</tbody></table>`;
+          }).join("");
           return `<div class="mc-continue-item" data-index="${it._idx}">
             <div class="mc-continue-drug">
               <span class="mcc-name">${escapeHtml(it.drug)}${it.dose ? ` <span class="mc-dose">${escapeHtml(it.dose)}</span>` : ""}</span>
@@ -1005,12 +1015,7 @@ function renderMealCard() {
               </span>
               <span class="mcc-date-print">${startLbl} ${startTxt}&nbsp;&nbsp;${endLbl} ${endTxt}<span class="mcc-note-print">${noteVal ? ` · ${noteVal}` : ""}</span></span>
             </div>
-            <table class="mcc-table">
-              <tbody>
-                ${headRow}
-                ${mealRows}
-              </tbody>
-            </table>
+            ${calendarTables}
           </div>`;
         }).join("")}
       </div>
@@ -1152,6 +1157,7 @@ function _addMed(med) {
     drug: norm(med.drug || ""), instruction: norm(med.instruction || ""),
     note: "", quantity: norm(med.quantity || ""), code: norm(med.code || ""),
     provider: "", source: norm(med.source || ""),
+    continuity: med.continuity ?? (med.source === "pom" ? "pom" : ""),
     // Authoritative Thai frequency phrase (used by the translation engine on the
     // instruction line, same as report-sourced rows) — POM items from Med
     // Reconcile carry it so their instruction reads natural Thai.
@@ -1547,7 +1553,11 @@ async function fetchAndRender() {
   }
 
   _setStatus("⏳ กำลังดึงรายการยากลับบ้าน...");
-  await Promise.all([_loadMedicationDatabase(), _loadPatternOverrides()]);
+  const loadStarted = performance.now();
+  const dependencies = Promise.all([_loadMedicationDatabase(), _loadPatternOverrides()]);
+  const revertFlag = sessionStorage.getItem('hm:revert');
+  if (revertFlag) sessionStorage.removeItem('hm:revert');
+  const savedPromise = revertFlag ? Promise.resolve(null) : _loadSavedMeds();
 
   // Fetch meds from ArcusAir: IPD → getallorderitem; OPD → pharmacy/dispense/search.
   const _endpoint = _isOpd ? "/api/report/home-med-opd" : "/api/report/home-med-api";
@@ -1556,7 +1566,7 @@ async function fetchAndRender() {
     resp = await window.BKNData.serverFetch(_endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ context: _context }),
+      body: JSON.stringify({ context: _context, forceLive: !!revertFlag }),
     });
   } catch (e) {
     console.error("[home-med] serverFetch threw:", e);
@@ -1575,6 +1585,7 @@ async function fetchAndRender() {
     return;
   }
 
+  const reportReadyMs = performance.now() - loadStarted;
   const data = resp.json;
   const reportMeds = data.meds || [];
   console.log(`[home-med] meds=${reportMeds.length} allMeds=${data.allMeds}`);
@@ -1583,9 +1594,7 @@ async function fetchAndRender() {
   // visit; otherwise seed from the ArcusAir discharge meds.
   // If the Revert button was clicked, clear the flag and skip the cache so the
   // fresh ArcusAir data is used unconditionally.
-  const revertFlag = sessionStorage.getItem('hm:revert');
-  if (revertFlag) sessionStorage.removeItem('hm:revert');
-  const saved = revertFlag ? null : await _loadSavedMeds();
+  const [saved] = await Promise.all([savedPromise, dependencies]);
   if (saved && saved.length) {
     // Fresh server continuity signal, by code — seeds cached meds saved before this
     // field existed. A cache that DOES carry `continuity` is a pharmacist pick and
@@ -1651,9 +1660,10 @@ async function fetchAndRender() {
   } else {
     const checklistHn = (data.patient && data.patient.hn) || (_context && (_context.hn || _context.patientId)) || "";
     fetchAndRenderChecklist(checklistHn);  // best-effort, non-blocking
-    _setReconMeds(data.reconcileMeds);
+    fetchAndRenderReconcile();
   }
   await renderMeds();
+  window.__HM_PERF__ = {reportMs:Math.round(reportReadyMs), readyMs:Math.round(performance.now()-loadStarted)};
 }
 
 /* ─────────────── OPD medical-history panel (last 5 visits) ────────────────
@@ -2030,7 +2040,7 @@ function renderReconPanel() {
       <span class="recon-empty-icon">🔍</span>
       Reconciliation data not loaded for this visit.<br><br>
       Open <b>Med Reconcile</b> in ArcusAir for this patient once, then click ↻.
-      <br><br><span style="font-size:9px;color:#b0bec5">Once captured it's saved on the pharmacy server for 24 hours, so any workstation can load it — no need to reopen Med Reconcile.</span>
+      <br><br><span style="font-size:9px;color:#b0bec5">Once captured it's saved on the pharmacy server for 96 hours, so any workstation can load it — no need to reopen Med Reconcile.</span>
     </div>`;
     return;
   }
@@ -2160,7 +2170,7 @@ function _bindReconPanel() {
     toAdd.forEach((m) => {
       const built = _reconInstruction(m);
       _addMed({
-        drug: m.drug, code: m.code, quantity: "", source: "pom",
+        drug: m.drug, code: m.code, quantity: "", source: "pom", continuity: "pom",
         instruction: built.instruction, frequencyTh: built.frequencyTh,
       });
       m._added = true;
@@ -2186,42 +2196,16 @@ function _bindReconPanel() {
  *      fresher incus-token than the stored one — layered on top.
  * Best-effort; leaves _context unchanged if neither source has anything. */
 async function _refreshReconContextFromArcus() {
-  if (!_context || !_context.patientvisituid) return;
-  const vid  = _context.patientvisituid;
-  const puid = _context.patientuid;
-
-  // 1) Server capture bag (durable, cross-PC).
-  try {
-    if (puid && window.BKNData && window.BKNData.loadCapture) {
-      const cap = await window.BKNData.loadCapture(puid, vid);
-      if (cap) {
-        if (cap.medreconcileuid)      _context.medreconcileuid     = cap.medreconcileuid;
-        if (cap.medreconcileSnapshot && !_context.medreconcileuid)
-          _context.medreconcileSnapshot = cap.medreconcileSnapshot;
-        if (cap.incusToken)           _context.incusToken          = cap.incusToken;
-      }
-    }
-  } catch (_e) { /* server unavailable — fall through to live tab */ }
-
-  // 2) Live ArcusAir tab (best-effort) — a fresher token / just-captured id.
-  let resp = null;
-  try {
-    resp = await chrome.runtime.sendMessage({ type: "HM_REFRESH_RECON_CTX", patientvisituid: vid });
-  } catch (_e) { return; }
-  if (!resp || !resp.ok) return;
-
-  const uid = (resp.medreconMap || {})[vid];
-  if (uid) _context.medreconcileuid = uid;
-
-  const snap = (resp.medhistoryMap || {})[vid];
-  if (snap && !_context.medreconcileuid) _context.medreconcileSnapshot = snap;
-
-  // A fresh incus-token lets the server make the live medreconcile/getdetail
-  // call (tokens expire, so a live tab's token beats the stored one).
-  const token = (resp.arcusHdrs || {})["incus-token"];
-  if (token) _context.incusToken = token;
+  if (!_context?.patientuid || !_context?.patientvisituid) return false;
+  // Reconciliation uses only the server capture for this exact patient/visit.
+  // Never substitute a token from an unrelated open ArcusAir tab.
+  const cap = await window.BKNData.loadCapture(_context.patientuid, _context.patientvisituid);
+  if (!cap?.incusToken) return false;
+  _context.incusToken = cap.incusToken;
+  _context.medreconcileuid = cap.medreconcileuid || null;
+  _context.medreconcileSnapshot = cap.medreconcileSnapshot || null;
+  return true;
 }
-
 async function fetchAndRenderReconcile() {
   if (!_context || !window.BKNData || !window.BKNData.serverFetch) {
     _setReconMeds([]);
@@ -2229,7 +2213,20 @@ async function fetchAndRenderReconcile() {
   }
   // Pull the latest reconcile id / snapshot / token from the ArcusAir tab first,
   // so a reload picks up a medreconcileuid captured after the sheet was opened.
-  await _refreshReconContextFromArcus();
+  try {
+    if (!await _refreshReconContextFromArcus()) {
+      _setReconMeds([]);
+
+      const list = document.getElementById("reconList");
+      if (list) list.innerHTML = '<div class="recon-empty">No stored reconciliation token for this visit. Open <b>Med Reconcile</b> in ArcusAir for this patient, wait for its data to load, then click ↻.</div>';
+      return;
+    }
+  } catch (_) {
+    _setReconMeds([]);
+    const list = document.getElementById("reconList");
+    if (list) list.textContent = "Cannot read reconciliation capture from the pharmacy server. Please retry ↻.";
+    return;
+  }
   try {
     const r = await window.BKNData.serverFetch("/api/report/reconcile-api", {
       method: "POST",
