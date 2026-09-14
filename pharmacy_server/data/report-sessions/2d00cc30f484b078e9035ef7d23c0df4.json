@@ -1,0 +1,100 @@
+{
+  "id": "2d00cc30f484b078e9035ef7d23c0df4",
+  "owner": "public",
+  "request": {
+    "schemaVersion": 1,
+    "reportType": "home-med-ipd",
+    "identity": {
+      "patientUid": "682c288ae6eee793934fb016",
+      "visitUid": "6aa74b76b9dcb8d063065374"
+    },
+    "presentation": {
+      "language": "th",
+      "templateVersion": "hm-a4-v1"
+    }
+  },
+  "revision": 2,
+  "status": "ready",
+  "source": {
+    "patient": {
+      "patientName": "MRS. HONG INTHAVONG",
+      "hn": "48-25-006500",
+      "an": "I2609141082",
+      "room": "511"
+    },
+    "meds": [
+      {
+        "drug": "Dexa/Neomycin (100/350 mg) EYE DROP 4 mL",
+        "code": "51181740000001",
+        "quantity": "2 Bottle",
+        "comment": "Instill 1 Drop 4 Times A Day Morning Noon Evening and Bedtime",
+        "note": "เพิ่มยา HM\nไม่เก็บยาไว้เกิน 1 เดือน หลังเปิดขวดใช้แล้ว",
+        "noteEn": "เพิ่มยา HM\n(Do Not Use After Opening 1 Month)",
+        "route": "Into Right eye",
+        "frequency": "4 Times A Day Morning Noon Evening and Bedtime",
+        "frequencyTh": "วันละ 4 ครั้ง เช้า กลางวัน เย็น ก่อนนอน",
+        "dosage": "1",
+        "provider": "เพ็ญนภา จำปาทอง, พญ.",
+        "oral": false,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "เพิ่มยา HM",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "alu",
+          "adn",
+          "bed"
+        ]
+      }
+    ],
+    "allMeds": 1,
+    "allergies": {
+      "nkda": false,
+      "items": [
+        {
+          "type": "drug",
+          "allergen": "hyoscine-n-butyl bromide, hyoscine-n-butylbromide, hyoscine butylbromide",
+          "reaction": "หายใจไม่ออก ผื่นคัน"
+        },
+        {
+          "type": "drug",
+          "allergen": "Buscopan (10 mg) Tablet,",
+          "reaction": ""
+        }
+      ],
+      "hasRecord": true
+    },
+    "appointmentText": "คนไข้มีนัดหมาย วันที่ 28 กันยายน 2569 เวลา 10:00 น.\tที่แผนก Eye Center กับ เพ็ญนภา จำปาทอง, พญ. หมายเหตุ F/U 6 mo",
+    "reconcileMeds": [],
+    "hasReconcile": false,
+    "ok": true,
+    "source": "arcus-api",
+    "cacheStatus": "live"
+  },
+  "edits": {},
+  "rendered": null,
+  "history": [
+    {
+      "revision": 2,
+      "action": "build",
+      "at": 1789385934.3679793
+    }
+  ],
+  "createdAt": 1789385933.9081705,
+  "displayContext": {
+    "patientName": "MRS. HONG  INTHAVONG",
+    "hn": "48-26-011459",
+    "patientId": "48-26-011459",
+    "an": "",
+    "patientVisitId": "",
+    "bed": "922",
+    "doctor": "",
+    "diagnosis": "Primary open-angle glaucoma, Presence of intraocular lens",
+    "pharmacistName": "ศิวาวุธ มงคล, ภก."
+  },
+  "error": null,
+  "updatedAt": 1789385934.3679793
+}

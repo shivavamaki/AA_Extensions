@@ -239,6 +239,26 @@
    * Click handler
    * ───────────────────────────────────────────── */
   let _sending = false;
+  let _hostedWindow = null;
+  let _hostedReady = false;
+  let _hostedContext = null;
+  let _hostedOrigin = "";
+  let _hostedListener = null;
+  let _hostedDeliveryTimer = null;
+
+  function sendHostedContext() {
+    if (!_hostedWindow || !_hostedOrigin || !_hostedContext) return;
+    clearTimeout(_hostedDeliveryTimer);
+    let attempts = 0;
+    const send = () => {
+      if (!_hostedWindow || !_hostedOrigin || !_hostedContext) return;
+      try {
+        _hostedWindow.postMessage({ type: "HM_PILOT_CONTEXT", context: _hostedContext }, _hostedOrigin);
+      } catch (_) { return; }
+      if (++attempts < 20) _hostedDeliveryTimer = setTimeout(send, 300);
+    };
+    send();
+  }
 
   async function handleClick() {
     if (_sending) return;
@@ -297,6 +317,13 @@
       if (dx) context.diagnosis = dx;
     } catch (_) { /* non-fatal */ }
 
+    if (_msgType === MSG.LOAD_MED_TABLE) {
+      _hostedContext = context;
+      sendHostedContext();
+      _sending = false;
+      return;
+    }
+
     // Mirror to the shared cross-feature / cross-workstation context bus.
     try {
       if (window.BKNData && typeof window.BKNData.setPatientContext === "function") {
@@ -331,7 +358,46 @@
 
   // The button click sets which page to open; both share the same extraction.
   let _msgType = MSG.LOAD_MED_TABLE;
-  function handleSheetClick()   { _msgType = MSG.LOAD_MED_TABLE;   handleClick(); }
+  async function openHostedSheet(mode, child) {
+    if (!child) {
+      alert("กรุณาอนุญาตป๊อปอัปสำหรับเปิด Home Medication Sheet");
+      return;
+    }
+    try {
+      const base = await window.BKNData.getServerUrl();
+      const page = mode === "opd" ? "OPD-Sheet.html" : "page-home-med.html";
+      const url = new URL(`/hm-pilot/src/features/home-med/${page}`, base);
+      _hostedOrigin = url.origin;
+      _hostedReady = false;
+      _hostedListener = (event) => {
+        if (event.source !== child || event.origin !== url.origin || event.data?.type !== "HM_PILOT_READY") return;
+        _hostedReady = true;
+        sendHostedContext();
+      };
+      window.addEventListener("message", _hostedListener);
+      child.location.href = url.href;
+      setTimeout(() => {
+        if (_hostedListener) window.removeEventListener("message", _hostedListener);
+        _hostedListener = null;
+      }, 120000);
+    } catch (error) {
+      child.close();
+      console.error("[home-med] hosted pilot launch failed:", error);
+      alert("ไม่สามารถเปิด Home Medication Sheet จาก server ได้");
+    }
+  }
+
+  async function handleSheetClick() {
+    _msgType = MSG.LOAD_MED_TABLE;
+    _hostedWindow = window.open("about:blank", "_blank");
+    if (!_hostedWindow) {
+      alert("กรุณาอนุญาตป๊อปอัปสำหรับเปิด Home Medication Sheet");
+      return;
+    }
+    const mode = sheetMode() || "ipd";
+    void openHostedSheet(mode, _hostedWindow);
+    await handleClick();
+  }
   function handleJourneyClick() { _msgType = MSG.OPEN_MED_JOURNEY; handleClick(); }
 
   /* ─────────────────────────────────────────────
@@ -349,7 +415,7 @@
     if (!flyout) return;
 
     const sheetBtn = ensureFlyoutButton(flyout, ".hm-sheet-btn", {
-      icon: "🏠💊", title: "Open Home Medication Sheet (Discharge)",
+      icon: "🏠💊", title: "Open Home Medication Sheet (Server)",
       className: "hm-sheet-btn", onClick: handleSheetClick,
     });
     const journeyBtn = ensureFlyoutButton(flyout, ".hm-journey-btn", {

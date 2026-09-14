@@ -103,6 +103,7 @@ Data layout:
 
 import hm_report_cache
 import report_sessions
+import hm_meal_slots
 import base64
 import copy
 import hashlib
@@ -4097,9 +4098,10 @@ class Handler(BaseHTTPRequestHandler):
         path = urllib.parse.urlsplit(self.path).path
         if path != '/api/report-sessions' and not path.startswith('/api/report-sessions/'):
             return False
-        if not self._require('super_admin', 'admin', 'editor'):
-            return True
-        owner = self._session()['username']
+        # HM pilot sessions are capability URLs: the random 128-bit report ID
+        # is the access credential. Keep the admin API protected, but allow the
+        # hosted report to work for staff without a second server login.
+        owner = 'public'
         parts = path.strip('/').split('/')
         try:
             store = _report_sessions()
@@ -5493,6 +5495,7 @@ def _build_session_report(request, context):
         result['allergies']       = _sub['allergies']
         result['appointmentText'] = _sub['appointmentText']
         result['reconcileMeds']   = _sub['reconcileMeds']
+        hm_meal_slots.annotate(result.get('meds'))
         result['hasReconcile'] = bool(result['reconcileMeds'])
         result['ok'] = True
         result['source'] = 'arcus-api'
@@ -5566,6 +5569,7 @@ def _build_session_report(request, context):
         # doctor notes) — both fetched in the _gather() above.
         result['appointmentText'] = _sub['appointmentText']
         result['visitSummary']    = _sub['visitSummary']
+        hm_meal_slots.annotate(result.get('meds'))
         # OPD sheets carry no discharge reconciliation.
         result['reconcileMeds'] = []
         result['hasReconcile'] = False

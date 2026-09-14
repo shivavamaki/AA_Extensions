@@ -1,14 +1,15 @@
 "use strict";
 (() => {
-  let context, token, session, receive, messageType;
+  let context, session, receive, messageType;
   const resumeId = new URLSearchParams(location.search).get('report');
   let saves = Promise.resolve();
   let failedSave = false;
+  let beginReport = null;
   const status = document.createElement('div');
   status.setAttribute('role','status');
   function say(text) { status.textContent = text; }
   async function api(path, opts={}) {
-    const r=await fetch(path,{...opts,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{}),...opts.headers},cache:'no-store'});
+    const r=await fetch(path,{...opts,headers:{'Content-Type':'application/json',...opts.headers},cache:'no-store'});
     const data=await r.json();
     if(!r.ok) throw new Error(data.error || 'Request failed');
     return data;
@@ -24,26 +25,30 @@
     return session.source;
   }
   window.addEventListener('message', event => {
-    if(event.source!==window.opener || !event.origin.startsWith('chrome-extension://') || event.data?.type!=='HM_PILOT_CONTEXT' || context) return;
+    const trustedOrigin = event.origin.startsWith('chrome-extension://') || event.origin === 'https://arcusair.bdms.co.th' || event.origin === 'http://arcusair.bdms.co.th';
+    const sourceOk = !window.opener || event.source === window.opener;
+    if(!sourceOk || !trustedOrigin || event.data?.type!=='HM_PILOT_CONTEXT' || context) return;
     context=event.data.context;
-    say('Patient context received. Sign in to build the report.');
+    say('Patient context received. Building report…');
+    if (beginReport && !resumeId) void beginReport();
   });
   window.HMHosted={
     subscribe(type,key,callback) {
       receive=callback; messageType=type;
-      const box=document.createElement('form');
-      box.className='no-print';
-      box.innerHTML='<strong>Server HM pilot</strong><input name="username" placeholder="Username" autocomplete="username" required><input name="password" type="password" placeholder="Password" autocomplete="current-password" required><button type="submit">Sign in and open report</button>';
-      box.append(status);document.querySelector('.toolbar').prepend(box);
-      say(resumeId ? 'Sign in to reopen your saved report.' : 'Open this pilot from the extension Home Medication Sheet.');
-      box.addEventListener('submit', async event => {
-        event.preventDefault();
-        const button=box.querySelector('button');button.disabled=true;
+      const button=document.createElement('button');
+      button.type='button';
+      button.className='no-print';
+      button.textContent=resumeId ? 'Open saved report' : 'Open server report';
+      if (resumeId) button.hidden=true;
+      document.querySelector('.toolbar').prepend(button);
+      say(resumeId ? 'Opening saved report…' : 'Waiting for patient data from ArcusAir…');
+      let started=false;
+      beginReport = async () => {
+        if (started) return;
+        started=true;
+        button.disabled=true;
         try {
           if(!resumeId && !context?.patientvisituid) throw new Error('Open this pilot from the extension Home Medication Sheet first.');
-          say('Signing in…');
-          const auth=await api('/api/auth/login',{method:'POST',body:JSON.stringify({username:box.elements.username.value,password:box.elements.password.value})});
-          token=auth.token;box.elements.password.value='';
           if(resumeId) {
             if(!/^[a-f0-9]{32}$/.test(resumeId)) throw new Error('Invalid report link');
             say('Opening saved report…');
@@ -65,10 +70,13 @@
           }
           receive({type:messageType,context});
           say('Report ready. Edits save to this server session.');
-          button.hidden=true;box.elements.username.hidden=true;box.elements.password.hidden=true;
-        } catch(e) { say(e.message); } finally {button.disabled=false;}
-      });
+          button.hidden=true;
+        } catch(e) { started=false; say(e.message); } finally {button.disabled=false;}
+      };
+      button.addEventListener('click', () => void beginReport());
       window.opener?.postMessage({type:'HM_PILOT_READY'},'*'); // readiness only; no patient data
+      if (resumeId) setTimeout(() => void beginReport(), 0);
+      else if (context) setTimeout(() => void beginReport(), 0);
     },
   };
   window.BKNData={

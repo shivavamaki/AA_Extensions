@@ -1,4 +1,4 @@
-"""Authenticated, owner-scoped HM jobs. Arcus credentials exist only in worker memory."""
+"""Opaque-ID scoped HM jobs. Arcus credentials exist only in worker memory."""
 import copy
 import json
 import re

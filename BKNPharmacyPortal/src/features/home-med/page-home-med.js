@@ -529,7 +529,10 @@ function _mealCardInfoDefault() {
 
 /** The meal-slot objects (key/icon/label) a med's instruction matches — drives
  * the per-meal checkboxes in the continued block. */
-function _mealSlots(text) {
+function _mealSlots(text, med) {
+  if (med && Array.isArray(med.mealSlots) && !med.instructionEdited) {
+    return window.BKNMealSlots.MEAL_SLOTS.filter((slot) => med.mealSlots.includes(slot.key));
+  }
   const MS = window.BKNMealSlots;
   if (!MS || !text) return [];
   const bucketed = MS.bucket([{ drug: "", text }]);
@@ -593,6 +596,7 @@ function _medFromReport(m) {
     quantity:    _cleanValue(m.quantity || ""),
     code:        norm(m.code || ""),
     provider:    norm(m.provider || ""),
+    mealSlots:   Array.isArray(m.mealSlots) ? m.mealSlots.filter((key) => typeof key === "string") : [],
     // Authoritative Thai frequency phrase (BKN frequency master); when present
     // it overrides the engine's frequency translation on the instruction line.
     frequencyTh: norm(m.frequencyTh || ""),
@@ -951,7 +955,7 @@ function renderMealCard() {
       drug: drugName,
       text,
       dose,
-      slots: _mealSlots(instrTh),   // matched meal-slot objects for checkboxes
+      slots: _mealSlots(instrTh, m),   // server metadata; recompute after edits
     };
     if (m.takeUntilFinished) continuedItems.push(item);
     else otherItems.push(item);
@@ -1617,6 +1621,7 @@ async function fetchAndRender() {
       quantity: norm(m.quantity || ""),
       code, provider: norm(m.provider || ""),
       frequencyTh: norm(m.frequencyTh || ""),
+      mealSlots: Array.isArray(m.mealSlots) ? m.mealSlots.filter((key) => typeof key === "string") : [],
       source: norm(m.source || ""),
       continuity,
       store: norm(m.store || ""),
