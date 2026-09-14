@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BKN Pharmacy Portal",
-  "version": "3.59.6",
-  "version_name": "3.59.6 — sticker prints the Prep./Check names shown in the drawer",
+  "version": "3.59.7",
+  "version_name": "3.59.7 — pharmacy server primary/backup failover",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzP9KPTBvryIH7rdPZ9RDvBKHZI1DzJHiOCfKJUWlupAlSZ1UiIZKIHWLww6kEXdACU1phvahaG6+2aLgzCToNv5YuKmBAoNlDu4Lm7xYUm62gEok3Y21jbZ/NUZJUh1Clz9ruMtQo95QNHoFx4aOHuLdMPJ9HXHlOA7DGVkaxtNbCeaOxkntUvJMtOk3771RD2Dxfl9Ad8kgOOa+cjYrZwDYJ187LZyk3CU/57xqtACPVCaYfj/xVcWOZwdulCd0IUXqLuhKDnp1Y/DNL40o9O5hEvOBJbOZmCqFPvlulpffjybE1xO/hkxPc+/yZRQ3r2Y4Iopjm1eYM9idygLHdwIDAQAB",
   "description": "BKN Hospital Pharmacy Portal — popup workspace, IV/aux labels, IPD queue, reports, KPI, knowledge hub, discharge process tools, medication stickers, allergy cards, ADR Drug Timeline. All persistent data flows through the pharmacy server.",
   "permissions": [
@@ -22,6 +22,7 @@
     "http://10.134.10.70/*",
     "http://10.134.10.91/*",
     "http://10.134.110.81/*",
+    "http://10.134.110.182/*",
     "http://localhost/*"
   ],
   "background": {

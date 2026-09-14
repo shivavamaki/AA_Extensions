@@ -1,16 +1,16 @@
 "use strict";
 
 // The CDP bridge registers its own onMessage listener for cdp* message types.
-importScripts("cdp-bridge.js");
-
-// Stores the desired filename for the next download triggered by the content script.
-let nextDownloadName = null;
+importScripts("cdp-bridge.js", "tab-settings.js");
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === "setNextDownloadName") {
-    nextDownloadName = message.filename || null;
-    sendResponse({ ok: true });
-    return false;
+  // Each download carries its own filename; no global next-download slot.
+  if (message.type === "downloadMedImage") {
+    chrome.downloads.download({ url: message.imageUrl, filename: message.filename, saveAs: false }, (downloadId) => {
+      const error = chrome.runtime.lastError;
+      sendResponse(error ? { ok: false, error: error.message } : { ok: true, downloadId });
+    });
+    return true;
   }
 
   // PUT requests must originate from the extension context (background) so that
@@ -71,17 +71,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   return false;
-});
-
-// Rename the file when Chrome is deciding the save path.
-chrome.downloads.onDeterminingFilename.addListener((downloadItem, suggest) => {
-  if (nextDownloadName) {
-    const name = nextDownloadName;
-    nextDownloadName = null;
-    const origExt = (downloadItem.filename.match(/\.[^./\\]+$/) || [""])[0];
-    const hasExt = /\.[^./\\]+$/.test(name);
-    suggest({ filename: hasExt ? name : name + (origExt || ".jpg") });
-  } else {
-    suggest();
-  }
 });

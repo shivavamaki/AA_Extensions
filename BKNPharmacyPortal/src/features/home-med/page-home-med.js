@@ -688,7 +688,7 @@ ${photo}
     <td class="col-how">
       <div class="instruction-card">
         <span class="instruction-icon">${_medicineIcon(med)}</span>
-        <span class="instruction-text" contenteditable="true" data-field="instruction" data-ph="วิธีใช้ยา"${med.frequencyTh ? ` data-freq-th="${escapeHtml(med.frequencyTh)}"` : ""}>${escapeHtml(med.instruction || "")}</span>
+        <span class="instruction-text" contenteditable="true" data-field="instruction" data-ph="วิธีใช้ยา"${med.instructionEdited ? ' data-no-translate translate="no"' : ""}${med.frequencyTh ? ` data-freq-th="${escapeHtml(med.frequencyTh)}"` : ""}>${escapeHtml(med.instruction || "")}</span>
       </div>
       <div class="comment note-line" contenteditable="true" data-field="note" data-ph="หมายเหตุ (ถ้ามี)" data-no-translate translate="no" data-note-th="${escapeHtml(med.note || "")}" data-note-en="${escapeHtml(med.noteEn || "")}">${escapeHtml(_noteForLang(med))}</div>
     </td>
@@ -1140,6 +1140,10 @@ function _commitField(index, field, value) {
   // newlines. Other fields stay single-line.
   const clean = field === "note" ? normMultiline(value) : norm(value);
   _meds[index][field] = clean;
+  if (field === "instruction") {
+    _meds[index].instructionEdited = true;
+    _meds[index].frequencyTh = "";
+  }
   // A manual note edit overrides both languages so switching lang keeps it.
   if (field === "note") _meds[index].noteEn = clean;
   _persist();
@@ -1546,7 +1550,7 @@ async function fetchAndRender() {
     if (tbody) { tbody.innerHTML = ""; _appendNoData(tbody, "BKNData unavailable (shared-data-client.js not loaded)."); }
     return;
   }
-  if (!_context.incusToken) {
+  if (!_context.incusToken && !window.HMHosted) {
     _setStatus("❌ ไม่พบ session (incus-token) — เปิดผู้ป่วยบน ArcusAir แล้วลองใหม่");
     if (tbody) { tbody.innerHTML = ""; _appendNoData(tbody, "ไม่พบ ArcusAir session — เปิดหน้าผู้ป่วยบน ArcusAir ก่อน แล้วกดปุ่มซ้ำ"); }
     return;
@@ -1595,7 +1599,7 @@ async function fetchAndRender() {
   // If the Revert button was clicked, clear the flag and skip the cache so the
   // fresh ArcusAir data is used unconditionally.
   const [saved] = await Promise.all([savedPromise, dependencies]);
-  if (saved && saved.length) {
+  if (saved && (saved.length || window.HMHosted)) {
     // Fresh server continuity signal, by code — seeds cached meds saved before this
     // field existed. A cache that DOES carry `continuity` is a pharmacist pick and
     // wins (even when blank); only when the key is absent do we take the fresh value.
@@ -1608,6 +1612,7 @@ async function fetchAndRender() {
         : (_freshCont[code] || "");
       return {
       drug: norm(m.drug || ""), instruction: norm(m.instruction || ""),
+      instructionEdited: !!m.instructionEdited,
       note: normMultiline(m.note || ""), noteEn: normMultiline(m.noteEn || ""),
       quantity: norm(m.quantity || ""),
       code, provider: norm(m.provider || ""),
@@ -1626,7 +1631,8 @@ async function fetchAndRender() {
     });
     // Detect new discharge meds added after the cache was saved and inject them.
     const savedCodes = new Set(_meds.map((m) => m.code).filter(Boolean));
-    const newItems = reportMeds.filter((m) => m.code && !savedCodes.has(norm(m.code)));
+    // Hosted edits belong to this exact source snapshot; removed rows must stay removed.
+    const newItems = window.HMHosted ? [] : reportMeds.filter((m) => m.code && !savedCodes.has(norm(m.code)));
     if (newItems.length) {
       _meds = _meds.concat(newItems.map(_medFromReport));
       _setStatus(`✅ ${_meds.length} รายการ (แก้ไขไว้ + ${newItems.length} รายการใหม่จาก ArcusAir)`);
@@ -2621,7 +2627,11 @@ function _applyContextAndRender(msg) {
   const key = _payloadKeyOf(msg);
   if (key && key === _lastRenderKey) return;   // same sheet already building/built
   _lastRenderKey = key;
-  _context = msg.context || null;
+  const boundary = HMReportBoundary.fromLegacy(msg);
+  window.__HM_REPORT_DEBUG__ = HMReportBoundary.diagnose(boundary.request);
+  // Compatibility stage: report validation is diagnostic; the original getter
+  // retains responsibility for missing context and authentication errors.
+  _context = boundary.context;
   populateHeader(null, _context);
   fetchAndRender();
 }
@@ -2637,18 +2647,12 @@ document.addEventListener("DOMContentLoaded", () => {
   bindLangControl();
   _bindReconPanel();
 
-  chrome.runtime.onMessage.addListener((msg) => {
-    if (msg.type === _MSG_TYPE) _applyContextAndRender(msg);
-  });
-
-  chrome.storage.session.get(_PAYLOAD_KEY, (res) => {
-    const stored = res && res[_PAYLOAD_KEY];
-    if (stored && stored.type === _MSG_TYPE) _applyContextAndRender(stored);
-    else {
+  (window.HMHosted || HMReportBoundary.extensionTransport(chrome)).subscribe(
+    _MSG_TYPE, _PAYLOAD_KEY, _applyContextAndRender, () => {
       const tbody = document.querySelector("#medTable tbody");
       if (tbody) _appendNoData(tbody, _IS_OPD_SHEET
         ? "No medication data loaded. Open from the OPD dispense view."
         : "No medication data loaded. Open from the Discharge Medication dispense view.");
     }
-  });
+  );
 });

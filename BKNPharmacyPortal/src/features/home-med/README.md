@@ -373,7 +373,7 @@ The editing UI lives in `src/features/pattern-editor/` (`page-pattern-editor.htm
 ## Server prebuild workflow (2026-09-13)
 
 1. On the dispense workbench, clicking `#allocatedispense` while the order table contains `DISCHARGE MEDICATION` captures the existing patient context before navigation. A background POST to `/api/report/home-med-api` with `prebuild: true` builds report data without opening a sheet or changing the allocation action. Duplicate in-flight requests from this page are suppressed per patient/visit.
-2. The server uses the existing ArcusAir getter and report builder. It atomically saves the result under `pharmacy_server/data/home-med-prebuilt/`, keyed by hashed patient UID + visit UID, with a 15-minute reuse window. Session credentials are not saved in this cache. Files contain patient report data; expiry prevents reuse, but does not delete old files.
+2. The server uses the existing ArcusAir getter and report builder. It atomically saves the result under `pharmacy_server/data/home-med-prebuilt/`, keyed by hashed patient UID + visit UID, with a four-calendar-day reuse window in Thailand (UTC+7), counting the save date as day one. Session credentials are not saved in this cache. Files contain patient report data; expired entries are deleted daily at 23:00 Thailand time and during server startup catch-up. The server must be running for scheduled cleanup.
 3. Opening Home Medication Sheet calls the same endpoint. The server first fetches live order data and compares its complete fingerprint with the cached source fingerprint. Equal item counts alone are insufficient: changed doses, quantities, instructions, statuses, or orders invalidate reuse. A valid hit returns the prebuilt report with freshly fetched allergies. The sheet continues its separate reconciliation/checklist refresh and saved-edit handling.
 4. Missing, expired, corrupt, or changed cache entries cause a normal live build. A cache-write failure does not prevent opening the sheet. Live fetch/authentication failures are reported rather than returning an unvalidated report.
 5. **Revert** bypasses saved edits and sends `forceLive: true`, forcing a fresh build and replacing the server cache.
@@ -383,3 +383,74 @@ Allocation click starts navigation, not confirmed allocation completion. Prebuil
 The response `cacheStatus` is `prebuilt`, `validated-hit`, or `live`. Deploy `hm_report_cache.py` alongside `bkn_ks_server.py`, restart the pharmacy server, reload the extension, and refresh ArcusAir. Verify an allocation click produces a prebuild request, unchanged orders produce a hit, a same-count dose edit produces a live build, and Revert always produces a live build.
 
 The prebuilt cache directory is created by _init_data_dirs() at server startup (CLI and GUI), even before the first report is built. JSON files appear only after a successful report build.
+
+Example: saved September 13, reusable through September 16; expired September 17 at midnight and deleted in the 23:00 cleanup. A fresh live build restarts retention from its save date. Live order fingerprint validation still applies.
+
+## Migration step 1: report boundary
+
+`src/shared/hm-report-boundary.js` separates the legacy Chrome startup transport from HM presentation. Both IPD and OPD load it before the page controller. Existing launchers still send their original messages; `fromLegacy` adapts those messages without changing patient context or the ArcusAir getter.
+
+The v1 request describes report type, patient/visit identity, source revision/fingerprint (currently null), and initial language/template version. Credentials remain in the existing context and are excluded from request metadata and diagnostics. This is an internal contract, not an authenticated server report-session API. Current language controls remain authoritative after startup.
+
+Chrome runtime and session-storage delivery now live in an adapter. A live message takes precedence over a late startup storage snapshot. Future HTTP delivery can replace this adapter. Other Chrome integrations remain for later migration stages; report hosting and server PDF building are not changed here.
+
+Debugger: open the HM sheet console and evaluate `window.__HM_REPORT_DEBUG__`. It contains validation errors, report type/version, initial language/template version and revision/fingerprint presence only, with no patient IDs or tokens. Validation is diagnostic in this compatibility phase; existing getter errors are preserved.
+
+Verification: `node BKNPharmacyPortal/test/test-hm-report-boundary.js`. Live acceptance: open IPD and OPD sheets, reopen with another patient, confirm correct patient/visit, edit quantity/instructions, and print. Automated tests do not substitute for that browser acceptance check.
+
+## Migration step 2: authenticated report sessions (API pilot)
+
+The existing extension workflow remains active. New endpoints use the pharmacy server's existing `Authorization: Bearer <login-token>` authentication; editor/admin/super_admin roles are permitted. A trusted extension Origin alone does not grant access. Each report belongs to its creating username; a different user receives 404 even when they know its ID. No patient or Arcus token belongs in the URL.
+
+| Method | Endpoint | Body / result |
+| --- | --- | --- |
+| POST | `/api/report-sessions` | `{request, context}`; 202 with opaque `id`, status and revision |
+| GET | `/api/report-sessions/{id}` | Poll status; ready response includes source report, edits and revision |
+| PUT | `/api/report-sessions/{id}/edits` | `{expectedRevision, edits:{medicines:[...]}}` |
+| POST | `/api/report-sessions/{id}/refresh` | `{expectedRevision, context}`; fresh live build, discards edits on success |
+
+`request` is the step-1 v1 contract. Supported report types are home-med-ipd and home-med-opd. Context patient/visit IDs must exactly match the contract. Current Arcus credentials are required for create/refresh and are held only in worker memory by this session layer. The API does not persist the caller context. Source report data contains patient information and is stored in `pharmacy_server/data/report-sessions/` under a random ID. Session responses use Cache-Control: no-store.
+
+Four background jobs may run simultaneously; excess requests receive 503. Refresh while a job is active or saving with an old revision returns 409. Startup recovery reports previously running jobs as interrupted, requiring fresh context to retry. Error messages omit upstream credentials. This pilot always builds from live source data; generalized deduplication/prebuild caching is a later stage.
+
+Edits currently support medicine string fields drug, code, instruction, quantity, note, noteEn and continuity. Source data remains separate from edits. Revision history records actions/timestamps, not historical document snapshots. The rendered field is reserved and remains null; no server HTML/PDF rendering yet. Session files currently have no automatic expiry; the separate four-day HM prebuilt-cache cleanup does not apply to these files. Before production UI cutover, expand editing coverage, define session retention and implement the authenticated launch handoff.
+
+Debug/check: GET the session and inspect status, revision and error; avoid copying the full patient report into logs. Run `python pharmacy_server/test_report_sessions.py` and `python pharmacy_server/test_hm_report_cache.py`. Tests use synthetic data and stub report builders. Real Arcus calls and hosted-browser acceptance remain to be verified after restarting the server with both report_sessions.py and hm_report_cache.py installed.
+
+## Migration step 3: server-hosted HM pilot
+
+The original extension sheets remain available. Both sheets now have **Open server pilot**. Keep the loaded extension sheet open, click the pilot button, then sign in with a pharmacy server editor/admin account. The pilot creates an owner-scoped session and builds live data. Its URL contains no patient information or tokens. Context is handed over in memory using window messaging checked against the opened window and server origin; the pilot accepts context only from its extension opener. Readiness messages carry no patient data. Arcus and login tokens are not written to browser storage by this adapter.
+
+Routes: `/hm-pilot/src/features/home-med/page-home-med.html` and `/hm-pilot/src/features/home-med/OPD-Sheet.html`. The server serves a strict allowlist of existing extension assets and substitutes `/static/hm-hosted.js` for the Chrome data client. Deploy the BKNPharmacyPortal directory alongside pharmacy_server; these assets are shared, not copied. This pilot requires that folder layout. It does not execute downloaded code inside the extension.
+
+The hosted IPD page reuses the existing A4 renderer and print workflow. OPD reuses its existing layout. Quantity/instruction/continuity/continuation edits and pharmacist notes save into report-session edits; successful saves show Saved. Failure/conflict is displayed and stops subsequent saves until reopened. Revert requests a live session refresh and discards saved edits on success. PDF still uses the browser print dialog. Reloading/reopening this pilot starts a new login/report session; persisted session retrieval exists at the API but UI session resume is not implemented yet. A refresh token may expire, in which case reopen from a current Arcus context.
+
+Debugger: `window.__HM_HOSTED_DEBUG__` exposes status, revision at build completion and report type without patient identifiers. The toolbar displays save status. Server session files remain governed by the step-2 pilot retention limitation; do not broadly enable before retention and workstation acceptance are completed.
+
+Checks performed: JS/Python syntax, report boundary tests, pagination tests, six server-session tests (including quantity/manual instruction/continuation tick roundtrip), and both pages' script/style/font/logo allowlist completeness. Actual browser login, handoff, print and real Arcus integration still require a live acceptance run after restart. No server restart or production cutover is performed by this change.
+
+## Hosted-session readiness update
+
+Saved report URLs now carry only the opaque report ID (`?report=...`). Reload/bookmark the URL and sign in as the creating user to reopen the stored source and edits. No Arcus or login tokens are saved to browser storage. A whitelisted display-context snapshot preserves the patient header and diagnosis. Resumed reports without current Arcus context allow editing/printing; Revert is disabled and requires opening a fresh pilot from the extension. Opening from the extension still creates a new live session, rather than resuming by patient identity automatically.
+
+This supersedes the step-2/3 retention and UI-resume limitations above: session files now expire after four Thailand calendar days from their last successful persistence (save/build), with the save date counted as day one. Reads do not extend expiry. Expired sessions return 410; cleanup runs at startup and daily at 23:00 Thailand time while the server is running. Active jobs are excluded from deletion. The prebuilt-cache and session directories have separate cleanup workers. Calendar-boundary, owner-scope, persisted reopening and credential-exclusion checks are included in `test_report_sessions.py` (8 tests).
+
+Live browser acceptance is still required before production cutover: create a pilot, edit/save, reload its URL, sign in, compare header and edits, print, then open a fresh extension pilot to verify live refresh. No automatic production cutover is included.
+
+## Hosted workflow verification
+
+`node BKNPharmacyPortal/test/test-hm-hosted.js` exercises the real hosted adapter with synthetic DOM/API fixtures: reject unrelated senders, login/build, save quantity and instructions, reopen from the opaque URL, retain an empty saved medicines list, disallow refresh without live context, and stop writes after conflicts. This is automated adapter integration coverage, not a real Chrome/Arcus acceptance test.
+
+Hosted saved edits now remain authoritative for their source snapshot: reopening does not merge removed medicines back from the original report, including when all rows were removed. The extension's live-data merge behavior is unchanged. `__HM_HOSTED_DEBUG__` now updates its revision after successful saves as well as builds.
+
+Next manual acceptance gate: restart the server, reload the extension, launch a pilot for a test case, save an instruction/quantity edit and remove a row, reload the report URL and sign in, verify those changes, then compare A4 print preview against the sheet. Real printing and authenticated Arcus access have not been exercised by the synthetic test harness. Production launch remains unchanged.
+
+## Real Chrome synthetic acceptance (2026-09-14)
+
+Ran the actual hosted IPD page in isolated headless Chrome against the real server handler with a loopback-only fixture, temporary report storage, synthetic authentication and 20 synthetic medicines. No live Arcus API or patient records were used.
+
+Verified: authenticated saved-session loading, 20 rendered medicine rows, quantity change persisted after a dispatched blur event, page reload/login restored `99 เม็ด`, zero JavaScript exceptions, three A4 preview pages and exactly three PDF pages. The first headless focus/blur attempt did not trigger a save; explicitly dispatching blur exercised the application commit handler. Physical keyboard/mouse acceptance remains to be confirmed on a workstation.
+
+Evidence: `reports/hm-hosted-synthetic-browser.png` and `reports/hm-hosted-synthetic-browser.pdf`. Fixture: `python pharmacy_server/test_hosted_browser_fixture.py` prints its loopback port/report ID. Launch an isolated Chrome with remote debugging port 9227, set HM_TEST_URL to the printed fixture URL plus the report ID, then run `node BKNPharmacyPortal/test/run-hosted-chrome-check.cjs` from the workspace root. These files contain synthetic data only.
+
+This does not verify production login, extension-to-server window handoff, actual Arcus calls, OPD browser layout or physical printers. Those remain the final workstation acceptance gates; no production cutover was performed.

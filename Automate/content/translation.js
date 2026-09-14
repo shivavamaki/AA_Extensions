@@ -1018,6 +1018,7 @@
   }
 
   async function runScraper() {
+    await window.ArcusTabSettings.flush();
     if (state.running) return;
     state.running = true;
     state.stopRequested = false;
@@ -1171,6 +1172,7 @@
   }
 
   function updateButtons() {
+    window.ArcusPanelHost.refresh();
     const run = document.querySelector("#arcus-tr-run");
     const stop = document.querySelector("#arcus-tr-stop");
     const mode = document.querySelector("#arcus-tr-mode");
@@ -1180,16 +1182,17 @@
   }
 
   function setPanelDismissed(value) {
+    if (value && state.running) return;
     state.dismissed = !!value;
     // Mark that the user (or the popup) has made an explicit choice, so the
     // asynchronous restore below cannot overwrite it with a stale stored value.
     state.dismissedExplicit = true;
-    try { chrome.storage?.local?.set({ [PANEL_DISMISSED_KEY]: !!value }); } catch (_) {}
+    try { window.ArcusTabSettings?.set({ [PANEL_DISMISSED_KEY]: !!value }); } catch (_) {}
   }
 
   function restorePanelDismissed(callback) {
     try {
-      chrome.storage?.local?.get([PANEL_DISMISSED_KEY, MODE_KEY], (data) => {
+      window.ArcusTabSettings?.get([PANEL_DISMISSED_KEY, MODE_KEY], (data) => {
         // If a show/hide request arrived while this read was in flight, that
         // choice wins — otherwise the panel would silently fail to appear.
         if (!state.dismissedExplicit) {
@@ -1205,7 +1208,7 @@
 
   function savePanelState(panel) {
     try {
-      chrome.storage?.local?.set({
+      window.ArcusTabSettings?.set({
         [PANEL_STATE_KEY]: {
           top: panel.style.top || "",
           left: panel.style.left || "",
@@ -1217,7 +1220,7 @@
 
   function restorePanelState(panel) {
     try {
-      chrome.storage?.local?.get(PANEL_STATE_KEY, (data) => {
+      window.ArcusTabSettings?.get(PANEL_STATE_KEY, (data) => {
         const saved = data?.[PANEL_STATE_KEY];
         if (!saved) return;
         if (saved.top) panel.style.top = saved.top;
@@ -1289,10 +1292,12 @@
   }
 
   function removePanel() {
+    if (state.running) { window.ArcusPanelHost.restore("arcus-tr-panel"); return; }
     document.querySelector("#arcus-tr-panel")?.remove();
   }
 
   function createPanel() {
+    if (window.ArcusPanelHost.restore("arcus-tr-panel")) return;
     if (!isTranslationPage() || state.dismissed || document.querySelector("#arcus-tr-panel")) return;
     injectStyles();
 
@@ -1329,6 +1334,7 @@
       </div>
     `;
     document.body.appendChild(panel);
+    window.ArcusPanelHost.register(panel, () => state.running);
     restorePanelState(panel);
 
     const header = panel.querySelector("#arcus-tr-header");
@@ -1365,7 +1371,7 @@
       modeSelect.value = state.mode;
       modeSelect.addEventListener("change", () => {
         state.mode = modeSelect.value === "dom" ? "dom" : "api";
-        try { chrome.storage?.local?.set({ [MODE_KEY]: state.mode }); } catch (_) {}
+        try { window.ArcusTabSettings?.set({ [MODE_KEY]: state.mode }); } catch (_) {}
         setStatus(state.mode === "api"
           ? "API mode: fetches every page directly. Much faster."
           : "DOM mode: opens each row in the UI. Slow, used as a fallback.");

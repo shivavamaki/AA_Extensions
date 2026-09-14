@@ -102,6 +102,7 @@ Data layout:
 """
 
 import hm_report_cache
+import report_sessions
 import base64
 import copy
 import hashlib
@@ -3825,6 +3826,8 @@ class Handler(BaseHTTPRequestHandler):
         body = json.dumps(obj, ensure_ascii=False).encode('utf-8')
         self.send_response(code)
         self.send_header('Content-Type',   'application/json; charset=utf-8')
+        if urllib.parse.urlsplit(self.path).path.startswith('/api/report-sessions'):
+            self.send_header('Cache-Control', 'no-store')
         self.send_header('Content-Length', str(len(body)))
         self._cors()
         self.end_headers()
@@ -4052,7 +4055,89 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     # GET
+    def _serve_hm_pilot(self):
+        path = urllib.parse.urlsplit(self.path).path
+        prefix = '/hm-pilot/'
+        if not path.startswith(prefix):
+            return False
+        relative = path[len(prefix):]
+        allowed = {
+            'src/features/home-med/page-home-med.html', 'src/features/home-med/OPD-Sheet.html',
+            'src/features/home-med/page-home-med.js', 'src/features/home-med/page-home-med-a4.js',
+            'src/features/home-med/page-home-med-a4.css',
+            'src/core/messages.js', 'src/core/utils.js', 'src/core/dom.js',
+            'src/shared/translate-core.js', 'src/shared/medical-glossary.js',
+            'src/shared/meal-slots.js', 'src/shared/hm-report-boundary.js',
+            'src/shared/hm-hosted-launcher.js',
+            'src/assets/fonts/Sarabun-Regular.ttf', 'src/features/patient-sticker/bkh-logo.png',
+        }
+        if relative not in allowed:
+            self.send_json(404, {'error': 'Pilot asset not found'})
+            return True
+        target = Path(__file__).parent.parent / 'BKNPharmacyPortal' / relative
+        if not target.is_file():
+            self.send_json(404, {'error': 'Pilot asset not installed'})
+            return True
+        if target.suffix != '.html':
+            self._serve_file(target, None)
+            return True
+        html = target.read_text(encoding='utf-8-sig').replace(
+            '../../shared/shared-data-client.js', '/static/hm-hosted.js')
+        data = html.encode('utf-8')
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Length', str(len(data)))
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Referrer-Policy', 'no-referrer')
+        self.end_headers()
+        self.wfile.write(data)
+        return True
+
+    def _handle_report_session(self):
+        path = urllib.parse.urlsplit(self.path).path
+        if path != '/api/report-sessions' and not path.startswith('/api/report-sessions/'):
+            return False
+        if not self._require('super_admin', 'admin', 'editor'):
+            return True
+        owner = self._session()['username']
+        parts = path.strip('/').split('/')
+        try:
+            store = _report_sessions()
+            if self.command == 'GET' and len(parts) == 3:
+                result = store.get(owner, parts[2])
+                status = 200
+            elif self.command in ('POST', 'PUT'):
+                length = int(self.headers.get('Content-Length', 0))
+                if not 0 < length <= 1024 * 1024:
+                    raise report_sessions.SessionError(413, 'Body must be between 1 byte and 1 MB')
+                body = self._read_json_body()
+                if not isinstance(body, dict):
+                    raise report_sessions.SessionError(400, 'JSON object required')
+                if self.command == 'POST' and len(parts) == 2:
+                    result = store.create(owner, body.get('request'), body.get('context'))
+                    status = 202
+                elif self.command == 'POST' and len(parts) == 4 and parts[3] == 'refresh':
+                    result = store.refresh(owner, parts[2], body.get('expectedRevision'), body.get('context'))
+                    status = 202
+                elif self.command == 'PUT' and len(parts) == 4 and parts[3] == 'edits':
+                    result = store.save(owner, parts[2], body.get('expectedRevision'), body.get('edits'))
+                    status = 200
+                else:
+                    raise report_sessions.SessionError(404, 'Unknown report-session route')
+            else:
+                raise report_sessions.SessionError(405, 'Method not supported')
+            self.send_json(status, result)
+        except report_sessions.SessionError as exc:
+            self.send_json(exc.status, {'error': exc.message})
+        except (ValueError, TypeError):
+            self.send_json(400, {'error': 'Invalid request body'})
+        except OSError:
+            self.send_json(503, {'error': 'Report storage unavailable'})
+        return True
+
     def do_GET(self):
+        if self._serve_hm_pilot(): return
+        if self._handle_report_session(): return
         # ── Static webapp files ────────────────────────────────
         clean = urllib.parse.urlsplit(self.path).path
         if clean in ('/dashboard', '/dashboard.html'):
@@ -4444,6 +4529,7 @@ class Handler(BaseHTTPRequestHandler):
 
     # PUT — full day doc OR single section OR rx collection OR user
     def do_PUT(self):
+        if self._handle_report_session(): return
         rtype, key, extra = self.parse_route()
         # An unparseable route yields rtype None, which would otherwise fall
         # through the trust gate below and surface as a misleading 401 ("not a
@@ -4821,6 +4907,7 @@ class Handler(BaseHTTPRequestHandler):
 
     # POST — login / logout / create user / append med error
     def do_POST(self):
+        if self._handle_report_session(): return
         rtype, key, _ = self.parse_route()
         try:
             body = self._read_json_body()
@@ -5215,6 +5302,7 @@ class Handler(BaseHTTPRequestHandler):
 
     # DELETE — remove a med error by savedAt, or delete a user
     def do_DELETE(self):
+        if self._handle_report_session(): return
         rtype, key, item_id = self.parse_route()
 
         if rtype == 'users':
@@ -5348,10 +5436,161 @@ def _install_close_guard():
 _CTRL_HANDLER_REF = None
 
 
+
+
+def _build_session_report(request, context):
+    # Reuse the established source/builder operations; always fetch live for sessions.
+    body = {'context': context, 'forceLive': True}
+    rtype = 'report-home-med-opd' if request['reportType'] == 'home-med-opd' else 'report-home-med-api'
+    if rtype == 'report-home-med-api':
+        ctx = body.get('context') or {}
+        if not ctx.get('patientuid') or not ctx.get('patientvisituid'):
+            raise RuntimeError("Report source unavailable")
+        if not ctx.get('incusToken'):
+            raise RuntimeError("Report source unavailable")
+        try:
+            data = fetch_arcus_discharge_meds(ctx)
+        except urllib.error.HTTPError as e:
+            raise RuntimeError("Report source unavailable")
+        except Exception as e:
+            raise RuntimeError("Report source unavailable")
+        if not body.get('forceLive') and not body.get('prebuild'):
+            cached = hm_report_cache.load(HM_PREBUILT_DIR, ctx, data)
+            if cached is not None:
+                try:
+                    cached['allergies'] = build_allergies_from_arcus(fetch_arcus_allergies(ctx))
+                except Exception:
+                    cached['allergies'] = {'nkda': False, 'items': [], 'hasRecord': False, 'error': 'fetch failed'}
+                cached['cacheStatus'] = 'validated-hit'
+                return cached
+                return
+        try:
+            result = build_home_med_from_arcus(data)
+        except Exception as e:
+            raise RuntimeError("Report source unavailable")
+        # Log exactly what the Home Medication Sheet received (API summary +
+        # built meds) to data/logs for inspection.
+        _log_home_med_fetch(ctx, data, result)
+        # Allergies, appointments and reconciliation are supplementary and
+        # mutually independent — each needs only ctx, never another's result.
+        # Run them concurrently so the sheet waits for the slowest rather than
+        # the sum; every one keeps its own best-effort fallback.
+        _sub = _gather({
+            'allergies': (
+                lambda: build_allergies_from_arcus(fetch_arcus_allergies(ctx)),
+                {'nkda': False, 'items': [], 'hasRecord': False,
+                 'error': 'fetch failed'},
+            ),
+            'appointmentText': (
+                lambda: format_appointments_th(fetch_arcus_future_appointments(ctx)),
+                'ไม่มีนัดติดตามอาการ '
+                'แต่ถ้าพบอาการผิดปรกติหรืออาการแย่ลง '
+                'แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม',
+            ),
+            # Prefers the client-captured snapshot, see _resolve_reconcile_meds().
+            'reconcileMeds': (lambda: _resolve_reconcile_meds(ctx), []),
+        })
+        result['allergies']       = _sub['allergies']
+        result['appointmentText'] = _sub['appointmentText']
+        result['reconcileMeds']   = _sub['reconcileMeds']
+        result['hasReconcile'] = bool(result['reconcileMeds'])
+        result['ok'] = True
+        result['source'] = 'arcus-api'
+        result['cacheStatus'] = 'prebuilt' if body.get('prebuild') else 'live'
+        try:
+            hm_report_cache.save(HM_PREBUILT_DIR, ctx, data, result)
+        except Exception as exc:
+            print('[home-med cache] save failed: ' + type(exc).__name__, file=sys.stderr)
+        return result
+        return
+
+    # ── OPD Home Medication Sheet: DAILY ORDER meds via getallorderitem ──
+    if rtype == 'report-home-med-opd':
+        ctx = body.get('context') or {}
+        if not ctx.get('patientuid') or not ctx.get('patientvisituid'):
+            raise RuntimeError("Report source unavailable")
+        if not ctx.get('incusToken'):
+            raise RuntimeError("Report source unavailable")
+        try:
+            data = fetch_arcus_opd_meds(ctx)
+        except urllib.error.HTTPError as e:
+            raise RuntimeError("Report source unavailable")
+        except Exception as e:
+            raise RuntimeError("Report source unavailable")
+        try:
+            result = build_home_med_from_opd(data)
+        except Exception as e:
+            raise RuntimeError("Report source unavailable")
+        _log_home_med_fetch(ctx, data, result)
+        # Allergies, visit history, appointments and the visit-summary panel
+        # are mutually independent (each derives only from ctx). Run them
+        # concurrently — serially this was the bulk of the OPD sheet's wait,
+        # since build_opd_visit_summary() is itself three upstream calls.
+        #   allergies    — best-effort (OPD has patientuid + patientvisituid)
+        #   visitHistory — recent visits' medical history (replaces
+        #                  reconciliation), from patientorder/search grouped by
+        #                  visit (this visit excluded). Up to OPD_HISTORY_MAX
+        #                  groups so the client's visit-count selector can slice
+        #                  locally without a re-fetch.
+        _sub = _gather({
+            'allergies': (
+                lambda: build_allergies_from_arcus(fetch_arcus_allergies(ctx)),
+                {'nkda': False, 'items': [], 'hasRecord': False,
+                 'error': 'fetch failed'},
+            ),
+            'visitHistory': (
+                lambda: build_opd_visit_history(
+                    ctx, ctx.get('patientvisituid', ''), OPD_HISTORY_MAX),
+                [],
+            ),
+            'appointmentText': (
+                lambda: format_appointments_th(fetch_arcus_future_appointments(ctx)),
+                '(ไม่สามารถโหลดนัดหมายได้)',
+            ),
+            'visitSummary': (
+                lambda: build_opd_visit_summary(ctx),
+                {'vitals': [], 'visits': [], 'doctorNotes': []},
+            ),
+        }, timeout=45)
+        result['allergies']    = _sub['allergies']
+        result['visitHistory'] = _sub['visitHistory']
+        # Tag each current med by continuity vs. the history (รับยาต่อเนื่อง /
+        # ปรับขนาดยา) — a default the pharmacist can override. Compare against
+        # the DEFAULT window so the tag doesn't shift when the user changes N.
+        try:
+            tag_meds_continuity(result.get('meds'),
+                                (result.get('visitHistory') or [])[:OPD_HISTORY_DEFAULT])
+        except Exception:
+            pass
+        # Appointments + current-visit summary panel (vitals, visit summary,
+        # doctor notes) — both fetched in the _gather() above.
+        result['appointmentText'] = _sub['appointmentText']
+        result['visitSummary']    = _sub['visitSummary']
+        # OPD sheets carry no discharge reconciliation.
+        result['reconcileMeds'] = []
+        result['hasReconcile'] = False
+        result['ok'] = True
+        result['source'] = 'arcus-opd'
+        return result
+        return
+
+
+_REPORT_SESSIONS = None
+_REPORT_SESSIONS_LOCK = threading.Lock()
+def _report_sessions():
+    global _REPORT_SESSIONS
+    with _REPORT_SESSIONS_LOCK:
+        if _REPORT_SESSIONS is None:
+            _REPORT_SESSIONS = report_sessions.ReportSessions(
+                DATA_DIR / 'report-sessions', _build_session_report, _atomic_write_json)
+        return _REPORT_SESSIONS
+
 # ── Server bootstrap (shared by CLI main + GUI app) ─────────────
 def _init_data_dirs():
     """Create data folders + seed empty collections. Idempotent."""
     HM_PREBUILT_DIR.mkdir(parents=True, exist_ok=True)
+    hm_report_cache.start_cleanup(HM_PREBUILT_DIR)
+    _report_sessions().start_cleanup()
     KPI_DIR.mkdir(parents=True, exist_ok=True)
     KS_DIR.mkdir(parents=True, exist_ok=True)
     RX_DIR.mkdir(parents=True, exist_ok=True)

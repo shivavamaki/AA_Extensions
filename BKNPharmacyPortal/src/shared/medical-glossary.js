@@ -594,6 +594,9 @@ function _applyVerb(t, lang) {
   const curated = _matchApplyVerbOverride(t, lang);
   if (curated) return curated;
 
+  if (/^apply\s+and\s+gently\s+massage\s+on\s+painful\s+area\b/i.test(t)) {
+    return lang === "th" ? "ทานวดเบาๆ" : "Apply and gently massage on painful area";
+  }
   if (/^apply\s+on\s+dry\s+skin/i.test(t)) {
     const M = { th:"ทาบริเวณผิวที่แห้ง", lo:"ທາບໍລິເວນຜິວທີ່ແຫ້ງ", en:"Apply on dry skin",
                 "zh-CN":"涂抹于干燥皮肤", my:"ခြောက်သွေ့သောအသားအရေတွင် လိမ်းပါ", km:"លាបលើស្បែកស្ងួត" };

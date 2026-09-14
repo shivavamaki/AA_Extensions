@@ -3,11 +3,28 @@
 > Chrome Extension (Manifest V3) for **BKN Hospital Pharmacy Department**  
 > Automates repetitive dispensing workflows on the Arcusair Pharmacy Management System.
 
-![Version](https://img.shields.io/badge/version-4.3.0-blue)
+![Version](https://img.shields.io/badge/version-4.7.0-blue)
 ![Manifest](https://img.shields.io/badge/manifest-v3-green)
 ![License](https://img.shields.io/badge/license-Internal-grey)
 
 ---
+
+
+## Tab and PC behavior (4.7.0)
+
+- Every Chrome tab has independent settings, panel visibility, ward selection, mode and running state. Changing or stopping one tab does not change another tab.
+- Settings are saved in this PC's Chrome profile using local extension storage. They are not stored in the shared Automate folder, sent to the pharmacy server, or synchronized through Chrome Sync.
+- Reloading the same tab preserves its settings. New and duplicated tabs start with independent defaults. A Chrome-restored tab recovers its settings when Chrome restores its session token. A completely new tab is a new workspace.
+- Existing shared settings from older releases are not imported into new tab profiles. Configure each tab once after upgrading.
+- Running panels stay expanded across Arcus route changes and DOM replacement, preserving controls, progress and Stop. Close and Minimize become available after the run stops.
+- A full page reload or browser shutdown ends in-memory automation; it does not resume dispensing automatically. Settings persistence is separate from run persistence.
+- Turbo remains an explicit per-page-session choice. Automatic override preferences belong only to their own tab.
+- Image download requests carry their own filenames; simultaneous tabs cannot consume another tab's pending filename. If an image has no usable download URL, the item reports failure instead of assigning a name to an unrelated download.
+
+After updating: reload Arcus Toolkit on chrome://extensions/, then reload each open Arcus tab. Each PC using the shared extension folder must reload its own extension.
+
+Regression tests: `node --test Automate/tests/tab-behavior.test.cjs`.
+Offline browser smoke test: `node Automate/tests/browser-panels.cjs` (optional Chrome executable path argument). The browser test uses a temporary profile and mocked services on localhost.
 
 ## Overview
 

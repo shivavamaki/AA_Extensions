@@ -541,7 +541,7 @@
     state.awaitingHuman = false;
 
     try {
-      chrome.storage?.local?.set({ [ENABLED_KEY]: state.enabled, [REASON_KEY]: state.reason });
+      window.ArcusTabSettings?.set({ [ENABLED_KEY]: state.enabled, [REASON_KEY]: state.reason });
     } catch (_) {}
 
     if (state.enabled) startWatching();
@@ -551,7 +551,7 @@
 
   function restore(callback) {
     try {
-      chrome.storage?.local?.get([ENABLED_KEY, REASON_KEY], (data) => {
+      window.ArcusTabSettings?.get([ENABLED_KEY, REASON_KEY], (data) => {
         state.reason = (data && data[REASON_KEY]) || DEFAULT_REASON;
         if (data && data[ENABLED_KEY]) {
           state.enabled = true;

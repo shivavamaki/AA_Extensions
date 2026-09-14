@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Arcus Toolkit",
-  "version": "4.6.1",
-  "version_name": "2026-09-02 - Re-confirm after override dialog; auto override; CDP turbo",
+  "version": "4.7.0",
+  "version_name": "2026-09-14 - Tab-local settings and persistent running panels",
   "description": "Auto Dispense and IP Fill automation for Arcus Pharmacy Management System.",
   "permissions": [
     "activeTab",
@@ -28,6 +28,8 @@
         "https://arcusair.bdms.co.th/*"
       ],
       "js": [
+        "content/tab-settings.js",
+        "content/panel-host.js",
         "content/api-client.js",
         "content/driver.js",
         "content/shared.js",

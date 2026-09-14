@@ -356,6 +356,7 @@
   }
 
   async function runScraper() {
+    await window.ArcusTabSettings.flush();
     if (state.running) return;
     state.running = true;
     state.stopRequested = false;
@@ -472,6 +473,7 @@
   }
 
   function updateButtons() {
+    window.ArcusPanelHost.refresh();
     const run = document.querySelector("#arcus-oi-run");
     const stop = document.querySelector("#arcus-oi-stop");
     if (run) run.disabled = state.running;
@@ -479,13 +481,14 @@
   }
 
   function setPanelDismissed(value) {
+    if (value && state.running) return;
     state.dismissed = !!value;
-    try { chrome.storage?.local?.set({ [PANEL_DISMISSED_KEY]: !!value }); } catch (_) {}
+    try { window.ArcusTabSettings?.set({ [PANEL_DISMISSED_KEY]: !!value }); } catch (_) {}
   }
 
   function restorePanelDismissed(callback) {
     try {
-      chrome.storage?.local?.get(PANEL_DISMISSED_KEY, (data) => {
+      window.ArcusTabSettings?.get(PANEL_DISMISSED_KEY, (data) => {
         state.dismissed = !!data?.[PANEL_DISMISSED_KEY];
         callback?.();
       });
@@ -496,7 +499,7 @@
 
   function savePanelState(panel) {
     try {
-      chrome.storage?.local?.set({
+      window.ArcusTabSettings?.set({
         [PANEL_STATE_KEY]: {
           top: panel.style.top || "",
           left: panel.style.left || "",
@@ -508,7 +511,7 @@
 
   function restorePanelState(panel) {
     try {
-      chrome.storage?.local?.get(PANEL_STATE_KEY, (data) => {
+      window.ArcusTabSettings?.get(PANEL_STATE_KEY, (data) => {
         const saved = data?.[PANEL_STATE_KEY];
         if (!saved) return;
         if (saved.top) panel.style.top = saved.top;
@@ -581,10 +584,12 @@
   }
 
   function removePanel() {
+    if (state.running) { window.ArcusPanelHost.restore("arcus-oi-panel"); return; }
     document.querySelector("#arcus-oi-panel")?.remove();
   }
 
   function createPanel() {
+    if (window.ArcusPanelHost.restore("arcus-oi-panel")) return;
     if (!isOrderItemPage() || state.dismissed || document.querySelector("#arcus-oi-panel")) return;
     injectStyles();
     const panel = document.createElement("div");
@@ -617,6 +622,7 @@
       </div>
     `;
     document.body.appendChild(panel);
+    window.ArcusPanelHost.register(panel, () => state.running);
     restorePanelState(panel);
 
     const header = panel.querySelector("#arcus-oi-header");

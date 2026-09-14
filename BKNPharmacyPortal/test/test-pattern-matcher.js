@@ -46,6 +46,13 @@ if (typeof matchMedicalPattern !== "function") {
  * Add new rows here as real ArcusAir instruction strings surface edge cases. */
 const CASES = [
   {
+    name: "Voltaren massage instruction preserves application verb",
+    input: "Apply and Gently Massage on Painful Area 2 times daily Morning Evening",
+    lang: "th",
+    opts: { freqOverride: "วันละ 2 ครั้ง เช้า เย็น" },
+    expect: "ทานวดเบาๆ วันละ 2 ครั้ง เช้า เย็น",
+  },
+  {
     name: "simple oral, once daily",
     input: "Take 1 Tablet Once Daily",
     lang: "th",

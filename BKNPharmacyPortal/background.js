@@ -24,6 +24,7 @@ const _PROXY_ALLOWED_HOSTS = new Set([
   '10.134.10.5',
   '10.134.10.91',
   '10.134.110.81',
+  '10.134.110.182',
 ]);
 function _isAllowedProxyUrl(url) {
   if (!url || typeof url !== 'string') return false;

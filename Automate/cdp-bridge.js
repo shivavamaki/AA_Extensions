@@ -394,9 +394,7 @@ function handleBridgeMessage(message, sender, sendResponse) {
   const handler = HANDLERS[message && message.type];
   if (!handler) return false;
 
-  const tabId = message.tabId == null
-    ? (sender.tab ? sender.tab.id : undefined)
-    : message.tabId;
+  const tabId = sender.tab ? sender.tab.id : message.tabId;
 
   if (typeof tabId !== "number") {
     sendResponse({ ok: false, error: "no tabId" });

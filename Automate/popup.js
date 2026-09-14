@@ -182,7 +182,7 @@ document.getElementById("openTranslation")?.addEventListener("click", async () =
         // Clear the dismissed flag in storage as well as in memory. The content
         // script restores it asynchronously at load, so a stale stored `true`
         // can clobber the in-memory false and silently suppress the panel.
-        try { chrome.storage?.local?.set({ arcusTranslationPanelDismissed: false }); } catch (_) {}
+        try { window.ArcusTabSettings?.set({ arcusTranslationPanelDismissed: false }); } catch (_) {}
 
         window.dispatchEvent(new CustomEvent("arcus-toolkit:show-translation-panel"));
 
@@ -208,6 +208,8 @@ document.getElementById("openTranslation")?.addEventListener("click", async () =
         await chrome.scripting.executeScript({
           target: { tabId },
           files: [
+            "content/tab-settings.js",
+            "content/panel-host.js",
             "content/api-client.js",
             "content/driver.js",
             "content/shared.js",

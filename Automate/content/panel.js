@@ -102,6 +102,7 @@
   }
 
   function updateButtonState() {
+    window.ArcusPanelHost.refresh();
     const running = state.isRunning;
 
     // Fade the panel only while idle. During a run it must stay fully legible,
@@ -139,7 +140,7 @@
     // context: chrome.storage still exists, but calling it throws. The optional
     // chaining above only guards absence, not a dead connection.
     try {
-      chrome.storage?.local?.set({
+      window.ArcusTabSettings?.set({
       [PANEL_STORAGE_KEY]: {
         top: panel.style.top || "",
         left: panel.style.left || "",
@@ -168,7 +169,7 @@
 
   function restorePanelState(panel) {
     try {
-      chrome.storage?.local?.get(PANEL_STORAGE_KEY, (data) => {
+      window.ArcusTabSettings?.get(PANEL_STORAGE_KEY, (data) => {
       const saved = data?.[PANEL_STORAGE_KEY];
       const waitOverrideEl = panel.querySelector("#arcus-manual-override");
       const modeSelectEl = panel.querySelector("#arcus-mode-select");
@@ -191,8 +192,7 @@
       if (saved.bottom) panel.style.bottom = saved.bottom;
       if (saved.width) panel.style.width = saved.width;
 
-      // v3.8.0: default must be checked even if an older saved state was unchecked.
-      state.settings.waitManualOverride = true;
+      state.settings.waitManualOverride = saved.waitManualOverride !== false;
       if (saved.automationMode) state.settings.automationMode = saved.automationMode;
       if (saved.pharmacyType) state.settings.pharmacyType = saved.pharmacyType;
       if (waitOverrideEl) waitOverrideEl.checked = state.settings.waitManualOverride;
@@ -214,6 +214,7 @@
   }
 
   function removePanel() {
+    if (state.isRunning) { window.ArcusPanelHost.restore("arcus-auto-panel"); return; }
     const panel = document.querySelector("#arcus-auto-panel");
     if (panel) panel.remove();
   }
@@ -519,6 +520,7 @@
   }
 
   function createPanel() {
+    if (window.ArcusPanelHost.restore("arcus-auto-panel")) return;
     if (document.querySelector("#arcus-auto-panel")) return;
 
     const panel = document.createElement("div");
@@ -612,6 +614,7 @@
     `;
 
     document.body.appendChild(panel);
+    window.ArcusPanelHost.register(panel, () => state.isRunning);
     attachPanelInteractions(panel);
     renderStats();
     updateButtonState();

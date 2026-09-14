@@ -29,6 +29,33 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     // Screen-only control delegates to the original row handler (including save/re-render).
     if (node.matches("tr.med-row")) {
+      // Reuse source-row persistence for both editable preview fields.
+      for (const [selector, label] of [
+        ['.instruction-text', 'Edit medication instructions / แก้ไขวิธีใช้ยา'],
+        ['.qty-main', 'Edit quantity / แก้ไขจำนวน'],
+      ]) {
+        const editable = clone.querySelector(selector);
+        const original = node.querySelector(selector);
+        if (!editable || !original) continue;
+        editable.contentEditable = 'plaintext-only';
+        editable.setAttribute('aria-label', label);
+        const initialText = editable.textContent;
+        editable.addEventListener('blur', () => {
+          if (!node.isConnected) return;
+          if (editable.textContent !== initialText) {
+            original.textContent = editable.textContent;
+            original.dispatchEvent(new Event('blur'));
+            renderMeds();
+          }
+          rebuild();
+        });
+        editable.addEventListener('keydown', event => {
+          if (event.key === 'Enter' && !event.isComposing) {
+            event.preventDefault();
+            editable.blur();
+          }
+        });
+      }
       const originalType = node.querySelector("select.continuity-select");
       const previewType = clone.querySelector("select.continuity-select");
       if (originalType && previewType) {
@@ -108,6 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
     preview.style.zoom = String(selected === "fit" ? ratio : Number(selected));
   }
   function rebuild() {
+    if (preview.contains(document.activeElement) && document.activeElement.isContentEditable) return;
     clearTimeout(timer);
     const rebuildStarted = performance.now();
     const original = document.getElementById("medTable");

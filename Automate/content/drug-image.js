@@ -141,6 +141,7 @@
   }
 
   function updateButtons() {
+    window.ArcusPanelHost.refresh();
     const run  = document.querySelector("#arcus-di-run");
     const stop = document.querySelector("#arcus-di-stop");
     const sync = document.querySelector("#arcus-di-sync");
@@ -151,7 +152,7 @@
 
   function savePanelState(panel) {
     try {
-      chrome.storage?.local?.set({
+      window.ArcusTabSettings?.set({
         [PANEL_STATE_KEY]: {
           top: panel.style.top || "",
           left: panel.style.left || "",
@@ -164,7 +165,7 @@
 
   function restorePanelState(panel) {
     try {
-      chrome.storage?.local?.get(PANEL_STATE_KEY, (data) => {
+      window.ArcusTabSettings?.get(PANEL_STATE_KEY, (data) => {
         const s = data?.[PANEL_STATE_KEY];
         if (!s) return;
         if (s.top)  panel.style.top  = s.top;
@@ -184,13 +185,14 @@
   }
 
   function setPanelDismissed(value) {
+    if (value && state.running) return;
     state.dismissed = !!value;
-    try { chrome.storage?.local?.set({ [PANEL_DISMISSED_KEY]: !!value }); } catch (_) {}
+    try { window.ArcusTabSettings?.set({ [PANEL_DISMISSED_KEY]: !!value }); } catch (_) {}
   }
 
   function restorePanelDismissed(cb) {
     try {
-      chrome.storage?.local?.get(PANEL_DISMISSED_KEY, (data) => {
+      window.ArcusTabSettings?.get(PANEL_DISMISSED_KEY, (data) => {
         state.dismissed = !!data?.[PANEL_DISMISSED_KEY];
         cb?.(state.dismissed);
       });
@@ -198,6 +200,7 @@
   }
 
   function removePanel() {
+    if (state.running) { window.ArcusPanelHost.restore("arcus-di-panel"); return; }
     document.querySelector("#arcus-di-panel")?.remove();
   }
 
@@ -260,6 +263,7 @@
   }
 
   function createPanel() {
+    if (window.ArcusPanelHost.restore("arcus-di-panel")) return;
     if (!isRelevantPage() || state.dismissed || document.querySelector("#arcus-di-panel")) return;
 
     injectStyles();
@@ -296,6 +300,7 @@
     `;
 
     document.body.appendChild(panel);
+    window.ArcusPanelHost.register(panel, () => state.running);
     restorePanelState(panel);
 
     const header      = panel.querySelector("#arcus-di-header");
@@ -561,16 +566,21 @@
       pushLog("info", `Server upload failed (${resp.error || resp.status}), falling back to download`);
     }
 
-    // Fallback: Chrome download with renamed file.
-    await new Promise((resolve) => {
-      try {
-        chrome.runtime.sendMessage({ type: "setNextDownloadName", filename }, () => resolve());
-      } catch (_) { resolve(); }
-    });
-    downloadBtn.click();
-    await sleep(400);
-    pushLog("success", `Downloaded: ${filename}`);
-    return { ok: true, code: drugCode };
+    // Bind the name to this exact URL/request so parallel tabs cannot swap names.
+    if (imageUrl && !imageUrl.startsWith("javascript") && imageUrl !== location.href) {
+      const response = await new Promise((resolve) => {
+        try {
+          chrome.runtime.sendMessage({ type: "downloadMedImage", imageUrl, filename },
+            (result) => resolve(result || { ok: false }));
+        } catch (_) { resolve({ ok: false }); }
+      });
+      if (response.ok) {
+        pushLog("success", "Download requested: " + filename);
+        return { ok: true, code: drugCode };
+      }
+    }
+    pushLog("fail", "Image download could not be started: " + drugCode);
+    return { ok: false, code: drugCode };
   }
 
   async function dismissSecurityDialog() {
@@ -667,6 +677,7 @@
   // ── Sync has_image from existing files ───────────────────────────────────
 
   async function syncHasImage() {
+    await window.ArcusTabSettings.flush();
     if (state.running) return;
     state.running = true;
     updateButtons();
@@ -735,6 +746,7 @@
   // ── Main run loop ─────────────────────────────────────────────────────────
 
   async function startRun() {
+    await window.ArcusTabSettings.flush();
     if (state.running) return;
     if (!isItemMasterPage()) {
       setStatus("Please navigate to the Item Master page first.");

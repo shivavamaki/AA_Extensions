@@ -26,6 +26,7 @@
      (popup.js REPORT_SERVER, kpi/knowledge/schedule apps). Used when the user
      has not explicitly configured bknks.serverUrl. */
   const SERVER_DEFAULT = "http://10.134.110.81:8765";
+  const SERVER_FAILOVER = "http://10.134.110.182:8765";
 
   let _serverUrlCache = null;
   let _patientCache   = null;
@@ -58,23 +59,29 @@
     opts = opts || {};
     const base = await getServerUrl();
     if (!base) return { ok: false, status: 0, error: "Server URL not configured" };
-    const url = base + (path.startsWith("/") ? path : "/" + path);
-    return new Promise(resolve => {
-      try {
-        chrome.runtime.sendMessage({
-          type: "BKN_SERVER_PROXY",
-          url, method: opts.method || "GET",
-          headers: opts.headers || {},
-          body: opts.body !== undefined ? opts.body : null,
-        }, resp => {
-          if (chrome.runtime.lastError || !resp) {
-            resolve({ ok: false, status: 0, error: chrome.runtime.lastError && chrome.runtime.lastError.message });
-          } else {
-            resolve(resp);
-          }
-        });
-      } catch (e) { resolve({ ok: false, status: 0, error: String(e) }); }
-    });
+    const candidates = [base];
+    if (base === SERVER_DEFAULT) candidates.push(SERVER_FAILOVER);
+    for (const candidate of candidates) {
+      const url = candidate + (path.startsWith("/") ? path : "/" + path);
+      const resp = await new Promise(resolve => {
+        try {
+          chrome.runtime.sendMessage({
+            type: "BKN_SERVER_PROXY",
+            url, method: opts.method || "GET",
+            headers: opts.headers || {},
+            body: opts.body !== undefined ? opts.body : null,
+          }, result => {
+            if (chrome.runtime.lastError || !result) {
+              resolve({ ok: false, status: 0, error: chrome.runtime.lastError && chrome.runtime.lastError.message });
+            } else {
+              resolve(result);
+            }
+          });
+        } catch (e) { resolve({ ok: false, status: 0, error: String(e) }); }
+      });
+      if (resp.ok || resp.status !== 0 || candidate === candidates[candidates.length - 1]) return resp;
+    }
+    return { ok: false, status: 0, error: "Pharmacy servers unavailable" };
   }
 
   /* ── patient context (session-scoped) ──────────────────────────────── */

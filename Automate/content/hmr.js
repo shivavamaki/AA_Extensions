@@ -14,7 +14,7 @@
     // Reloading the extension while this page stays open kills the connection:
     // chrome.storage still exists but calling it throws.
     try {
-      chrome.storage.local.get([STORAGE_KEY], r => {
+      window.ArcusTabSettings.get([STORAGE_KEY], r => {
       _allState = r[STORAGE_KEY] || {};
       _stateReady = true;
       if (cb) cb();
@@ -28,7 +28,7 @@
   function saveRoomData(key, data) {
     _allState[key] = data;
     try {
-      chrome.storage.local.set({ [STORAGE_KEY]: _allState });
+      window.ArcusTabSettings.set({ [STORAGE_KEY]: _allState });
     } catch (_) {}
   }
 

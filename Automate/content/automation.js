@@ -765,6 +765,7 @@
   }
 
   async function runAutomation({ functionName, mode }) {
+    await window.ArcusTabSettings.flush();
     if (!window.ArcusShared.isWorkbenchPage()) {
       alert("This function works only on Arcus dispense workbench pharmacy routes.");
       return;

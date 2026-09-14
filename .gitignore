@@ -70,3 +70,7 @@ pharmacy_server/www/static/0..png
 # pharmacists and worth keeping in history. Verified free of HN/name/patientuid.
 # NOTE: never un-ignore patients/, hmr/, hmq/, opd-queue/, temp-reports/, logs/
 # or auth/ — those carry identifiable patient data and credential hashes.
+
+# Local extension signing keys (outside the loaded extension directory)
+/.signing-keys/
+*.pem

@@ -114,10 +114,11 @@
   }
 
   function syncModeWithUrl() {
+    if (state.running) return;
     const modeFromUrl = detectModeFromUrl();
     if (modeFromUrl && modeFromUrl !== state.mode && isIpFillPage()) {
       state.mode = modeFromUrl;
-      try { chrome.storage?.local?.set({ [IPFILL_MODE_KEY]: state.mode }); } catch (_) {}
+      try { window.ArcusTabSettings?.set({ [IPFILL_MODE_KEY]: state.mode }); } catch (_) {}
     }
   }
 
@@ -213,13 +214,14 @@
   }
 
   function setPanelDismissed(value) {
+    if (value && state.running) return;
     state.dismissed = !!value;
-    try { chrome.storage?.local?.set({ [IPFILL_PANEL_DISMISSED_KEY]: !!value }); } catch (_) {}
+    try { window.ArcusTabSettings?.set({ [IPFILL_PANEL_DISMISSED_KEY]: !!value }); } catch (_) {}
   }
 
   function restorePanelDismissed(callback) {
     try {
-      chrome.storage?.local?.get(IPFILL_PANEL_DISMISSED_KEY, (data) => {
+      window.ArcusTabSettings?.get(IPFILL_PANEL_DISMISSED_KEY, (data) => {
         state.dismissed = !!data?.[IPFILL_PANEL_DISMISSED_KEY];
         callback?.(state.dismissed);
       });
@@ -277,6 +279,7 @@
   }
 
   function updateButtons() {
+    window.ArcusPanelHost.refresh();
     const runBtn = document.querySelector("#arcus-ipfill-run");
     const stopBtn = document.querySelector("#arcus-ipfill-stop");
     const diagBtn = document.querySelector("#arcus-ipfill-diagnose");
@@ -300,13 +303,13 @@
 
   function saveWardList() {
     const selected = getWardList();
-    try { chrome.storage?.local?.set({ [IPFILL_WARD_LIST_KEY]: selected }); } catch (_) {}
+    try { window.ArcusTabSettings?.set({ [IPFILL_WARD_LIST_KEY]: selected }); } catch (_) {}
     updateWardCount();
   }
 
   function restoreWardList() {
     try {
-      chrome.storage?.local?.get(IPFILL_WARD_LIST_KEY, (data) => {
+      window.ArcusTabSettings?.get(IPFILL_WARD_LIST_KEY, (data) => {
         const saved = data?.[IPFILL_WARD_LIST_KEY];
         const selected = Array.isArray(saved) ? saved : DEFAULT_WARD_OPTIONS.slice();
         getWardToggleInputs().forEach((input) => {
@@ -321,13 +324,13 @@
   }
 
   function saveMode() {
-    try { chrome.storage?.local?.set({ [IPFILL_MODE_KEY]: state.mode }); } catch (_) {}
+    try { window.ArcusTabSettings?.set({ [IPFILL_MODE_KEY]: state.mode }); } catch (_) {}
     updateModeTheme();
   }
 
   function restoreMode(callback) {
     try {
-      chrome.storage?.local?.get(IPFILL_MODE_KEY, (data) => {
+      window.ArcusTabSettings?.get(IPFILL_MODE_KEY, (data) => {
         const saved = data?.[IPFILL_MODE_KEY];
         if (saved && MODES[saved]) state.mode = saved;
         if (isIpFillPage()) state.mode = detectModeFromUrl();
@@ -377,13 +380,14 @@
   }
 
   function removePanel() {
+    if (state.running) { window.ArcusPanelHost.restore("arcus-ipfill-panel"); return; }
     document.querySelector("#arcus-ipfill-panel")?.remove();
   }
 
   function savePanelState(panel) {
     const minimized = panel.classList.contains("is-minimized");
     try {
-      chrome.storage?.local?.set({
+      window.ArcusTabSettings?.set({
         [IPFILL_PANEL_STORAGE_KEY]: {
           top: panel.style.top || "",
           left: panel.style.left || "",
@@ -398,7 +402,7 @@
 
   function restorePanelState(panel) {
     try {
-      chrome.storage?.local?.get(IPFILL_PANEL_STORAGE_KEY, (data) => {
+      window.ArcusTabSettings?.get(IPFILL_PANEL_STORAGE_KEY, (data) => {
         const saved = data?.[IPFILL_PANEL_STORAGE_KEY];
         if (!saved) return;
         if (saved.top) panel.style.top = saved.top;
@@ -495,6 +499,7 @@
   }
 
   function createPanel() {
+    if (window.ArcusPanelHost.restore("arcus-ipfill-panel")) return;
     if (!isIpFillPage() || state.dismissed || document.querySelector("#arcus-ipfill-panel")) return;
     const panel = document.createElement("div");
     panel.id = "arcus-ipfill-panel";
@@ -565,6 +570,7 @@
       </div>
     `;
     document.body.appendChild(panel);
+    window.ArcusPanelHost.register(panel, () => state.running);
     attachPanelInteractions(panel);
     renderLog();
     updateModeTheme();
@@ -786,6 +792,7 @@
   }
 
   async function startRun() {
+    await window.ArcusTabSettings.flush();
     if (state.running) return;
     const wards = getWardList();
     if (!wards.length) {

@@ -10,7 +10,11 @@
     setPanelDismissed,
   } = window.ArcusShared;
 
+  const wiredPanels = new WeakSet();
   function wirePanelButtons() {
+    const panel = document.querySelector("#arcus-auto-panel");
+    if (!panel || wiredPanels.has(panel)) return;
+    wiredPanels.add(panel);
     document.querySelector("#arcus-btn-allocate")?.addEventListener("click", () => {
       setPanelDismissed(false);
       window.ArcusAutomation?.runAutomation({

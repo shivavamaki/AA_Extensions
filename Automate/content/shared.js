@@ -168,9 +168,10 @@
   };
 
   function setPanelDismissed(value) {
+    if (value && state.isRunning) return;
     state.panel.dismissed = !!value;
     try {
-      chrome.storage?.local?.set({ [PANEL_DISMISSED_KEY]: !!value });
+      window.ArcusTabSettings?.set({ [PANEL_DISMISSED_KEY]: !!value });
     } catch (_) {}
   }
 
@@ -180,7 +181,7 @@
 
   function restorePanelDismissed(callback) {
     try {
-      chrome.storage?.local?.get(PANEL_DISMISSED_KEY, (data) => {
+      window.ArcusTabSettings?.get(PANEL_DISMISSED_KEY, (data) => {
         state.panel.dismissed = !!data?.[PANEL_DISMISSED_KEY];
         callback?.(state.panel.dismissed);
       });

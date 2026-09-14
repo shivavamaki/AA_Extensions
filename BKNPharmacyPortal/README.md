@@ -99,7 +99,7 @@ Content scripts (3 separate manifest.json entries — load order is load-bearing
 
 Key methods: `getServerUrl / setServerUrl / serverFetch / getPatientContext / setPatientContext / loadAdrTimeline / saveAdrTimeline / loadMedCache / saveMedCache / loadPatientProfile`
 
-- Server URL key: **`bknks.serverUrl`** in `chrome.storage.local` — falls back to `http://10.134.110.81:8765`
+- Server URL key: **`bknks.serverUrl`** in `chrome.storage.local` — defaults to `http://10.134.110.81:8765` and automatically fails over to `http://10.134.110.182:8765` when the primary is unreachable.
 - Patient context: `chrome.storage.session` + mirrors to `PUT /api/patients/{puid}/context`
 - **No localStorage** for cross-workstation data
 

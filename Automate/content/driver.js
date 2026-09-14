@@ -98,7 +98,7 @@
   async function syncTurboPreference() {
     return new Promise((resolve) => {
       try {
-        chrome.storage?.local?.get(TURBO_KEY, async (data) => {
+        window.ArcusTabSettings?.get(TURBO_KEY, async (data) => {
           if (data && data[TURBO_KEY]) await enableTurbo();
           resolve(driverState.mode);
         });

@@ -21,6 +21,21 @@
 const STORAGE_KEY_ROWS = 'ipdQueue_rows';
 const STORAGE_KEY_SENT = 'ipdQueue_sent';
 const REPORT_SERVER    = 'http://10.134.110.81:8765';
+const REPORT_FAILOVER   = 'http://10.134.110.182:8765';
+
+async function fetchPharmacy(path, options) {
+  const bases = [REPORT_SERVER, REPORT_FAILOVER];
+  let lastError;
+  for (const base of bases) {
+    try {
+      const response = await fetch(`${base}${path}`, options);
+      if (response.ok || response.status !== 0 || base === bases[bases.length - 1]) return response;
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError || new Error('Pharmacy servers unavailable');
+}
 
 // ── Report server-side fetch utilities ────────────────────────────────────────
 function parseXlsBuffer(buffer) {
@@ -49,7 +64,7 @@ function parseXlsBuffer(buffer) {
 }
 
 async function fetchReportBytes(jasperUrl, reportId) {
-  const resp = await fetch(`${REPORT_SERVER}/api/report/fetch`, {
+  const resp = await fetchPharmacy('/api/report/fetch', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url: jasperUrl, report: reportId }),
@@ -75,7 +90,7 @@ function todayBKK() {
 async function loadReportCache(reportKey, date) {
   const d = date || todayBKK();
   try {
-    const r = await fetch(`${REPORT_SERVER}/api/report-cache/${encodeURIComponent(reportKey)}/${d}`);
+    const r = await fetchPharmacy(`/api/report-cache/${encodeURIComponent(reportKey)}/${d}`);
     if (!r.ok) return null;
     const j = await r.json();
     return (j && Array.isArray(j.rows)) ? j : null;   // {} when no cache → null
@@ -85,7 +100,7 @@ async function loadReportCache(reportKey, date) {
 async function saveReportCache(reportKey, rows, meta, source) {
   const d = todayBKK();
   try {
-    const r = await fetch(`${REPORT_SERVER}/api/report-cache/${encodeURIComponent(reportKey)}/${d}`, {
+    const r = await fetchPharmacy(`/api/report-cache/${encodeURIComponent(reportKey)}/${d}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rows: rows || [], meta: meta || {}, source: source || 'manual' }),
