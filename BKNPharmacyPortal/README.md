@@ -2,7 +2,7 @@
 
 Unified Chrome MV3 extension for BKN Hospital Pharmacy. Combines the former **BKN Pharmacy** (`rx_menu`) and **Discharge Process Checklist** (`AAOverlay`) extensions into one portal backed by a shared pharmacy server.
 
-**Version:** 3.54.0 · **Manifest:** MV3 · **Target:** ArcusAir (`arcusair.bdms.co.th`, AngularJS 1.x SPA)
+**Version:** 3.61.2 · **Manifest:** MV3 · **Target:** ArcusAir (`arcusair.bdms.co.th`, AngularJS 1.x SPA)
 
 Full project context: [/README.md](../README.md)
 
@@ -123,6 +123,8 @@ Key methods: `getServerUrl / setServerUrl / serverFetch / getPatientContext / se
 2. **Load unpacked** → select `BKNPharmacyPortal/`
 3. **No per-install registration needed.** The server grants login-less writes to any `chrome-extension://` origin coming from a trusted subnet (`BKN_TRUSTED_SUBNETS`, default `10.134.0.0/16`) — the extension ID is not checked, so reloading from any folder works. If a workstation sits on a different subnet, add it to that env var. See `pharmacy_server/RISK-TREATMENT.md`.
 4. Start the pharmacy server: `python pharmacy_server/bkn_ks_server.py`
+
+The extension source lives only in this outer `BKNPharmacyPortal/` directory. Do not load or recreate a nested `BKNPharmacyPortal/BKNPharmacyPortal/` copy; it is an obsolete snapshot.
 
 ---
 
