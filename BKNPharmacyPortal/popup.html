@@ -89,6 +89,7 @@
     .auth-btn-cancel{padding:8px 12px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.15);border-radius:7px;font-family:inherit;font-size:12px;cursor:pointer;transition:background var(--transition);}
     .auth-btn-cancel:hover{background:rgba(255,255,255,.12);}
   </style>
+  <link rel="stylesheet" href="src/features/automate/popup.css">
 </head>
 <body>
 
@@ -118,9 +119,147 @@
     <button class="tab-btn" data-tab="tab-knowledge">
       <span class="tab-icon">📚</span><span class="tab-label">Knowledge</span>
     </button>
+    <button class="tab-btn" data-tab="tab-automate"><span class="tab-icon">&#9881;</span><span class="tab-label">Automate</span></button>
   </nav>
 
   <main class="tab-content">
+    <section class="tab-panel" id="tab-automate" aria-label="Automate">
+      <h2 class="automate-title">Automate</h2>
+      <div class="automate-cards">
+<div class="section">
+<div class="section-head"><span class="section-icon">▦</span><span class="section-title">Paperless Checker</span><span class="section-badge">SCANNER</span></div>
+<div class="section-body"><p class="desc">Review prescriptions, scan medicines, dispense, and wait for the next prescription. Uses the current tab.</p>
+<div class="btn-row"><button id="openPaperless" class="btn btn-primary">Open Checker</button><button id="stopPaperless" class="btn btn-danger">Stop Checker</button></div>
+<div class="btn-row"><button id="reviewPaperless" class="btn btn-primary">Current data &amp; review logs</button><button id="prepareMedication" class="btn btn-primary">Prepare medication</button></div>
+<div id="paperlessStatus" class="status">Choose a mode after opening. No automatic resume on reload.</div></div></div>
+
+  <!-- Auto Dispense -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-icon">⚙️</span>
+      <span class="section-title">Auto Dispense</span>
+      <span class="section-badge">AUTOMATION</span>
+    </div>
+    <div class="section-body">
+      <p class="desc">Automate allocate &amp; dispense on the workbench. Drag, minimize, filter by row type, or pause for manual override from the page panel.</p>
+      <div class="btn-row">
+        <button id="openWorkbench" class="btn btn-primary">
+          <span class="btn-icon">🔗</span> Open Workbench
+        </button>
+        <button id="closeWorkbenchPanel" class="btn btn-danger">
+          <span class="btn-icon">✕</span> Close Panel
+        </button>
+      </div>
+      <div id="dispenseStatus" class="status">Open the workbench — the automation panel appears automatically.</div>
+    </div>
+  </div>
+
+  <!-- IP Fill -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-icon">💉</span>
+      <span class="section-title">IP Fill</span>
+      <span class="section-badge">AUTOMATION</span>
+    </div>
+    <div class="section-body">
+      <p class="desc">Automate inpatient pharmaceutical fill by ward. Supports drag, minimize, manual pause, and retry from the page panel.</p>
+      <div class="btn-row">
+        <button id="openIpFill" class="btn btn-primary">
+          <span class="btn-icon">🔗</span> Open IP Fill
+        </button>
+        <button id="closeIpFillPanel" class="btn btn-danger">
+          <span class="btn-icon">✕</span> Close Panel
+        </button>
+      </div>
+      <div id="ipfillStatus" class="status">Open IP Fill — the panel appears automatically.</div>
+    </div>
+  </div>
+
+  <!-- Drug Image Downloader -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-icon">🖼️</span>
+      <span class="section-title">Drug Image Downloader</span>
+      <span class="section-badge">AUTOMATION</span>
+    </div>
+    <div class="section-body">
+      <p class="desc">Auto-download drug images from Item Master. Reads pending codes from the local medication DB (<code>has_image: false</code>), searches each code, and downloads + renames the image file automatically.</p>
+      <div class="btn-row">
+        <button id="openDrugImage" class="btn btn-primary">
+          <span class="btn-icon">🔗</span> Open Item Master
+        </button>
+        <button id="closeDrugImagePanel" class="btn btn-danger">
+          <span class="btn-icon">✕</span> Close Panel
+        </button>
+      </div>
+      <div id="drugImageStatus" class="status">Open Item Master — the panel appears automatically.</div>
+    </div>
+  </div>
+
+  <!-- Frequency Master Scraper -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-icon">FM</span>
+      <span class="section-title">Frequency Master Scraper</span>
+      <span class="section-badge">SCRAPER</span>
+    </div>
+    <div class="section-body">
+      <p class="desc">Scrape Frequency Master rows and modify-dialog details into a JSON download.</p>
+      <div class="btn-row">
+        <button id="openFrequencyMaster" class="btn btn-primary">
+          <span class="btn-icon">Open</span> Frequency Master
+        </button>
+        <button id="closeFrequencyPanel" class="btn btn-danger">
+          <span class="btn-icon">X</span> Close Panel
+        </button>
+      </div>
+      <div id="frequencyStatus" class="status">Open Frequency Master - the scraper panel appears automatically.</div>
+    </div>
+  </div>
+
+  <!-- Order Item Instruction Scraper -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-icon">OI</span>
+      <span class="section-title">Order Item Scraper</span>
+      <span class="section-badge">SCRAPER</span>
+    </div>
+    <div class="section-body">
+      <p class="desc">Loop medication DB codes, open Order Item CRUD, and export all instruction rows to JSON.</p>
+      <div class="btn-row">
+        <button id="openOrderItem" class="btn btn-primary">
+          <span class="btn-icon">Open</span> Order Item
+        </button>
+        <button id="closeOrderItemPanel" class="btn btn-danger">
+          <span class="btn-icon">X</span> Close Panel
+        </button>
+      </div>
+      <div id="orderItemStatus" class="status">Open Order Item - the scraper panel appears automatically.</div>
+    </div>
+  </div>
+
+  <!-- HIS Translations Scraper -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-icon">TR</span>
+      <span class="section-title">HIS Translations</span>
+      <span class="section-badge">SCRAPER</span>
+    </div>
+    <div class="section-body">
+      <p class="desc">Export every translation (route, frequency, instruction) to JSON. API mode fetches all pages directly; DOM mode opens each row as a fallback. Pick the mode in the panel.</p>
+      <div class="btn-row">
+        <button id="openTranslation" class="btn btn-primary">
+          <span class="btn-icon">Open</span> Translation
+        </button>
+        <button id="closeTranslationPanel" class="btn btn-danger">
+          <span class="btn-icon">X</span> Close Panel
+        </button>
+      </div>
+      <div id="translationStatus" class="status">Open Translation - the scraper panel appears automatically.</div>
+    </div>
+  </div>
+      </div>
+    </section>
 
     <!-- ══════════════════════════════════════════════════════
          WORKSPACE TAB — Pharmacist + Assistant merged
@@ -718,5 +857,6 @@
   </div>
 
   <script src="popup.js"></script>
+  <script src="src/features/automate/popup.js"></script>
 </body>
 </html>

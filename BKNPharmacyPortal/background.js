@@ -10,6 +10,9 @@
 ═══════════════════════════════════════════════════════════════════════════ */
 'use strict';
 
+// Automate feature handlers share the single MV3 worker.
+importScripts('src/features/automate/background.js');
+
 const DRUGDELIVERY_URL_PART = '10.134.10.91:8809/drugdelivery/web/ipfill';
 
 /* Allowlist for BKN_SERVER_PROXY and extFetch — prevents SSRF from a

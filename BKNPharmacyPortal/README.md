@@ -163,3 +163,8 @@ BKNPharmacyPortal/
     ├── assets/fonts/   (THSarabunNew, Sarabun)
     └── vendor/         (jsbarcode.min.js)
 ```
+
+
+## Automate integration (3.62.0)
+
+The popup now includes an **Automate** tab with all Arcus Toolkit controls. Feature files remain separate under [src/features/automate](src/features/automate/README.md). See that guide for redundancy decisions, verification, and extension reload steps. Disable the standalone Automate extension before using the merged portal on the same Arcus tabs.

@@ -85,12 +85,19 @@
   }
 
   /* ── patient context (session-scoped) ──────────────────────────────── */
+  // Chrome session storage is available to trusted extension pages, not content scripts.
+  function canUsePatientSession() {
+    return window.location?.protocol === "chrome-extension:";
+  }
+
   async function getPatientContext() {
     if (_patientCache) return _patientCache;
+    if (!canUsePatientSession()) return null;
     return new Promise(resolve => {
       try {
         chrome.storage.session.get([PATIENT_CACHE], r => {
-          _patientCache = (r && r[PATIENT_CACHE]) || null;
+          const error = chrome.runtime.lastError;
+          _patientCache = error ? null : ((r && r[PATIENT_CACHE]) || null);
           resolve(_patientCache);
         });
       } catch (_) { resolve(null); }
@@ -100,20 +107,23 @@
   async function setPatientContext(ctx) {
     if (!ctx || typeof ctx !== "object") return;
     _patientCache = ctx;
-    return new Promise(resolve => {
-      try {
-        chrome.storage.session.set({ [PATIENT_CACHE]: ctx }, async () => {
-          /* Also snapshot to the pharmacy server for cross-session recovery */
-          if (ctx.patientuid) {
-            await serverFetch(`/api/patients/${encodeURIComponent(ctx.patientuid)}/context`, {
-              method: "PUT", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(ctx),
-            });
-          }
-          resolve();
-        });
-      } catch (_) { resolve(); }
-    });
+    if (canUsePatientSession()) {
+      await new Promise(resolve => {
+        try {
+          chrome.storage.session.set({ [PATIENT_CACHE]: ctx }, () => {
+            void chrome.runtime.lastError;
+            resolve();
+          });
+        } catch (_) { resolve(); }
+      });
+    }
+    // Keep the server snapshot even when session storage is unavailable or denied.
+    if (ctx.patientuid) {
+      await serverFetch(`/api/patients/${encodeURIComponent(ctx.patientuid)}/context`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(ctx),
+      });
+    }
   }
 
   /* ── ADR Timeline persistence ─────────────────────────────────────── */

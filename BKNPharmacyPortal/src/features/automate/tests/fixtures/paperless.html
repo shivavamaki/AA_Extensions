@@ -1,0 +1,34 @@
+<!doctype html><html><head><style>md-select,md-option{display:block;padding:8px}#menu{display:none}.md-select-backdrop{display:none;position:fixed;inset:0}#menu{position:relative;background:white}td{padding:8px}</style></head><body>
+<md-select id="statusuid" multiple aria-expanded="false" aria-owns="menu"><md-select-value>Ordered, Dispensed</md-select-value></md-select>
+<div class="md-select-backdrop"></div><div id="menu"><md-select-menu>
+<md-option value="-" aria-selected="false">All</md-option><md-option aria-selected="true">Ordered</md-option><md-option aria-selected="false">Allocated</md-option><md-option aria-selected="true">Dispensed</md-option><md-option aria-selected="false">Partial Checkedin</md-option><md-option aria-selected="false">Partially Allocated</md-option><md-option aria-selected="false">Partially Cancelled</md-option><md-option aria-selected="false">Partially Dispensed</md-option>
+</md-select-menu></div><input id="ordernumber"><button id="searchdispense">Search</button><button id="cancelsearch">Clear</button>
+<div class="full-height ng-scope layout-row"><div><md-content><md-content><div><md-card><md-content class="padded-content-page overflow-visible _md md-incustheme-theme"><div><md-table-container><div><div><table><tbody id="results"><tr><td>I-STALE</td></tr></tbody></table></div></div></md-table-container></div></md-content></md-card></div></md-content></md-content></div></div>
+<script>
+location.hash='#!/pharmacy/dispenseworkbench/pharmacy/dispense';window.statusCloseCount=0;window.searchCount=0;window.clearCount=0;window.modeActions=[];window.rowClicks=0;window.dispenseClicks=0;window.disableDispense=false;window.finalClicks=0;window.finalDisabled=true;window.finalWrong=true;window.inputCount=0;window.testResponse='normal';
+const select=document.querySelector('md-select'),menu=document.querySelector('#menu'),backdrop=document.querySelector('.md-select-backdrop'),opts=[...document.querySelectorAll('md-option')];
+select.onclick=()=>{window.modeActions.push('status');select.setAttribute('aria-expanded','true');menu.style.display='block';backdrop.style.display='block';};
+opts.forEach(o=>o.onclick=()=>{const v=o.getAttribute('aria-selected')==='true'?'false':'true';o.setAttribute('aria-selected',v);if(o.textContent==='All')opts.forEach(x=>x.setAttribute('aria-selected',v));});
+backdrop.onclick=()=>{window.statusCloseCount++;select.setAttribute('aria-expanded','false');menu.style.display='none';backdrop.style.display='none';select.querySelector('md-select-value').textContent=opts[0].getAttribute('aria-selected')==='true'?'All':opts.filter(o=>o.getAttribute('aria-selected')==='true').map(o=>o.textContent).join(', ');};
+document.querySelector('#cancelsearch').onclick=()=>{window.clearCount++;window.modeActions.push('clear');document.querySelector('#ordernumber').value='';};
+document.querySelector('#ordernumber').addEventListener('input',()=>window.inputCount++);
+document.querySelector('#searchdispense').onclick=()=>{
+window.modeActions.push('search');window.searchCount++;const code=document.querySelector('#ordernumber').value;
+if(!code||window.testResponse==='stale')return;
+setTimeout(()=>{
+const body=document.querySelector('#results');body.replaceChildren();
+if(window.testResponse==='empty')return;
+const row=document.createElement('tr'),cell=document.createElement('td');cell.textContent=window.testResponse==='wrong'?'O-UNRELATED':code;row.append(cell);
+row.onclick=()=>{window.rowClicks++;document.querySelector('md-content[ng-if="vm.showdetailspanel"]')?.remove();const p=document.createElement('md-content');p.setAttribute('ng-if','vm.showdetailspanel');p.style.display='block';const h=document.createElement('h4');h.textContent='Order Details ('+(window.testResponse==='wrong-detail'?'E-WRONG':code)+')';p.append(h);
+const table=document.createElement('table');table.id='ordertable';const tbody=document.createElement('tbody');table.append(tbody);
+['MED-A','MED-B'].forEach((med,i)=>{const r=document.createElement('tr');r.setAttribute('ng-repeat-start','orderitems in vm.selecteddispense.patientorderitems');r.innerHTML='<td>Alerts</td><td id="showMonographcode'+i+'">'+med+'</td><td>Demo medicine</td><td>10 tablets</td>';tbody.append(r);});
+const dispense=document.createElement('button');dispense.id='dispensetodept';dispense.textContent='Dispense';dispense.disabled=window.disableDispense;dispense.onclick=()=>{
+window.dispenseClicks++;p.remove();document.querySelector('.full-height').style.display='none';
+const final=document.createElement('md-content');final.id='final-page';final.style.display='block';
+final.innerHTML='<table><tbody><tr><td id="final-order">'+(window.finalWrong?'O-WRONG':code)+'</td><td>MED-A</td><td>MED-B</td></tr></tbody></table><button aria-label="Dispense" ng-click="vm.verifyDispense();">Dispense</button>';
+const save=final.querySelector('button');save.disabled=window.finalDisabled;save.onclick=()=>window.finalClicks++;document.body.append(final);location.hash='#!/pharmacy/dispensetodept';
+};p.append(table,dispense);document.body.append(p);};
+body.append(row);
+},100);
+};
+</script><script src="overlay.js"></script></body></html>
