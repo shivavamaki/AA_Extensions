@@ -199,7 +199,12 @@ function initTabs() {
   const panels = document.querySelectorAll('.tab-panel');
 
   chrome.storage.local.get(['activeTab'], ({ activeTab }) => {
-    if (activeTab) activateTab(activeTab);
+    if (window.location.hash === '#ipdqueue-window') {
+      activateTab('tab-ipdqueue');
+      chrome.storage.local.set({ activeTab: 'tab-ipdqueue' });
+    } else if (activeTab) {
+      activateTab(activeTab);
+    }
   });
 
   btns.forEach(btn => {
@@ -212,6 +217,7 @@ function initTabs() {
   function activateTab(id) {
     btns.forEach(b => b.classList.toggle('active', b.dataset.tab === id));
     panels.forEach(p => p.classList.toggle('active', p.id === id));
+    document.body.classList.toggle('ipdqueue-resizable', id === 'tab-ipdqueue');
   }
 }
 
@@ -228,6 +234,8 @@ function initIpdQueue() {
       handleDeliveryResult(msg.visitId, msg.ok, msg.errorText);
     }
   });
+
+  initIpdQueueSize();
 
   // Generate URL button
   const btnGen = document.getElementById('btnQueueGenUrl');
@@ -282,6 +290,84 @@ function initIpdQueue() {
   document.getElementById('btnQueueDischarge')?.addEventListener('click', fetchDischargeStatus);
 
   restoreQueueState();
+}
+
+// Chrome does not expose the action popup's outer window to this extension, so
+// resize the popup viewport only while the IPD Queue tab is selected.
+function initIpdQueueSize() {
+  const STORAGE_KEY = 'ipdQueue_popupSize_v2';
+  const MIN = { width: 680, height: 600 };
+  const MAX = { width: 1000, height: 900 };
+  const STEP = { width: 80, height: 60 };
+  const valueEl = document.getElementById('queueSizeValue');
+  const down = document.getElementById('btnQueueSizeDown');
+  const up = document.getElementById('btnQueueSizeUp');
+  const openWindow = document.getElementById('btnQueueOpenWindow');
+  const grips = [
+    document.getElementById('queueResizeGripLeft'),
+    document.getElementById('queueResizeGripRight'),
+  ].filter(Boolean);
+  if (!valueEl || !down || !up || grips.length !== 2) return;
+
+  if (window.location.hash === '#ipdqueue-window') {
+    document.body.classList.add('standalone-ipdqueue');
+  }
+  openWindow?.addEventListener('click', () => {
+    chrome.windows.create({
+      url: `${chrome.runtime.getURL('popup.html')}#ipdqueue-window`,
+      type: 'popup',
+      width: 900,
+      height: 900,
+      focused: true,
+    });
+  });
+
+  let size = { width: 680, height: 600 };
+  const apply = () => {
+    document.documentElement.style.setProperty('--popup-width', `${size.width}px`);
+    document.documentElement.style.setProperty('--popup-height', `${size.height}px`);
+    valueEl.textContent = `${size.width}×${size.height}`;
+    down.disabled = size.width === MIN.width && size.height === MIN.height;
+    up.disabled = size.width === MAX.width && size.height === MAX.height;
+  };
+  const save = () => chrome.storage.local.set({ [STORAGE_KEY]: size });
+  const clamp = (value, limits) => Math.max(limits.min, Math.min(limits.max, value));
+
+  chrome.storage.local.get([STORAGE_KEY], (result) => {
+    const saved = result[STORAGE_KEY];
+    if (saved && Number.isFinite(saved.width) && Number.isFinite(saved.height)) {
+      size.width = clamp(saved.width, { min: MIN.width, max: MAX.width });
+      size.height = clamp(saved.height, { min: MIN.height, max: MAX.height });
+    }
+    apply();
+  });
+  down.addEventListener('click', () => {
+    size.width = clamp(size.width - STEP.width, { min: MIN.width, max: MAX.width });
+    size.height = clamp(size.height - STEP.height, { min: MIN.height, max: MAX.height });
+    apply(); save();
+  });
+  up.addEventListener('click', () => {
+    size.width = clamp(size.width + STEP.width, { min: MIN.width, max: MAX.width });
+    size.height = clamp(size.height + STEP.height, { min: MIN.height, max: MAX.height });
+    apply(); save();
+  });
+  grips.forEach((grip) => grip.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    grip.setPointerCapture?.(event.pointerId);
+    const startY = event.clientY;
+    const startHeight = size.height;
+    const onMove = (moveEvent) => {
+      size.height = clamp(startHeight + moveEvent.clientY - startY, { min: MIN.height, max: MAX.height });
+      apply();
+    };
+    const onUp = () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      save();
+    };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp, { once: true });
+  }));
 }
 
 async function restoreQueueState() {
@@ -3386,8 +3472,10 @@ function initPendingCodeApp() {
 
 // ── HM Process Queue Dashboard ────────────────────────────────────────────────
 function initHmqDashboard() {
-  document.getElementById('btnHmqDashboard')?.addEventListener('click', () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL('src/features/hmq/page-hmq-dashboard.html') });
+  document.getElementById('btnHmqDashboard')?.addEventListener('click', async () => {
+    const stored = await chrome.storage.local.get(['bknks.serverUrl']);
+    const base = String(stored['bknks.serverUrl'] || REPORT_SERVER).replace(/\/$/, '');
+    chrome.tabs.create({ url: `${base}/static/hmq/dashboard.html` });
   });
 }
 

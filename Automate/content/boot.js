@@ -39,6 +39,7 @@
   }
 
   function createPanelIfNeeded() {
+    if (window.ArcusPaperless?.isActive()) { window.ArcusPanel?.removePanel(); return; }
     if (!isWorkbenchPage()) {
       window.ArcusPanel?.removePanel();
       return;

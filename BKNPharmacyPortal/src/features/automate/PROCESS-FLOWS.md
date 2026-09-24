@@ -4,6 +4,10 @@ These diagrams describe the original Automate workflows. The active deployment u
 
 Reviewed 2026-09-14; behavior layer updated to manifest **4.7.0**. Clinical workflow branches below remain the source-review baseline. Static source review; no live automation or clinical transaction was executed. Diagrams describe implemented behavior, including failure branches, rather than intended behavior. View with a Mermaid-capable Markdown preview.
 
+## Allocation coordination update: Portal 3.62.1
+
+The current allocation runner submits Allocate once, explicitly resolves the configured override, and waits for the workbench. It stops on an unconfirmed outcome instead of re-confirming allocation. The older re-confirmation diagrams below are historical; see README.md for the current behavior.
+
 ## Behavior update: 4.7.0
 
 Settings use independent tab profiles in PC-local Chrome storage. New/duplicated tabs start independently; reload and Chrome session-token restoration recover the same tab settings. No settings are written to the shared folder or Chrome Sync. Runs wait for pending settings restoration.

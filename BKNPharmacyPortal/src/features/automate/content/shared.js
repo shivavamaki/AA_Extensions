@@ -46,13 +46,9 @@
       // the old [ng-click*='save'] never matched saveData() and the search fell
       // through to a bare button.md-primary, which can be a different button.
       allocateSaveButton: [
-        "button[aria-label='Allocate']",
-        "button[ng-click*='saveData'][aria-label='Allocate']",
-        "#actiondiv button[ng-click*='saveData']",
-        "#actiondiv > button.md-primary.md-button.md-incustheme-theme.md-ink-ripple",
-        "#actiondiv button.md-primary",
-        "button.md-primary[ng-click*='saveData']",
-        "button.md-primary",
+        "#actiondiv > button.md-primary.md-button.md-incustheme-theme.md-ink-ripple[aria-label='Allocate'][ng-click*='saveData']",
+        "#actiondiv > button[aria-label='Allocate'][ng-click*='saveData']",
+        "button[aria-label='Allocate'][ng-click*='saveData']",
       ],
 
       // The dispense confirm calls vm.verifyDispense(), NOT vm.saveData() like
@@ -575,8 +571,8 @@
 
   function findOpenDialog() {
     for (const selector of CONFIG.genericDialogSelectors) {
-      const el = document.querySelector(selector);
-      if (el && el instanceof HTMLElement && isVisible(el)) return el;
+      const dialogs = Array.from(document.querySelectorAll(selector)).filter(el => el instanceof HTMLElement && isVisible(el));
+      if (dialogs.length) return dialogs[dialogs.length - 1];
     }
     return null;
   }
@@ -589,9 +585,13 @@
 
   function dialogLooksLikeManualOverride(dialogEl = findOpenDialog()) {
     if (!dialogEl) return false;
-    const txt = textOf(dialogEl).toLowerCase();
-    const hints = ["override", "reason", "select reason", "warning override", "please select"];
-    return hints.some((h) => txt.includes(h));
+    // Informational alerts can mention a reason in their text without asking
+    // for an override. Identify the editable controls instead.
+    return !!dialogEl.querySelector(
+      "md-select[ng-model*='overridereason'], select[ng-model*='overridereason'], " +
+      "textarea[ng-model*='overridereason'], input[ng-model*='overridereason'], " +
+      "md-select[aria-label*='Override Reason'], select[aria-label*='Override Reason']"
+    );
   }
 
   async function waitForWorkbenchReady() {
@@ -621,25 +621,27 @@
     const selectors = asSelectorList(CONFIG.actionSelectors[selectorName]);
 
     const find = () => {
+      let disabledCandidate = null;
       for (const selector of selectors) {
-        try {
-          const el = document.querySelector(selector);
-          if (!el) continue;
+        for (const el of document.querySelectorAll(selector)) {
+          if (!document.contains(el) || el.closest("md-dialog, [role='dialog']")) continue;
           const style = getComputedStyle(el);
           if (style.display === "none" || style.visibility === "hidden") continue;
           const rect = el.getBoundingClientRect();
           if (rect.width <= 0 || rect.height <= 0) continue;
-          return el;
-        } catch (_) {}
+          if (!el.disabled && el.getAttribute("aria-disabled") !== "true" && !el.closest("[disabled]")) return el;
+          disabledCandidate ||= el;
+        }
       }
-      return null;
+      return disabledCandidate;
     };
 
     const btn = await waitFor(find, timeoutMs, 200);
     if (!btn) return { ok: false, el: null, reason: `${selectorName} not found in the DOM` };
 
     const enabled = await waitFor(() => {
-      const el = find() || btn;
+      const el = find();
+      if (!el || state.stopRequested) return null;
       const blocked = el.disabled
         || el.getAttribute("aria-disabled") === "true"
         || !!el.closest("[disabled]");
@@ -869,41 +871,53 @@
    * open; every one of those reached Arcus. If it will not close, say so and
    * leave it for a human rather than hammering it.
    */
+  const closingAlerts = new WeakSet();
+  const alertCloseAttempts = new WeakMap();
   async function closeAlertDialogIfPresent(logMeta = "") {
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      const dialog = findOpenDialog();
-      if (!dialog || !isAlertDialog(dialog)) return attempt > 1;
+    const original = findOpenDialog();
+    if (!original || closingAlerts.has(original)) return false;
+    closingAlerts.add(original);
+    try {
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const dialog = findOpenDialog();
+        if (!dialog || !isAlertDialog(dialog)) return attempt > 1;
+        if (dialog !== original || dialogLooksLikeManualOverride(dialog) ||
+            window.ArcusAutoOverride?.blockedAlerts(dialog).length) return false;
+        const count = alertCloseAttempts.get(dialog) || 0;
+        if (count >= 3 || state.stopRequested) return false;
 
-      const closeBtn =
-        dialog.querySelector(CONFIG.actionSelectors.closeBtn) ||
-        dialog.querySelector("button[aria-label='Close']") ||
-        (await waitForSelectorVisible(CONFIG.actionSelectors.closeBtn, 800));
+        const closeBtn =
+          dialog.querySelector(CONFIG.actionSelectors.closeBtn) ||
+          dialog.querySelector("button[aria-label='Close']");
 
-      if (!closeBtn) return false;
+        if (!closeBtn) return false;
 
-      // allowRepeat: this is a deliberate, bounded retry on the same button.
-      await Driver.click(closeBtn, { allowRepeat: attempt > 1 });
+        // allowRepeat: this is a deliberate, bounded retry on the same button.
+        alertCloseAttempts.set(dialog, count + 1);
+        await Driver.click(closeBtn, { allowRepeat: count > 0 });
 
-      const closed = await waitFor(() => !findOpenDialog(), 2500, 150);
-      if (closed) {
-        window.ArcusPanel?.pushLog("info", "Closed alert popup", logMeta);
-        return true;
+        const closed = await waitFor(() => !findOpenDialog(), 2500, 150);
+        if (closed) {
+          window.ArcusPanel?.pushLog("info", "Closed alert popup", logMeta);
+          return true;
+        }
       }
-    }
 
-    window.ArcusPanel?.pushLog(
-      "fail",
-      "Alert popup would not close after 3 attempts",
-      logMeta
-    );
-    return false;
+      window.ArcusPanel?.pushLog(
+        "fail",
+        "Alert popup would not close after 3 attempts",
+        logMeta
+      );
+      return false;
+    } finally { closingAlerts.delete(original); }
   }
 
   async function closeGenericToolbarDialogIfPresent(logMeta = "") {
     const dialog = findOpenDialog();
     if (!dialog) return false;
 
-    const icon = queryFirst(CONFIG.actionSelectors.closeToolbarIcon, document, true);
+    if (dialogLooksLikeManualOverride(dialog) || window.ArcusAutoOverride?.blockedAlerts(dialog).length) return false;
+    const icon = queryFirst(CONFIG.actionSelectors.closeToolbarIcon, dialog, true);
     if (icon) {
       await clickLikeUser(icon);
       window.ArcusPanel?.pushLog("info", "Closed toolbar dialog", logMeta);
@@ -918,6 +932,7 @@
   async function acknowledgeAlertRowsIfPresent(logMeta = "") {
     const dialog = findOpenDialog();
     if (!dialog || !isAlertDialog(dialog)) return false;
+    if (dialogLooksLikeManualOverride(dialog) || window.ArcusAutoOverride?.blockedAlerts(dialog).length) return false;
 
     // "Mark all as viewed" is the app's own bulk action and is far more reliable
     // than closing a many-row alert dialog one button at a time. Look for it

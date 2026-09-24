@@ -454,3 +454,9 @@ Verified: automatic saved-session loading, 20 rendered medicine rows, quantity c
 Evidence: `reports/hm-hosted-synthetic-browser.png` and `reports/hm-hosted-synthetic-browser.pdf`. Fixture: `python pharmacy_server/test_hosted_browser_fixture.py` prints its loopback port/report ID. Launch an isolated Chrome with remote debugging port 9227, set HM_TEST_URL to the printed fixture URL plus the report ID, then run `node BKNPharmacyPortal/test/run-hosted-chrome-check.cjs` from the workspace root. These files contain synthetic data only.
 
 This does not verify production login, extension-to-server window handoff, actual Arcus calls, OPD browser layout or physical printers. Those remain the final workstation acceptance gates; no production cutover was performed.
+
+### Hosted launch patient isolation (3.60.1)
+
+Each new sheet launch clears the previous context, delivery timer, and READY listener before opening the tab. Delivery retries capture their own tab and context; old callbacks cannot send into a newer launch. Repeated sheet/Journey clicks are ignored while context extraction is pending. This prevents an early READY message from building a report for the previous patient, since the hosted receiver accepts its first context only. Regression: `node BKNPharmacyPortal/test/test-hm-launch-patient.js`. Update/reload the extension and refresh ArcusAir tabs to activate this content-script fix; existing saved report links remain associated with their original patient.
+
+Release 3.61.0 includes this patient-handoff fix. Update through `/update-extension.html` using the manual ZIP instructions, reload the extension, and refresh ArcusAir; batch updaters have been retired.

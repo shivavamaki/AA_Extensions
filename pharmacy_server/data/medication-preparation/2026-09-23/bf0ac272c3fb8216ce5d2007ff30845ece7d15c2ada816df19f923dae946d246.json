@@ -1,0 +1,12 @@
+{
+  "id": "prep_2026-09-23_bf0ac272c3fb8216ce5d2007",
+  "event": "medication_prepared",
+  "orderNumber": "I2609230094",
+  "staffName": "Apsorn",
+  "staffRole": "Pharmacist",
+  "preparedAt": "2026-09-23T03:54:47.908085Z",
+  "date": "2026-09-23",
+  "scanDate": "2026-09-23",
+  "source": "medication-preparation-page",
+  "identityMethod": "staff-selection"
+}

@@ -1,0 +1,205 @@
+{
+  "id": "defdfb553b677be61750fa7fd99c84ee",
+  "owner": "public",
+  "request": {
+    "schemaVersion": 1,
+    "reportType": "home-med-ipd",
+    "identity": {
+      "patientUid": "5b8a57543238d86bf0c30fcf",
+      "visitUid": "6ab3659b554c377aebaf18ca"
+    },
+    "presentation": {
+      "language": "th",
+      "templateVersion": "hm-a4-v1"
+    }
+  },
+  "revision": 2,
+  "status": "ready",
+  "source": {
+    "patient": {
+      "patientName": "น.ส. นงนภัส วัชโรทยาน",
+      "hn": "48-18-003796",
+      "an": "I2609240418",
+      "room": "602"
+    },
+    "meds": [
+      {
+        "drug": "Gaviscon Advance Peppermint (10 mL)",
+        "code": "51001020224013",
+        "quantity": "20 Pack",
+        "comment": "Take 1 Pack 3 Times Daily After Breakfast Lunch and Dinner",
+        "note": "บรรเทาอาการกรดไหลย้อน อาหารไม่ย่อย\nบรรเทาอาการกรดไหลย้อน ปวดแสบท้อง",
+        "noteEn": "บรรเทาอาการกรดไหลย้อน อาหารไม่ย่อย\nantireflux and antacids",
+        "route": "Orally",
+        "frequency": "3 Times Daily After Breakfast Lunch and Dinner",
+        "frequencyTh": "วันละ 3 ครั้ง หลังอาหาร เช้า กลางวัน เย็น",
+        "dosage": "1",
+        "provider": "พิมพ์วิมล จันทร์แสง, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "บรรเทาอาการกรดไหลย้อน อาหารไม่ย่อย",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "alu",
+          "adn"
+        ]
+      },
+      {
+        "drug": "Prevacid Fdt-30 Mg Tablet",
+        "code": "51171906000003",
+        "quantity": "10 Tablet",
+        "comment": "Take 1 Tablet Once Daily Before Breakfast",
+        "note": "ยายับยั้งการหลั่งกรด (ควรทานก่อนอาหาร 1 ชม. หรือ หลังอาหาร 2 ชม.),ห้ามบดหรือเคี้ยวเม็ดยา",
+        "noteEn": "(To inhibit acid secretion) (Take 1 hour before meals or 2 hours after meals) Do Not Chew or Crush",
+        "route": "Orally",
+        "frequency": "Once Daily Before Breakfast",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนอาหารเช้า",
+        "dosage": "1",
+        "provider": "พิมพ์วิมล จันทร์แสง, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "bbf"
+        ]
+      },
+      {
+        "drug": "Neurontin (100 Mg) Capsule //",
+        "code": "51141517000002",
+        "quantity": "20 Capsule",
+        "comment": "Take 1 Capsule Once Daily Before Bedtime",
+        "note": "ทานเวลามีอาการปวดต้นคอ ต่อเนื่อง 3-7 วันตามอาการ\nรับประทานตามแพทย์สั่ง กลืนพร้อมน้ำ",
+        "noteEn": "ทานเวลามีอาการปวดต้นคอ ต่อเนื่อง 3-7 วันตามอาการ\nTake as prescribed; swallow with water.",
+        "route": "Orally",
+        "frequency": "Once Daily Before Bedtime",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนนอน",
+        "dosage": "1",
+        "provider": "พิมพ์วิมล จันทร์แสง, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "ทานเวลามีอาการปวดต้นคอ ต่อเนื่อง 3-7 วันตามอาการ",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "bed"
+        ]
+      },
+      {
+        "drug": "SERMION (**30 mg**) Tablet //",
+        "code": "51141705000002",
+        "quantity": "10 Tablet",
+        "comment": "Take 1 Tablet Once Daily After Breakfast",
+        "note": "รับประทานตามแพทย์สั่ง กลืนพร้อมน้ำ",
+        "noteEn": "Take as prescribed; swallow with water.",
+        "route": "Orally",
+        "frequency": "Once Daily After Breakfast",
+        "frequencyTh": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "dosage": "1",
+        "provider": "พิมพ์วิมล จันทร์แสง, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf"
+        ]
+      },
+      {
+        "drug": "Rivotril (0.5 Mg) Tab // #",
+        "code": "51141502000003",
+        "quantity": "20 Tablet",
+        "comment": "Take 1 Tablet Once Daily Before Bedtime",
+        "note": "ทานเวลามีอาการปวดต้นคอ ต่อเนื่อง 3-7 วันตามอาการ\nอาจง่วงหรือเวียนหัว เลี่ยงขับรถ ใช้เครื่องจักร และดื่มแอลกอฮอล์",
+        "noteEn": "ทานเวลามีอาการปวดต้นคอ ต่อเนื่อง 3-7 วันตามอาการ\nMay cause drowsiness/dizziness; avoid driving, machinery, and alcohol.",
+        "route": "Orally",
+        "frequency": "Once Daily Before Bedtime",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนนอน",
+        "dosage": "1",
+        "provider": "พิมพ์วิมล จันทร์แสง, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "ทานเวลามีอาการปวดต้นคอ ต่อเนื่อง 3-7 วันตามอาการ",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "bed"
+        ]
+      },
+      {
+        "drug": "Arcoxia 60 Mg Tab",
+        "code": "51142153000002",
+        "quantity": "10 Tablet",
+        "comment": "Take 1 Tablet Once Daily After Breakfast",
+        "note": "ทานเวลามีอาการปวดต้นคอ\nแก้ปวด ลดอักเสบของข้อและกล้ามเนื้อ (ทานหลังอาหารทันที)",
+        "noteEn": "ทานเวลามีอาการปวดต้นคอ\nFor pain (Anti-inflammatory-take after meal immediately)",
+        "route": "Orally",
+        "frequency": "Once Daily After Breakfast",
+        "frequencyTh": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "dosage": "1",
+        "provider": "พิมพ์วิมล จันทร์แสง, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "ทานเวลามีอาการปวดต้นคอ",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf"
+        ]
+      }
+    ],
+    "allMeds": 6,
+    "allergies": {
+      "nkda": true,
+      "items": [],
+      "hasRecord": true
+    },
+    "appointmentText": "คนไข้มีนัดหมาย วันที่ 3 พฤษภาคม 2570 เวลา 08:40 น.\tที่แผนก Health Promotion Center กับ Nurse Check Up หมายเหตุ นัดฉีดวัคซีนไข้หวัดใหญ่ครบกำหนดล่วงหน้า 1 ปี",
+    "reconcileMeds": [],
+    "hasReconcile": false,
+    "ok": true,
+    "source": "arcus-api",
+    "cacheStatus": "live"
+  },
+  "edits": {},
+  "rendered": null,
+  "history": [
+    {
+      "revision": 2,
+      "action": "build",
+      "at": 1790227249.363463
+    }
+  ],
+  "createdAt": 1790227248.5036824,
+  "displayContext": {
+    "patientName": "MISS NONGNAPAT  WATCHAROTAYAN",
+    "hn": "48-24-006109",
+    "patientId": "48-24-006109",
+    "an": "",
+    "patientVisitId": "",
+    "bed": "411",
+    "doctor": "",
+    "diagnosis": "Chest pain, unspecified, Headache, Dizziness and giddiness, Other specified headache syndromes, Dyspepsia, ปวดศีรษะ วิงเวียนศีรษะ กล้ามเนื้อพังผืดยึด",
+    "pharmacistName": "อัปสร วัฒนาอุดมชัย, ภญ."
+  },
+  "error": null,
+  "updatedAt": 1790227249.363463
+}

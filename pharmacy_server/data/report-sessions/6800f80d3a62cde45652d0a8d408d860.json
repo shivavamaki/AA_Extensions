@@ -1,0 +1,177 @@
+{
+  "id": "6800f80d3a62cde45652d0a8d408d860",
+  "owner": "public",
+  "request": {
+    "schemaVersion": 1,
+    "reportType": "home-med-ipd",
+    "identity": {
+      "patientUid": "5b8a57543238d86bf0c31898",
+      "visitUid": "6ab349d418e07707c012df0d"
+    },
+    "presentation": {
+      "language": "th",
+      "templateVersion": "hm-a4-v1"
+    }
+  },
+  "revision": 2,
+  "status": "ready",
+  "source": {
+    "patient": {
+      "patientName": "นาง ภารดี พงษ์ชนะ",
+      "hn": "48-18-005994",
+      "an": "I2609240253",
+      "room": "511"
+    },
+    "meds": [
+      {
+        "drug": "Ferlo-B-Cal TABLET",
+        "code": "51002030105005",
+        "quantity": "30 Tablet",
+        "comment": "Take 1 Tablet Every Odd Day After Breakfast",
+        "note": "ทานยานี้อุจจาระอาจเป็นสีดำ, ไม่ทานพร้อมนม ยาลดกรด แคลเซียม",
+        "noteEn": "Black Stool May Occur, Do Not Take With Milk Antacid Calcium",
+        "route": "Orally",
+        "frequency": "Every Odd Day After Breakfast",
+        "frequencyTh": "ทุกวันคี่ หลังอาหารเช้า",
+        "dosage": "1",
+        "provider": "ศุภวดี วงศ์นิจศีล, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf"
+        ]
+      },
+      {
+        "drug": "Serc 24 mg TABLET",
+        "code": "51161608000002",
+        "quantity": "10 Tablet",
+        "comment": "Take 1 Tablet 2 Times Daily After Breakfast and Dinner If needed",
+        "note": "รับประทานตามแพทย์สั่ง กลืนพร้อมน้ำ",
+        "noteEn": "Take as prescribed; swallow with water.",
+        "route": "Orally",
+        "frequency": "2 Times Daily After Breakfast and Dinner If needed",
+        "frequencyTh": "วันละ 2 ครั้ง หลังอาหาร เช้า เย็น เวลามีอาการ",
+        "dosage": "1",
+        "provider": "ศุภวดี วงศ์นิจศีล, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "adn",
+          "prn"
+        ]
+      }
+    ],
+    "allMeds": 2,
+    "allergies": {
+      "nkda": true,
+      "items": [],
+      "hasRecord": true
+    },
+    "appointmentText": "ไม่มีนัดติดตามอาการ แต่ถ้าพบอาการผิดปรกติหรืออาการแย่ลง แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม",
+    "reconcileMeds": [
+      {
+        "drug": "Simvastatin 20 mg",
+        "code": "011001",
+        "status": "stopped",
+        "instruction": "",
+        "frequency": "วันละ 1 ครั้ง ก่อนนอน",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนนอน",
+        "frequencyEn": "Once Daily Before Bedtime",
+        "route": "Orally",
+        "note": "",
+        "statusRaw": "DISCONTINUE",
+        "addable": false
+      },
+      {
+        "drug": "Losartan 50 mg TABLET",
+        "code": "51121710000004",
+        "status": "stopped",
+        "instruction": "ผู้ป่วยแจ้งว่าตื่นมาแล้วกินทันที",
+        "frequency": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "frequencyTh": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "frequencyEn": "Once Daily After Breakfast",
+        "route": "Orally",
+        "note": "ผู้ป่วยแจ้งว่าตื่นมาแล้วกินทันที",
+        "statusRaw": "DISCONTINUE",
+        "addable": false
+      },
+      {
+        "drug": "Sitagliptin / Metformin",
+        "code": "011001",
+        "status": "stopped",
+        "instruction": "ทานหลังอาหารเช้า",
+        "frequency": "ตามแพทย์สั่ง",
+        "frequencyTh": "ตามแพทย์สั่ง",
+        "frequencyEn": "As directed",
+        "route": "Orally",
+        "note": "ทานหลังอาหารเช้า",
+        "statusRaw": "DISCONTINUE",
+        "addable": false
+      },
+      {
+        "drug": "Paracetamol 500 mg TABLET",
+        "code": "51142001000033",
+        "status": "changed",
+        "instruction": "",
+        "frequency": "ทุก 6 ชั่วโมง เวลามีอาการ",
+        "frequencyTh": "ทุก 6 ชั่วโมง เวลามีอาการ",
+        "frequencyEn": "Every 6 Hours If Needed",
+        "route": "Orally",
+        "note": "",
+        "statusRaw": "CHANGE",
+        "addable": true
+      },
+      {
+        "drug": "Sitagliptin/Metformin (50/1000mg) TABLET",
+        "code": "51001100204022",
+        "status": "stopped",
+        "instruction": "",
+        "frequency": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "frequencyTh": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "frequencyEn": "Once Daily After Breakfast",
+        "route": "Orally",
+        "note": "",
+        "statusRaw": "DISCONTINUE",
+        "addable": false
+      }
+    ],
+    "hasReconcile": true,
+    "ok": true,
+    "source": "arcus-api",
+    "cacheStatus": "live"
+  },
+  "edits": {},
+  "rendered": null,
+  "history": [
+    {
+      "revision": 2,
+      "action": "build",
+      "at": 1790223660.7603157
+    }
+  ],
+  "createdAt": 1790223659.8531659,
+  "displayContext": {
+    "patientName": "MRS. PARADEE  PONGCHANA",
+    "hn": "48-18-005994",
+    "patientId": "48-18-005994",
+    "an": "",
+    "patientVisitId": "",
+    "bed": "511",
+    "doctor": "",
+    "diagnosis": "Dizziness and giddiness, Volume depletion, Anaemia, unspecified",
+    "pharmacistName": "ปัทมพร ศรีกัลป์, ภญ"
+  },
+  "error": null,
+  "updatedAt": 1790223660.7603157
+}

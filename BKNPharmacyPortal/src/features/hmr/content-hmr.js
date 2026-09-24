@@ -1230,25 +1230,30 @@
     for (const t of ['mousedown', 'mouseup', 'click']) {
       el.dispatchEvent(new MouseEvent(t, { bubbles: true, cancelable: true, view: window }));
     }
-    if (typeof el.click === 'function') el.click();
+    // One dispatched click is sufficient; do not send a second native click.
   }
   function _hmrDispatchEscape() {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));
     document.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));
   }
+  const _hmrPassiveCloseAttempts = new WeakMap();
   function _hmrAutoDismissAlertsOnce() {
-    // Never touch dialogs while HM Process automation runs (it handles alerts).
-    if (_hmrAutoRunning) return;
+    // The active workflow owns its dialogs; the passive closer must stand down.
+    if (_hmrAutoRunning || window.ArcusShared?.state.isRunning ||
+        window.ArcusAutoOverride?.isEnabled?.() || window.ArcusStore?.ipfill?.state.running ||
+        window.ArcusPaperless?.isActive?.()) return;
     const d = _hmrFindDialog();
     if (!_hmrIsAlertModal(d)) return;
-    // Close synchronously so the modal is gone in the same tick it's detected —
-    // no async gap where a mutation burst could delay a follow-up attempt.
+    const attempt = _hmrPassiveCloseAttempts.get(d) || { count: 0, at: 0 };
+    if (attempt.count >= 3 || (attempt.count && Date.now() - attempt.at < 1500)) return;
+    // At most two Close attempts and one Escape, spaced out across mutations.
     const close = _hmrQueryFirst(
       ['#closeBtn', "button[aria-label='Close']",
        'md-dialog md-toolbar button', 'md-dialog .md-icon-button'], d);
-    if (close) _hmrFireClose(close);
-    // Belt-and-suspenders: Escape also closes AngularMaterial dialogs.
-    _hmrDispatchEscape();
+    if (!close) return;
+    _hmrPassiveCloseAttempts.set(d, { count: attempt.count + 1, at: Date.now() });
+    if (attempt.count === 2) _hmrDispatchEscape();
+    else _hmrFireClose(close);
   }
 
   // Short polling fallback (in addition to the MutationObserver): the alert can

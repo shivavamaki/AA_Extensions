@@ -1,0 +1,12 @@
+{
+  "id": "prep_2026-09-24_6b844a1da7e32d6bac2f9220",
+  "event": "medication_prepared",
+  "orderNumber": "I2609240196",
+  "staffName": "Narudee",
+  "staffRole": "Phar.Assist",
+  "preparedAt": "2026-09-24T03:49:26.886338Z",
+  "date": "2026-09-24",
+  "scanDate": "2026-09-24",
+  "source": "medication-preparation-page",
+  "identityMethod": "staff-selection"
+}

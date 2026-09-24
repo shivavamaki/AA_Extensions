@@ -1,0 +1,208 @@
+{
+  "id": "b7d2a8b2b9199598c590ad554abaa7e1",
+  "owner": "public",
+  "request": {
+    "schemaVersion": 1,
+    "reportType": "home-med-ipd",
+    "identity": {
+      "patientUid": "6ab26b6e3a413e3f2f14d5f5",
+      "visitUid": "6ab26b6ff2a1cfdbf58dc1c9"
+    },
+    "presentation": {
+      "language": "th",
+      "templateVersion": "hm-a4-v1"
+    }
+  },
+  "revision": 2,
+  "status": "ready",
+  "source": {
+    "patient": {
+      "patientName": "นาย ทรงศักดิ์ กันทรพันธุ์",
+      "hn": "48-26-011894",
+      "an": "I2609240272",
+      "room": "607"
+    },
+    "meds": [
+      {
+        "drug": "Augmentin (1 Gm) Tablet #",
+        "code": "51010010318007",
+        "quantity": "14 Tablet",
+        "comment": "Take 1 Tablet 2 Times Daily After Breakfast and Dinner",
+        "note": "(ทานยาติดต่อกันทุกวันจนยาหมด),(ถ้ายังไม่ทาน-อย่าแกะเม็ดยาออกจากแผง)ยาฆ่าเชื้อ",
+        "noteEn": "(Take Until Finished)(Store in the original package), Antibiotic",
+        "route": "Orally",
+        "frequency": "2 Times Daily After Breakfast and Dinner",
+        "frequencyTh": "วันละ 2 ครั้ง หลังอาหาร เช้า เย็น",
+        "dosage": "1",
+        "provider": "สุกัญญา ศรีขจรจิต, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "adn"
+        ]
+      },
+      {
+        "drug": "Arcoxia (90 mg) Tablet",
+        "code": "51142153000003",
+        "quantity": "5 Tablet",
+        "comment": "Take 1 Tablet Once Daily After Breakfast",
+        "note": "แก้ปวด ลดอักเสบของข้อและกล้ามเนื้อ (ทานหลังอาหารทันที)",
+        "noteEn": "For pain (Anti-inflammatory-take after meal immediately)",
+        "route": "Orally",
+        "frequency": "Once Daily After Breakfast",
+        "frequencyTh": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "dosage": "1",
+        "provider": "สุกัญญา ศรีขจรจิต, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf"
+        ]
+      },
+      {
+        "drug": "Pseudoephedrine Tablet (60 Mg) ><",
+        "code": "51151743000003",
+        "quantity": "20 Tablet",
+        "comment": "Take 1 Tablet 3 Times Daily After Breakfast Lunch and Dinner",
+        "note": "แก้คัดจมูก หูอื้อ หรืออาการตามแพทย์สั่ง อาจทำให้ใจสั่น",
+        "noteEn": "Stuffy nose Or As Doctor Directed May cause palpitation",
+        "route": "Orally",
+        "frequency": "3 Times Daily After Breakfast Lunch and Dinner",
+        "frequencyTh": "วันละ 3 ครั้ง หลังอาหาร เช้า กลางวัน เย็น",
+        "dosage": "1",
+        "provider": "สุกัญญา ศรีขจรจิต, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "alu",
+          "adn"
+        ]
+      },
+      {
+        "drug": "Difflam Forte Throat Spray (15 Ml)",
+        "code": "51142114000003",
+        "quantity": "1 Bottle",
+        "comment": "Spray into the Mouth 1 SPRAY(S) 3 Times Daily Morning Noon Evening If needed",
+        "note": "พ่นคอตามคำแนะนำ หลีกเลี่ยงการใช้เกินขนาด",
+        "noteEn": "Spray into the throat as directed; do not exceed the recommended dose.",
+        "route": "(Mouth/Throat)",
+        "frequency": "3 Times Daily Morning Noon Evening If needed",
+        "frequencyTh": "วันละ 3 ครั้ง เช้า กลางวัน เย็น เวลามีอาการ",
+        "dosage": "1",
+        "provider": "สุกัญญา ศรีขจรจิต, พญ.",
+        "oral": false,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": true,
+        "mealSlots": [
+          "abf",
+          "alu",
+          "adn",
+          "prn"
+        ]
+      },
+      {
+        "drug": "Paracetamol 500 mg TABLET",
+        "code": "51142001000033",
+        "quantity": "10 Tablet",
+        "comment": "Take 1 Tablet Every 6 Hours If Needed",
+        "note": "ยาแก้ปวด-ลดไข้ // ไม่ควรทานเกิน 6 เม็ดต่อวัน",
+        "noteEn": "For Pain or Fever // Not take more than 6 tablets per day",
+        "route": "Orally",
+        "frequency": "Every 6 Hours If Needed",
+        "frequencyTh": "ทุก 6 ชั่วโมง เวลามีอาการ",
+        "dosage": "1",
+        "provider": "พิมพ์วิมล จันทร์แสง, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "prn"
+        ]
+      },
+      {
+        "drug": "Flunarizine 5 mg CAPSULE",
+        "code": "51014070301001",
+        "quantity": "10 Capsule",
+        "comment": "Take 1 Capsule Once Daily Before Bedtime",
+        "note": "อาจง่วงหรือเวียนหัว เลี่ยงขับรถ ใช้เครื่องจักร และดื่มแอลกอฮอล์",
+        "noteEn": "May cause drowsiness/dizziness; avoid driving, machinery, and alcohol.",
+        "route": "Orally",
+        "frequency": "Once Daily Before Bedtime",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนนอน",
+        "dosage": "1",
+        "provider": "พิมพ์วิมล จันทร์แสง, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "bed"
+        ]
+      }
+    ],
+    "allMeds": 6,
+    "allergies": {
+      "nkda": true,
+      "items": [],
+      "hasRecord": true
+    },
+    "appointmentText": "ไม่มีนัดติดตามอาการ แต่ถ้าพบอาการผิดปรกติหรืออาการแย่ลง แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม",
+    "reconcileMeds": [],
+    "hasReconcile": false,
+    "ok": true,
+    "source": "arcus-api",
+    "cacheStatus": "live"
+  },
+  "edits": {},
+  "rendered": null,
+  "history": [
+    {
+      "revision": 2,
+      "action": "build",
+      "at": 1790227474.919956
+    }
+  ],
+  "createdAt": 1790227474.1539478,
+  "displayContext": {
+    "patientName": "MR. SONGSAK  KANTARAPAN",
+    "hn": "48-26-011894",
+    "patientId": "48-26-011894",
+    "an": "",
+    "patientVisitId": "",
+    "bed": "607",
+    "doctor": "",
+    "diagnosis": "Other specified headache syndromes, Dizziness and giddiness, Fever, unspecified, suspected sinusitis, Acute sinusitis",
+    "pharmacistName": "อัปสร วัฒนาอุดมชัย, ภญ."
+  },
+  "error": null,
+  "updatedAt": 1790227474.919956
+}

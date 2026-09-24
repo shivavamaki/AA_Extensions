@@ -314,111 +314,41 @@ All files under `www/` are served as static content from the root path, includin
 
 ---
 
-## Extension sync (deploying the extension to workstations)
+## Extension updates (3.61.0 onward)
 
-Chrome **cannot install an unpacked extension from a URL** — "Load unpacked"
-reads a local folder only, so the server can never push an install. What it can
-do is publish the extension as a ZIP that each workstation unpacks to a **fixed
-local path**, so Chrome's registered path never changes and an update becomes
-*sync + reload* instead of remove-and-re-add.
+Staff update manually using the ZIP published at `/update-extension.html`.
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/ext-version` | `{version, name, id}` currently published — lets a client skip the download when already current. `id` is Chrome's deterministic extension id, computed from the manifest `key` (`_ext_id_from_key`), never hand-copied |
-| `GET` | `/ext-download` | The packaged extension ZIP (`Content-Disposition` names it by version) |
-| `GET` | `/ext-sync.bat` | The client sync script, **with this server's URL already filled in** (taken from the request's `Host`, so it is correct on any address/port) |
-| `GET` | `/update-extension` | `BKN-Update-Extension.bat` — the one-click updater staff keep on the Desktop; a thin bootstrap that re-fetches `/ext-sync.bat` each run, also URL-injected |
+| GET | `/api/ext-version` | Published version, extension ID, ZIP size and SHA-256 |
+| GET | `/ext-download` | Extension ZIP, built on demand and cached by manifest version |
+| GET | `/update-extension` or `/update-extension.html` | ZIP download and manual update instructions |
+| GET | `/reload-extension` | Optional helper for copying the Chrome extensions settings address |
 
-**Source.** The ZIP is built from `EXT_SRC_DIR` — by default the
-`BKNPharmacyPortal/` folder beside `pharmacy_server/` (the server runs on the
-same machine as the repo). Override with `BKN_EXT_SRC`. Dev noise (`.git`,
-`node_modules`, `test`, `screenshots`, `*.pem`, `*.crx`) is excluded, and the
-build is **cached per manifest version** in `data/ext-pkg/` — so **bump the
-manifest version to publish**, which the normal release flow does anyway.
+### Staff update steps
 
-### For pharmacy staff — one file, double-click
+1. Download the ZIP and extract it into a temporary folder. Check that it contains `manifest.json`.
+2. Close extension pages and back up the current installation. Replace all contents of the existing installation folder (normally `D:\pharmacy\BKNPharmacyPortal`) with the extracted contents. Keep the registered folder path; do not nest another folder beneath it.
+3. Open `chrome://extensions`, enable Developer mode, and reload BKN Pharmacy Portal. Check its version matches the update page.
+4. Refresh every ArcusAir tab. Close old medication sheets and open a new sheet for the selected patient.
 
-Give each workstation **one** file: `BKN-Update-Extension.bat`. Download it once
-from `http://10.134.110.81:8765/update-extension` (or copy it from
-`pharmacy_server/www/`) and leave it on the Desktop.
+For first installation, extract to the intended installation folder and select it with **Load unpacked**.
 
-To update, the staff member **double-clicks it** — no typing, no arguments. It
-re-downloads the sync logic from the server each run, so the Desktop copy never
-goes stale; only the one `SERVER=` line would ever need editing, and only if the
-server moves.
+### Publishing
 
-First time on a PC, after running it once: `chrome://extensions` → Developer
-mode → **Load unpacked** → `D:\pharmacy\BKNPharmacyPortal`. After that it is
-double-click, then click the reload arrow — the path, and therefore the
-extension ID, never changes.
+Bump `BKNPharmacyPortal/manifest.json`; the server builds the ZIP on the next version/download request. No publish script is needed. Source is `EXT_SRC_DIR` (override with `BKN_EXT_SRC`); packages are cached in `data/ext-pkg/`. Batch and CMD files are excluded from packages, along with existing development-file exclusions. Restart the server after changing its Python code.
 
-### For the maintainer — publishing a version
+### Retired batch deployment
 
-On the server machine, after bumping the manifest version, double-click
-`pharmacy_server/publish_extension.bat`. It reports the version, forces the
-package build so the first workstation doesn't wait, and reminds you that **an
-edit without a version bump will not reach the workstations** (the ZIP is cached
-per manifest version).
+Release 3.61.0 removes `www/BKN-Update-Extension.bat`, `www/bkn-install.bat`, `publish_extension.bat`, and the embedded sync-script generator. The old `/update-extension.bat`, `/BKN-Update-Extension.bat`, `/bkn-install.bat`, `/install.bat`, `/ext-sync.bat`, and `/ext-sync` routes return HTTP 410 with instructions to use the update page. The nested legacy server also retires these routes.
 
-Both scripts fail safely and say what to do: if the server is unreachable they
-explain which address they tried and leave any existing install untouched.
+Existing Desktop/Downloads copies are not remotely removed; staff should delete them. Historical BAT review archives include unrelated server-start scripts and are retained as historical records, not installation packages. No server-start scripts are removed.
 
-The script is deliberately conservative: it compares versions and exits early
-when current, verifies the downloaded package contains a `manifest.json`
-*before* touching the live folder, and leaves the existing install untouched if
-the server is unreachable or the download is corrupt.
+### 3.61.0 release notes
 
-**After a successful update the script opens Chrome at the extension's own
-page** (`chrome://extensions/?id=<deterministic id>`), so the reload arrow is
-right there instead of being hunted for. It does this **only when something
-actually changed** — an up-to-date run exits without opening anything.
-
-Three things the launch has to get right on a ward PC, all learned the hard way:
-
-- **Chrome silently drops a `chrome://` URL given on the command line** (a
-  deliberate security restriction) and opens the New Tab page instead. So the
-  script opens an ordinary **`GET /reload-extension?id=…&ver=…`** page on the
-  pharmacy server (`www/reload-extension.html`), which shows the remaining step
-  in EN/TH and **copies** `chrome://extensions/?id=…` to the clipboard on click.
-  A web page **cannot navigate to `chrome://` at all** — Chrome blocks it from
-  an `<a href>`, `window.open()` and `location.assign()` alike, and a user
-  gesture makes no difference — so copy-and-paste is the furthest this can go.
-  The page validates the `id` against `^[a-p]{32}$` and falls back to plain
-  `chrome://extensions` for anything else, so a truncated or unsubstituted
-  value can never produce a broken address. Clipboard writes need a secure
-  context and this page is plain http, so it falls back to a hidden-textarea
-  `execCommand('copy')`, and the address is rendered on the page and
-  auto-selected for a manual Ctrl+C. In the `.bat`, the URL is
-  double-quoted so `&` needs **no** `^` escape, and comments inside the
-  `if defined CHROME ( … ) else ( … )` block must use `rem`, not `::` — a `::`
-  breaks block parsing and both branches run.
-
-- **Never `start "" chrome.exe`.** `chrome.exe` is usually *not* on `PATH`, so
-  the shell hands the unknown name to Windows, which offers to find it in the
-  **Microsoft Store**. The script resolves the real binary instead — the two
-  `Program Files` locations, `%LOCALAPPDATA%`, then the
-  `App Paths\chrome.exe` registry entry — and prints a plain "open Chrome
-  yourself" note if none matches.
-- **Pass the profile Chrome last used.** These workstations have many Chrome
-  profiles, so a bare launch shows the *"Who's using Chrome?"* picker — a dead
-  end for a staff member who just wants the reload arrow. The profile is read
-  from `User Data/Local State` → `profile.last_used`, falling back to
-  `Default`. Hardcoding `Default` would be **wrong** here: on the pharmacy PC
-  the profile in use is `Profile 10`, and `Default` is a different, empty
-  profile with no extension installed.
-
-> **Chrome still requires a manual reload — this is by design and cannot be
-> scripted.** Chrome deliberately blocks synthetic clicks on
-> `chrome://extensions` (automating extension install/reload is a known malware
-> technique), so `SendKeys`/AutoIt/AutoHotkey will not work there either.
-> Deep-linking to the right page is as far as a script can go.
->
-> The only way to remove the reload entirely is a **policy-managed CRX**
-> (`update_url` + `ExtensionInstallForcelist`/`ExtensionInstallSources` via
-> Group Policy). That needs hospital IT: these workstations are centrally
-> managed (`SyncDisabled`, `URLAllowlist` etc. are already pushed) and local
-> `gpedit.msc`/`HKLM` policy edits are denied to pharmacy staff. **IT has
-> declined this**, so the `.bat` + manual reload is the supported flow.
+- Replace batch installers/updaters with manual ZIP deployment.
+- Prevent the previous patient's context from reaching a new Home Medication Sheet tab (carried forward from the 3.60.1 fix).
+- Clear previous launch state, isolate delayed delivery callbacks, and guard repeated clicks while patient extraction is pending.
 
 ---
 
@@ -487,3 +417,31 @@ Double-click `start_server.bat` to launch the server in a terminal window. It ca
 ---
 
 Maintained by BKN Hospital Pharmacy Department · Internal use only
+
+### HM Process Queue dashboard
+
+Open `/static/hmq/dashboard.html` on the pharmacy server for the queue board, statistics, date filters, search, and audit logs without installing the extension. The server home page and extension HM Queue Dashboard button link here. Assets live in `www/static/hmq/` and read the existing same-origin `/api/hmq` endpoint. The static URL works without a server restart. `/hmq-dashboard` is also available after restarting the Python server. Reload the extension to update its button. The existing `/hmq-report` remains available.
+
+HMQ performance: the loader uses one `os.scandir` pass and enumeration metadata for the parsed-JSON cache, avoiding per-file SMB stat requests. It preserves live-over-archive precedence and checks fresh directory metadata on every query. Restart the server to activate Python loader changes. The dashboard reuses date formatting/card markup and debounces search; static asset updates apply on page reload. Regression check: `python -m unittest discover -s pharmacy_server -p test_hmq_loader.py`.
+
+### Staff medication preparation
+
+Open `/static/medication-preparation/index.html` (also linked as **PREPARE MEDICATION** on the server home page and **Prepare medication** in Arcus Toolkit).
+
+1. Select the preparer's name from the same `/api/iv-staff` master used by IV stickers.
+2. Scan the order number beginning with I, O, or E. Enter, Tab, or 800 ms idle submits it.
+3. Wait for **Saved** or **Already recorded**, then scan the next order. The input retains focus. This is an order-level preparation acknowledgement; it does not verify individual medicines, quantities, or dispensing completion.
+
+A name is selected explicitly on a new page. This is a staff-selected attribution, not an authenticated pharmacist signature. The server validates the selected name against the current IV staff master. Names/roles are copied into the immutable record so later master-list changes do not rewrite history.
+
+Records are stored atomically under `data/medication-preparation/YYYY-MM-DD/<hash>.json`. The folder represents the scan's Bangkok date; `preparedAt` and `date` are server-generated receipt time/date. One record per selected staff name + exact order number + scan date prevents repeated scans from duplicating preparation counts. A different staff member produces a separate record. A retry retains the same payload, including across a page reload in the same tab. Existing records can be acknowledged on later retries; new records accept only today's or yesterday's scan date to accommodate midnight transitions.
+
+Dashboard API:
+
+- `POST /api/medication-preparations`: JSON `{ "staffName": "<IV staff name>", "orderNumber": "I-ORDER", "scanDate": "YYYY-MM-DD" }`. Returns `{ok, duplicate, record}`; HTTP 201 for a new event, 200 for an existing event.
+- `GET /api/medication-preparations?from=YYYY-MM-DD&to=YYYY-MM-DD&orderNumber=I-ORDER&staffName=...&limit=100&offset=0`: returns `{rows,total,from,to,limit,offset}`, newest first. Dates default to today in Bangkok and filter the server receipt date. `orderNumber` is a case-insensitive substring filter; `staffName` is an exact filter. Up to 366 days and 500 rows per page. Dashboards join by `orderNumber` and display `staffName` / `preparedAt`.
+- There is no edit/delete API for these preparation acknowledgements. Saves from the hosted page require same-origin requests on the configured trusted network; existing extension/session permissions remain available and other endpoint policies are unchanged.
+
+Reload the extension to expose its new button. **Restart the Python pharmacy server to activate the new API**; the page disables saves until that API is available. No historical patient/queue records are migrated or changed.
+
+Synthetic validation: `python -m unittest discover -s pharmacy_server -p test_medication_preparation.py` and `node pharmacy_server/test_medication_preparation_browser.cjs`.

@@ -88,7 +88,15 @@
 
   async function disableTurbo() {
     driverState.requested = false;
-    await send({ type: "cdpDetach" });
+    const result = await send({ type: "cdpDetach" });
+    if (!result.ok) {
+      driverState.requested = isTurbo();
+      driverState.lastError = result.error || "detach failed";
+      window.dispatchEvent(new CustomEvent("arcus-driver:mode", {
+        detail: { mode: driverState.mode, reason: driverState.lastError },
+      }));
+      return { ok: false, error: driverState.lastError };
+    }
     driverState.mode = "dom";
     driverState.attached = false;
     window.dispatchEvent(new CustomEvent("arcus-driver:mode", { detail: { mode: "dom" } }));

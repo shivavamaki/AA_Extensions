@@ -3,12 +3,16 @@
 > Chrome Extension (Manifest V3) for **BKN Hospital Pharmacy Department**  
 > Automates repetitive dispensing workflows on the Arcusair Pharmacy Management System.
 
-![Version](https://img.shields.io/badge/version-4.7.0-blue)
+![Version](https://img.shields.io/badge/version-4.8.3-blue)
 ![Manifest](https://img.shields.io/badge/manifest-v3-green)
 ![License](https://img.shields.io/badge/license-Internal-grey)
 
 ---
 
+
+## Paperless Checker (4.8.3)
+
+Open the active ArcusAir tab, then use Arcus Toolkit → Paperless Checker → Open Checker. Includes scanner-based order lookup, medicine DOM checks, guarded dispensing, automatic next-prescription standby, and session log export. Use **Current data & review logs** for a full-page live status view, medicine progress, searchable retained session history, and filtered JSON export. Reload the extension and ArcusAir after updating. See [PAPERLESS-CHECKER.md](PAPERLESS-CHECKER.md) for workflow, guards, and validation.
 
 ## Tab and PC behavior (4.7.0)
 

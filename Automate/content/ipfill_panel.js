@@ -792,7 +792,9 @@
   }
 
   async function startRun() {
+    if (window.ArcusPaperless?.isActive()) { setStatus("Stop Paperless Checker before starting IP Fill."); return; }
     await window.ArcusTabSettings.flush();
+    if (window.ArcusPaperless?.isActive()) return;
     if (state.running) return;
     const wards = getWardList();
     if (!wards.length) {

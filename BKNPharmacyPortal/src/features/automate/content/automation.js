@@ -329,61 +329,70 @@
     return { ok: false, reason: `No row with status ${targetStatus} and column 10 starts with ${getOrderPatternLabel()}` };
   }
 
-  async function clickAllocateSaveAndHandleOverride(functionName) {
-    const meta = `${functionName} • allocate route`;
-
-    setStep("Waiting allocate page", "Looking for Save button");
-    const saveBtn = await waitForAllocatePageReady();
-    if (!saveBtn) return { ok: false, reason: "allocate page/save button not ready" };
-
-    setStep("Saving allocate", "Clicked Save button");
-    if (!(await clickAndSettle(saveBtn, { timeoutMs: CONFIG.maxSaveSettleMs }))) {
-      return { ok: false, reason: "allocate confirm button could not be clicked" };
-    }
-    window.ArcusPanel?.pushLog("info", "Clicked allocate save button", meta);
-    // A dialog may render a frame after the response; give the digest one tick.
-    await settleDialogRender();
-    // Auto-override watches the DOM and may be filling this dialog in right
-    // now; let it finish so we do not race it.
-    await waitForAutoOverrideIdle();
-
+  async function closeAllocationInfoAlert(meta) {
     const dialog = findOpenDialog();
-    if (!dialog) {
-      // No dialog is visible, but that does not mean the save went through:
-      // auto-override may have already handled and closed one, in which case we
-      // are still sitting on the allocate page with nothing committed. Let
-      // commitAfterDialog decide — it returns immediately if the app really did
-      // navigate back, and re-presses the confirm button if it did not.
-      return commitAfterDialog({
-        meta,
-        label: "allocate",
-        isPage: isAllocatePage,
-        waitForPage: waitForAllocatePageReady,
-      });
+    if (!dialog) return true;
+    if (!isAlertDialog(dialog) || dialogLooksLikeManualOverride(dialog) ||
+        window.ArcusAutoOverride?.blockedAlerts(dialog).length) return false;
+    setStep("Closing alert", "Closing the informational alert before Allocate");
+    await closeAlertDialogIfPresent(meta);
+    await settleDomRender();
+    return !findOpenDialog();
+  }
+
+  async function clickAllocateSaveAndHandleOverride(functionName) {
+    const meta = functionName + " / allocate";
+    const fail = reason => ({ ok: false, done: true, reason });
+    setStep("Waiting allocate page", "Looking for Allocate button");
+    await settleDialogRender(1200);
+    if (!(await closeAllocationInfoAlert(meta))) return fail("Review the existing dialog before allocating");
+    let saveBtn = await waitForAllocatePageReady();
+    if (findOpenDialog()) {
+      if (!(await closeAllocationInfoAlert(meta))) return fail("Review the existing dialog before allocating");
+      saveBtn = await waitForAllocatePageReady();
     }
+    if (!saveBtn || state.stopRequested) return fail("allocate page not ready or stopped");
 
-    if (dialogLooksLikeManualOverride(dialog) && state.settings.waitManualOverride) {
-      setStep("Manual override", "Please select override reason and Save");
-      const waitResult = await waitForManualOverrideCompletion(meta);
-      if (!waitResult.ok) return waitResult;
-
-      // Closing the override dialog returns to the allocate page, it does not
-      // commit anything. The confirm button has to be pressed again.
-      return commitAfterDialog({
-        meta,
-        label: "allocate",
-        isPage: isAllocatePage,
-        waitForPage: waitForAllocatePageReady,
-      });
+    setStep("Saving allocate", "Sending Allocate once");
+    if (!(await clickAndSettle(saveBtn, { timeoutMs: CONFIG.maxSaveSettleMs }))) {
+      return fail("allocate confirm button could not be clicked");
     }
-
-    await closeGenericToolbarDialogIfPresent(meta);
-    return commitAfterDialog({
-      meta,
-      label: "allocate",
-      isPage: isAllocatePage,
-      waitForPage: waitForAllocatePageReady,
-    });
+    window.ArcusPanel?.pushLog("info", "Allocate submitted once; waiting for result", meta);
+    let deadline = Date.now() + CONFIG.maxRouteWaitMs;
+    while (!state.stopRequested && Date.now() < deadline) {
+      const override = window.ArcusAutoOverride;
+      if (isWorkbenchPage()) {
+        if (await waitForWorkbenchReady()) return { ok: true, reason: "allocated and returned to workbench" };
+        return fail("workbench returned but did not become ready");
+      }
+      const dialog = findOpenDialog();
+      if (dialog && override?.isEnabled?.()) {
+        // Act explicitly; do not race the observer's debounce timer.
+        await override.handleIfPresent();
+        while (override.state.busy && !state.stopRequested) await sleep(100);
+        if (state.stopRequested) break;
+        if (override.isAwaitingHuman()) {
+          setStep("Waiting for pharmacist", override.state.awaitingReason || "Review the override dialog");
+          const reviewed = await waitForManualOverrideCompletion(meta);
+          if (!reviewed.ok) return fail(reviewed.reason);
+        } else if (findOpenDialog()) {
+          return fail("Unrecognized dialog left open for review");
+        }
+        deadline = Date.now() + CONFIG.maxRouteWaitMs;
+      } else if (dialog) {
+        if (!dialogLooksLikeManualOverride(dialog) || !state.settings.waitManualOverride) {
+          return fail("Dialog requires review; no automatic close or repeat Allocate was sent");
+        }
+        const reviewed = await waitForManualOverrideCompletion(meta);
+        if (!reviewed.ok) return fail(reviewed.reason);
+        deadline = Date.now() + CONFIG.maxRouteWaitMs;
+      }
+      // Saving the reason can trigger allocation itself. Never re-submit saveData
+      // simply because Angular has not navigated yet.
+      await sleep(150);
+    }
+    return fail(state.stopRequested ? "stopped; sent allocation is not undone" :
+      "Allocation result not confirmed. Check the order before retrying; no repeat Allocate was sent.");
   }
 
   /**
@@ -570,9 +579,11 @@
         await clickAndSettle(row, { timeoutMs: CONFIG.maxRowSettleMs });
 
         const meta = `${functionName} • attempt ${attempt}`;
+        await settleDialogRender(1200);
         if (findOpenDialog() && isAlertDialog()) {
           await acknowledgeAlertRowsIfPresent(meta);
           await closeAlertDialogIfPresent(meta);
+          if (findOpenDialog()) return { ok: false, done: true, reason: "Row alert remains open; review before allocating" };
           // No XHR follows a dialog close; wait for the re-render, not the network.
           await settleDomRender();
         }
@@ -621,9 +632,11 @@
     await clickAndSettle(found.row, { timeoutMs: CONFIG.maxRowSettleMs });
 
     const meta = `${functionName} • auto status ${targetStatus}`;
+    await settleDialogRender(1200);
     if (findOpenDialog() && isAlertDialog()) {
       await acknowledgeAlertRowsIfPresent(meta);
       await closeAlertDialogIfPresent(meta);
+      if (findOpenDialog()) return { ok: false, done: true, reason: "Row alert remains open; review before allocating" };
       // No XHR follows a dialog close; wait for the re-render, not the network.
       await settleDomRender();
     }
@@ -699,6 +712,10 @@
           setStep("Row failed", result.reason || "unknown reason");
         }
         window.ArcusPanel?.renderStats();
+        if (result.done && !result.ok) {
+          window.ArcusPanel?.setStatus(functionName + "\nStopped for review: " + result.reason);
+          return;
+        }
         await sleep(CONFIG.loopDelayMs);
       }
 
@@ -772,11 +789,13 @@
       alert("This function works only on Arcus dispense workbench pharmacy routes.");
       return;
     }
+    if (window.ArcusAutoOverride?.state.busy) { alert("Wait for the current override to finish."); return; }
     if (state.isRunning) {
       alert("Another workbench task is already running.");
       return;
     }
 
+    window.ArcusAutoOverride?.resume();
     if (state.settings.automationMode === "auto") {
       return runAutoStatusAutomation({ functionName, mode });
     }

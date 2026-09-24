@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Arcus Toolkit",
-  "version": "4.7.0",
-  "version_name": "2026-09-14 - Tab-local settings and persistent running panels",
-  "description": "Auto Dispense and IP Fill automation for Arcus Pharmacy Management System.",
+  "version": "4.8.3",
+  "version_name": "2026-09-22 - Paperless current data and review logs",
+  "description": "Pharmacy allocation, dispensing, IP Fill, and paperless barcode checker for ArcusAir.",
   "permissions": [
     "activeTab",
     "scripting",
@@ -41,7 +41,8 @@
         "content/drug-image.js",
         "content/frequency-master.js",
         "content/order-item.js",
-        "content/translation.js"
+        "content/translation.js",
+        "content/paperless-checker.js"
       ],
       "css": [
         "styles.css"

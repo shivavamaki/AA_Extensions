@@ -1,0 +1,87 @@
+{
+  "id": "ea590514591a3a7fe9976d8356b7df17",
+  "owner": "public",
+  "request": {
+    "schemaVersion": 1,
+    "reportType": "home-med-ipd",
+    "identity": {
+      "patientUid": "5b8a57523238d86bf0c2e5e9",
+      "visitUid": "6ab373666128a37c9730a038"
+    },
+    "presentation": {
+      "language": "th",
+      "templateVersion": "hm-a4-v1"
+    }
+  },
+  "revision": 2,
+  "status": "ready",
+  "source": {
+    "patient": {
+      "patientName": "พันจ่าตรี ตรีศักดิ์ ปาสาเนย์",
+      "hn": "48-17-013353",
+      "an": "I2609231498",
+      "room": "817"
+    },
+    "meds": [
+      {
+        "drug": "Seretide-50/250 mcg ACCUHALER",
+        "code": "51018030111011",
+        "quantity": "1 Bottle",
+        "comment": "Inhale through the Mouth 1 PUFF_PU 2 Times Daily Morning and Evening",
+        "note": "บ้วนปากด้วยน้ำหลังสูดยาทุกครั้ง",
+        "noteEn": "Should gargle with water after inhale",
+        "route": "(Mouth/Throat)",
+        "frequency": "2 Times Daily Morning and Evening",
+        "frequencyTh": "วันละ 2 ครั้ง เช้า เย็น",
+        "dosage": "1",
+        "provider": "ทนงศักดิ์ สุวรรณเทน, นพ.",
+        "oral": false,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "adn"
+        ]
+      }
+    ],
+    "allMeds": 1,
+    "allergies": {
+      "nkda": true,
+      "items": [],
+      "hasRecord": true
+    },
+    "appointmentText": "คนไข้มีนัดหมาย วันที่ 21 ตุลาคม 2569 เวลา 10:00 น.\tที่แผนก Outpatient Pharmacy (Floor 1) กับ Pharmacist หมายเหตุ Voriconazole TABLET (200 mg) (ยานอกบัญชี) = 2 Box",
+    "reconcileMeds": [],
+    "hasReconcile": false,
+    "ok": true,
+    "source": "arcus-api",
+    "cacheStatus": "live"
+  },
+  "edits": {},
+  "rendered": null,
+  "history": [
+    {
+      "revision": 2,
+      "action": "build",
+      "at": 1790170116.4636936
+    }
+  ],
+  "createdAt": 1790170116.0254476,
+  "displayContext": {
+    "patientName": "CPO 3 TRISAK  PASANE",
+    "hn": "48-17-013353",
+    "patientId": "48-17-013353",
+    "an": "",
+    "patientVisitId": "",
+    "bed": "811",
+    "doctor": "",
+    "diagnosis": "Pneumonia in mycoses classified elsewhere, Mild protein-energy malnutrition, Other autoimmune haemolytic anaemias, โรคโลหิตจางจากเม็ดเลือดแดงแตกเนื่องจากภูมิคุ้มกันต่อต้านตนเอง",
+    "pharmacistName": "ปฬาภรณ์ อันพาพรม, ภญ."
+  },
+  "error": null,
+  "updatedAt": 1790170116.4636936
+}

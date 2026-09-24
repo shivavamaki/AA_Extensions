@@ -249,11 +249,14 @@
   function sendHostedContext() {
     if (!_hostedWindow || !_hostedOrigin || !_hostedContext) return;
     clearTimeout(_hostedDeliveryTimer);
+    const child = _hostedWindow;
+    const origin = _hostedOrigin;
+    const context = _hostedContext;
     let attempts = 0;
     const send = () => {
-      if (!_hostedWindow || !_hostedOrigin || !_hostedContext) return;
+      if (child !== _hostedWindow || context !== _hostedContext || child.closed) return;
       try {
-        _hostedWindow.postMessage({ type: "HM_PILOT_CONTEXT", context: _hostedContext }, _hostedOrigin);
+        child.postMessage({ type: "HM_PILOT_CONTEXT", context }, origin);
       } catch (_) { return; }
       if (++attempts < 20) _hostedDeliveryTimer = setTimeout(send, 300);
     };
@@ -365,20 +368,23 @@
     }
     try {
       const base = await window.BKNData.getServerUrl();
+      if (child !== _hostedWindow || child.closed) return;
       const page = mode === "opd" ? "OPD-Sheet.html" : "page-home-med.html";
       const url = new URL(`/hm-pilot/src/features/home-med/${page}`, base);
       _hostedOrigin = url.origin;
       _hostedReady = false;
-      _hostedListener = (event) => {
+      const listener = (event) => {
+        if (child !== _hostedWindow) return;
         if (event.source !== child || event.origin !== url.origin || event.data?.type !== "HM_PILOT_READY") return;
         _hostedReady = true;
         sendHostedContext();
       };
-      window.addEventListener("message", _hostedListener);
+      _hostedListener = listener;
+      window.addEventListener("message", listener);
       child.location.href = url.href;
       setTimeout(() => {
-        if (_hostedListener) window.removeEventListener("message", _hostedListener);
-        _hostedListener = null;
+        window.removeEventListener("message", listener);
+        if (_hostedListener === listener) _hostedListener = null;
       }, 120000);
     } catch (error) {
       child.close();
@@ -388,6 +394,15 @@
   }
 
   async function handleSheetClick() {
+    if (_sending) return;
+    // The hosted page accepts its first context message. Clear the previous
+    // patient before opening a tab that can immediately announce READY.
+    clearTimeout(_hostedDeliveryTimer);
+    if (_hostedListener) window.removeEventListener("message", _hostedListener);
+    _hostedListener = null;
+    _hostedContext = null;
+    _hostedOrigin = "";
+    _hostedReady = false;
     _msgType = MSG.LOAD_MED_TABLE;
     _hostedWindow = window.open("about:blank", "_blank");
     if (!_hostedWindow) {
@@ -398,7 +413,7 @@
     void openHostedSheet(mode, _hostedWindow);
     await handleClick();
   }
-  function handleJourneyClick() { _msgType = MSG.OPEN_MED_JOURNEY; handleClick(); }
+  function handleJourneyClick() { if (_sending) return; _msgType = MSG.OPEN_MED_JOURNEY; handleClick(); }
 
   /* ─────────────────────────────────────────────
    * Inject / remove buttons (idempotent, page-level):

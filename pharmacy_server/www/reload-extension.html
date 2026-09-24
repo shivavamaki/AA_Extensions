@@ -46,9 +46,9 @@
 </head>
 <body>
   <div class="card">
-    <h1>✅ Update installed</h1>
-    <p class="sub">BKN Pharmacy Portal <span class="ver" id="ver"></span> is now in
-      <code>D:\pharmacy\BKNPharmacyPortal</code></p>
+    <h1>Finish your manual update</h1>
+    <p class="sub">BKN Pharmacy Portal <span class="ver" id="ver"></span>: after replacing the files in your installation folder
+      (normally <code>D:\pharmacy\BKNPharmacyPortal</code>), reload it below.</p>
 
     <p><strong>One last step</strong> — Chrome needs to reload the extension.</p>
     <p class="thai">เหลืออีกขั้นตอนเดียว — กด <b>Reload</b> ที่ Chrome</p>
@@ -72,9 +72,7 @@
   </div>
 
 <script>
-  // Chrome refuses a chrome:// URL passed on the command line, so the updater
-  // opens THIS ordinary http page instead and the user clicks through from
-  // here — a link click is a user gesture, which Chrome does allow.
+  // Copy the Chrome settings address after manually replacing extension files.
   const params = new URLSearchParams(location.search);
   // A Chrome extension id is exactly 32 chars, a-p. Anything else (a truncated
   // "…", a stray placeholder) must NOT be pasted into the URL — fall back to the

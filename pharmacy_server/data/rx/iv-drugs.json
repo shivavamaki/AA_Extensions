@@ -1,5 +1,15 @@
 [
   {
+    "codeName": "MMC",
+    "generic": "Mitomycin-C",
+    "type": "EYE",
+    "exp": 7,
+    "storage": "Keep in Room Temp.",
+    "had": "High Alert Drugs",
+    "conc": "0.3 mg/mL",
+    "rate": ""
+  },
+  {
     "codeName": "MERONEM",
     "generic": "Meropenem",
     "type": "ATB",

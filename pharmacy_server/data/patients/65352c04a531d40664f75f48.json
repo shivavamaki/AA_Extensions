@@ -1,10 +1,10 @@
 {
   "patientuid": "65352c04a531d40664f75f48",
   "createdAt": "2026-06-01T11:54:22.324913+00:00",
-  "updatedAt": "2026-06-02T03:52:33.856924+00:00",
+  "updatedAt": "2026-09-21T08:11:12.916764+00:00",
   "context": {
     "patientuid": "65352c04a531d40664f75f48",
-    "patientvisituid": "6a1ae2bc2f94766d8234e402",
+    "patientvisituid": "6aafc35bc13a9d6918056021",
     "hn": "48-23-012646",
     "patientName": "MASTER THANACHOT  KOTTHIAM"
   },
@@ -13,5 +13,460 @@
     "customMedications": [],
     "adrEvent": null
   },
-  "medicationCache": {}
+  "medicationCache": {},
+  "captures": {
+    "6aafc35bc13a9d6918056021": {
+      "incusToken": "6ab091286c1c04bcd303a168",
+      "ts": 1789977832097,
+      "tokenTs": 1789977832097,
+      "medreconcileSnapshot": {
+        "medreconcile": {
+          "_id": "6aafcbdce4ec1f60ac86eb8e",
+          "medicationitems": [
+            {
+              "orderitemuid": {
+                "_id": "5b859656136d2764034b07a0",
+                "aliasnames": [
+                  "51142106000013",
+                  "Ibuprofen - O",
+                  "MSYJUNI0100O",
+                  "Nurofen",
+                  "ibuprofen ",
+                  "brufen",
+                  "NSAIDs",
+                  "junifen"
+                ],
+                "orderiteminstructions": [
+                  {
+                    "instructiontypeuid": "5cdaa6f356c0907903d1f906",
+                    "instructionuid": "591e82f9a57b21756dda8ab9",
+                    "instructiontext": "(Take after meal immediately) For pain-fever-inflammation",
+                    "locallangtext": "(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ",
+                    "otherlanguages": [],
+                    "_id": "692c40b6a83ad0157d98f3ca"
+                  },
+                  {
+                    "instructiontypeuid": "5b3c67b88c9df34c3e943533",
+                    "instructionuid": "591e82f9a57b21756dda8ab9",
+                    "instructiontext": "eGFR 30 to <60 mL/minute/1.73 m2: Avoid use in patients with intercurrent disease that increases risk of acute kidney injury. eGFR <30 mL/minute/1.73 m2: Avoid use.",
+                    "locallangtext": "",
+                    "otherlanguages": [],
+                    "_id": "692c40b6a83ad0157d98f3cb"
+                  },
+                  {
+                    "instructiontypeuid": "5b3c67b88c9df34c3e943533",
+                    "instructionuid": "591e82f9a57b21756dda8abc",
+                    "instructiontext": "analgesic : 4-10 MKDose q 6-8 hr; antipyretic : 5-10 MKDose q 6-8 hr. (Max: 40 mg/kg/day)",
+                    "locallangtext": "",
+                    "otherlanguages": [],
+                    "_id": "692c40b6a83ad0157d98f3cc"
+                  }
+                ],
+                "billingserviceuid": "6427281c0ccbef9c199dce79",
+                "billingservicesapuid": "5ba86fc21de8aea22956a8d3",
+                "code": "51142106000013",
+                "mbcode": "",
+                "name": "Ibuprofen Ped 100mg/5mL SUSP 60mL  ",
+                "description": "Ibuprofen Ped 100mg/5mL SUSP 60mL  ",
+                "orderitemcodes": [
+                  {
+                    "orderitemcodetypeuid": "5cc6910987ce9227fbc7f75f",
+                    "code": "126269",
+                    "_id": "61b06bd3cce30d077ed472c0"
+                  }
+                ],
+                "activefrom": "2014-08-17T13:03:39.461Z",
+                "ordercategorycode": "ORDCT6",
+                "Ordersubcategorycode": "2",
+                "ordercatuid": "5b858dcb136d27640348d078",
+                "ordersubcatuid": "5b858dcd136d27640348d21a",
+                "istaskgenerationreqd": false,
+                "ispermissionreqforresult": false,
+                "isapprovalrequired": false,
+                "iscosignrequired": false,
+                "isdoctorshareitem": false,
+                "ishourlycharge": false,
+                "isschedulable": false,
+                "allowpriceoverride": true,
+                "ispackageitem": false,
+                "createdby": "5b862a593238d86bf03a3d3a",
+                "createdat": "2014-08-18T03:23:20.000Z",
+                "modifiedby": "61f8b67154406605adb5b4d1",
+                "modifiedat": "2025-11-30T13:03:50.521Z",
+                "statusflag": "A",
+                "orguid": "5b20f438d1202e29ce16f710",
+                "orgcode": 48,
+                "externaltablename": "billableitem",
+                "incomesourceuid": "5c05025f3e4efabebdb7e6f9",
+                "servicecattypeuid": "5befe6337c9612b4c0ce5ee4",
+                "bsmdduid": 1945,
+                "type": "itemaster",
+                "externaluiditemmaster": 4306,
+                "restrictfrequencies": [],
+                "__v": 27,
+                "activeto": null,
+                "checklists": [],
+                "colorcode": null,
+                "defaultmodalityuid": null,
+                "defaultpriorityuid": null,
+                "doctorfeetax": null,
+                "duplicatealertduration": null,
+                "externaluid": "",
+                "ipdchecklists": [],
+                "isacknowledgementmandatory": true,
+                "linkedorderitems": [],
+                "maxqty": null,
+                "minqty": null,
+                "orderitemchanges": [
+                  {
+                    "_id": "61b06bd3cce30d077ed472c1",
+                    "modifiedat": "2021-12-08T08:24:51.475Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea273",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\"}],\"billingserviceuid\":\"5ba86fc21de8aea22956a8d3\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"description\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"orderitemcodes\":[{\"code\":\"\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T08:24:49.397Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5ccbbf7790a24a33ea7f0d0c\",\"modifiedat\":\"2019-05-14T00:55:10.909Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":2,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"},\"isobservationpanel\":false,\"isoutlab\":false,\"iscommentsasitemname\":false,\"alertinallocatescreen\":false,\"defaultfrequencyuid\":null}"
+                  },
+                  {
+                    "_id": "61dd45c1d69b460dd6e4d43e",
+                    "modifiedat": "2022-01-11T08:54:25.712Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea706",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]}],\"billingserviceuid\":\"5ba86fc21de8aea22956a8d3\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"description\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T08:54:17.225Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5bb325cb3e4efabebd8ea273\",\"modifiedat\":\"2021-12-08T08:24:51.475Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":3,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"}}"
+                  },
+                  {
+                    "_id": "62578baf414a2806eccb6591",
+                    "modifiedat": "2022-04-14T02:49:19.781Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea273",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]}],\"billingserviceuid\":\"5ba86fc21de8aea22956a8d3\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"description\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T02:49:17.783Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5bb325cb3e4efabebd8ea706\",\"modifiedat\":\"2022-01-11T08:54:25.712Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":4,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"}}"
+                  },
+                  {
+                    "_id": "63074cf73c379b0676317e66",
+                    "modifiedat": "2022-08-25T10:20:39.719Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea688",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]}],\"billingserviceuid\":\"5ba86fc21de8aea22956a8d3\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"IBUprofen (100mg/5ml)Syrup(60ml) $$\",\"description\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T10:20:15.667Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5bb325cb3e4efabebd8ea273\",\"modifiedat\":\"2022-04-14T02:49:19.781Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":5,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"}}"
+                  },
+                  {
+                    "_id": "63074d8312f6290671fa7713",
+                    "modifiedat": "2022-08-25T10:22:59.321Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea688",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\",\"junifen\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]}],\"billingserviceuid\":\"5ba86fc21de8aea22956a8d3\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"IBUprofen (100mg/5ml)Syrup(60ml) $$\",\"description\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T10:22:49.677Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5bb325cb3e4efabebd8ea688\",\"modifiedat\":\"2022-08-25T10:20:39.719Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":6,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"}}"
+                  },
+                  {
+                    "_id": "63074da343d7af38d224f1d0",
+                    "modifiedat": "2022-08-25T10:23:31.813Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea688",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\",\"junifen\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]}],\"billingserviceuid\":\"5ba86fc21de8aea22956a8d3\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Ibuprofen (100mg/5ml)Syrup(60ml) $$\",\"description\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T10:23:24.191Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5bb325cb3e4efabebd8ea688\",\"modifiedat\":\"2022-08-25T10:22:59.321Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":7,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"}}"
+                  },
+                  {
+                    "_id": "6311a0adb10242067f9b1925",
+                    "modifiedat": "2022-09-02T06:20:29.837Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea688",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\",\"junifen\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]}],\"billingserviceuid\":\"5ba86fc21de8aea22956a8d3\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"description\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T06:20:22.697Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5bb325cb3e4efabebd8ea688\",\"modifiedat\":\"2022-08-25T10:23:31.813Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":8,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"}}"
+                  },
+                  {
+                    "_id": "633e99dc2fea75061f44e38e",
+                    "modifiedat": "2022-10-06T09:03:24.719Z",
+                    "modifiedby": "629c467a1e799376d5e71467",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\",\"junifen\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]}],\"billingserviceuid\":\"5ba86fc21de8aea22956a8d3\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"description\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T09:03:23.377Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5bb325cb3e4efabebd8ea688\",\"modifiedat\":\"2022-09-02T06:20:29.837Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":9,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"}}"
+                  },
+                  {
+                    "_id": "6341666486bff406823dd7d9",
+                    "modifiedat": "2022-10-08T12:00:36.784Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea688",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\",\"junifen\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]}],\"billingserviceuid\":\"5ba86fc21de8aea22956a8d3\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Ibuprofen (100mg/5ml)Syrup(60ml) $$\",\"description\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T12:00:25.212Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"629c467a1e799376d5e71467\",\"modifiedat\":\"2022-10-06T09:03:24.718Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":10,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"}}"
+                  },
+                  {
+                    "_id": "63ed77bb48dcd8067be53b6b",
+                    "modifiedat": "2023-02-16T00:24:27.321Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea68c",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\",\"junifen\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]}],\"billingserviceuid\":\"5ba86fc21de8aea22956a8d3\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"description\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T00:24:20.255Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5bb325cb3e4efabebd8ea688\",\"modifiedat\":\"2022-10-08T12:00:36.784Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":11,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"},\"isororder\":false}"
+                  },
+                  {
+                    "_id": "642aaf3ba4b58306439bf4a7",
+                    "modifiedat": "2023-04-03T10:49:31.219Z",
+                    "modifiedby": "5cd1222c5ba4412e87b87925",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\",\"junifen\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]}],\"billingserviceuid\":\"6427281c0ccbef9c199dce79\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"description\":\"Junifen(Nurofen)(100mg/5ml)Syrup(60ml) $$\",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T10:49:15.632Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5cd14cbb5f16d93a88347436\",\"modifiedat\":\"2023-03-31T19:57:08.318Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":13,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"isororder\":false,\"defaultqty\":null,\"displayorder\":null,\"processtime\":null,\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"}}"
+                  },
+                  {
+                    "_id": "6481ac235d92630623f2bbfd",
+                    "modifiedat": "2023-06-08T10:23:31.034Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea688",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\",\"junifen\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]}],\"billingserviceuid\":\"6427281c0ccbef9c199dce79\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"description\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T10:23:29.855Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5cd9ab6128b23879100a224d\",\"modifiedat\":\"2023-04-12T08:35:21.156Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":15,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"isororder\":false,\"defaultqty\":null,\"displayorder\":null,\"processtime\":null,\"orderitemalternatives\":[],\"outlabs\":[],\"portablecharges\":[],\"restrictdepartments\":[],\"restrictmodifiers\":[],\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"}}"
+                  },
+                  {
+                    "_id": "64b9123edf4a56065659d865",
+                    "modifiedat": "2023-07-20T10:53:50.673Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea688",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\",\"junifen\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]}],\"billingserviceuid\":\"6427281c0ccbef9c199dce79\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"description\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T10:53:49.570Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5bb325cb3e4efabebd8ea688\",\"modifiedat\":\"2023-06-08T10:23:31.034Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":16,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"isororder\":false,\"defaultqty\":null,\"displayorder\":null,\"processtime\":null,\"orderitemalternatives\":[],\"outlabs\":[],\"portablecharges\":[],\"restrictdepartments\":[],\"restrictmodifiers\":[],\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"}}"
+                  },
+                  {
+                    "_id": "64ec17f0857b58068a5fa6b7",
+                    "modifiedat": "2023-08-28T03:43:44.301Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea688",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\",\"junifen\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]},{\"instructiontypeuid\":\"5b3c67b88c9df34c3e943533\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"eGFR 30 to <60 mL/minute/1.73 m2: Avoid use in patients with intercurrent disease that increases risk of acute kidney injury. eGFR <30 mL/minute/1.73 m2: Avoid use.\",\"locallangtext\":\"\",\"otherlanguages\":[]}],\"billingserviceuid\":\"6427281c0ccbef9c199dce79\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"description\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T03:43:41.422Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"63f85efc48d9be0645daa6ae\",\"modifiedat\":\"2023-08-17T07:39:04.387Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":18,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"isororder\":false,\"defaultqty\":null,\"displayorder\":null,\"processtime\":null,\"orderitemalternatives\":[],\"outlabs\":[],\"portablecharges\":[],\"restrictdepartments\":[],\"restrictmodifiers\":[],\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"}}"
+                  },
+                  {
+                    "_id": "64ec5b951a0e8d0669722867",
+                    "modifiedat": "2023-08-28T08:32:21.077Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea688",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\",\"junifen\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]},{\"instructiontypeuid\":\"5b3c67b88c9df34c3e943533\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"eGFR 30 to <60 mL/minute/1.73 m2: Avoid use in patients with intercurrent disease that increases risk of acute kidney injury. eGFR <30 mL/minute/1.73 m2: Avoid use.\",\"locallangtext\":\"\",\"otherlanguages\":[]}],\"billingserviceuid\":\"6427281c0ccbef9c199dce79\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"description\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T08:32:19.183Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5bb325cb3e4efabebd8ea688\",\"modifiedat\":\"2023-08-28T03:43:44.301Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":19,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"isororder\":false,\"defaultqty\":null,\"displayorder\":null,\"processtime\":null,\"orderitemalternatives\":[],\"outlabs\":[],\"portablecharges\":[],\"restrictdepartments\":[],\"restrictmodifiers\":[],\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"}}"
+                  },
+                  {
+                    "_id": "65140cd7925e61257c31eb96",
+                    "modifiedat": "2023-09-27T11:07:03.938Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea688",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\",\"junifen\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]},{\"instructiontypeuid\":\"5b3c67b88c9df34c3e943533\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"eGFR 30 to <60 mL/minute/1.73 m2: Avoid use in patients with intercurrent disease that increases risk of acute kidney injury. eGFR <30 mL/minute/1.73 m2: Avoid use.\",\"locallangtext\":\"\",\"otherlanguages\":[]}],\"billingserviceuid\":\"6427281c0ccbef9c199dce79\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"description\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T11:07:01.938Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5bb325cb3e4efabebd8ea688\",\"modifiedat\":\"2023-08-28T08:32:21.077Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":20,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"isororder\":false,\"defaultqty\":null,\"displayorder\":null,\"processtime\":null,\"orderitemalternatives\":[],\"outlabs\":[],\"portablecharges\":[],\"restrictdepartments\":[],\"restrictmodifiers\":[],\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"}}"
+                  },
+                  {
+                    "_id": "653e694d6c8bd0067d83a012",
+                    "modifiedat": "2023-10-29T14:16:45.921Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea535",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\",\"junifen\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]},{\"instructiontypeuid\":\"5b3c67b88c9df34c3e943533\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"eGFR 30 to <60 mL/minute/1.73 m2: Avoid use in patients with intercurrent disease that increases risk of acute kidney injury. eGFR <30 mL/minute/1.73 m2: Avoid use.\",\"locallangtext\":\"\",\"otherlanguages\":[]}],\"billingserviceuid\":\"6427281c0ccbef9c199dce79\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"description\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T14:16:43.328Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5bb325cb3e4efabebd8ea688\",\"modifiedat\":\"2023-09-27T11:07:03.938Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":21,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"isororder\":false,\"defaultqty\":null,\"displayorder\":null,\"processtime\":null,\"orderitemalternatives\":[],\"outlabs\":[],\"portablecharges\":[],\"restrictdepartments\":[],\"restrictmodifiers\":[],\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"}}"
+                  },
+                  {
+                    "modifiedat": "2024-11-14T10:05:47.353Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea688",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\",\"junifen\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]},{\"instructiontypeuid\":\"5b3c67b88c9df34c3e943533\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"eGFR 30 to <60 mL/minute/1.73 m2: Avoid use in patients with intercurrent disease that increases risk of acute kidney injury. eGFR <30 mL/minute/1.73 m2: Avoid use.\",\"locallangtext\":\"\",\"otherlanguages\":[]},{\"instructiontypeuid\":\"5b3c67b88c9df34c3e943533\",\"instructionuid\":\"591e82f9a57b21756dda8abc\",\"instructiontext\":\"analgesic : 4-10 MKDose q 6-8 hr; antipyretic : 5-10 MKDose q 6-8 hr. (Max: 40 mg/kg/day)\",\"locallangtext\":\"\",\"otherlanguages\":[]}],\"billingserviceuid\":\"6427281c0ccbef9c199dce79\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"description\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"orderitemcodes\":[{\"_id\":\"61b06bd3cce30d077ed472c0\",\"code\":\"126269\",\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T10:05:28.400Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5bb325cb3e4efabebd8ea535\",\"modifiedat\":\"2023-10-29T14:16:45.921Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":22,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"isororder\":false,\"defaultqty\":null,\"displayorder\":null,\"processtime\":null,\"orderitemalternatives\":[],\"outlabs\":[],\"portablecharges\":[],\"restrictdepartments\":[],\"restrictmodifiers\":[],\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"},\"alloworderwithoutstock\":false,\"isapprovalrequiredforsso\":false}",
+                    "_id": "6735cb7bc6d0765c80fe6302"
+                  },
+                  {
+                    "modifiedat": "2025-03-11T03:11:07.260Z",
+                    "modifiedby": "5bb325cb3e4efabebd8ea688",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\",\"junifen\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]},{\"instructiontypeuid\":\"5b3c67b88c9df34c3e943533\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"eGFR 30 to <60 mL/minute/1.73 m2: Avoid use in patients with intercurrent disease that increases risk of acute kidney injury. eGFR <30 mL/minute/1.73 m2: Avoid use.\",\"locallangtext\":\"\",\"otherlanguages\":[]},{\"instructiontypeuid\":\"5b3c67b88c9df34c3e943533\",\"instructionuid\":\"591e82f9a57b21756dda8abc\",\"instructiontext\":\"analgesic : 4-10 MKDose q 6-8 hr; antipyretic : 5-10 MKDose q 6-8 hr. (Max: 40 mg/kg/day)\",\"locallangtext\":\"\",\"otherlanguages\":[]}],\"billingserviceuid\":\"6427281c0ccbef9c199dce79\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"description\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"orderitemcodes\":[{\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"code\":\"126269\",\"_id\":\"61b06bd3cce30d077ed472c0\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T03:11:03.963Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"5bb325cb3e4efabebd8ea688\",\"modifiedat\":\"2024-11-14T10:05:47.352Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":23,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"isororder\":false,\"defaultqty\":null,\"displayorder\":null,\"processtime\":null,\"orderitemalternatives\":[],\"outlabs\":[],\"portablecharges\":[],\"restrictdepartments\":[],\"restrictmodifiers\":[],\"isapprovalrequiredforsso\":false,\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"},\"alloworderwithoutstock\":false}",
+                    "_id": "67cfa9cbebfbe58c316ee97e"
+                  },
+                  {
+                    "modifiedat": "2025-11-30T13:03:50.521Z",
+                    "modifiedby": "61f8b67154406605adb5b4d1",
+                    "organisationuid": "5b20f438d1202e29ce16f710",
+                    "postaudit": "{\"_id\":\"5b859656136d2764034b07a0\",\"aliasnames\":[\"51142106000013\",\"Ibuprofen - O\",\"MSYJUNI0100O\",\"Nurofen\",\"ibuprofen \",\"brufen\",\"NSAIDs\",\"junifen\"],\"orderiteminstructions\":[{\"instructiontypeuid\":\"5cdaa6f356c0907903d1f906\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"(Take after meal immediately) For pain-fever-inflammation\",\"locallangtext\":\"(ทานหลังอาหารทันที เขย่าขวดก่อนใช้ ) แก้ปวด-ลดไข้-ลดอักเสบของข้อและกล้ามเนื้อ\",\"otherlanguages\":[]},{\"instructiontypeuid\":\"5b3c67b88c9df34c3e943533\",\"instructionuid\":\"591e82f9a57b21756dda8ab9\",\"instructiontext\":\"eGFR 30 to <60 mL/minute/1.73 m2: Avoid use in patients with intercurrent disease that increases risk of acute kidney injury. eGFR <30 mL/minute/1.73 m2: Avoid use.\",\"locallangtext\":\"\",\"otherlanguages\":[]},{\"instructiontypeuid\":\"5b3c67b88c9df34c3e943533\",\"instructionuid\":\"591e82f9a57b21756dda8abc\",\"instructiontext\":\"analgesic : 4-10 MKDose q 6-8 hr; antipyretic : 5-10 MKDose q 6-8 hr. (Max: 40 mg/kg/day)\",\"locallangtext\":\"\",\"otherlanguages\":[]}],\"billingserviceuid\":\"6427281c0ccbef9c199dce79\",\"billingservicesapuid\":\"5ba86fc21de8aea22956a8d3\",\"code\":\"51142106000013\",\"mbcode\":\"\",\"name\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"description\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"orderitemcodes\":[{\"orderitemcodetypeuid\":\"5cc6910987ce9227fbc7f75f\",\"code\":\"126269\",\"_id\":\"61b06bd3cce30d077ed472c0\",\"searchCodeType\":\"UCEP\"}],\"activefrom\":\"2014-08-17T13:03:39.461Z\",\"ordercategorycode\":\"ORDCT6\",\"Ordersubcategorycode\":\"2\",\"ordercatuid\":\"5b858dcb136d27640348d078\",\"ordersubcatuid\":\"5b858dcd136d27640348d21a\",\"istaskgenerationreqd\":false,\"ispermissionreqforresult\":false,\"isapprovalrequired\":false,\"iscosignrequired\":false,\"isdoctorshareitem\":false,\"ishourlycharge\":false,\"isschedulable\":false,\"allowpriceoverride\":true,\"ispackageitem\":false,\"createdby\":\"5b862a593238d86bf03a3d3a\",\"createdat\":\"2014-08-18T03:23:20.000Z\",\"modifiedby\":\"6360ea2d40e92229582aa81b\",\"modifiedat\":\"2025-07-16T06:50:49.488Z\",\"statusflag\":\"A\",\"orguid\":\"5b20f438d1202e29ce16f710\",\"orgcode\":48,\"externaltablename\":\"billableitem\",\"incomesourceuid\":\"5c05025f3e4efabebdb7e6f9\",\"servicecattypeuid\":\"5befe6337c9612b4c0ce5ee4\",\"bsmdduid\":1945,\"type\":\"itemaster\",\"externaluiditemmaster\":4306,\"restrictfrequencies\":[],\"__v\":26,\"activeto\":null,\"checklists\":[],\"colorcode\":null,\"defaultmodalityuid\":null,\"defaultpriorityuid\":null,\"doctorfeetax\":null,\"duplicatealertduration\":null,\"externaluid\":\"\",\"ipdchecklists\":[],\"isacknowledgementmandatory\":true,\"linkedorderitems\":[],\"maxqty\":null,\"minqty\":null,\"restrictagegroup\":null,\"restrictencounter\":null,\"restrictgender\":null,\"resultitems\":null,\"taxondoctorgst\":false,\"shadowupdate\":\"2021-01-03T14:39:17.143Z\",\"alertinallocatescreen\":false,\"calculatedailytotal\":false,\"defaultfrequencyuid\":null,\"iscommentsasitemname\":false,\"isobservationpanel\":false,\"isoutlab\":false,\"isororder\":false,\"defaultqty\":null,\"displayorder\":null,\"processtime\":null,\"orderitemalternatives\":[],\"outlabs\":[],\"portablecharges\":[],\"restrictdepartments\":[],\"restrictmodifiers\":[],\"isapprovalrequiredforsso\":false,\"ispharmacogenomics\":false,\"locallangdesc\":\"Ibuprofen Ped 100mg/5mL SUSP 60mL  \",\"baseuomuid\":{\"_id\":\"5b222a9db4059c5bb0247802\",\"valuedescription\":\"Bottle\",\"relatedvalue\":\"C\"},\"alloworderwithoutstock\":false}",
+                    "_id": "692c40b6a83ad0157d98f3ce"
+                  }
+                ],
+                "restrictagegroup": null,
+                "restrictencounter": null,
+                "restrictgender": null,
+                "resultitems": null,
+                "taxondoctorgst": false,
+                "shadowupdate": "2021-01-03T14:39:17.143Z",
+                "alertinallocatescreen": false,
+                "calculatedailytotal": false,
+                "defaultfrequencyuid": null,
+                "iscommentsasitemname": false,
+                "isobservationpanel": false,
+                "isoutlab": false,
+                "isororder": false,
+                "defaultqty": null,
+                "displayorder": null,
+                "processtime": null,
+                "orderitemalternatives": [],
+                "outlabs": [],
+                "portablecharges": [],
+                "restrictdepartments": [],
+                "restrictmodifiers": [],
+                "isapprovalrequiredforsso": false,
+                "ispharmacogenomics": false,
+                "locallangdesc": "Ibuprofen Ped 100mg/5mL SUSP 60mL  "
+              },
+              "orderitemname": "Ibuprofen Ped 100mg/5mL SUSP 60mL  ",
+              "startdate": "2026-09-20T12:03:41.893Z",
+              "enddate": null,
+              "duration": 1,
+              "lastdosagedate": "2026-09-20T08:00:00.836Z",
+              "ordertypeuid": {
+                "_id": "5796e65d1526f6ebabe3b4a5",
+                "valuecode": "ORDTYP2",
+                "valuedescription": "CONTINUOUS ORDER",
+                "activefrom": "2016-07-26T04:25:55.000Z",
+                "statusflag": "A",
+                "domaincode": "ORDTYP",
+                "isdefault": false,
+                "relatedvalue": "I",
+                "createdby": "56b3023fa0a0cfa62210a1aa",
+                "createdat": "2016-07-26T04:26:05.009Z",
+                "orguid": "569794170946a3d0d588efe6",
+                "modifiedby": "5b862a593238d86bf03a39a9",
+                "modifiedat": "2019-02-05T02:11:04.042Z",
+                "activeto": null,
+                "externaluid": "",
+                "locallanguagedesc": "",
+                "aliasname": "",
+                "displayorder": null,
+                "shadowupdate": "2020-04-06T11:02:23.368Z",
+                "mastershadowsync": 1580105566334
+              },
+              "isactive": true,
+              "frequencyuid": {
+                "_id": "5bc5e6673e4efabebd03e64c",
+                "timings": [
+                  "1900-01-01T01:00:00.000Z",
+                  "1900-01-01T07:00:00.000Z",
+                  "1900-01-01T13:00:00.000Z",
+                  "1899-12-31T19:00:00.000Z"
+                ],
+                "code": "Q 6 HR.PRN.HI.FEVER",
+                "name": "Every 6 Hours If Needed For High Fever",
+                "description": "Every 6 Hours If Needed For High Fever",
+                "locallangdesc": "ทุก 6 ชั่วโมง เวลามีไข้สูง",
+                "activefrom": "2014-08-11T10:06:56.000Z",
+                "type": "PRN",
+                "repeatsday": "1",
+                "allordercategories": true,
+                "createdby": "5bb483bb3e4efabebdac697f",
+                "createdat": "2014-08-11T10:06:56.000Z",
+                "modifiedby": "5bb325cb3e4efabebd8ea68c",
+                "modifiedat": "2017-03-01T09:16:58.000Z",
+                "statusflag": "A",
+                "orguid": "5b20f438d1202e29ce16f710",
+                "orgcode": 48,
+                "externaltablename": "frequencydefintion",
+                "externaluid": 119
+              },
+              "quantity": 1,
+              "quantityUOM": {
+                "_id": "5b222a9db4059c5bb0247802",
+                "valuecode": "BOT",
+                "valuedescription": "Bottle",
+                "locallanguagedesc": "Bottle",
+                "activefrom": "2014-07-29T07:46:16.000Z",
+                "domaincode": "INVUOM",
+                "createdby": "5b862a913238d86bf03aa787",
+                "createdat": "2014-07-29T07:46:16.000Z",
+                "modifiedby": "64df1baf0af0e1066a3014f4",
+                "modifiedat": "2023-12-27T14:36:51.110Z",
+                "isdefault": false,
+                "externaluid": 125480,
+                "aliasname": "ขวด",
+                "statusflag": "A",
+                "externaltablename": "referencevalue",
+                "orguid": "569794170946a3d0d588efe6",
+                "relatedvalue": "C",
+                "activeto": null,
+                "displayorder": null,
+                "mastershadowsync": 1580105712073
+              },
+              "routeuid": {
+                "_id": "57f4aa79e311c733215e6c22",
+                "valuecode": "ORAL_R",
+                "valuedescription": "Orally",
+                "locallanguagedesc": "ทางปาก",
+                "activefrom": "2008-11-01T11:24:25.000Z",
+                "domaincode": "ROUTE",
+                "createdby": "5b862a913238d86bf03aa787",
+                "createdat": "2008-11-01T03:24:24.000Z",
+                "modifiedby": "63fc189ef2a46c062a871807",
+                "modifiedat": "2024-02-12T03:04:58.021Z",
+                "isdefault": false,
+                "externaluid": 750,
+                "statusflag": "A",
+                "externaltablename": "referencevalue",
+                "orguid": "569794170946a3d0d588efe6",
+                "activeto": null,
+                "aliasname": "24",
+                "relatedvalue": "",
+                "displayorder": null,
+                "retried": "1558006411888_update",
+                "shadowupdatedby": "5cd903d8d76426f6c43aafc1",
+                "mastershadowsync": 1580105570419
+              },
+              "dosage": 10,
+              "dosageUOM": {
+                "_id": "57f4aa79e311c733215e6d4e",
+                "valuecode": "ML",
+                "valuedescription": "MilliLitre",
+                "locallanguagedesc": "MilliLitre",
+                "activefrom": "2014-07-29T07:46:16.000Z",
+                "domaincode": "INVUOM",
+                "createdby": "5b862a913238d86bf03aa787",
+                "createdat": "2014-07-29T07:46:16.000Z",
+                "modifiedby": "64df1baf0af0e1066a3014f4",
+                "modifiedat": "2023-12-27T14:36:52.437Z",
+                "isdefault": false,
+                "externaluid": 125486,
+                "aliasname": "ซีซี",
+                "statusflag": "A",
+                "externaltablename": "referencevalue",
+                "orguid": "569794170946a3d0d588efe6",
+                "relatedvalue": "C",
+                "activeto": null,
+                "displayorder": null,
+                "mastershadowsync": 1580105571495
+              },
+              "comments": "",
+              "broughtfromoutside": false,
+              "infusionrate": null,
+              "infusionduration": null,
+              "broughtinquantity": 1,
+              "dosagefrequency": null,
+              "daysofweek": null,
+              "durationuom": null,
+              "_id": "6aafcbdce4ec1f60ac86eb8f",
+              "patientorderalerts": []
+            }
+          ],
+          "reviewedbyusers": [],
+          "reconciledbyusers": [],
+          "medreconcilelogs": [
+            {
+              "modifiedat": "2026-09-20T12:04:44.772Z",
+              "useruid": "5f9fa5f4ebb1970748c6ac35",
+              "comments": "PREPARED",
+              "_id": "6aafcbdce4ec1f60ac86eb90"
+            }
+          ],
+          "patientuid": "65352c04a531d40664f75f48",
+          "patientvisituid": "6aafc35bc13a9d6918056021",
+          "reconciledate": "2026-09-20T12:04:44.771Z",
+          "userdepartmentuid": {
+            "_id": "5b857e32136d276403482bc9",
+            "name": "Pediatrics"
+          },
+          "preparedbyuseruid": {
+            "_id": "5f9fa5f4ebb1970748c6ac35",
+            "name": "เจนจรินทร์ รัตนปัญญา, RN.",
+            "iscareprovider": false,
+            "licensenumber": ""
+          },
+          "comments": null,
+          "isactive": true,
+          "createdby": "5f9fa5f4ebb1970748c6ac35",
+          "createdat": "2026-09-20T12:04:44.772Z",
+          "modifiedby": "5f9fa5f4ebb1970748c6ac35",
+          "modifiedat": "2026-09-20T12:04:44.772Z",
+          "statusflag": "A",
+          "orguid": "5b20f438d1202e29ce16f710",
+          "sourceofdatapatient": null,
+          "sourceofdatarelative": true,
+          "sourceofdatarelativedetails": "มารดา",
+          "sourceofdataother": null,
+          "sourceofdataotherdetails": null,
+          "currentmedicationusing": "NOTMEDREUSE",
+          "reconciletypeuid": {
+            "_id": "691f13df73ed91126bf60f06",
+            "valuedescription": "Admission",
+            "valuecode": "RECADM",
+            "relatedvalue": "Admission",
+            "domaincode": "RECONTYPE"
+          },
+          "__v": 0
+        }
+      }
+    }
+  }
 }

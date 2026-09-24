@@ -28,6 +28,8 @@ API:
   GET    /api/mixing-protocols              — mixing label protocols (array)
   GET    /api/iv-drugs                      — IV drug master list (array)
   PUT    /api/iv-drugs                      — replace IV drug master list
+  GET    /api/medication-preparations      — preparation log (?from=&to=&orderNumber=&staffName=&limit=&offset=)
+  POST   /api/medication-preparations      — staff preparation acknowledgement {staffName,orderNumber,scanDate}
   GET    /api/iv-staff                      — pharmacy staff list (array)
   PUT    /api/iv-staff                      — replace pharmacy staff list
   GET    /api/medication-db                 — BKN medication DB keyed by item code
@@ -101,6 +103,7 @@ Data layout:
                                        downloaded Jasper XLS, home-med fetch logs
 """
 
+import medication_preparation
 import hm_report_cache
 import report_sessions
 import hm_meal_slots
@@ -163,6 +166,7 @@ REPORT_CACHE_DIR  = DATA_DIR / 'report-cache'   # parsed report rows, 1-day rete
 PATIENTS_DIR      = DATA_DIR / 'patients'
 HMR_DIR           = DATA_DIR / 'hmr'
 HMQ_DIR           = DATA_DIR / 'hmq'
+MED_PREPARATION_DIR = DATA_DIR / 'medication-preparation'
 IV_WORKLIST_DIR   = DATA_DIR / 'iv-worklist'
 OPD_QUEUE_DIR     = DATA_DIR / 'opd-queue'
 LOGS_DIR          = DATA_DIR / 'logs'
@@ -182,7 +186,7 @@ EXT_SRC_DIR  = Path(os.environ.get('BKN_EXT_SRC')
 EXT_PKG_DIR  = DATA_DIR / 'ext-pkg'          # built ZIPs (server-written cache)
 # Never ship developer/VCS noise to a workstation.
 EXT_SKIP_DIRS  = {'.git', '__pycache__', 'node_modules', 'test', 'screenshots'}
-EXT_SKIP_EXT   = {'.pem', '.crx', '.zip', '.log'}
+EXT_SKIP_EXT   = {'.pem', '.crx', '.zip', '.log', '.bat', '.cmd'}
 
 def _ext_manifest_version():
     """Version string from the source manifest, or '' if unreadable."""
@@ -259,14 +263,6 @@ def _ext_build_zip():
             if p.suffix.lower() in EXT_SKIP_EXT:
                 continue
             z.write(p, rel.as_posix())
-        # Ship the installer INSIDE the package too. After the first
-        # install it then lives at D:\pharmacy\BKNPharmacyPortal\, so the
-        # next update can be run straight from the local install and
-        # nobody has to revisit the page — or, worse, fall back to the
-        # copy on the shared drive.
-        installer = WWW_DIR / 'bkn-install.bat'
-        if installer.exists():
-            z.write(installer, 'bkn-install.bat')
     os.replace(tmp, out)          # atomic publish, like _atomic_write_json
     # Keep only the current version's ZIP — old builds are dead weight.
     for old in EXT_PKG_DIR.glob('BKNPharmacyPortal-*.zip'):
@@ -274,188 +270,6 @@ def _ext_build_zip():
             try: old.unlink()
             except OSError: pass
     return out
-
-# Kept as a template rather than a static file under www/ so the server URL can
-# be filled in per request — see _ext_sync_bat().
-_EXT_SYNC_BAT_TEMPLATE = r'''@echo off
-setlocal EnableDelayedExpansion
-:: BKN Pharmacy Portal - extension sync
-:: Downloads the current extension from the pharmacy server and unpacks it to a
-:: FIXED local folder, so Chrome's "Load unpacked" path never changes.
-:: Re-run this whenever a new version is announced, then reload the extension.
-
-set "SERVER=@@SERVER@@"
-:: Deterministic extension id, derived from the manifest "key" by the server —
-:: never hand-typed, so it cannot drift from the published build.
-set "EXTID=@@EXTID@@"
-set "TARGET=D:\pharmacy\BKNPharmacyPortal"
-set "TMP=%TEMP%\bkn-ext-sync"
-
-echo.
-echo  BKN Pharmacy Portal - extension sync
-echo  ====================================
-echo  Server: %SERVER%
-echo  Target: %TARGET%
-echo.
-
-:: --- check what the server is publishing -------------------------------
-for /f "usebackq delims=" %%V in (`
-  powershell -NoProfile -Command ^
-    "try{(Invoke-RestMethod -TimeoutSec 10 '%SERVER%/api/ext-version').version}catch{''}"
-`) do set "REMOTE=%%V"
-
-if "%REMOTE%"=="" (
-  echo  *** Cannot reach the pharmacy server, or it has no package.
-  echo      Check that the server is running at %SERVER%.
-  goto :fail
-)
-echo  Available version: %REMOTE%
-
-if exist "%TARGET%\manifest.json" (
-  for /f "usebackq delims=" %%L in (`
-    powershell -NoProfile -Command ^
-      "try{(Get-Content -Raw '%TARGET%\manifest.json' | ConvertFrom-Json).version}catch{''}"
-  `) do set "LOCAL=%%L"
-  echo  Installed version: !LOCAL!
-  if "!LOCAL!"=="%REMOTE%" (
-    echo.
-    echo  Already up to date - nothing to do.
-    goto :done
-  )
-)
-
-:: --- download + unpack --------------------------------------------------
-echo.
-echo  Downloading...
-if exist "%TMP%" rmdir /s /q "%TMP%"
-mkdir "%TMP%" 2>nul
-powershell -NoProfile -Command ^
-  "try{Invoke-WebRequest -TimeoutSec 120 -Uri '%SERVER%/ext-download' -OutFile '%TMP%\ext.zip'}catch{exit 1}"
-if errorlevel 1 (
-  echo  *** Download failed.
-  goto :fail
-)
-
-echo  Unpacking...
-powershell -NoProfile -Command ^
-  "try{Expand-Archive -Force -Path '%TMP%\ext.zip' -DestinationPath '%TMP%\new'}catch{exit 1}"
-if errorlevel 1 (
-  echo  *** Could not unpack the download ^(file may be corrupt^).
-  goto :fail
-)
-if not exist "%TMP%\new\manifest.json" (
-  echo  *** Downloaded package looks wrong ^(no manifest.json^) - keeping the
-  echo      existing install untouched.
-  goto :fail
-)
-
-:: Only now touch the live folder: the new copy is verified, so a failed
-:: download can never leave a half-updated extension behind.
-echo  Installing...
-if not exist "D:\pharmacy" mkdir "D:\pharmacy"
-if exist "%TARGET%" rmdir /s /q "%TARGET%"
-if not exist "%TARGET%" mkdir "%TARGET%"
-:: robocopy, not move: TEMP is usually on C: and the target on D:, and "move"
-:: across volumes is unreliable. robocopy exit codes 0-7 are success (8+ real
-:: errors), so the check cannot use plain errorlevel.
-robocopy "%TMP%\new" "%TARGET%" /E /NFL /NDL /NJH /NJS /NP >nul
-if %ERRORLEVEL% GEQ 8 (
-  echo  *** Could not write to %TARGET%
-  echo      Close Chrome and try again.
-  goto :fail
-)
-if not exist "%TARGET%\manifest.json" (
-  echo  *** Install did not complete - manifest.json missing in the target.
-  goto :fail
-)
-
-echo.
-echo  Updated to version %REMOTE%.
-echo.
-echo  ================================================================
-echo    LAST STEP - click the RELOAD arrow, then close that tab.
-echo  ================================================================
-echo.
-echo    Chrome is opening at the extension's own page, so the reload
-echo    button is right there - no need to search for it.
-echo.
-echo    (First time on this PC only: turn Developer mode ON, click
-echo     "Load unpacked" and select  %TARGET% )
-echo.
-
-:: Open Chrome straight at THIS extension's card. Chrome blocks scripted
-:: clicks on chrome://extensions by design, so the reload itself stays
-:: manual — but landing on the right page removes all the navigating.
-::
-:: Resolve chrome.exe by PATH, then the two standard install locations.
-:: `start "" chrome.exe` is NOT safe here: chrome.exe is usually not on PATH,
-:: and the shell then hands the unknown name to Windows, which offers to find
-:: it in the Microsoft Store. Never let that happen on a ward PC.
-:: Order: the standard install paths first (fast, no parsing), then the
-:: App Paths registry entry as a fallback for a non-standard install.
-set "CHROME="
-if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
-if not defined CHROME if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"
-if not defined CHROME if exist "%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe" set "CHROME=%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"
-:: Non-standard install: ask the App Paths registry entry. tokens=2,* keeps the
-:: path intact even though it contains spaces.
-if not defined CHROME for /f "usebackq skip=2 tokens=2,*" %%A in (
-  `reg query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe" /ve 2^>nul`
-) do if not defined CHROME set "CHROME=%%B"
-
-:: Which Chrome profile? These PCs have MANY profiles (Default, Profile 10,
-:: Profile 19, …) and Chrome shows the "Who's using Chrome?" picker when it
-:: can't tell — a dead end for a staff member who just wants the reload arrow.
-:: Read the profile Chrome itself last used from Local State, so we open the
-:: one the pharmacist actually works in (where the extension is installed).
-:: Hardcoding "Default" would be wrong on exactly these machines.
-set "CHPROFILE="
-for /f "usebackq delims=" %%A in (`
-  powershell -NoProfile -Command ^
-    "try{(Get-Content -Raw '%LOCALAPPDATA%\Google\Chrome\User Data\Local State' | ConvertFrom-Json).profile.last_used}catch{''}"
-`) do set "CHPROFILE=%%A"
-if not defined CHPROFILE set "CHPROFILE=Default"
-
-:: Open an ordinary http:// page on the pharmacy server, NOT chrome://extensions
-:: directly. Chrome silently DROPS a chrome:// URL given on the command line
-:: (a deliberate security restriction) and lands on the New Tab page instead —
-:: which is what happened in 3.47.1. The served page carries the instructions
-:: and a click-through, and a user click is a gesture Chrome does honour.
-rem The URL is double-quoted, so '&' needs NO caret escape - a '^' would be
-rem passed through literally and corrupt the query string. Note: use REM, not
-rem '::', inside a parenthesised block - '::' breaks block parsing so BOTH
-rem branches run.
-if defined CHROME (
-  start "" "%CHROME%" --profile-directory="%CHPROFILE%" "%SERVER%/reload-extension?id=%EXTID%&ver=%REMOTE%"
-) else (
-  echo   NOTE: Chrome was not found automatically - open Chrome yourself and go to
-  echo         chrome://extensions   then click the reload arrow.
-)
-
-:done
-if exist "%TMP%" rmdir /s /q "%TMP%" 2>nul
-echo.
-pause
-exit /b 0
-
-:fail
-if exist "%TMP%" rmdir /s /q "%TMP%" 2>nul
-echo.
-pause
-exit /b 1
-'''
-
-def _ext_sync_bat(host_header=''):
-    """The client sync script, with this server's own URL baked in.
-
-    Served from /ext-sync.bat so a workstation curls it once and never has to
-    hand-edit an address. Uses the Host the client actually reached us on, so
-    it stays correct whatever address/port the server is published under.
-    """
-    host = (host_header or '').strip() or f'{getattr(Handler, "_ip", "127.0.0.1")}:{getattr(Handler, "_port", DEFAULT_PORT)}'
-    return (_EXT_SYNC_BAT_TEMPLATE
-            .replace('@@SERVER@@', f'http://{host}')
-            .replace('@@EXTID@@', _ext_id_from_key()))
 
 KS_COLS       = {'faqs', 'items', 'vdos'}
 # All rx collections — GET is public; PUT requires editor/admin auth
@@ -2568,7 +2382,7 @@ _JSON_CACHE = {}
 _JSON_CACHE_LOCK = threading.Lock()
 _JSON_CACHE_MAX = 4000        # bounded: ~a few days of live files, then evict
 
-def _load_json_cached(path):
+def _load_json_cached(path, file_stat=None):
     """Parsed JSON for `path`, reusing the last parse when the file is unchanged.
 
     Returns a DEEP COPY. Callers mutate what they load — load_all_hmq() backfills
@@ -2581,7 +2395,7 @@ def _load_json_cached(path):
     inline `try: json.loads(...) except: pass` blocks this replaces.
     """
     try:
-        st = path.stat()
+        st = file_stat if file_stat is not None else path.stat()
         key = (str(path), st.st_mtime_ns, st.st_size)
     except OSError:
         return None
@@ -3150,31 +2964,42 @@ def load_all_hmq(from_date=None, to_date=None):
     Archives outside the requested window are skipped by FILENAME before being
     read (_archive_in_range); live HMQ-*.json files are always read since an
     unfinished case is never archived and its name carries no date."""
-    if not HMQ_DIR.exists():
+    # One directory enumeration supplies Windows file metadata as well as names.
+    # Avoid three glob scans and a separate SMB stat round trip per live case.
+    try:
+        with os.scandir(HMQ_DIR) as scan:
+            files = list(scan)
+    except FileNotFoundError:
         return []
     seen = {}
-    # One file per live case, all re-read on every request — this is the hot
-    # path the popup polls every 8 s. _load_json_cached skips the re-parse when
-    # the file has not changed (see the cache note by _atomic_write_json).
-    for p in HMQ_DIR.glob('HMQ-*.json'):
-        doc = _load_json_cached(p)
-        if isinstance(doc, dict):
-            eid = doc.get('id')
-            if eid:
-                seen[eid] = doc
-    archive_paths = sorted(HMQ_DIR.glob('*_HM_queue.json')) + sorted(HMQ_DIR.glob('DAY_*.json'))
-    for mp in archive_paths:
-        if not _archive_in_range(mp, from_date, to_date):
-            continue
+    live, archives = [], []
+    for entry in files:
+        name = entry.name
+        if name.startswith('HMQ-') and name.endswith('.json'):
+            live.append(entry)
+        elif (name.endswith('_HM_queue.json') or
+              (name.startswith('DAY_') and name.endswith('.json'))):
+            if _archive_in_range(Path(entry.path), from_date, to_date):
+                archives.append(entry)
+
+    def read_entry(entry):
         try:
-            records = _load_json_cached(mp)
-            if isinstance(records, list):
-                for doc in records:
-                    eid = doc.get('id')
-                    if eid and eid not in seen:
-                        seen[eid] = doc
-        except Exception:
-            pass
+            return _load_json_cached(Path(entry.path), entry.stat())
+        except OSError:
+            return None
+
+    for entry in live:
+        doc = read_entry(entry)
+        if isinstance(doc, dict) and doc.get('id'):
+            seen[doc['id']] = doc
+    # Preserve precedence: live entries, current archives, then legacy archives.
+    archives.sort(key=lambda e: (not e.name.endswith('_HM_queue.json'), e.name))
+    for entry in archives:
+        records = read_entry(entry)
+        if isinstance(records, list):
+            for doc in records:
+                if isinstance(doc, dict) and doc.get('id') and doc['id'] not in seen:
+                    seen[doc['id']] = doc
     result = list(seen.values())
     # Backfill startedBy for entries created before the field existed: recover
     # it from the audit log's "Started" line. Done on READ so no stored file is
@@ -3827,7 +3652,7 @@ class Handler(BaseHTTPRequestHandler):
         body = json.dumps(obj, ensure_ascii=False).encode('utf-8')
         self.send_response(code)
         self.send_header('Content-Type',   'application/json; charset=utf-8')
-        if urllib.parse.urlsplit(self.path).path.startswith('/api/report-sessions'):
+        if urllib.parse.urlsplit(self.path).path.startswith(('/api/report-sessions', '/api/medication-preparations')):
             self.send_header('Cache-Control', 'no-store')
         self.send_header('Content-Length', str(len(body)))
         self._cors()
@@ -4137,7 +3962,48 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(503, {'error': 'Report storage unavailable'})
         return True
 
+    def _handle_medication_preparation(self):
+        parsed = urllib.parse.urlsplit(self.path)
+        if parsed.path != '/api/medication-preparations':
+            return False
+        try:
+            if self.command == 'GET':
+                qs = urllib.parse.parse_qs(parsed.query)
+                get = lambda key, default='': (qs.get(key) or [default])[0]
+                result = medication_preparation.list_records(
+                    MED_PREPARATION_DIR, get('from', _hmq_today()), get('to', _hmq_today()),
+                    get('orderNumber'), get('staffName'), int(get('limit', '100')), int(get('offset', '0')))
+                self.send_json(200, result)
+            elif self.command == 'POST':
+                # This endpoint alone accepts the hosted scanner page on trusted LAN.
+                # Keep the general extension/admin write policy unchanged.
+                origin = urllib.parse.urlsplit(self.headers.get('Origin', ''))
+                hosted = (_ip_is_trusted(self.client_address[0]) and
+                          origin.scheme in ('http', 'https') and
+                          origin.netloc == self.headers.get('Host', '') and
+                          not origin.username and not origin.password and
+                          self.headers.get('Sec-Fetch-Site', 'same-origin') == 'same-origin')
+                if not self._allow_write(hosted or self._is_trusted_extension()):
+                    return True
+                length = int(self.headers.get('Content-Length', '0'))
+                if not 0 < length <= 4096:
+                    self.send_json(400, {'error': 'Preparation request must be 1–4096 bytes'})
+                    return True
+                body = self._read_json_body()
+                record, created = medication_preparation.save(
+                    MED_PREPARATION_DIR, body, load_rx('iv-staff'), _atomic_write_json)
+                self.send_json(201 if created else 200,
+                               {'ok': True, 'duplicate': not created, 'record': record})
+            else:
+                self.send_json(405, {'error': 'Method not allowed'})
+        except (ValueError, TypeError) as exc:
+            self.send_json(400, {'error': str(exc)})
+        except OSError:
+            self.send_json(503, {'error': 'Preparation log storage unavailable; retry the same scan'})
+        return True
+
     def do_GET(self):
+        if self._handle_medication_preparation(): return
         if self._serve_hm_pilot(): return
         if self._handle_report_session(): return
         # ── Static webapp files ────────────────────────────────
@@ -4146,6 +4012,9 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_file(WWW_DIR / 'dashboard.html', 'text/html; charset=utf-8'); return
         if clean in ('/hmr-report', '/hmr-report.html'):
             self._serve_file(WWW_DIR / 'hmr-report.html', 'text/html; charset=utf-8'); return
+
+        if clean in ('/hmq-dashboard', '/hmq-dashboard.html'):
+            self._serve_file(WWW_DIR / 'hmq-dashboard.html', 'text/html; charset=utf-8'); return
 
         if clean in ('/hmq-report', '/hmq-report.html'):
             self._serve_file(WWW_DIR / 'hmq-report.html', 'text/html; charset=utf-8'); return
@@ -4205,74 +4074,18 @@ class Handler(BaseHTTPRequestHandler):
             with zip_path.open('rb') as f:
                 shutil.copyfileobj(f, self.wfile)
             return
-        # /reload-extension → the "finish the update" page the sync script opens
-        # after a successful install. Served over plain http because Chrome drops
-        # a chrome:// URL passed on the command line; the user clicks through
-        # from here.
+        # Manual ZIP update instructions and the optional reload helper.
         if clean in ('/reload-extension', '/reload-extension.html'):
             self._serve_file(WWW_DIR / 'reload-extension.html',
                              'text/html; charset=utf-8'); return
-        # /update-extension(.html) → the page staff use to update the
-        # extension: current version, release notes, and the installer they
-        # download and run on their OWN PC. Must be matched BEFORE the
-        # legacy .bat route below, which also claims '/update-extension'.
         if clean in ('/update-extension', '/update-extension.html'):
-            page = WWW_DIR / 'update-extension.html'
-            if page.exists():
-                self._serve_file(page, 'text/html; charset=utf-8'); return
-            # fall through to the legacy .bat handler when the page is absent
+            self._serve_file(WWW_DIR / 'update-extension.html',
+                             'text/html; charset=utf-8'); return
 
-        # /update-extension → the one-click updater a workstation keeps on its
-        # Desktop. It is a tiny bootstrap that re-downloads /ext-sync.bat each
-        # run, so the copy on the PC never goes stale. Served with this server's
-        # own address baked in, so the staff member never edits anything.
-        if clean in ('/update-extension', '/update-extension.bat',
-                     '/BKN-Update-Extension.bat'):
-            src = WWW_DIR / 'BKN-Update-Extension.bat'
-            if not src.exists():
-                self.send_json(404, {'error': 'updater not installed on server'}); return
-            host = (self.headers.get('Host', '') or '').strip() \
-                   or f'{getattr(Handler, "_ip", "127.0.0.1")}:{getattr(Handler, "_port", DEFAULT_PORT)}'
-            text = src.read_text(encoding='utf-8')
-            text = re.sub(r'(?m)^set "SERVER=.*"$', f'set "SERVER=http://{host}"', text, count=1)
-            body = text.encode('utf-8')
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/octet-stream')
-            self.send_header('Content-Length', str(len(body)))
-            self.send_header('Content-Disposition',
-                             'attachment; filename="BKN-Update-Extension.bat"')
-            self._cors()
-            self.end_headers()
-            self.wfile.write(body); return
-        # /ext-sync.bat → the client sync script, pre-filled with this server's
-        # own URL so a workstation needs no hand-editing.
-        # /bkn-install.bat → the installer a workstation saves and runs
-        # LOCALLY. Served as an attachment so the browser downloads it
-        # rather than showing it as text; staff must never run a script
-        # straight off the file share, where anyone with write access to
-        # that folder could replace it.
-        if clean in ('/bkn-install.bat', '/install.bat'):
-            p = WWW_DIR / 'bkn-install.bat'
-            if not p.exists():
-                self.send_json(404, {'error': 'installer not found'}); return
-            body = p.read_bytes()
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/octet-stream')
-            self.send_header('Content-Length', str(len(body)))
-            self.send_header('Content-Disposition', 'attachment; filename="bkn-install.bat"')
-            self._cors()
-            self.end_headers()
-            self.wfile.write(body); return
-
-        if clean in ('/ext-sync.bat', '/ext-sync'):
-            body = _ext_sync_bat(self.headers.get('Host', '')).encode('utf-8')
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/octet-stream')
-            self.send_header('Content-Length', str(len(body)))
-            self.send_header('Content-Disposition', 'attachment; filename="bkn-ext-sync.bat"')
-            self._cors()
-            self.end_headers()
-            self.wfile.write(body); return
+        # Batch deployment was retired in 3.61.0. Do not fall through to static files.
+        if clean in ('/update-extension.bat', '/BKN-Update-Extension.bat',
+                     '/bkn-install.bat', '/install.bat', '/ext-sync.bat', '/ext-sync'):
+            self.send_json(410, {'error': 'Batch updates retired; use /update-extension.html for manual ZIP updates'}); return
 
         # ── Med image by code (any extension) ──────────────────
         # /med-image/:code — serve whatever file has this stem, so the client
@@ -4909,6 +4722,7 @@ class Handler(BaseHTTPRequestHandler):
 
     # POST — login / logout / create user / append med error
     def do_POST(self):
+        if self._handle_medication_preparation(): return
         if self._handle_report_session(): return
         rtype, key, _ = self.parse_route()
         try:

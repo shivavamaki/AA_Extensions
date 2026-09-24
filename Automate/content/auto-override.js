@@ -445,6 +445,7 @@
   }
 
   async function handleIfPresent() {
+    if (window.ArcusPaperless?.isActive()) return {ok:false, reason:"paperless checker owns this tab"};
     if (!state.enabled || state.busy) return { ok: false, reason: "not active" };
 
     const dialog = getAlertDialog();

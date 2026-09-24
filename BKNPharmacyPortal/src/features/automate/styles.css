@@ -937,3 +937,47 @@
   color: #c62828;
   cursor: help;
 }
+
+/* Compact workbench controls (3.62.3). Scoped away from other feature panels. */
+#arcus-auto-panel.arcus-compact-panel { width:280px; }
+#arcus-auto-panel .arcus-panel-header.compact { padding:6px 8px; align-items:center; }
+#arcus-auto-panel .compact-body { padding:7px 8px; }
+#arcus-auto-panel .arcus-settings-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+#arcus-auto-panel .compact-field { margin-bottom:5px; min-width:0; }
+#arcus-auto-panel .section-title { margin-bottom:3px; font-size:9px; }
+#arcus-auto-panel .select { padding:4px; height:27px; font-size:11px; }
+#arcus-auto-panel #arcus-location-detected { display:none; }
+#arcus-auto-panel .arcus-check-grid { grid-template-columns:repeat(4,1fr); padding:5px; gap:2px; }
+#arcus-auto-panel .arcus-check-grid label { font-size:10px; gap:2px; }
+#arcus-auto-panel .compact-check { display:flex; align-items:center; min-height:22px; margin:0; gap:5px; }
+#arcus-auto-panel .compact-check .arcus-turbo-state { margin-left:4px; }
+#arcus-auto-panel .arcus-reason-row { display:flex; align-items:center; gap:6px; margin:4px 0 6px; }
+#arcus-auto-panel .arcus-reason-row[hidden] { display:none; }
+#arcus-auto-panel #arcus-override-reason { min-width:0; flex:1; height:26px; padding:3px 5px; border:1px solid #cbd5e1; border-radius:5px; font:inherit; }
+#arcus-auto-panel .compact-buttons { margin:5px 0; }
+#arcus-auto-panel .compact-buttons .btn { padding:6px 3px; }
+#arcus-auto-panel .arcus-step-card { padding:5px 7px; margin:4px 0; }
+#arcus-auto-panel .arcus-step-name { font-size:11px; margin:0; }
+#arcus-auto-panel .compact-status { min-height:0; margin:3px 0; padding:4px 6px; max-height:48px; overflow:auto; }
+#arcus-auto-panel [hidden] { display:none!important; }
+#arcus-auto-panel .compact-summary { display:flex; gap:12px; margin:5px 0 0; }
+#arcus-auto-panel .compact-summary .metric { display:flex; gap:4px; align-items:center; border:0; background:none; padding:0; }
+#arcus-auto-panel .compact-summary .value { font-size:12px; }
+#arcus-auto-panel .arcus-tools { margin-top:4px; font-size:10px; color:#607d8b; }
+#arcus-auto-panel .arcus-tools summary { cursor:pointer; }
+#arcus-auto-panel .arcus-tools .btn-row { grid-template-columns:1fr 1fr; }
+#arcus-auto-panel .arcus-turbo-paused { color:#9a5700; background:#fff0d4; }
+
+/* Dock automation after the navigation items in an expanded Arcus sidebar. */
+#arcus-auto-panel.arcus-menu-panel {
+  position: relative !important;
+  inset: auto !important;
+  width: calc(100% - 12px) !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 8px 6px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  z-index: auto !important;
+}
+#arcus-auto-panel.arcus-menu-panel select { min-width: 0; max-width: 100%; }

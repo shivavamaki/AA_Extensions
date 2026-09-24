@@ -1,7 +1,7 @@
 {
   "patientuid": "5c066f8d3e4efabebdd458c6",
   "createdAt": "2026-05-31T08:20:30.102923+00:00",
-  "updatedAt": "2026-05-31T08:20:30.102923+00:00",
+  "updatedAt": "2026-09-22T13:11:30.534552+00:00",
   "context": {
     "patientuid": "5c066f8d3e4efabebdd458c6",
     "patientvisituid": "6a1a650f9666d23ad905eab1",
@@ -13,5 +13,63 @@
     "customMedications": [],
     "adrEvent": null
   },
-  "medicationCache": {}
+  "medicationCache": {},
+  "captures": {
+    "6ab26007f597a1346fb2e7cf": {
+      "incusToken": "6ab27c9efc74d668d6210ea3",
+      "ts": 1790082690534,
+      "tokenTs": 1790082690534,
+      "medreconcileSnapshot": {
+        "medreconcile": {
+          "_id": "6ab26f8250e6f5176a485172",
+          "medicationitems": [],
+          "reviewedbyusers": [],
+          "reconciledbyusers": [],
+          "medreconcilelogs": [
+            {
+              "modifiedat": "2026-09-22T12:07:30.060Z",
+              "useruid": "64a7c704102fb2063c74b5b6",
+              "comments": "PREPARED",
+              "_id": "6ab26f8250e6f5176a485173"
+            }
+          ],
+          "patientuid": "5c066f8d3e4efabebdd458c6",
+          "patientvisituid": "6ab26007f597a1346fb2e7cf",
+          "reconciledate": "2026-09-22T12:07:30.060Z",
+          "userdepartmentuid": {
+            "_id": "5b857e32136d276403482bc9",
+            "name": "Pediatrics"
+          },
+          "preparedbyuseruid": {
+            "_id": "64a7c704102fb2063c74b5b6",
+            "name": "เกศริน ดลละวิจิตร, RN.",
+            "iscareprovider": false,
+            "licensenumber": ""
+          },
+          "comments": null,
+          "isactive": true,
+          "createdby": "64a7c704102fb2063c74b5b6",
+          "createdat": "2026-09-22T12:07:30.061Z",
+          "modifiedby": "64a7c704102fb2063c74b5b6",
+          "modifiedat": "2026-09-22T12:07:30.061Z",
+          "statusflag": "A",
+          "orguid": "5b20f438d1202e29ce16f710",
+          "sourceofdatapatient": null,
+          "sourceofdatarelative": true,
+          "sourceofdatarelativedetails": "มารดา",
+          "sourceofdataother": null,
+          "sourceofdataotherdetails": null,
+          "currentmedicationusing": "NOTMEDREUSE",
+          "reconciletypeuid": {
+            "_id": "691f13df73ed91126bf60f06",
+            "valuedescription": "Admission",
+            "valuecode": "RECADM",
+            "relatedvalue": "Admission",
+            "domaincode": "RECONTYPE"
+          },
+          "__v": 0
+        }
+      }
+    }
+  }
 }

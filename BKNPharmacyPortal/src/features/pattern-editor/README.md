@@ -123,3 +123,16 @@ Each override row has a **Mode**:
 
 See [`../home-med/README.md`](../home-med/README.md#pattern-overrides-editable-no-code-deploy)
 for how the sheet consumes overrides.
+
+### Built-in additions (3.61.1)
+
+The following pharmacist-supplied Exact/verb phrases now ship as built-ins:
+
+| English | Thai |
+|---|---|
+| apply to the ulcer | ทาแผลในปาก |
+| spray into the nostril | พ่นจมูก |
+| apply to rectum | ทาบริเวณทวารหนัก |
+| apply on local swelling, bruised area | ทาบริเวณที่ปวด บวม |
+
+They also match leading verbs followed by dose/frequency tokens without server overrides. Longer distinct instructions keep their existing parser behavior. Identical saved copies display as Built-in; different translations or replacement modes remain Override. This update does not rewrite server override data.

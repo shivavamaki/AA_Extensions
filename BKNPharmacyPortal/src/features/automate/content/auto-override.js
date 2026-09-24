@@ -56,7 +56,10 @@
     handled: 0,
     skipped: 0,
     busy: false,
+    suspended: false,
+    generation: 0,
     lastSignature: null,
+    lastDialog: null,
     // Set while an excluded alert is on screen, so the automation loop can wait
     // instead of racing the pharmacist.
     awaitingHuman: false,
@@ -65,6 +68,15 @@
 
   window.ArcusStore = window.ArcusStore || {};
   window.ArcusStore.autoOverride = { state, SEL, NEVER_AUTO, version: "4.6.0" };
+
+  function shouldAbort() {
+    return !state.enabled || state.suspended || window.ArcusShared?.state.stopRequested ||
+      !!window.ArcusPaperless?.isActive();
+  }
+
+  function notifyState() { window.dispatchEvent(new CustomEvent("arcus-override:state")); }
+  function cancelPending() { state.suspended = true; state.generation += 1; notifyState(); }
+  function resume() { state.suspended = false; state.lastSignature = null; notifyState(); }
 
   function log(type, message, meta) {
     window.ArcusPanel?.pushLog?.(type, message, meta || "");
@@ -86,7 +98,11 @@
   // Topmost dialog wins: Angular Material appends each new one after the last.
   function getAlertDialog() {
     const dialogs = Array.from(document.querySelectorAll(SEL.dialog)).filter(isVisible);
-    return dialogs.length ? dialogs[dialogs.length - 1] : null;
+    const dialog = dialogs[dialogs.length - 1];
+    if (!dialog) return null;
+    return dialog.querySelector(SEL.pharmacyReasonSelect) ||
+      (dialog.getAttribute("aria-label") === "Alerts" && dialog.querySelector(SEL.alertRows))
+      ? dialog : null;
   }
 
   /**
@@ -174,14 +190,6 @@
     return textOf(text || valueEl);
   }
 
-  /** Whether the select's model actually holds a value, per Angular's classes. */
-  function selectHasValue(select) {
-    if (!select) return false;
-    if (select.classList && select.classList.contains("ng-empty")) return false;
-    if (select.classList && select.classList.contains("ng-not-empty")) return true;
-    return selectedTextOf(select) !== "";
-  }
-
   /** Every option currently rendered for an open select menu, anywhere in the page. */
   /**
    * Options belonging to ONE select's menu.
@@ -225,11 +233,16 @@
   }
 
   function menuIsOpen(select) {
-    if (select) return optionsForSelect(select).length > 0;
+    if (select) {
+      const root = document.getElementById(select.getAttribute("aria-owns")) || select.querySelector(SEL.openMenu);
+      const container = root?.closest(".md-select-menu-container") || root;
+      return !!container && isVisible(container) && select.getAttribute("aria-expanded") !== "false" && optionsForSelect(select).length > 0;
+    }
     return visibleOptions().length > 0;
   }
 
-  async function chooseSelectOption(select, wantedText) {
+  async function chooseSelectOption(select, wantedText, abort = shouldAbort) {
+    if (abort()) return { ok: false, reason: "override stopped" };
     if (!select) return { ok: false, reason: "select not found" };
     if (select.disabled || select.getAttribute("aria-disabled") === "true") {
       return { ok: false, reason: "select is disabled" };
@@ -248,6 +261,7 @@
     // a child that does not open anything. Click the value element when present
     // and fall back to keyboard activation, which md-select also honours.
     for (let attempt = 1; attempt <= 3 && !menuIsOpen(select); attempt++) {
+      if (abort()) return { ok: false, reason: "override stopped" };
       const target = select.querySelector("md-select-value") || select;
       await Driver.click(target);
 
@@ -271,9 +285,7 @@
     // Scoped to THIS select: the dialog's other select carries the same option
     // labels inside a disabled container.
     const options = optionsForSelect(select);
-    const match =
-      options.find((o) => textOf(o).toLowerCase() === wanted) ||
-      options.find((o) => textOf(o).toLowerCase().indexOf(wanted) !== -1);
+    const match = options.find((o) => textOf(o).toLowerCase() === wanted);
 
     if (!match) {
       await Driver.pressKey("Escape");
@@ -299,16 +311,17 @@
     // Driver.click refuses zero-size elements — a sensible rule for page
     // buttons, wrong here. We have already found this option in an open menu
     // and matched its text, so dispatch to it directly.
+    if (abort() || !document.contains(select)) return { ok: false, reason: "override stopped or dialog replaced" };
     clickOptionDirectly(match);
 
     // Confirm by the value the select now displays, not by the menu closing:
     // the menu can close without the model updating if the click missed.
-    // Accept either the displayed label matching, or Angular reporting the model
-    // as non-empty: on multi-item dialogs the label can lag the model.
+    // A non-empty model may still hold a previous, different reason. Require
+    // the requested label to render before allowing Save.
     const wantedLabel = textOf(match).toLowerCase();
     const applied = await Driver.waitFor(() => {
       if (selectedTextOf(select).toLowerCase() === wantedLabel) return true;
-      return selectHasValue(select) ? true : null;
+      return null;
     }, 3000);
 
     if (!applied) {
@@ -332,6 +345,7 @@
    */
   /** True once the option is genuinely interactive, not mid-animation. */
   function optionIsReady(option) {
+    if (option.disabled || option.getAttribute("aria-disabled") === "true" || option.closest("[disabled]")) return false;
     try {
       const style = getComputedStyle(option);
       if (style.pointerEvents === "none") return false;
@@ -372,6 +386,9 @@
    * dialog is left exactly as it is for a pharmacist.
    */
   async function handleDialog(dialog) {
+    const generation = state.generation;
+    const abort = () => shouldAbort() || generation !== state.generation || !document.contains(dialog);
+    if (abort()) return { ok: false, reason: "override stopped or dialog replaced" };
     const item = readItemName(dialog);
     const alerts = readAlerts(dialog);
     const blocked = alerts.filter((a) => a.blocked);
@@ -401,25 +418,20 @@
 
     const select = dialog.querySelector(SEL.pharmacyReasonSelect);
 
-    if (!select) {
-      // Some alert dialogs carry no pharmacy reason; if Save is already live
-      // there is nothing to fill in.
-      if (isSaveEnabled(dialog)) {
-        const saved = await Driver.clickAndSettle(
-          dialog.querySelector(SEL.saveButton), { timeoutMs: 12000 });
-        if (!saved.ok) return { ok: false, reason: "Save could not be clicked: " + saved.reason };
-        return { ok: true, reason: "saved (no pharmacy reason required)" };
-      }
+    // Both dialog variants use the same single Save and closure check.
+    if (!select && !isSaveEnabled(dialog)) {
       return { ok: false, reason: "no pharmacy reason select and Save is disabled" };
     }
-
-    const chosen = await chooseSelectOption(select, state.reason);
+    const chosen = select
+      ? await chooseSelectOption(select, state.reason, abort)
+      : { ok: true, chosen: "no pharmacy reason required" };
     if (!chosen.ok) return { ok: false, reason: chosen.reason };
 
     // Angular needs a digest before Save is re-enabled.
     const ready = await Driver.waitFor(() => (isSaveEnabled(dialog) ? true : null), 4000);
     if (!ready) return { ok: false, reason: "Save stayed disabled after selecting the reason" };
 
+    if (abort()) return { ok: false, reason: "override stopped or dialog replaced" };
     const saved = await Driver.clickAndSettle(
       dialog.querySelector(SEL.saveButton), { timeoutMs: 15000 });
     if (!saved.ok) return { ok: false, reason: "Save could not be clicked: " + saved.reason };
@@ -446,11 +458,12 @@
 
   async function handleIfPresent() {
     if (window.ArcusPaperless?.isActive()) return {ok:false, reason:"paperless checker owns this tab"};
-    if (!state.enabled || state.busy) return { ok: false, reason: "not active" };
+    if (shouldAbort() || state.busy) return { ok: false, reason: "not active" };
 
     const dialog = getAlertDialog();
     if (!dialog) {
       // The pharmacist dealt with whatever was blocking; let the run continue.
+      state.lastSignature = null;
       if (state.awaitingHuman) {
         state.awaitingHuman = false;
         state.awaitingReason = "";
@@ -463,7 +476,10 @@
     if (!dialog.querySelector(SEL.saveButton)) return { ok: false, reason: "not an override dialog" };
 
     const signature = signatureOf(dialog);
-    if (signature === state.lastSignature) return { ok: false, reason: "already attempted" };
+    if (dialog === state.lastDialog && signature === state.lastSignature) return { ok: false, reason: "already attempted" };
+    state.lastDialog = dialog;
+    state.awaitingHuman = false;
+    state.awaitingReason = "";
 
     state.busy = true;
     try {
@@ -473,6 +489,8 @@
       } else {
         // Stop retrying and let a human take over.
         state.lastSignature = signature;
+        state.awaitingHuman = true;
+        state.awaitingReason = result.reason;
         if (!result.blocked) {
           log("fail", "Auto-override failed: " + result.reason, "left open for manual handling");
         }
@@ -480,6 +498,8 @@
       return result;
     } catch (err) {
       state.lastSignature = signature;
+      state.awaitingHuman = true;
+      state.awaitingReason = err.message || String(err);
       log("fail", "Auto-override error: " + (err.message || err));
       return { ok: false, reason: err.message || String(err) };
     } finally {
@@ -536,6 +556,8 @@
   }
 
   function setEnabled(enabled, reason) {
+    state.generation += 1;
+    state.suspended = false;
     state.enabled = !!enabled;
     if (reason) state.reason = reason;
     state.lastSignature = null;
@@ -547,6 +569,7 @@
 
     if (state.enabled) startWatching();
     else { stopWatching(); log("info", "Auto-override disabled"); }
+    notifyState();
     return state.enabled;
   }
 
@@ -558,6 +581,7 @@
           state.enabled = true;
           startWatching();
         }
+        notifyState();
         callback?.(state.enabled);
       });
     } catch (_) {
@@ -569,7 +593,7 @@
 
   window.ArcusAutoOverride = {
     DEFAULT_REASON, ENABLED_KEY, REASON_KEY, NEVER_AUTO, state,
-    setEnabled, isEnabled: () => state.enabled,
+    setEnabled, cancelPending, resume, isEnabled: () => state.enabled,
     handleIfPresent, handleDialog, chooseSelectOption,
     getAlertDialog, readAlerts, readItemName, blockedAlerts,
     isSaveEnabled, signatureOf, isAwaitingHuman,

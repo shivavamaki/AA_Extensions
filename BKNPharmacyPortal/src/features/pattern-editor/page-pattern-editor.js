@@ -36,7 +36,12 @@ function loadBuiltins() {
 
 /** Source classification for a phrase key. */
 function sourceOf(key) {
-  const hasOverride = !!overrides[key];
+  const ov = overrides[key];
+  // Saved custom phrases can become built-ins in a later release. An identical
+  // saved copy is already using the shipped default; keep genuine edits visible.
+  const identical = ov && builtins[key] && ov.th === builtins[key].th
+    && (!ov.mode || ov.mode === "exact") && !ov.en;
+  const hasOverride = !!ov && !identical;
   const hasBuiltin = Object.prototype.hasOwnProperty.call(builtins, key);
   if (hasBuiltin && hasOverride) return "override"; // built-in shadowed by an edit
   if (hasBuiltin) return "builtin";                 // shipped default, untouched
@@ -251,7 +256,7 @@ async function load() {
     rebuildOrder();
     render();
     const nBuiltin = Object.keys(builtins).length;
-    const nOverride = Object.keys(overrides).filter(k => builtins[k]).length;
+    const nOverride = Object.keys(overrides).filter(k => sourceOf(k) === "override").length;
     const nCustom = Object.keys(overrides).filter(k => !builtins[k]).length;
     setStatus(`${nBuiltin} built-in · ${nOverride} overridden · ${nCustom} custom.`, "ok");
   } catch (e) {

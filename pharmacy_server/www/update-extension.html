@@ -139,59 +139,55 @@
   <div class="card">
     <div class="dl">
       <div class="dl-main">
-        <a class="btn" id="dl-bat" href="/bkn-install.bat" download>
-          ⬇ ดาวน์โหลดตัวติดตั้ง · Download installer
-        </a>
-        <div class="btn-note">ไฟล์เดียว ใช้ได้ทุกครั้งที่มีเวอร์ชันใหม่ · One file, reuse it for every future update</div>
-      </div>
-      <div class="dl-main">
-        <a class="btn secondary" id="dl-zip" href="/ext-download">
-          🗜 ดาวน์โหลด .zip เอง · Download the .zip only
-        </a>
-        <div class="btn-note">สำหรับติดตั้งด้วยตนเอง · For manual install</div>
+        <a class="btn" id="dl-zip" href="/ext-download">🗜 ดาวน์โหลด ZIP · Download extension ZIP</a>
+        <div class="btn-note">ตั้งแต่ 3.61.0 อัปเดตด้วย ZIP · From 3.61.0, update manually using ZIP</div>
       </div>
     </div>
     <div class="hash" id="hash"></div>
   </div>
 
-  <h2>วิธีติดตั้ง · How to install</h2>
+  <h2>วิธีอัปเดต · How to update</h2>
   <div class="card">
     <ol class="steps">
       <li>
-        <div class="step-t">กดปุ่ม “ดาวน์โหลดตัวติดตั้ง” ด้านบน</div>
-        <div class="step-d">ไฟล์ <code>bkn-install.bat</code> จะถูกบันทึกไว้ในโฟลเดอร์ Downloads ของเครื่องคุณ<br>
-          The file is saved to your own Downloads folder.</div>
+        <div class="step-t">ดาวน์โหลด ZIP แล้วแตกไฟล์ในโฟลเดอร์ชั่วคราว · Download and extract</div>
+        <div class="step-d">ใช้ Extract All และตรวจว่ามี <code>manifest.json</code> ก่อนเปลี่ยนไฟล์เดิม<br>
+          Extract All into a temporary folder. Confirm it contains manifest.json before changing the installed folder.</div>
       </li>
       <li>
-        <div class="step-t">เปิดโฟลเดอร์ Downloads แล้ว <b>ดับเบิลคลิก</b> ไฟล์นั้น</div>
-        <div class="step-d">ถ้า Windows ถามเรื่องความปลอดภัย ให้เลือก <kbd>More info</kbd> → <kbd>Run anyway</kbd><br>
-          If Windows asks, choose More info → Run anyway.</div>
+        <div class="step-t">ปิดหน้าส่วนขยาย แล้วแทนที่ไฟล์ในโฟลเดอร์เดิม · Replace the installed files</div>
+        <div class="step-d">สำรองไฟล์เดิมไว้ก่อน แล้วแทนที่เนื้อหาทั้งหมดของ <code>D:\pharmacy\BKNPharmacyPortal</code>
+          (หรือตำแหน่งที่ติดตั้งเดิม) ด้วยไฟล์ที่แตกแล้ว ห้ามซ้อนโฟลเดอร์เพิ่ม<br>
+          Close extension pages. Back up the existing files, then replace all contents of the existing installation folder
+          with the extracted files. Keep the same folder path; manifest.json must sit directly inside it.</div>
       </li>
       <li>
-        <div class="step-t">รอจนขึ้นข้อความ “Updated to version …”</div>
-        <div class="step-d">ตัวติดตั้งจะดาวน์โหลด ตรวจสอบ แล้วติดตั้งลงที่ <code>D:\pharmacy</code> ให้เอง<br>
-          The installer downloads, verifies, then installs to D:\pharmacy by itself.</div>
+        <div class="step-t">เปิด chrome://extensions แล้วกด Reload ↻ · Reload the extension</div>
+        <div class="step-d">พิมพ์ <code>chrome://extensions</code> ในช่องที่อยู่ เปิด Developer mode แล้วกด Reload ของ BKN Pharmacy Portal
+          ตรวจว่าเป็นเวอร์ชันเดียวกับด้านบน<br>
+          Type chrome://extensions into the address bar, enable Developer mode, reload BKN Pharmacy Portal,
+          and check its version matches the published version above.</div>
       </li>
       <li>
-        <div class="step-t">Chrome จะเปิดขึ้นมา — กดปุ่ม <b>รีโหลด ↻</b> ของส่วนขยาย</div>
-        <div class="step-d">แล้วปิดแท็บนั้นได้เลย เป็นอันเสร็จ<br>
-          Press the extension’s reload arrow, then close the tab. Done.</div>
+        <div class="step-t">รีเฟรช ArcusAir ทุกแท็บ · Refresh ArcusAir tabs</div>
+        <div class="step-d">ปิดใบยาที่เปิดค้าง แล้วเปิดใบใหม่จากผู้ป่วยที่เลือก ตรวจ HN ก่อนพิมพ์<br>
+          Close previously opened medication sheets. Refresh ArcusAir tabs and open a fresh sheet for the selected patient; verify the HN before printing.</div>
       </li>
     </ol>
-
     <div class="why">
-      <b>ทำไมต้องดาวน์โหลดมาไว้ที่เครื่องตัวเอง?</b><br>
-      สคริปต์ที่วางอยู่บนไดรฟ์ที่ใช้ร่วมกัน ใครก็ตามที่เขียนไฟล์ในโฟลเดอร์นั้นได้
-      สามารถแก้ไขไฟล์นั้น แล้วโค้ดจะทำงานบนทุกเครื่องที่เปิดมัน
-      การเก็บสำเนาไว้ที่เครื่องตัวเองจึงปลอดภัยกว่า
-      <br><br>
-      <b>Why download it instead of running it from the shared drive?</b>
-      A script on a share can be replaced by anyone who can write to that folder,
-      and would then run on every workstation that launches it. Your own local copy removes that risk.
+      <b>ติดตั้งครั้งแรก · First installation:</b> Extract the ZIP into <code>D:\pharmacy\BKNPharmacyPortal</code>,
+      then use Developer mode → Load unpacked in <code>chrome://extensions</code> and select that folder.<br><br>
+      <b>ไฟล์อัปเดตเก่า · Old updater files:</b> Remove old BKN-Update-Extension.bat and bkn-install.bat copies
+      from your Desktop or Downloads. These scripts are retired; use this ZIP page for future updates.
     </div>
   </div>
 
   <h2>เวอร์ชันล่าสุด · What’s new</h2>
+  <div class="card">
+    <b>3.61.0</b>
+    <p>อัปเดตส่วนขยายด้วย ZIP แทนไฟล์ BAT และแก้ไขการส่งข้อมูลผู้ป่วยเก่าไปยังใบยาที่เปิดใหม่</p>
+    <p>Manual ZIP updates replace batch installers. Includes the fix preventing a new Home Medication Sheet from receiving the previous patient's context.</p>
+  </div>
   <div class="card" id="releases">
     <div class="muted">กำลังโหลด… · Loading…</div>
   </div>
@@ -227,7 +223,7 @@
           '<b>ขนาด · Size:</b> ' + mb +
           '<b>SHA-256:</b> ' + esc(info.sha256) +
           '<br><span class="muted">ตรวจสอบไฟล์ได้ด้วยคำสั่ง · Verify with: ' +
-          '<code>certutil -hashfile bkn-portal.zip SHA256</code></span>';
+          '<code>certutil -hashfile &quot;BKNPharmacyPortal-' + esc(v) + '.zip&quot; SHA256</code></span>';
       }
       render(v);
     })

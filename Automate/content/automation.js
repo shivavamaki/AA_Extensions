@@ -765,7 +765,9 @@
   }
 
   async function runAutomation({ functionName, mode }) {
+    if (window.ArcusPaperless?.isActive()) { alert("Stop Paperless Checker before starting batch automation."); return; }
     await window.ArcusTabSettings.flush();
+    if (window.ArcusPaperless?.isActive()) return;
     if (!window.ArcusShared.isWorkbenchPage()) {
       alert("This function works only on Arcus dispense workbench pharmacy routes.");
       return;

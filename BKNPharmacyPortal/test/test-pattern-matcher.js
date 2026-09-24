@@ -45,6 +45,14 @@ if (typeof matchMedicalPattern !== "function") {
  * shape — see src/features/home-med/README.md "Translation" section).
  * Add new rows here as real ArcusAir instruction strings surface edge cases. */
 const CASES = [
+  {"name": "promoted exact: apply to the ulcer", "input": "apply to the ulcer", "lang": "th", "expect": "ทาแผลในปาก"},
+  {"name": "promoted verb: apply to the ulcer", "input": "apply to the ulcer 2 times daily Morning Evening", "lang": "th", "opts": {"freqOverride": "วันละ 2 ครั้ง เช้า เย็น"}, "expect": "ทาแผลในปาก วันละ 2 ครั้ง เช้า เย็น"},
+  {"name": "promoted exact: spray into the nostril", "input": "spray into the nostril", "lang": "th", "expect": "พ่นจมูก"},
+  {"name": "promoted verb: spray into the nostril", "input": "spray into the nostril 2 times daily Morning Evening", "lang": "th", "opts": {"freqOverride": "วันละ 2 ครั้ง เช้า เย็น"}, "expect": "พ่นจมูก วันละ 2 ครั้ง เช้า เย็น"},
+  {"name": "promoted exact: apply to rectum", "input": "apply to rectum", "lang": "th", "expect": "ทาบริเวณทวารหนัก"},
+  {"name": "promoted verb: apply to rectum", "input": "apply to rectum 2 times daily Morning Evening", "lang": "th", "opts": {"freqOverride": "วันละ 2 ครั้ง เช้า เย็น"}, "expect": "ทาบริเวณทวารหนัก วันละ 2 ครั้ง เช้า เย็น"},
+  {"name": "promoted exact: apply on local swelling, bruised area", "input": "apply on local swelling, bruised area", "lang": "th", "expect": "ทาบริเวณที่ปวด บวม"},
+  {"name": "promoted verb: apply on local swelling, bruised area", "input": "apply on local swelling, bruised area 2 times daily Morning Evening", "lang": "th", "opts": {"freqOverride": "วันละ 2 ครั้ง เช้า เย็น"}, "expect": "ทาบริเวณที่ปวด บวม วันละ 2 ครั้ง เช้า เย็น"},
   {
     name: "Voltaren massage instruction preserves application verb",
     input: "Apply and Gently Massage on Painful Area 2 times daily Morning Evening",
@@ -99,6 +107,18 @@ const CASES = [
     input: "shake well before use",
     lang: "th",
     expect: "เขย่าขวดก่อนใช้",
+  },
+  {
+    name: "built-in phrase — chew before swallowing",
+    input: "Chew Before Swallowing 1 Tablet Once Daily Before Bedtime",
+    lang: "th",
+    contains: ["เคี้ยวก่อนกลืน"],
+  },
+  {
+    name: "built-in phrase — spray into the mouth",
+    input: "Spray into the Mouth",
+    lang: "th",
+    contains: ["พ่นเข้าปาก"],
   },
   {
     // _applyVerb()/_drinkVerb() only kick in on the freqOverride salvage path

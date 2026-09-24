@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Cache-Control" content="no-store"><title>Medication preparation · Pharmacy</title><link rel="stylesheet" href="prepare.css"><script defer src="prepare.js"></script></head>
+<body>
+<header><div><p class="eyebrow">PHARMACY · PAPERLESS</p><h1>Medication preparation</h1><p>Select your name, then scan each prepared order.</p></div><a href="/">Server home</a></header>
+<main>
+<section class="panel scanner">
+<div class="step"><span>1</span><h2>Select your name</h2></div>
+<label for="staff">Prepared by · ผู้จัดยา</label><select id="staff" disabled><option value="">Loading IV sticker staff…</option></select>
+<div class="step"><span>2</span><h2>Scan the order number</h2></div>
+<form id="scan-form"><label for="order">Order number · เลขที่ใบสั่งยา</label><div class="scan-row"><input id="order" type="text" autocomplete="off" spellcheck="false" maxlength="160" placeholder="Scan order barcode · I / O / E" disabled><button id="save" type="submit" disabled>Save preparation</button></div></form>
+<p class="hint">Scanner Enter / Tab submits. Scanners without a suffix submit after 800 ms idle.</p>
+<div id="feedback" class="feedback" role="status" aria-live="polite">Connecting to pharmacy server…</div>
+<p id="last-save"></p><button id="connect" class="secondary" type="button">Reload staff &amp; connection</button>
+<p class="hint">This records who prepared the scanned order. Individual medicines and quantities are not verified by this step.</p>
+</section>
+<section class="panel history">
+<div class="section-head"><div><p class="eyebrow">SERVER LOG</p><h2>Preparation history</h2></div><button id="refresh" class="secondary">Refresh</button></div>
+<div class="filters"><label>From<input id="from" type="date"></label><label>To<input id="to" type="date"></label><label>Order number<input id="search" type="search" placeholder="Search order number"></label></div>
+<p id="history-status" role="status"></p>
+<div class="table-wrap"><table><thead><tr><th>Prepared at</th><th>Order number</th><th>Prepared by</th></tr></thead><tbody id="rows"><tr><td colspan="3">Loading preparation history…</td></tr></tbody></table></div>
+<div class="pagination"><span id="count"></span><button id="previous" class="secondary" disabled>Previous</button><button id="next" class="secondary" disabled>Next</button></div>
+</section>
+</main></body></html>

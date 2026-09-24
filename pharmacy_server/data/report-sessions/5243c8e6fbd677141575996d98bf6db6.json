@@ -1,0 +1,246 @@
+{
+  "id": "5243c8e6fbd677141575996d98bf6db6",
+  "owner": "public",
+  "request": {
+    "schemaVersion": 1,
+    "reportType": "home-med-ipd",
+    "identity": {
+      "patientUid": "6ab28adc9ea9f16fd424a6cc",
+      "visitUid": "6ab28adca052ce70c1352159"
+    },
+    "presentation": {
+      "language": "th",
+      "templateVersion": "hm-a4-v1"
+    }
+  },
+  "revision": 2,
+  "status": "ready",
+  "source": {
+    "patient": {
+      "patientName": "MR. INGEBRIGT HUSE",
+      "hn": "48-26-011899",
+      "an": "I2609240190",
+      "room": "614"
+    },
+    "meds": [
+      {
+        "drug": "Sirdalud 4 Mg Tab(ยานอกบัญชี)",
+        "code": "51151917000002",
+        "quantity": "5 Tablet",
+        "comment": "Take 0.5 Tablet Once Daily Before Bedtime",
+        "note": "(อาจทำให้ง่วงนอน)",
+        "noteEn": "(It may cause drowsiness)",
+        "route": "Orally",
+        "frequency": "Once Daily Before Bedtime",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนนอน",
+        "dosage": "0.5",
+        "provider": "พิมพ์วิมล จันทร์แสง, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "bed"
+        ]
+      },
+      {
+        "drug": "Lyrica (150 Mg) Capsule",
+        "code": "51141534000002",
+        "quantity": "14 Capsule",
+        "comment": "Take 1 Capsule Once Daily Before Bedtime",
+        "note": "(อาจทำให้ง่วงนอน)",
+        "noteEn": "May cause drowsiness",
+        "route": "Orally",
+        "frequency": "Once Daily Before Bedtime",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนนอน",
+        "dosage": "1",
+        "provider": "กิตติพงษ์ ดงแสง, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "bed"
+        ]
+      },
+      {
+        "drug": "Opalmon TABLET 5 mcg",
+        "code": "51002010104001",
+        "quantity": "21 Tablet",
+        "comment": "Take 1 Tablet 3 Times Daily After Breakfast Lunch and Dinner",
+        "note": "ลดความเจ็บปวด, ชาปลายประสาท อาจมีอาการคลื่นใส้หลังรับประทานยา",
+        "noteEn": "ลดความเจ็บปวด, ชาปลายประสาท อาจมีอาการคลื่นใส้หลังรับประทานยา",
+        "route": "Orally",
+        "frequency": "3 Times Daily After Breakfast Lunch and Dinner",
+        "frequencyTh": "วันละ 3 ครั้ง หลังอาหาร เช้า กลางวัน เย็น",
+        "dosage": "1",
+        "provider": "กิตติพงษ์ ดงแสง, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "alu",
+          "adn"
+        ]
+      },
+      {
+        "drug": "Tarlige 5 mg TABLET",
+        "code": "51141500000001",
+        "quantity": "14 Tablet",
+        "comment": "Take 1 Tablet 2 Times Daily After Breakfast and Dinner",
+        "note": "รับประทานตามแพทย์สั่ง กลืนพร้อมน้ำ",
+        "noteEn": "Take as prescribed; swallow with water.",
+        "route": "Orally",
+        "frequency": "2 Times Daily After Breakfast and Dinner",
+        "frequencyTh": "วันละ 2 ครั้ง หลังอาหาร เช้า เย็น",
+        "dosage": "1",
+        "provider": "กิตติพงษ์ ดงแสง, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "adn"
+        ]
+      },
+      {
+        "drug": "Locoa Transdermal Patch (40 mg)",
+        "code": "51142104000033",
+        "quantity": "14 Patch",
+        "comment": "Patch on the skin 1 Patch Once Daily Morning",
+        "note": "แปะบนผิวสะอาดและแห้งตามแพทย์สั่ง เปลี่ยนตำแหน่งแปะ",
+        "noteEn": "Apply to clean, dry skin as prescribed; rotate application sites.",
+        "route": "(Topical)",
+        "frequency": "Once Daily Morning",
+        "frequencyTh": "วันละ 1 ครั้ง เช้า",
+        "dosage": "1",
+        "provider": "กิตติพงษ์ ดงแสง, นพ.",
+        "oral": false,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "apply right lower neck prn for pain once daily dose",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf"
+        ]
+      },
+      {
+        "drug": "Stugeron (25 mg) Tablet //",
+        "code": "51171807000002",
+        "quantity": "10 Tablet",
+        "comment": "Take 1 Tablet 3 Times Daily After Breakfast Lunch and Dinner",
+        "note": "แก้มึนเวียนศีรษะ ทานยาแล้วอาจง่วงนอน",
+        "noteEn": "For Dizziness May cause drowsiness",
+        "route": "Orally",
+        "frequency": "3 Times Daily After Breakfast Lunch and Dinner",
+        "frequencyTh": "วันละ 3 ครั้ง หลังอาหาร เช้า กลางวัน เย็น",
+        "dosage": "1",
+        "provider": "พิมพ์วิมล จันทร์แสง, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "alu",
+          "adn"
+        ]
+      },
+      {
+        "drug": "Serc 24 mg TABLET",
+        "code": "51161608000002",
+        "quantity": "10 Tablet",
+        "comment": "Take 1 Tablet 2 Times Daily After Breakfast and Dinner",
+        "note": "รับประทานตามแพทย์สั่ง กลืนพร้อมน้ำ",
+        "noteEn": "Take as prescribed; swallow with water.",
+        "route": "Orally",
+        "frequency": "2 Times Daily After Breakfast and Dinner",
+        "frequencyTh": "วันละ 2 ครั้ง หลังอาหาร เช้า เย็น",
+        "dosage": "1",
+        "provider": "พิมพ์วิมล จันทร์แสง, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "adn"
+        ]
+      }
+    ],
+    "allMeds": 7,
+    "allergies": {
+      "nkda": true,
+      "items": [],
+      "hasRecord": true
+    },
+    "appointmentText": "คนไข้มีนัดหมาย วันที่ 8 ตุลาคม 2569 เวลา 08:00 น.\tที่แผนก Orthopedic Surgery กับ กิตติพงษ์ ดงแสง, นพ. หมายเหตุ นัดติดตามอาการปวดต้นคอ",
+    "reconcileMeds": [
+      {
+        "drug": "Amlodipine 5 mg TABLET #",
+        "code": "51121743000001",
+        "status": "changed",
+        "instruction": "",
+        "frequency": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "frequencyTh": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "frequencyEn": "Once Daily After Breakfast",
+        "route": "Orally",
+        "note": "",
+        "statusRaw": "CHANGE",
+        "addable": true
+      }
+    ],
+    "hasReconcile": true,
+    "ok": true,
+    "source": "arcus-api",
+    "cacheStatus": "live"
+  },
+  "edits": {},
+  "rendered": null,
+  "history": [
+    {
+      "revision": 2,
+      "action": "build",
+      "at": 1790220806.5884402
+    }
+  ],
+  "createdAt": 1790220805.7744646,
+  "displayContext": {
+    "patientName": "MR. INGEBRIGT  HUSE",
+    "hn": "48-26-011899",
+    "patientId": "48-26-011899",
+    "an": "",
+    "patientVisitId": "",
+    "bed": "614",
+    "doctor": "",
+    "diagnosis": "Dizziness and giddiness, Other specified headache syndromes, Sprain and strain of toe(s), Other peripheral vertigo, Other spondylosis with myelopathy: cervical region, Cervical disc disorder with radiculopathy",
+    "pharmacistName": "ปัทมพร ศรีกัลป์, ภญ"
+  },
+  "error": null,
+  "updatedAt": 1790220806.5884402
+}

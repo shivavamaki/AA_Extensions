@@ -1,6 +1,6 @@
 # Automate in BKN Pharmacy Portal
 
-Integrated from the working Automate 4.8.3 project into Portal 3.62.0.
+Integrated from the working Automate 4.8.3 project into Portal 3.62.2.
 The original Automate directory is retained as a fallback; the portal is self-contained.
 
 ## Redundancy decisions
@@ -53,3 +53,43 @@ node BKNPharmacyPortal/src/features/automate/tests/browser-paperless-review.cjs
 ```
 
 To save a popup screenshot, set AUTOMATE_SCREENSHOT to the output PNG path before running the popup browser test. By default tests leave no screenshots in the repository.
+
+## Allocation and override update (3.62.1)
+
+The supplied workflow recording showed 65 automatic Close events in 1,013 ms. Review found HMR's passive modal closer could dispatch two clicks per attempt and retry during mutation bursts. It now yields to active Automate, IP Fill, and Paperless owners; its independent retries are bounded per dialog.
+
+- Keep **Medically needed** as the default, as requested. The panel displays an editable Pharmacy override reason with suggestions. Selection must match the exact label offered by Arcus; missing options are left for manual review.
+- Allocate is submitted once. Saving the override can itself start allocation, so the runner waits for the workbench instead of pressing Allocate again. An unconfirmed outcome stops the batch for review.
+- Automatically handle the reason dialog explicitly, independently of observer timing. Failed selection and allergy alerts stay open for a pharmacist.
+- Stop cancels pending option/Save work. Transactions already sent cannot be undone.
+- Shared dialog closers use dialog-scoped controls, reject override/allergy dialogs, and prevent concurrent Close loops.
+- HMR remains a separate feature; its active HM workflow is unchanged.
+
+Additional regressions:
+
+```powershell
+node --test BKNPharmacyPortal/src/features/automate/tests/allocation-coordination.test.cjs
+node BKNPharmacyPortal/src/features/automate/tests/browser-allocation.cjs
+```
+
+These tests use synthetic DOM and mocked services. They verify the automation logic, not a live authenticated hospital transaction. Reload Portal 3.62.1 and the Arcus tabs to activate the changes; keep the standalone Automate extension disabled.
+
+## Alert closing and Allocate button correction (3.62.2)
+
+Informational dialogs are distinguished from override dialogs by their input controls, not words such as “reason” in their message. The runner waits briefly for alerts after selecting a row and closes informational alerts on the allocation page before submitting. Override and allergy dialogs remain protected.
+
+The final Allocate action prioritizes the supplied #actiondiv > button.md-primary.md-button.md-incustheme-theme.md-ink-ripple with aria-label="Allocate" and ng-click="vm.saveData()". Readiness waits for the live button to become enabled and ignores toolbar buttons, dialog Save buttons, and detached elements.
+
+The allocation browser fixture now uses that exact markup and the real readiness helper, with delayed button enabling and delayed row/allocation alerts. All eleven allocation scenarios and twenty-six unit/integration cases pass. Reload Portal 3.62.2 and the Arcus tab to use this update. Live hospital transactions were not run.
+
+## Compact controls and toggle feedback (3.62.3)
+
+The floating panel uses two-column Mode/Location settings, one-row order filters, compact statistics and one current-step display. The visible log-copy control and redundant Ready/detail text are removed. Record/Export remain under collapsed Tools; diagnostic logs stay in memory. The override reason is shown only when Auto override is enabled.
+
+Manual wait persists per tab and applies when Auto override is off; Auto override takes priority when enabled. Auto override reflects on/off/paused state, including Stop and resume. Turbo locks while connecting or disconnecting and follows the actual driver result, including refused attach/detach. Turbo remains session-only.
+
+Test: node BKNPharmacyPortal/src/features/automate/tests/browser-panel-toggles.cjs. Set AUTOMATE_SCREENSHOT to an optional PNG path for a synthetic panel capture.
+
+## Sidebar panel and reasons (3.62.4)
+
+Auto override offers Doctor is Aware, For extra stock, and Medically needed (default). Existing saved custom reasons remain available. The automation panel mounts after the last item in tri-menu > md-content when the sidebar is at least 180px wide; otherwise it floats. Panel state and controls survive sidebar replacement, including during allocation. Browser checks cover all choices, docking, replacement, fallback, toggle behavior, and allocation regression flows.

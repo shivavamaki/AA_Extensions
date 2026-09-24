@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paperless Checker · Review</title>
+<link rel="stylesheet" href="paperless-review.css"><script defer src="paperless-review.js"></script>
+</head>
+<body>
+<header><div><p class="eyebrow">ARCUS TOOLKIT</p><h1>Paperless Checker</h1><p>Current checks and session activity</p></div><span id="connection" class="badge">Connecting…</span></header>
+<main>
+<section class="toolbar" aria-label="Review controls">
+<label>ArcusAir tab<select id="source"><option value="">Select a tab</option></select></label>
+<button id="refresh">Refresh</button><button id="open-tab">Go to ArcusAir</button>
+<label class="check"><input type="checkbox" id="auto" checked> Live refresh</label><span id="updated"></span>
+</section>
+<p id="notice" role="status" aria-live="polite"></p>
+<section class="metrics" aria-label="Current checker status">
+<article><h2>Checker</h2><strong id="state">—</strong><p id="mode">Select an ArcusAir tab</p></article>
+<article><h2>Prescription</h2><strong id="prescription">—</strong><p id="status">—</p></article>
+<article><h2>Medicine checks</h2><strong id="progress">—</strong><p>Barcode matches only; quantity is not verified.</p></article>
+</section>
+<section class="panel"><div class="section-head"><h2>Current medicines</h2><span id="current-message"></span></div><div id="medicines" class="medicine-list"><p>No current check.</p></div></section>
+<section class="panel">
+<div class="section-head"><div><h2>Review log</h2><p>Recent sessions saved in this browser profile.</p></div><button id="export" disabled>Export filtered log</button></div>
+<div class="filters">
+<label>Session<select id="session"><option value="">No saved sessions</option></select></label>
+<label>Search<input id="search" type="search" placeholder="Prescription, medicine code, event…"></label>
+<label>Event type<select id="kind"><option value="">All events</option><option value="scan">Barcode scans</option><option value="attention">Needs attention</option><option value="action">Actions</option></select></label>
+</div>
+<p id="session-info"></p>
+<div class="table-wrap"><table><thead><tr><th>Time</th><th>Prescription</th><th>Type</th><th>Code</th><th>Activity / verification</th></tr></thead><tbody id="logs"><tr><td colspan="5">No events recorded.</td></tr></tbody></table></div>
+<div class="pagination"><span id="count"></span><button id="previous">Previous</button><span id="page"></span><button id="next">Next</button></div>
+</section>
+<footer>Review is read-only. A sent Dispense click does not confirm server completion. Logs retain up to 20 recent sessions and 1,000 events per session, within a 2 MB archive. Export logs you need to keep.</footer>
+</main></body></html>
+

@@ -1,7 +1,7 @@
 "use strict";
 
 // The CDP bridge registers its own onMessage listener for cdp* message types.
-importScripts("cdp-bridge.js", "tab-settings.js");
+importScripts("cdp-bridge.js", "tab-settings.js", "paperless-review-store.js");
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Each download carries its own filename; no global next-download slot.

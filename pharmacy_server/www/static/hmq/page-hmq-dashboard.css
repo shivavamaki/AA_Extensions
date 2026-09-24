@@ -1,0 +1,418 @@
+/* ══ HM Process Queue Dashboard — same visual language as the Ward View
+   floating popup (hmq.css), laid out as a full-page 3-column board with a
+   date-range filter. Read-only: no Start/Complete/Revert actions here —
+   those live on the live Ward View popup, this page is for browsing history. */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #eef3fc;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: #263238;
+  font-size: 13px;
+}
+
+.hmqd-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #1565c0, #1e88e5);
+  color: #fff;
+  padding: 16px 22px;
+  flex-wrap: wrap;
+}
+.hmqd-header-icon { font-size: 22px; }
+.hmqd-header-text { flex: 1; min-width: 200px; }
+.hmqd-title { font-weight: 700; font-size: 16px; }
+.hmqd-subtitle { font-size: 11.5px; opacity: .85; margin-top: 2px; }
+.hmqd-total-badge {
+  background: rgba(255,255,255,.2);
+  border: 1px solid rgba(255,255,255,.4);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.hmqd-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: #fff;
+  border-bottom: 1px solid #dce8f8;
+  padding: 12px 22px;
+}
+.hmqd-field { display: flex; flex-direction: column; gap: 3px; }
+.hmqd-field label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #7a90b8;
+}
+.hmqd-field input[type="date"],
+.hmqd-field input[type="search"] {
+  border: 1px solid #c8d8f0;
+  border-radius: 7px;
+  padding: 6px 9px;
+  font-size: 12.5px;
+  font-family: inherit;
+  color: #1e3056;
+  background: #f5f8ff;
+}
+.hmqd-field input[type="search"] { min-width: 180px; }
+.hmqd-quick-ranges { display: flex; gap: 6px; }
+.hmqd-btn {
+  border: 1px solid #c8d8f0;
+  background: #f5f8ff;
+  color: #2a4a7f;
+  border-radius: 7px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.hmqd-btn:hover { background: #eaf2ff; }
+.hmqd-btn.active { background: #5b8de8; border-color: #5b8de8; color: #fff; }
+.hmqd-btn-primary { background: #1565c0; border-color: #1565c0; color: #fff; }
+.hmqd-btn-primary:hover { background: #0d47a1; }
+.hmqd-spacer { flex: 1; }
+.hmqd-updated { font-size: 10.5px; color: #90a4ae; }
+
+.hmqd-board {
+  display: flex;
+  gap: 16px;
+  padding: 16px 22px 28px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.hmqd-col {
+  flex: 1 1 300px;
+  min-width: 280px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(21,101,192,.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 160px);
+}
+.hmqd-col-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: .01em;
+}
+.hmqd-col-hdr.new  { background: #fff3e0; color: #e65100; }
+.hmqd-col-hdr.proc { background: #e3f2fd; color: #0d47a1; }
+.hmqd-col-hdr.done { background: #e8f5e9; color: #1b5e20; }
+.hmqd-col-count {
+  margin-left: auto;
+  background: rgba(0,0,0,.08);
+  border-radius: 999px;
+  padding: 1px 9px;
+  font-size: 11px;
+}
+.hmqd-col-rows { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 4px 0; }
+
+.hmqd-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;                 /* tightened: the row now carries a room badge too */
+  padding: 9px 14px;
+  border-bottom: 1px solid #f1f3f6;
+}
+.hmqd-row:last-child { border-bottom: none; }
+.hmqd-qnum {
+  flex: 0 0 auto;
+  min-width: 30px;
+  height: 22px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: #eceff1;
+  color: #546e7a;
+  font-weight: 700;
+  font-size: 10.5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.hmqd-row-info { flex: 1; min-width: 0; }
+/* Room / bed badge — the field staff scan the board for, so it gets the
+   strongest visual weight after the queue number. Mirrors .hmq-room in the
+   floating Ward-View popup (hmq.css) so both views read the same. */
+.hmqd-room {
+  flex: 0 0 auto;
+  min-width: 42px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 6px;
+  background: #1565c0;
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: .02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.hmqd-room-none {
+  background: #eceff1;
+  color: #b0bec5;
+  font-weight: 700;
+}
+/* Thai name — larger than before, since the English half is no longer shown. */
+.hmqd-row-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1a2027;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hmqd-hn { font-weight: 400; color: #78909c; font-size: 10px; margin-left: 6px; }
+/* Pharmacist who started the case — On Process column only. */
+.hmqd-by {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: #e3f2fd;
+  color: #1565c0;
+  font-weight: 600;
+  font-size: 10px;
+  line-height: 15px;
+  vertical-align: middle;
+}
+.hmqd-row-meta {
+  font-size: 10px;
+  color: #90a4ae;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hmqd-row-date {
+  flex: 0 0 auto;
+  text-align: right;
+  font-size: 10px;
+  color: #90a4ae;
+  line-height: 1.3;
+}
+.hmqd-row-date b { display: block; color: #546e7a; font-size: 10.5px; }
+
+.hmqd-log-btn {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: #90a4ae;
+  padding: 4px;
+  border-radius: 5px;
+  line-height: 1;
+}
+.hmqd-log-btn:hover { background: #eceff1; color: #546e7a; }
+
+.hmqd-empty {
+  padding: 22px 14px;
+  font-size: 11.5px;
+  color: #b0bec5;
+  font-style: italic;
+  text-align: center;
+}
+.hmqd-loading, .hmqd-error {
+  padding: 40px 22px;
+  text-align: center;
+  color: #90a4ae;
+  font-size: 13px;
+}
+.hmqd-error { color: #c62828; }
+
+.hmqd-note {
+  margin: 0 22px 20px;
+  padding: 10px 14px;
+  background: #eaf2ff;
+  border: 1px solid #c8d8f0;
+  border-radius: 8px;
+  font-size: 11px;
+  color: #4a6284;
+}
+
+/* ── Per-patient log modal (same look as hmq.css's popup modal) ─────────── */
+.hmqd-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,.45);
+  z-index: 999;
+  align-items: center;
+  justify-content: center;
+}
+.hmqd-modal-overlay.open { display: flex; }
+.hmqd-modal {
+  width: 360px;
+  max-height: 70vh;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0,0,0,.3);
+  display: flex;
+  flex-direction: column;
+}
+.hmqd-modal-hdr {
+  background: linear-gradient(135deg, #1565c0, #1e88e5);
+  color: #fff;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hmqd-modal-title { flex: 1; font-weight: 700; font-size: 13px; }
+.hmqd-modal-sub { font-size: 10.5px; opacity: .85; margin-top: 1px; }
+.hmqd-modal-close {
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.35);
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  line-height: 1;
+  padding: 0;
+  font-size: 13px;
+}
+.hmqd-modal-close:hover { background: rgba(255,255,255,.28); }
+.hmqd-modal-body { padding: 6px 0; overflow-y: auto; }
+.hmqd-log-entry { display: flex; gap: 10px; padding: 9px 15px; font-size: 12px; }
+.hmqd-log-entry + .hmqd-log-entry { border-top: 1px solid #f1f3f6; }
+.hmqd-log-time {
+  flex: 0 0 auto;
+  color: #90a4ae;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  padding-top: 1px;
+}
+.hmqd-log-text { flex: 1; color: #37474f; }
+.hmqd-log-user { color: #90a4ae; font-size: 10px; margin-top: 1px; }
+
+/* ══ Tabs ═══════════════════════════════════════════════════════════════ */
+.hmqd-tabs {
+  display: flex; gap: 4px; padding: 0 18px;
+  background: #fff; border-bottom: 1px solid #dce4ec;
+}
+.hmqd-tab {
+  appearance: none; border: 0; background: none; cursor: pointer;
+  font: 600 13px/1 "Segoe UI", system-ui, sans-serif; color: #78909c;
+  padding: 12px 14px; border-bottom: 2.5px solid transparent;
+}
+.hmqd-tab:hover { color: #1565c0; }
+.hmqd-tab.is-active { color: #1565c0; border-bottom-color: #1565c0; }
+.hmqd-tab:focus-visible { outline: 2px solid #1565c0; outline-offset: -2px; }
+
+/* ══ Statistics ═════════════════════════════════════════════════════════
+   Palette validated with the dataviz validator (categorical, light surface):
+   #2a78d6 / #eb6834 — CVD ΔE 24.7 protan, 32.7 tritan, normal 33.6, all PASS.
+   Only the two-series stage bar uses categorical colour; every other chart is
+   single-hue sequential, because its job is magnitude, not identity. */
+#hmqd-stats { padding: 16px 18px 8px; }
+
+.hmqd-kpis {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px; margin-bottom: 14px;
+}
+.hmqd-tile {
+  background: #fff; border: 1px solid #dce4ec; border-radius: 10px;
+  padding: 13px 15px; box-shadow: 0 1px 2px rgba(20,28,36,.04);
+}
+.hmqd-tile-v {
+  font-size: 26px; font-weight: 700; color: #16212b; line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.hmqd-tile-l { font-size: 11.5px; font-weight: 600; color: #546e7a; margin-top: 2px; }
+.hmqd-tile-s { font-size: 10.5px; color: #90a4ae; margin-top: 3px; }
+
+.hmqd-panel {
+  background: #fff; border: 1px solid #dce4ec; border-radius: 10px;
+  padding: 14px 16px; margin-bottom: 12px;
+  box-shadow: 0 1px 2px rgba(20,28,36,.04);
+}
+.hmqd-panel h3 { margin: 0; font-size: 14px; color: #16212b; font-weight: 700; }
+.hmqd-sub { margin: 3px 0 12px; font-size: 11px; color: #90a4ae; line-height: 1.5; max-width: 78ch; }
+.hmqd-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.hmqd-nodata { font-size: 12px; color: #b0bec5; padding: 14px 0; }
+
+.hmqd-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.hmqd-bar { fill: #2a78d6; }                 /* sequential: one hue */
+.hmqd-s1  { fill: #2a78d6; }                 /* categorical slot 1 */
+.hmqd-s2  { fill: #eb6834; }                 /* categorical slot 2 */
+.hmqd-axis { stroke: #c3cdd6; stroke-width: 1; }
+.hmqd-cx { font-size: 9.5px; fill: #90a4ae; }
+.hmqd-cv { font-size: 9.5px; fill: #546e7a; font-variant-numeric: tabular-nums; }
+
+.hmqd-legend { display: flex; gap: 16px; margin-top: 8px; font-size: 11px; color: #546e7a; }
+.hmqd-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.hmqd-sw1 { background: #2a78d6; }
+.hmqd-sw2 { background: #eb6834; }
+
+.hmqd-hbars { display: flex; flex-direction: column; gap: 7px; }
+.hmqd-hb { display: flex; align-items: center; gap: 9px; font-size: 11.5px; }
+.hmqd-hb-lbl {
+  flex: 0 0 40%; color: #37474f; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.hmqd-hb-track { flex: 1 1 auto; height: 12px; background: #eef2f6; border-radius: 4px; overflow: hidden; }
+.hmqd-hb-fill  { display: block; height: 100%; background: #2a78d6; border-radius: 4px; }
+.hmqd-hb-val   { flex: 0 0 auto; color: #546e7a; font-variant-numeric: tabular-nums; min-width: 34px; text-align: right; }
+
+.hmqd-scroll { overflow-x: auto; }
+.hmqd-dtable { border-collapse: collapse; width: 100%; font-size: 12px; min-width: 460px; }
+.hmqd-dtable th, .hmqd-dtable td { padding: 7px 11px; text-align: left; border-bottom: 1px solid #eef2f6; }
+.hmqd-dtable th {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .07em;
+  color: #78909c; background: #f6f9fc; font-weight: 700;
+}
+.hmqd-dtable td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hmqd-dtable tr:last-child td { border-bottom: none; }
+
+/* Latest audit-log line, between the name and the ward/HN meta row. Gives the
+   board the case's current story without opening the 🕒 modal. */
+.hmqd-row-log {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 10.5px;
+  line-height: 1.35;
+  min-width: 0;
+}
+.hmqd-log-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #37474f;
+  background: #f4f7fa;
+  border-left: 2px solid #90a4ae;
+  border-radius: 0 4px 4px 0;
+  padding: 1px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hmqd-log-when {
+  flex: 0 0 auto;
+  color: #b0bec5;
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Skip offscreen card layout and painting in long history views. */
+.hmqd-row { content-visibility: auto; contain-intrinsic-size: auto 86px; }

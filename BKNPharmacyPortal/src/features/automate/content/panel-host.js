@@ -5,10 +5,15 @@
   // status survive Angular removing or replacing its content/body containers.
   function restore(id) {
     const entry = panels.get(id);
-    if (!entry || !entry.isRunning()) return false;
+    if (!entry) return false;
+    if (!entry.isRunning()) {
+      if (entry.options.shouldRestore?.()) entry.options.mount?.(entry.panel, false);
+      return false;
+    }
     const panel = entry.panel;
     const root = document.documentElement;
-    if (root && panel.parentNode !== root) root.appendChild(panel);
+    if (entry.options.mount) entry.options.mount(panel, true);
+    else if (root && panel.parentNode !== root) root.appendChild(panel);
     panel.classList.remove("is-minimized", "is-idle");
     for (const [property, value] of Object.entries({
       display: "block", visibility: "visible", opacity: "1",
@@ -21,7 +26,7 @@
       if (button.id.endsWith("-minimize") && button.textContent === "+") button.textContent = "—";
     }
     const rect = panel.getBoundingClientRect();
-    if (rect.left < 0 || rect.top < 0 || rect.right > innerWidth || rect.bottom > innerHeight) {
+    if (!panel.classList.contains("arcus-menu-panel") && (rect.left < 0 || rect.top < 0 || rect.right > innerWidth || rect.bottom > innerHeight)) {
       panel.style.left = "auto";
       panel.style.top = "8px";
       panel.style.right = "8px";
@@ -44,8 +49,8 @@
       }
     }
   }
-  function register(panel, isRunning) {
-    panels.set(panel.id, { panel, isRunning, pinned: false });
+  function register(panel, isRunning, options = {}) {
+    panels.set(panel.id, { panel, isRunning, options, pinned: false });
     panel.addEventListener("click", (event) => {
       if (isRunning() && event.target.closest('button[id$="-close"], button[id$="-minimize"]')) {
         event.preventDefault();

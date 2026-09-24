@@ -33,6 +33,7 @@
 
     document.querySelector("#arcus-btn-stop")?.addEventListener("click", () => {
       state.stopRequested = true;
+      window.ArcusAutoOverride?.cancelPending();
       window.ArcusPanel?.setStatus("Stopping...");
       window.ArcusPanel?.pushLog("info", "Stop requested by user");
     });
@@ -67,6 +68,7 @@
 
   window.addEventListener("arcus-toolkit:stop", () => {
     state.stopRequested = true;
+    window.ArcusAutoOverride?.cancelPending();
     window.ArcusPanel?.setStatus("Stopping...");
     window.ArcusPanel?.pushLog("info", "Stop requested by popup");
   });

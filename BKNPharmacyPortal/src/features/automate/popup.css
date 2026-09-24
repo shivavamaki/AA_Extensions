@@ -1,17 +1,20 @@
-/* Scoped to Automate; portal controls retain their own styles. */
-#tab-automate .automate-title { font-size:16px; color:var(--text-main); margin:0 0 12px; }
-#tab-automate .automate-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
-#tab-automate .section { border:1px solid var(--border-soft); border-radius:var(--radius-md); background:var(--white); overflow:hidden; }
-#tab-automate .section-head { display:flex; align-items:center; gap:7px; padding:10px; border-bottom:1px solid var(--border-soft); }
-#tab-automate .section-title { flex:1; font-size:12px; font-weight:600; color:var(--text-main); }
-#tab-automate .section-badge { font-size:9px; color:var(--blue-dim); }
-#tab-automate .section-body { padding:10px; }
-#tab-automate .desc { font-size:11px; color:var(--text-soft); line-height:1.5; margin:0 0 10px; }
-#tab-automate .btn-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
-#tab-automate .btn { flex:1; padding:8px; border:0; border-radius:5px; font-family:inherit; font-size:11px; font-weight:600; cursor:pointer; }
-#tab-automate .btn-primary { background:var(--blue-dark); color:var(--white); }
-#tab-automate .btn-danger { background:#b3261e; color:#fff; }
+/* Automate shares the Workspace palette, card borders and section typography. */
+#tab-automate .automate-title { margin:0 0 8px; padding:5px 2px; border-bottom:1px solid var(--border-soft); font-size:10px; font-weight:600; letter-spacing:.8px; text-transform:uppercase; color:var(--text-soft); }
+#tab-automate .automate-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-bottom:12px; align-items:start; }
+#tab-automate .automate-pharmacist { grid-template-columns:repeat(3,minmax(0,1fr)); }
+#tab-automate .section { border:1px solid var(--border-soft); border-radius:var(--radius-md); background:var(--white); overflow:hidden; padding:8px; min-width:0; }
+#tab-automate .section-head { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+#tab-automate .section-icon { font-size:16px; }
+#tab-automate .section-title { flex:1; font-size:11px; font-weight:600; color:var(--text-mid); }
+#tab-automate .desc { font-size:10px; color:var(--text-soft); line-height:1.4; margin:0 0 7px; }
+#tab-automate .btn-row { display:flex; gap:4px; margin-top:4px; }
+#tab-automate .btn { flex:1; min-width:0; padding:6px 4px; border:1px solid var(--border-soft); border-radius:var(--radius-md); font-family:inherit; font-size:10px; font-weight:500; cursor:pointer; line-height:1.3; transition:background var(--transition),border-color var(--transition); }
+#tab-automate .btn-primary { background:var(--blue-pastel); color:var(--text-main); }
+#tab-automate .btn-primary:hover { background:var(--white); border-color:var(--blue); }
+#tab-automate .btn-danger { background:var(--white); color:var(--red); }
+#tab-automate .btn-danger:hover { background:var(--red-pale); border-color:var(--red); }
 #tab-automate .btn:focus-visible { outline:2px solid var(--orange); outline-offset:2px; }
-#tab-automate .status { font-size:11px; line-height:1.4; padding:7px; background:var(--blue-pastel); color:var(--text-main); border-radius:5px; white-space:pre-line; }
-#tab-automate .status.error { color:#9c1717; background:#fff0f0; }
+#tab-automate .status { font-size:10px; line-height:1.4; margin-top:6px; padding:5px; background:var(--blue-pastel); color:var(--text-main); border-radius:5px; white-space:pre-line; }
+#tab-automate .status:empty { display:none; }
+#tab-automate .status.error { color:var(--red); background:var(--red-pale); }
 @media(max-width:480px) { #tab-automate .automate-cards { grid-template-columns:1fr; } }

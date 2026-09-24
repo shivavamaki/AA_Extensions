@@ -267,3 +267,38 @@ try {
   const el = document.getElementById("headerVersion");
   if (el) el.textContent = "v" + chrome.runtime.getManifest().version;
 } catch (_) {}
+
+document.getElementById("openPaperless").addEventListener("click", async () => {
+try {
+const tab=await getActiveArcusTab();
+if(!tab?.url?.startsWith("https://arcusair.bdms.co.th/")){setStatus("paperlessStatus","Select your ArcusAir tab first.","error");return;}
+const gate=await executeInTab(tab.id,()=>({loaded:!!window.ArcusPaperless,active:window.ArcusPaperless?.isActive(),canOpen:window.ArcusPaperless?.canOpen()}));
+if(!gate?.loaded){setStatus("paperlessStatus","Reload Arcus Toolkit and this ArcusAir tab first.","error");return;}
+if(!gate.canOpen){setStatus("paperlessStatus","Stop the running automation first.","error");return;}
+if(!gate.active)await executeInTab(tab.id,()=>{location.hash="#!/pharmacy/dispenseworkbench/pharmacy/dispense";});
+const result=await executeInTab(tab.id,()=>window.ArcusPaperless.open());
+if(!result?.ok){setStatus("paperlessStatus",result?.error||"Checker could not open.","error");return;}
+window.close();
+}catch(error){setStatus("paperlessStatus",error.message,"error");}
+});
+document.getElementById("stopPaperless").addEventListener("click",async()=>{
+try{const tab=await getActiveArcusTab();if(!tab?.url?.startsWith("https://arcusair.bdms.co.th/"))return;
+await executeInTab(tab.id,()=>window.ArcusPaperless?.stop());setStatus("paperlessStatus","Checker stopped. Sent actions are not undone.","done");
+}catch(error){setStatus("paperlessStatus",error.message,"error");}
+});
+// Review does not open the checker or start an automation.
+document.getElementById("reviewPaperless").addEventListener("click", async () => {
+  try {
+    const tab = await getActiveArcusTab();
+    const query = tab?.url?.startsWith("https://arcusair.bdms.co.th/") ? `?tab=${tab.id}` : "";
+    await chrome.tabs.create({url: chrome.runtime.getURL("paperless-review.html") + query});
+  } catch (error) { setStatus("paperlessStatus", error.message, "error"); }
+});
+
+document.getElementById("prepareMedication").addEventListener("click", async () => {
+  try {
+    const settings = await chrome.storage.local.get("bknks.serverUrl");
+    const base = String(settings["bknks.serverUrl"] || "http://10.134.110.81:8765").replace(/\/$/, "");
+    await chrome.tabs.create({url: base + "/static/medication-preparation/index.html"});
+  } catch (error) { setStatus("paperlessStatus", error.message, "error"); }
+});

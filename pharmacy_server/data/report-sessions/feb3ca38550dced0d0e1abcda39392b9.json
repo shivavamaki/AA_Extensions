@@ -1,0 +1,179 @@
+{
+  "id": "feb3ca38550dced0d0e1abcda39392b9",
+  "owner": "public",
+  "request": {
+    "schemaVersion": 1,
+    "reportType": "home-med-ipd",
+    "identity": {
+      "patientUid": "5b8a57523238d86bf0c2e5e9",
+      "visitUid": "6ab373666128a37c9730a038"
+    },
+    "presentation": {
+      "language": "th",
+      "templateVersion": "hm-a4-v1"
+    }
+  },
+  "revision": 2,
+  "status": "ready",
+  "source": {
+    "patient": {
+      "patientName": "พันจ่าตรี ตรีศักดิ์ ปาสาเนย์",
+      "hn": "48-17-013353",
+      "an": "I2609240008",
+      "room": "817"
+    },
+    "meds": [
+      {
+        "drug": "Rabeprazole 20 mg TABLET",
+        "code": "51171916000003",
+        "quantity": "30 Tablet",
+        "comment": "Take 1 Tablet Once Daily Before Breakfast",
+        "note": "ยายับยั้งการหลั่งกรด ห้ามหักแบ่งหรือบดเคี้ยวเม็ดยา(ควรทานก่อนอาหาร 1 ชม. หรือ หลังอาหาร 2 ชม.)",
+        "noteEn": "Inhibit Acid Secretion, Do Not Chew or Crush (Take 1 hour before meals or 2 hours after meals)",
+        "route": "Orally",
+        "frequency": "Once Daily Before Breakfast",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนอาหารเช้า",
+        "dosage": "1",
+        "provider": "ทนงศักดิ์ สุวรรณเทน, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "เพิ่มอีก 30 วัน",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "bbf"
+        ]
+      },
+      {
+        "drug": "Calcium carbonate 1000 mg TABLET",
+        "code": "51171501000011",
+        "quantity": "60 Tablet",
+        "comment": "Take 1 Tablet Once Daily After Breakfast",
+        "note": "รับประทานตามแพทย์สั่ง กลืนพร้อมน้ำ",
+        "noteEn": "Take as prescribed; swallow with water.",
+        "route": "Orally",
+        "frequency": "Once Daily After Breakfast",
+        "frequencyTh": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "dosage": "1",
+        "provider": "ทนงศักดิ์ สุวรรณเทน, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf"
+        ]
+      },
+      {
+        "drug": "Folic acid 5 mg TABLET",
+        "code": "51131517000002",
+        "quantity": "60 Tablet",
+        "comment": "Take 1 Tablet Once Daily After Breakfast",
+        "note": "ยาบำรุง",
+        "noteEn": "Vitamin",
+        "route": "Orally",
+        "frequency": "Once Daily After Breakfast",
+        "frequencyTh": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "dosage": "1",
+        "provider": "ทนงศักดิ์ สุวรรณเทน, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf"
+        ]
+      },
+      {
+        "drug": "Prednisolone 5 mg TABLET",
+        "code": "51181708000001",
+        "quantity": "60 Tablet",
+        "comment": "Take 1 Tablet Once Daily After Breakfast",
+        "note": "(ยาลดการอักเสบ รับประทานหลังอาหารทันที)",
+        "noteEn": "(Antiinflammation, Take After Meal Immediately )",
+        "route": "Orally",
+        "frequency": "Once Daily After Breakfast",
+        "frequencyTh": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "dosage": "1",
+        "provider": "ทนงศักดิ์ สุวรรณเทน, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf"
+        ]
+      },
+      {
+        "drug": "Seretide-50/250 mcg ACCUHALER",
+        "code": "51018030111011",
+        "quantity": "1 Bottle",
+        "comment": "Inhale through the Mouth 1 PUFF_PU 2 Times Daily Morning and Evening",
+        "note": "บ้วนปากด้วยน้ำหลังสูดยาทุกครั้ง",
+        "noteEn": "Should gargle with water after inhale",
+        "route": "(Mouth/Throat)",
+        "frequency": "2 Times Daily Morning and Evening",
+        "frequencyTh": "วันละ 2 ครั้ง เช้า เย็น",
+        "dosage": "1",
+        "provider": "ทนงศักดิ์ สุวรรณเทน, นพ.",
+        "oral": false,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "adn"
+        ]
+      }
+    ],
+    "allMeds": 5,
+    "allergies": {
+      "nkda": true,
+      "items": [],
+      "hasRecord": true
+    },
+    "appointmentText": "คนไข้มีนัดหมาย วันที่ 21 ตุลาคม 2569 เวลา 10:00 น.\tที่แผนก Outpatient Pharmacy (Floor 1) กับ Pharmacist หมายเหตุ Voriconazole TABLET (200 mg) (ยานอกบัญชี) = 2 Box",
+    "reconcileMeds": [],
+    "hasReconcile": false,
+    "ok": true,
+    "source": "arcus-api",
+    "cacheStatus": "live"
+  },
+  "edits": {},
+  "rendered": null,
+  "history": [
+    {
+      "revision": 2,
+      "action": "build",
+      "at": 1790201961.4593568
+    }
+  ],
+  "createdAt": 1790201960.8165994,
+  "displayContext": {
+    "patientName": "CPO 3 TRISAK  PASANE",
+    "hn": "48-17-013353",
+    "patientId": "48-17-013353",
+    "an": "",
+    "patientVisitId": "",
+    "bed": "817",
+    "doctor": "",
+    "diagnosis": "Pneumonia in mycoses classified elsewhere, Mild protein-energy malnutrition, Other autoimmune haemolytic anaemias, โรคโลหิตจางจากเม็ดเลือดแดงแตกเนื่องจากภูมิคุ้มกันต่อต้านตนเอง",
+    "pharmacistName": "อคิราภ์ วีรภัทรสกุล, ภญ."
+  },
+  "error": null,
+  "updatedAt": 1790201961.4593568
+}

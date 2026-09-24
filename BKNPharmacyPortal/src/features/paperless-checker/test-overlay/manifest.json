@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "BKN Paperless Status — Test Only",
+  "version": "0.7.0",
+  "description": "Isolated test: Ordered review and five-status second-pharmacist lookup.",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "action": {
+    "default_title": "Show paperless status overlay"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://arcusair.bdms.co.th/*"
+      ],
+      "js": [
+        "overlay.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

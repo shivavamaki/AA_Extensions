@@ -626,12 +626,17 @@ function _applyVerb(t, lang) {
 const _DOSE_TAIL_RE = /^(?:\d|quarter\b|half\b|three-quarter\b|once\b|twice\b|every\b|as\b|before\b|after\b|at\b|when\b|if\b|[1-9])/i;
 function _matchCuratedVerbPrefix(t, lang) {
   const overrides = (typeof window !== "undefined" && window.PATTERN_OVERRIDES) || null;
-  if (!overrides) return null;
+  // Promoted Exact/verb phrases must still work without server overrides.
+  // Only explicitly marked built-ins participate; unrelated exact phrases
+  // retain their existing matching behavior. Pharmacist overrides win by key.
+  const phrases = Object.fromEntries(Object.entries(AUXILIARY_PHRASES)
+    .filter(([, value]) => value.verbPrefix));
+  Object.assign(phrases, overrides || {});
   const norm = String(t || "").toLowerCase().replace(/\s+/g, " ").trim();
   const isTopical = /^(apply|ทา)\b/i.test(norm);
   let best = null, bestLen = 0;
-  for (const key of Object.keys(overrides)) {
-    const ov = overrides[key];
+  for (const key of Object.keys(phrases)) {
+    const ov = phrases[key];
     if (!ov || ov.mode === "replace") continue;   // replace-mode is a substring rule, not a prefix verb
     const k = String(key || "").toLowerCase().replace(/\s+/g, " ").trim();
     if (!k || k.length <= bestLen) continue;
@@ -639,7 +644,7 @@ function _matchCuratedVerbPrefix(t, lang) {
     // For non-topical verbs, require the remainder to look like a dose/freq tail
     // so a curated phrase can't hijack an unrelated instruction. Topical
     // apply/ทา phrases keep the original permissive behaviour.
-    if (!isTopical && norm !== k) {
+    if ((!isTopical || ov.verbPrefix) && norm !== k) {
       const rest = norm.slice(k.length).trim();
       if (rest && !_DOSE_TAIL_RE.test(rest)) continue;
     }
@@ -895,6 +900,34 @@ window.matchQtyNoLabel = function (text, lang) {
  * translations. Falls through to local glossary replacements if not matched.
  * ═══════════════════════════════════════════════════════════════ */
 const AUXILIARY_PHRASES = {
+  "apply to the ulcer": { th: "ทาแผลในปาก", verbPrefix: true },
+  "spray into the nostril": { th: "พ่นจมูก", verbPrefix: true },
+  "apply to rectum": { th: "ทาบริเวณทวารหนัก", verbPrefix: true },
+  "apply on local swelling, bruised area": { th: "ทาบริเวณที่ปวด บวม", verbPrefix: true },
+  "dissolve in mouth": {
+    th:"อมให้ละลายแล้วกลืน",
+  },
+  "drop": {
+    th:"หยด",
+  },
+  "instill": {
+    th:"หยอดตา",
+  },
+  "apply and gently massage on painful area": {
+    th:"ทาและนวดเบา ๆ บริเวณที่ปวด",
+  },
+  "chew before swallowing": {
+    th:"เคี้ยวก่อนกลืน",
+  },
+  "drink instead of water": {
+    th:"ดื่มแทนน้ำ",
+  },
+  "inhale through the mouth": {
+    th:"สูดเข้าทางปาก",
+  },
+  "spray into the mouth": {
+    th:"พ่นเข้าปาก",
+  },
   "shake well before use": {
     th:"เขย่าขวดก่อนใช้",            lo:"ໝູນຂວດກ່ອນໃຊ້",
     my:"အသုံးပြုခြင်းမတိုင်မီ ကောင်းစွာလှုပ်ပါ", km:"ឱ្យល្បាស់មុនពេលប្រើ",

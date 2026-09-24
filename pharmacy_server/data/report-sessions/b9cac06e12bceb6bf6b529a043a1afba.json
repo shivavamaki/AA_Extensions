@@ -1,0 +1,373 @@
+{
+  "id": "b9cac06e12bceb6bf6b529a043a1afba",
+  "owner": "public",
+  "request": {
+    "schemaVersion": 1,
+    "reportType": "home-med-ipd",
+    "identity": {
+      "patientUid": "696f1a9b6287b0e9fb4fc692",
+      "visitUid": "6ab3235e13fe897115e4e2ac"
+    },
+    "presentation": {
+      "language": "th",
+      "templateVersion": "hm-a4-v1"
+    }
+  },
+  "revision": 2,
+  "status": "ready",
+  "source": {
+    "patient": {
+      "patientName": "นาย สุขสัญต์ นาถ้ำพลอย",
+      "hn": "48-26-000870",
+      "an": "I2609240126",
+      "room": "CCU02"
+    },
+    "meds": [
+      {
+        "drug": "Spiolto Respimat Reusable (2.5/2.5 mcg) INH SOLN (60 D) (ยานอกบัญชี)",
+        "code": "51161500150000",
+        "quantity": "1 Box",
+        "comment": "Inhale through the Mouth 2 Puff Once Daily Before Bedtime",
+        "note": "สูดยาตามเทคนิคของอุปกรณ์และจำนวนครั้งที่แพทย์สั่ง",
+        "noteEn": "Inhale using the device correctly and the prescribed number of puffs.",
+        "route": "(Mouth/Throat)",
+        "frequency": "Once Daily Before Bedtime",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนนอน",
+        "dosage": "2",
+        "provider": "ยุทธพงษ์ เต็มธนะกิจไพศาล, นพ.",
+        "oral": false,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": true,
+        "mealSlots": [
+          "abf",
+          "bed"
+        ]
+      },
+      {
+        "drug": "Senokot Tab",
+        "code": "51171610000004",
+        "quantity": "2 Tablet",
+        "comment": "Take 2 Tablet Once Daily Before Bedtime",
+        "note": "ยาระบาย",
+        "noteEn": "For Constipation",
+        "route": "Orally",
+        "frequency": "Once Daily Before Bedtime",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนนอน",
+        "dosage": "2",
+        "provider": "ยุทธพงษ์ เต็มธนะกิจไพศาล, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": true,
+        "mealSlots": [
+          "abf",
+          "bed"
+        ]
+      },
+      {
+        "drug": "Seretide-50/250 mcg ACCUHALER",
+        "code": "51018030111011",
+        "quantity": "1 Bottle",
+        "comment": "Inhale through the Mouth 1 PUFF_PU 2 Times Daily Morning and Evening",
+        "note": "บ้วนปากด้วยน้ำหลังสูดยาทุกครั้ง",
+        "noteEn": "Should gargle with water after inhale",
+        "route": "(Mouth/Throat)",
+        "frequency": "2 Times Daily Morning and Evening",
+        "frequencyTh": "วันละ 2 ครั้ง เช้า เย็น",
+        "dosage": "1",
+        "provider": "ยุทธพงษ์ เต็มธนะกิจไพศาล, นพ.",
+        "oral": false,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": true,
+        "mealSlots": [
+          "abf",
+          "adn"
+        ]
+      },
+      {
+        "drug": "Aldactone Tablet (25 Mg) // #",
+        "code": "51191507000002",
+        "quantity": "2 Tablet",
+        "comment": "Take 2 Tablet Once Daily After Breakfast",
+        "note": "D",
+        "noteEn": "D",
+        "route": "Orally",
+        "frequency": "Once Daily After Breakfast",
+        "frequencyTh": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "dosage": "2",
+        "provider": "ยุทธพงษ์ เต็มธนะกิจไพศาล, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": true,
+        "mealSlots": [
+          "abf"
+        ]
+      },
+      {
+        "drug": "Lasix (40 Mg) Tablet // #",
+        "code": "51191510000002",
+        "quantity": "2 Tablet",
+        "comment": "Take 2 Tablet Once Daily After Breakfast",
+        "note": "ยาขับปัสสาวะ",
+        "noteEn": "Diuretics",
+        "route": "Orally",
+        "frequency": "Once Daily After Breakfast",
+        "frequencyTh": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "dosage": "2",
+        "provider": "ยุทธพงษ์ เต็มธนะกิจไพศาล, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": true,
+        "mealSlots": [
+          "abf"
+        ]
+      },
+      {
+        "drug": "omePRAzole (20 mg) capsule #",
+        "code": "51171909000001",
+        "quantity": "1 Capsule",
+        "comment": "Take 1 Capsule Once Daily Before Breakfast",
+        "note": "ยายับยั้งการหลั่งกรด (ควรทานก่อนอาหาร 1 ชม. หรือ หลังอาหาร 2 ชม.)",
+        "noteEn": "To inhibit acid secretion (Take 1 hour before meals or 2 hours after meals)",
+        "route": "Orally",
+        "frequency": "Once Daily Before Breakfast",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนอาหารเช้า",
+        "dosage": "1",
+        "provider": "ยุทธพงษ์ เต็มธนะกิจไพศาล, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": true,
+        "mealSlots": [
+          "bbf"
+        ]
+      },
+      {
+        "drug": "Losartan 50 mg TABLET",
+        "code": "51121710000004",
+        "quantity": "1 Tablet",
+        "comment": "Take 0.5 Tablet Once Daily After Breakfast",
+        "note": "D",
+        "noteEn": "D",
+        "route": "Orally",
+        "frequency": "Once Daily After Breakfast",
+        "frequencyTh": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "dosage": "0.5",
+        "provider": "ยุทธพงษ์ เต็มธนะกิจไพศาล, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": true,
+        "mealSlots": [
+          "abf"
+        ]
+      },
+      {
+        "drug": "simvastatin 20 mg",
+        "code": "011001",
+        "quantity": "2 Unit",
+        "comment": "Take 2 Unit Once Daily Before Bedtime",
+        "note": "simvastatin 20 mg",
+        "noteEn": "simvastatin 20 mg",
+        "route": "Orally",
+        "frequency": "Once Daily Before Bedtime",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนนอน",
+        "dosage": "2",
+        "provider": "ยุทธพงษ์ เต็มธนะกิจไพศาล, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "simvastatin 20 mg",
+        "comments": "simvastatin 20 mg",
+        "broughtFromOutside": true,
+        "mealSlots": [
+          "abf",
+          "bed"
+        ]
+      },
+      {
+        "drug": "Carvedilol 12.5 mg",
+        "code": "011001",
+        "quantity": "1 Unit",
+        "comment": "Take 0.5 Unit Once Daily",
+        "note": "Carvedilol 12.5 mg",
+        "noteEn": "Carvedilol 12.5 mg",
+        "route": "Orally",
+        "frequency": "Once Daily",
+        "frequencyTh": "วันละ 1 ครั้ง",
+        "dosage": "0.5",
+        "provider": "ยุทธพงษ์ เต็มธนะกิจไพศาล, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "Carvedilol 12.5 mg",
+        "comments": "Carvedilol 12.5 mg",
+        "broughtFromOutside": true,
+        "mealSlots": [
+          "abf"
+        ]
+      },
+      {
+        "drug": "Cettec HB 10 mg TABLET",
+        "code": "51161629000017",
+        "quantity": "1 Tablet",
+        "comment": "Take 1 Tablet Once Daily Before Bedtime",
+        "note": "รับประทานตามแพทย์สั่ง กลืนพร้อมน้ำ",
+        "noteEn": "Take as prescribed; swallow with water.",
+        "route": "Orally",
+        "frequency": "Once Daily Before Bedtime",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนนอน",
+        "dosage": "1",
+        "provider": "ยุทธพงษ์ เต็มธนะกิจไพศาล, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": true,
+        "mealSlots": [
+          "abf",
+          "bed"
+        ]
+      },
+      {
+        "drug": "Gabapentin 600 mg",
+        "code": "011001",
+        "quantity": "1 Unit",
+        "comment": "Take 0.5 Unit Once Daily Before Bedtime",
+        "note": "Gabapentin 600 mg",
+        "noteEn": "Gabapentin 600 mg",
+        "route": "Orally",
+        "frequency": "Once Daily Before Bedtime",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนนอน",
+        "dosage": "0.5",
+        "provider": "ยุทธพงษ์ เต็มธนะกิจไพศาล, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "Gabapentin 600 mg",
+        "comments": "Gabapentin 600 mg",
+        "broughtFromOutside": true,
+        "mealSlots": [
+          "abf",
+          "bed"
+        ]
+      },
+      {
+        "drug": "Warfarin sodium 5 mg TABLET",
+        "code": "51131604000008",
+        "quantity": "1 Tablet",
+        "comment": "Take 1 Tablet Once Daily Before Bedtime",
+        "note": "X",
+        "noteEn": "X",
+        "route": "Orally",
+        "frequency": "Once Daily Before Bedtime",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนนอน",
+        "dosage": "1",
+        "provider": "ยุทธพงษ์ เต็มธนะกิจไพศาล, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": true,
+        "mealSlots": [
+          "abf",
+          "bed"
+        ]
+      },
+      {
+        "drug": "**Inhaler** Berodual (200 doses)",
+        "code": "51018030111002",
+        "quantity": "1 Bottle",
+        "comment": "Inhale through the Mouth 1 PUFF_PU Every 6 hours (0,6,12,18)",
+        "note": "สูดยาตามเทคนิคของอุปกรณ์และจำนวนครั้งที่แพทย์สั่ง",
+        "noteEn": "Inhale using the correct device technique and prescribed number of puffs.",
+        "route": "(Mouth/Throat)",
+        "frequency": "Every 6 hours (0,6,12,18)",
+        "frequencyTh": "ทุก 6 ชั่วโมง(00.00, 06.00, 12.00, 18.00 น.)",
+        "dosage": "1",
+        "provider": "ยุทธพงษ์ เต็มธนะกิจไพศาล, นพ.",
+        "oral": false,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": true,
+        "mealSlots": []
+      }
+    ],
+    "allMeds": 13,
+    "allergies": {
+      "nkda": false,
+      "items": [
+        {
+          "type": "drug",
+          "allergen": "phenytoin sodium",
+          "reaction": "ผื่นแดงคันตามร่างกาย มีแผลที่ริมฝีปาก"
+        }
+      ],
+      "hasRecord": true
+    },
+    "appointmentText": "ไม่มีนัดติดตามอาการ แต่ถ้าพบอาการผิดปรกติหรืออาการแย่ลง แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม",
+    "reconcileMeds": [],
+    "hasReconcile": false,
+    "ok": true,
+    "source": "arcus-api",
+    "cacheStatus": "live"
+  },
+  "edits": {},
+  "rendered": null,
+  "history": [
+    {
+      "revision": 2,
+      "action": "build",
+      "at": 1790218211.6784759
+    }
+  ],
+  "createdAt": 1790218210.5529375,
+  "displayContext": {
+    "patientName": "MR. SUKSAN  NATHAMPHLOI",
+    "hn": "48-26-000870",
+    "patientId": "48-26-000870",
+    "an": "",
+    "patientVisitId": "",
+    "bed": "617",
+    "doctor": "",
+    "diagnosis": "Mitral (valve) insufficiency, Tricuspid insufficiency, Atrial fibrillation and flutter, Emphysema, Hyperlipidaemia, unspecified",
+    "pharmacistName": "ปัทมพร ศรีกัลป์, ภญ"
+  },
+  "error": null,
+  "updatedAt": 1790218211.6784759
+}

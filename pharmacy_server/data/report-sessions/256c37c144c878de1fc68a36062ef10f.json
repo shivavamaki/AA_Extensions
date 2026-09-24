@@ -1,0 +1,179 @@
+{
+  "id": "256c37c144c878de1fc68a36062ef10f",
+  "owner": "public",
+  "request": {
+    "schemaVersion": 1,
+    "reportType": "home-med-ipd",
+    "identity": {
+      "patientUid": "5b8a57533238d86bf0c30825",
+      "visitUid": "6ab1db193fa1a47d00f41301"
+    },
+    "presentation": {
+      "language": "th",
+      "templateVersion": "hm-a4-v1"
+    }
+  },
+  "revision": 2,
+  "status": "ready",
+  "source": {
+    "patient": {
+      "patientName": "ด.ช. พรพระ แสงทองอร่าม",
+      "hn": "48-18-001870",
+      "an": "I2609231303",
+      "room": "710"
+    },
+    "meds": [
+      {
+        "drug": "Bilaxten ODT (10 mg)",
+        "code": "51018060124006",
+        "quantity": "10 Tablet",
+        "comment": "Dissolve in mouth 1 Tablet Once Daily Before Breakfast",
+        "note": "ยาแก้แพ้-ลดน้ำมูก-แก้คัน, (ควรทานก่อนอาหาร 1 ชม. หรือ หลังอาหาร 2 ชม.)",
+        "noteEn": "For Allergy-running Nose-itching, (Take 1 hour before meals or 2 hours after meals)",
+        "route": "Orally",
+        "frequency": "Once Daily Before Breakfast",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนอาหารเช้า",
+        "dosage": "1",
+        "provider": "วัชรินทร์ อยู่สำราญ, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "bbf"
+        ]
+      },
+      {
+        "drug": "Levofloxacin **750 mg** TABLET",
+        "code": "51101538000017",
+        "quantity": "4 Tablet",
+        "comment": "Take 0.5 Tablet Once Daily After Breakfast",
+        "note": "ใช้ยาให้ครบ; หากปวดหรือบวมบริเวณเอ็น ให้หยุดยาและพบแพทย์",
+        "noteEn": "Complete as prescribed; stop and seek care if tendon pain or swelling occurs.",
+        "route": "Orally",
+        "frequency": "Once Daily After Breakfast",
+        "frequencyTh": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "dosage": "0.5",
+        "provider": "วัชรินทร์ อยู่สำราญ, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf"
+        ]
+      },
+      {
+        "drug": "Paramed 325 Mg Tab",
+        "code": "51142001000035",
+        "quantity": "10 Tablet",
+        "comment": "Take 1 Tablet Every 6 Hours When have Symptom",
+        "note": "ยาแก้ปวด-ลดไข้, ไม่ควรทานเกิน 9 เม็ดต่อวัน",
+        "noteEn": "For Pain or Fever, Not take more than 9 tablets per day",
+        "route": "Orally",
+        "frequency": "Every 6 Hours When have Symptom",
+        "frequencyTh": "ทุก 6 ชั่วโมง เวลามีอาการ",
+        "dosage": "1",
+        "provider": "วัชรินทร์ อยู่สำราญ, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "prn"
+        ]
+      },
+      {
+        "drug": "Montelukast 5 mg chewable TABLET",
+        "code": "51161515000009",
+        "quantity": "7 Tablet",
+        "comment": "Chew Before Swallowing 1 Tablet Once Daily Before Bedtime",
+        "note": "เคี้ยวให้ละเอียดก่อนกลืน รับประทานตามแพทย์สั่ง",
+        "noteEn": "Chew thoroughly before swallowing; take as prescribed.",
+        "route": "Orally",
+        "frequency": "Once Daily Before Bedtime",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนนอน",
+        "dosage": "1",
+        "provider": "วัชรินทร์ อยู่สำราญ, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "bed"
+        ]
+      },
+      {
+        "drug": "NacLong (10 Tab.) Effervescent",
+        "code": "51161701000004",
+        "quantity": "1 Tube",
+        "comment": "Take 1 Tablet Once Daily After Breakfast",
+        "note": "(ยา 1 เม็ด ละลายน้ำ ครึ่ง แก้วแล้วดื่ม) ยาละลายเสมหะ",
+        "noteEn": "(1 Tablet Dissolve 1/2 Glass Of water) Mucolytic",
+        "route": "Orally",
+        "frequency": "Once Daily After Breakfast",
+        "frequencyTh": "วันละ 1 ครั้ง หลังอาหารเช้า",
+        "dosage": "1",
+        "provider": "วัชรินทร์ อยู่สำราญ, นพ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": true,
+        "mealSlots": [
+          "abf"
+        ]
+      }
+    ],
+    "allMeds": 5,
+    "allergies": {
+      "nkda": true,
+      "items": [],
+      "hasRecord": true
+    },
+    "appointmentText": "ไม่มีนัดติดตามอาการ แต่ถ้าพบอาการผิดปรกติหรืออาการแย่ลง แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม",
+    "reconcileMeds": [],
+    "hasReconcile": false,
+    "ok": true,
+    "source": "arcus-api",
+    "cacheStatus": "live"
+  },
+  "edits": {},
+  "rendered": null,
+  "history": [
+    {
+      "revision": 2,
+      "action": "build",
+      "at": 1790160612.1791446
+    }
+  ],
+  "createdAt": 1790160611.5827062,
+  "displayContext": {
+    "patientName": "MASTER PHONPHRA  SAENGTHONGARAM",
+    "hn": "48-18-001870",
+    "patientId": "48-18-001870",
+    "an": "",
+    "patientVisitId": "",
+    "bed": "710",
+    "doctor": "",
+    "diagnosis": "Pneumonia, unspecified",
+    "pharmacistName": "ชนินาถ ทรงศิริ, ภญ."
+  },
+  "error": null,
+  "updatedAt": 1790160612.1791446
+}

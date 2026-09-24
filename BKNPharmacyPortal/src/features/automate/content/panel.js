@@ -20,6 +20,7 @@
     off: "off",
     connecting: "connecting...",
     unavailable: "unavailable",
+    paused: "paused",
   };
 
   function setAutoOverrideState(mode, detail) {
@@ -47,9 +48,45 @@
     if (toggle) toggle.checked = event.detail?.mode === "turbo";
   });
 
+  function setReasonValue(control, value) {
+    if (!Array.from(control.options).some(option => option.value === value)) control.add(new Option(value, value));
+    control.value = value;
+  }
+  function mountPanel(panel, running) {
+    const menu = document.querySelector("tri-menu > md-content");
+    const dock = menu && menu.getBoundingClientRect().width >= 180 ? menu : null;
+    panel.classList.toggle("arcus-menu-panel", !!dock);
+    const parent = dock || (running ? document.documentElement : document.body);
+    if (parent && (panel.parentNode !== parent || (dock && parent.lastElementChild !== panel))) parent.appendChild(panel);
+  }
+  function syncOverrideControls() {
+    const override = window.ArcusAutoOverride;
+    const enabled = !!override?.isEnabled();
+    const toggle = document.querySelector("#arcus-auto-override");
+    if (toggle) toggle.checked = enabled;
+    setAutoOverrideState(enabled ? (override.state.suspended ? "paused" : "on") : "off");
+    const reason = document.querySelector("#arcus-override-reason");
+    if (reason) {
+      if (document.activeElement !== reason) setReasonValue(reason, override?.state.reason || "Medically needed");
+      reason.disabled = !enabled || state.isRunning || !!override?.state.busy;
+    }
+    const row = document.querySelector("#arcus-override-reason-row");
+    if (row) row.hidden = !enabled;
+  }
+
+  function syncManualState() {
+    const el = document.querySelector("#arcus-manual-state");
+    if (el) el.textContent = state.settings.waitManualOverride ? "on" : "off";
+  }
+
+  window.addEventListener("arcus-override:state", syncOverrideControls);
+
   function setStatus(message) {
     const el = document.querySelector("#arcus-auto-status");
-    if (el) el.textContent = message;
+    if (el) {
+      el.textContent = message;
+      el.hidden = !message || message === "Ready" || message === document.querySelector("#arcus-current-step")?.textContent;
+    }
     console.log("[Arcus Panel]", message);
   }
 
@@ -58,6 +95,7 @@
     const detailEl = document.querySelector("#arcus-current-detail");
     if (stepEl) stepEl.textContent = stepName || "Ready";
     if (detailEl) detailEl.textContent = detail || "";
+    if (stepEl) stepEl.title = detail;
   }
 
   function renderStats() {
@@ -113,7 +151,6 @@
     const allocateBtn = document.querySelector("#arcus-btn-allocate");
     const dispenseBtn = document.querySelector("#arcus-btn-dispense");
     const stopBtn = document.querySelector("#arcus-btn-stop");
-    const copyBtn = document.querySelector("#arcus-btn-copy-log");
     const waitOverride = document.querySelector("#arcus-manual-override");
     const modeSelect = document.querySelector("#arcus-mode-select");
     const pharmacyTypeSelect = document.querySelector("#arcus-pharmacy-type");
@@ -122,8 +159,9 @@
     if (allocateBtn) allocateBtn.disabled = running;
     if (dispenseBtn) dispenseBtn.disabled = running;
     if (stopBtn) stopBtn.disabled = !running;
-    if (copyBtn) copyBtn.disabled = false;
     if (waitOverride) waitOverride.disabled = running;
+    syncOverrideControls();
+    syncManualState();
     if (modeSelect) modeSelect.disabled = running;
     if (pharmacyTypeSelect) pharmacyTypeSelect.disabled = running;
     filterBoxes.forEach((box) => (box.disabled = running));
@@ -182,6 +220,7 @@
         renderOrderTypeSection(panel, state.settings.rowFilters || [state.settings.rowFilter || "all"]);
         state.settings.waitManualOverride = true;
         if (waitOverrideEl) waitOverrideEl.checked = true;
+        syncManualState();
         if (modeSelectEl) modeSelectEl.value = state.settings.automationMode || "auto";
         return;
       }
@@ -190,12 +229,13 @@
       if (saved.left) panel.style.left = saved.left;
       if (saved.right) panel.style.right = saved.right;
       if (saved.bottom) panel.style.bottom = saved.bottom;
-      if (saved.width) panel.style.width = saved.width;
+      // Use the current compact width instead of stale saved widths.
 
       state.settings.waitManualOverride = saved.waitManualOverride !== false;
       if (saved.automationMode) state.settings.automationMode = saved.automationMode;
       if (saved.pharmacyType) state.settings.pharmacyType = saved.pharmacyType;
       if (waitOverrideEl) waitOverrideEl.checked = state.settings.waitManualOverride;
+      syncManualState();
       if (modeSelectEl) modeSelectEl.value = state.settings.automationMode || "auto";
       if (pharmacyTypeEl) pharmacyTypeEl.value = state.settings.pharmacyType || "auto";
 
@@ -340,6 +380,19 @@
       const AutoOverride = window.ArcusAutoOverride;
       const live = AutoOverride?.isEnabled?.() || false;
       overrideToggle.checked = live;
+      const reasonInput = panel.querySelector("#arcus-override-reason");
+      if (reasonInput) {
+        setReasonValue(reasonInput, AutoOverride?.state.reason || "Medically needed");
+        reasonInput.addEventListener("change", () => {
+          if (!AutoOverride || state.isRunning || AutoOverride.state.busy) {
+            setReasonValue(reasonInput, AutoOverride?.state.reason || "Medically needed");
+            return;
+          }
+          const reason = reasonInput.value.trim() || AutoOverride.DEFAULT_REASON;
+          AutoOverride.setEnabled(AutoOverride.isEnabled(), reason);
+          reasonInput.value = reason;
+        });
+      }
       setAutoOverrideState(live ? "on" : "off");
 
       overrideToggle.addEventListener("change", () => {
@@ -353,12 +406,7 @@
         // it is confirmed every time it is switched on.
         if (overrideToggle.checked) {
           const accepted = window.confirm(
-            "Turn on Auto override?\n\n" +
-            "The alert dialog will be filled in with \"" + AutoOverride.DEFAULT_REASON +
-            "\" and saved automatically, so nobody reads those alerts during a run.\n\n" +
-            "Drug allergy alerts are never handled automatically - the run pauses " +
-            "and waits for a pharmacist.\n\n" +
-            "Every alert that is auto-accepted is written to the panel log."
+            "Use \"" + AutoOverride.state.reason + "\" and save override dialogs automatically?\nAllergy alerts still require manual review."
           );
           if (!accepted) {
             overrideToggle.checked = false;
@@ -387,14 +435,7 @@
         // the banner is never a surprise.
         if (turboToggle.checked) {
           const accepted = window.confirm(
-            "Turn on Turbo mode?\n\n" +
-            "Turbo uses the Chrome DevTools Protocol for faster, more reliable " +
-            "automation.\n\n" +
-            "While it is on, Chrome shows a yellow bar reading \"Arcus Toolkit " +
-            "started debugging this browser\". That bar cannot be hidden or " +
-            "moved, and it disappears when you turn Turbo off.\n\n" +
-            "Turbo also cannot start if DevTools is already open on this tab.\n\n" +
-            "It stays on only for this session."
+            "Enable Turbo for this tab? Chrome will show its debugging banner."
           );
           if (!accepted) {
             turboToggle.checked = false;
@@ -403,13 +444,19 @@
           }
         }
 
-        setTurboState(turboToggle.checked ? "connecting" : "off");
-        const result = await window.ArcusDriver?.setTurboPreference(turboToggle.checked);
-        // Attach can be refused (DevTools already open on this tab), so the
-        // checkbox has to follow the driver's real state, not the click.
-        if (turboToggle.checked && result && !result.ok) {
-          turboToggle.checked = false;
-          setTurboState("unavailable", result.error);
+        const requested = turboToggle.checked;
+        turboToggle.disabled = true;
+        setTurboState(requested ? "connecting" : "off");
+        try {
+          const result = await window.ArcusDriver?.setTurboPreference(requested);
+          turboToggle.checked = !!window.ArcusDriver?.isTurbo();
+          if (!result?.ok) setTurboState("unavailable", result?.error || "Turbo unavailable");
+          else setTurboState(turboToggle.checked ? "on" : "off");
+        } catch (error) {
+          turboToggle.checked = !!window.ArcusDriver?.isTurbo();
+          setTurboState("unavailable", error.message);
+        } finally {
+          turboToggle.disabled = false;
         }
       });
     }
@@ -433,6 +480,7 @@
     });
 
     header?.addEventListener("mousedown", (event) => {
+      if (panel.classList.contains("arcus-menu-panel")) return;
       if (event.target.closest("button")) return;
       const rect = panel.getBoundingClientRect();
       dragging = true;
@@ -478,6 +526,7 @@
 
     waitOverride?.addEventListener("change", () => {
       state.settings.waitManualOverride = waitOverride.checked;
+      syncManualState();
       pushLog("info", `Manual override wait `, "Settings");
       savePanelState(panel);
     });
@@ -508,6 +557,7 @@
     });
 
     window.addEventListener("resize", () => {
+      if (panel.classList.contains("arcus-menu-panel")) return;
       const rect = panel.getBoundingClientRect();
       const nextLeft = clamp(rect.left, 8, Math.max(8, window.innerWidth - panel.offsetWidth - 8));
       const nextTop = clamp(rect.top, 8, Math.max(8, window.innerHeight - panel.offsetHeight - 8));
@@ -530,7 +580,6 @@
       <div id="arcus-auto-header" class="arcus-panel-header compact">
         <div class="arcus-panel-title-wrap">
           <div class="title">Arcus Auto</div>
-          <div class="desc">Allocate / Dispense</div>
         </div>
         <div class="arcus-panel-actions">
           <button id="arcus-btn-minimize" class="icon-btn" title="Minimize / Restore">—</button>
@@ -539,11 +588,12 @@
       </div>
 
       <div id="arcus-auto-body" class="arcus-panel-body compact-body">
+        <div class="arcus-settings-grid">
         <div class="field-group compact-field">
-          <div class="section-title">Mode</div>
+          <label class="section-title" for="arcus-mode-select">Mode</label>
           <select id="arcus-mode-select" class="select compact-select">
-            <option value="auto">Auto: refresh search + status Ordered/Allocated</option>
-            <option value="semi">Semi-auto: selected order type</option>
+            <option value="auto">Auto refresh</option>
+            <option value="semi">Selected orders</option>
           </select>
         </div>
 
@@ -553,14 +603,15 @@
             <span id="arcus-location-detected" style="font-size:10px;color:#607d8b;font-weight:500;text-transform:none;letter-spacing:0;"></span>
           </div>
           <select id="arcus-pharmacy-type" class="select compact-select">
-            <option value="auto">Auto-detect from page</option>
-            <option value="inpatient">Inpatient — order no. starts with I</option>
-            <option value="outpatient">Outpatient — order no. starts with O or E</option>
+            <option value="auto">Auto</option>
+            <option value="inpatient">Inpatient</option>
+            <option value="outpatient">Outpatient</option>
           </select>
         </div>
 
+        </div>
         <div class="field-group compact-field">
-          <div class="section-title">Order type</div>
+          <div class="section-title">Orders</div>
           <div id="arcus-order-type-container" class="arcus-check-grid">
             <label><input class="arcus-order-type-check" type="checkbox" value="all" checked /> ALL</label>
             <label><input class="arcus-order-type-check" type="checkbox" value="daily" /> DAILY</label>
@@ -569,9 +620,9 @@
           </div>
         </div>
 
-        <label class="checkbox-line compact-check">
+        <label class="checkbox-line compact-check" title="Wait for manual override when Auto override is off. Auto override takes priority when enabled.">
           <input id="arcus-manual-override" type="checkbox" checked />
-          <span>Wait manual override</span>
+          <span>Wait manual override</span><span id="arcus-manual-state" class="arcus-turbo-state">on</span>
         </label>
 
         <label class="checkbox-line compact-check" title="Uses Chrome DevTools Protocol for trusted clicks and network-idle waits. Chrome shows a debugging banner while active.">
@@ -584,10 +635,11 @@
           <span>Auto override <span id="arcus-auto-override-state" class="arcus-turbo-state">off</span></span>
         </label>
 
-        <div class="btn-row compact-buttons">
-          <button id="arcus-btn-record" class="btn" title="Record what you click, so automation steps can be built from real selectors and timings instead of guesses. Patient identifiers are redacted.">Record</button>
-          <button id="arcus-btn-export-rec" class="btn" title="Copy the recording to the clipboard as JSON">Export</button>
+        <div id="arcus-override-reason-row" class="arcus-reason-row">
+        <label class="field-label" for="arcus-override-reason">Reason</label>
+        <select id="arcus-override-reason"><option>Doctor is Aware</option><option>For extra stock</option><option selected>Medically needed</option></select>
         </div>
+
 
         <div class="btn-row compact-buttons">
           <button id="arcus-btn-allocate" class="btn">Allocate</button>
@@ -596,12 +648,11 @@
         </div>
 
         <div class="arcus-step-card">
-          <div class="arcus-step-label">Current step</div>
           <div id="arcus-current-step" class="arcus-step-name">Ready</div>
-          <div id="arcus-current-detail" class="arcus-step-detail">Order type: ALL ROW</div>
+          <div id="arcus-current-detail" class="arcus-step-detail" hidden>Order type: ALL ROW</div>
         </div>
 
-        <div id="arcus-auto-status" class="status compact-status">Ready</div>
+        <div id="arcus-auto-status" class="status compact-status" role="status" hidden>Ready</div>
 
         <div class="summary compact-summary">
           <div class="metric"><div class="label">Done</div><div id="arcus-stat-processed" class="value">0</div></div>
@@ -609,31 +660,27 @@
           <div class="metric"><div class="label">Fail</div><div id="arcus-stat-fail" class="value">0</div></div>
         </div>
 
-        <button id="arcus-btn-copy-log" class="small-btn">Copy hidden log</button>
+        <details class="arcus-tools"><summary>Tools</summary>
+        <div class="btn-row compact-buttons">
+          <button id="arcus-btn-record" class="btn" title="Record what you click, so automation steps can be built from real selectors and timings instead of guesses. Patient identifiers are redacted.">Record</button>
+          <button id="arcus-btn-export-rec" class="btn" title="Copy the recording to the clipboard as JSON">Export</button>
+        </div>
+
+        </details>
       </div>
     `;
 
-    document.body.appendChild(panel);
-    window.ArcusPanelHost.register(panel, () => state.isRunning);
+    mountPanel(panel, state.isRunning);
+    window.ArcusPanelHost.register(panel, () => state.isRunning, {
+      mount: mountPanel,
+      shouldRestore: () => !window.ArcusShared.getPanelDismissed() && window.ArcusShared.isWorkbenchPage() && !window.ArcusPaperless?.active,
+    });
     attachPanelInteractions(panel);
     renderStats();
     updateButtonState();
     setStep("Ready", `Order type: ${getSelectedRowFilterLabel()}`);
 
-    document.querySelector("#arcus-btn-copy-log")?.addEventListener("click", async () => {
-      const text = state.logItems
-        .map((item) => `[${item.time}] ${item.type.toUpperCase()}${item.meta ? ` (${item.meta})` : ""} - ${item.message}`)
-        .join("\n");
 
-      try {
-        await navigator.clipboard.writeText(text || "No log yet.");
-        setStep("Log copied", "Hidden log copied to clipboard");
-        pushLog("info", "Log copied to clipboard");
-      } catch (error) {
-        setStep("Copy failed", error.message || "clipboard error");
-        pushLog("fail", "Failed to copy log", error.message || "clipboard error");
-      }
-    });
   }
 
   window.ArcusPanel = {

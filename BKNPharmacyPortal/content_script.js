@@ -3,8 +3,7 @@
  *
  * Handles three concerns:
  *  1. drugdelivery page — receive visitId, fill form and submit
- *  2. arcusair MRD page — scroll-load table, inject "Send" buttons per row
- *  3. arcusair Dispense Workbench — scrape patient + order, push to iv_sticker
+ *  2. arcusair Dispense Workbench — scrape patient + order, push to iv_sticker
  */
 (function () {
   'use strict';
@@ -27,14 +26,6 @@
     return true;
   });
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 2. ARCUSAIR — MRD TABLE  (https://arcusair.bdms.co.th/#!/mrd/reopenvisit)
-  // ═══════════════════════════════════════════════════════════════════════════
-  const MRD_TABLE_SEL =
-    'md-card-content md-table-container';
-    // 'body > div.full-height.ng-scope.layout-row > div > md-content > ' +
-    // 'md-card > md-card-content > div:nth-child(4) > md-table-container';
-
   // Column indices (0-based) — mapped from live HTML inspection
   // td[0]  HN
   // td[1]  Name  (text inside nested <span ng-if>)
@@ -55,156 +46,8 @@
     END_DATE:   7,
   };
 
-  const SEND_BTN_CLASS = 'bknExt_sendBtn';
-
-  function isMrdPage() {
-    const h = location.hash || '';
-    return h.includes('/mrd/') || location.href.includes('/mrd/');
-  }
-
-  if (HOST === 'arcusair.bdms.co.th') {
-    if (isMrdPage()) initMrdPage();
-    // Re-evaluate on SPA hash navigation
-    window.addEventListener('hashchange', () => {
-      if (isMrdPage()) {
-        setTimeout(initMrdPage, 600);
-      } else {
-        // Clean up any stray buttons if navigating away from MRD page
-        document.querySelectorAll('.' + SEND_BTN_CLASS)
-          .forEach(b => b.parentNode && b.parentNode.removeChild(b));
-      }
-    });
-    // Dispense workbench button is injected via MutationObserver below (SPA navigation)
-  }
-
-  function initMrdPage() {
-    if (!isMrdPage()) return;
-    waitForElement(MRD_TABLE_SEL, () => {
-      scrollLoadAll(MRD_TABLE_SEL).then(() => {
-        injectSendButtons();
-        observeTableChanges();
-      });
-    });
-  }
-
-  /**
-   * Scroll the table container down repeatedly until no new rows appear,
-   * so Angular's virtual/lazy-load renders everything.
-   */
-  async function scrollLoadAll(containerSel) {
-    const container = document.querySelector(containerSel);
-    if (!container) return;
-
-    const scroller = findScroller(container) || document.scrollingElement;
-    let lastCount = 0;
-    let stable = 0;
-
-    while (stable < 3) {
-      scroller.scrollTop += 600;
-      await sleep(400);
-      const count = container.querySelectorAll('tbody tr').length;
-      if (count === lastCount) {
-        stable++;
-      } else {
-        stable = 0;
-        lastCount = count;
-      }
-    }
-    scroller.scrollTop = 0;
-    await sleep(200);
-  }
-
-  function findScroller(el) {
-    let node = el.parentElement;
-    while (node && node !== document.body) {
-      const { overflowY } = getComputedStyle(node);
-      if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight) {
-        return node;
-      }
-      node = node.parentElement;
-    }
-    return null;
-  }
-
-  function injectSendButtons() {
-    if (!isMrdPage()) return;
-    const table = document.querySelector(MRD_TABLE_SEL);
-    if (!table) return;
-
-    const rows = Array.from(table.querySelectorAll('tbody tr'));
-    rows.forEach(tr => {
-      if (tr.querySelector('.' + SEND_BTN_CLASS)) return;
-
-      const cells = tr.querySelectorAll('td');
-      if (cells.length < 12) return;
-
-      const endDate = cellText(cells[COL.END_DATE]);
-      if (endDate !== '') return;
-
-      const visitId = cellText(cells[COL.VISIT_ID]);
-      if (!visitId) return;
-
-      const btn = document.createElement('button');
-      btn.className = SEND_BTN_CLASS;
-      btn.type = 'button';
-      btn.textContent = 'Send ▶';
-      btn.title = `Send Visit ID: ${visitId} to Drug Delivery`;
-      Object.assign(btn.style, {
-        marginLeft: '6px',
-        padding: '2px 10px',
-        fontSize: '11px',
-        fontWeight: '600',
-        background: 'linear-gradient(135deg,#00b4d8,#0096b7)',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        whiteSpace: 'nowrap',
-        verticalAlign: 'middle',
-        transition: 'opacity .15s',
-      });
-      btn.addEventListener('mouseenter', () => btn.style.opacity = '.8');
-      btn.addEventListener('mouseleave', () => btn.style.opacity = '1');
-      btn.addEventListener('click', () => handleSend(btn, visitId));
-
-      const visitCell = cells[COL.VISIT_ID];
-      visitCell.appendChild(btn);
-    });
-  }
-
-  async function handleSend(btn, visitId) {
-    btn.disabled = true;
-    btn.textContent = '…';
-    try {
-      await chrome.runtime.sendMessage({ action: 'sendToDrugDelivery', visitId });
-      btn.textContent = '✓';
-      btn.style.background = 'linear-gradient(135deg,#00c9a7,#00a688)';
-      setTimeout(() => {
-        btn.textContent = 'Send ▶';
-        btn.style.background = 'linear-gradient(135deg,#00b4d8,#0096b7)';
-        btn.disabled = false;
-      }, 3000);
-    } catch (e) {
-      btn.textContent = '✗';
-      btn.style.background = '#e05050';
-      btn.disabled = false;
-      console.error('[MRD Send]', e);
-    }
-  }
-
-  function observeTableChanges() {
-    const table = document.querySelector(MRD_TABLE_SEL);
-    if (!table) return;
-    let debounce = null;
-    new MutationObserver(() => {
-      clearTimeout(debounce);
-      debounce = setTimeout(injectSendButtons, 400);
-    }).observe(table, { childList: true, subtree: true });
-  }
-
-
   // ═══════════════════════════════════════════════════════════════════════════
-  // 3. DRUGDELIVERY PAGE  (http://10.134.10.91:8809/drugdelivery/…)
+  // 2. DRUGDELIVERY PAGE  (http://10.134.10.91:8809/drugdelivery/…)
   // ═══════════════════════════════════════════════════════════════════════════
   if (location.hostname === '10.134.10.91') {
     chrome.runtime.sendMessage({ action: 'drugDeliveryReady' });

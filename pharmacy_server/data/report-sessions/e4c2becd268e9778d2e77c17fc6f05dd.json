@@ -1,0 +1,110 @@
+{
+  "id": "e4c2becd268e9778d2e77c17fc6f05dd",
+  "owner": "public",
+  "request": {
+    "schemaVersion": 1,
+    "reportType": "home-med-ipd",
+    "identity": {
+      "patientUid": "6ab26b6e3a413e3f2f14d5f5",
+      "visitUid": "6ab26b6ff2a1cfdbf58dc1c9"
+    },
+    "presentation": {
+      "language": "th",
+      "templateVersion": "hm-a4-v1"
+    }
+  },
+  "revision": 2,
+  "status": "ready",
+  "source": {
+    "patient": {
+      "patientName": "นาย ทรงศักดิ์ กันทรพันธุ์",
+      "hn": "48-26-011894",
+      "an": "I2609240194",
+      "room": "607"
+    },
+    "meds": [
+      {
+        "drug": "Paracetamol 500 mg TABLET",
+        "code": "51142001000033",
+        "quantity": "10 Tablet",
+        "comment": "Take 1 Tablet Every 6 Hours If Needed",
+        "note": "ยาแก้ปวด-ลดไข้ // ไม่ควรทานเกิน 6 เม็ดต่อวัน",
+        "noteEn": "For Pain or Fever // Not take more than 6 tablets per day",
+        "route": "Orally",
+        "frequency": "Every 6 Hours If Needed",
+        "frequencyTh": "ทุก 6 ชั่วโมง เวลามีอาการ",
+        "dosage": "1",
+        "provider": "พิมพ์วิมล จันทร์แสง, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "prn"
+        ]
+      },
+      {
+        "drug": "Flunarizine 5 mg CAPSULE",
+        "code": "51014070301001",
+        "quantity": "10 Capsule",
+        "comment": "Take 1 Capsule Once Daily Before Bedtime",
+        "note": "อาจง่วงหรือเวียนหัว เลี่ยงขับรถ ใช้เครื่องจักร และดื่มแอลกอฮอล์",
+        "noteEn": "May cause drowsiness/dizziness; avoid driving, machinery, and alcohol.",
+        "route": "Orally",
+        "frequency": "Once Daily Before Bedtime",
+        "frequencyTh": "วันละ 1 ครั้ง ก่อนนอน",
+        "dosage": "1",
+        "provider": "พิมพ์วิมล จันทร์แสง, พญ.",
+        "oral": true,
+        "priority": "Routine",
+        "isStat": false,
+        "store": "Inpatient Pharmacy (Floor G)",
+        "adminInstruction": "",
+        "comments": "",
+        "broughtFromOutside": false,
+        "mealSlots": [
+          "abf",
+          "bed"
+        ]
+      }
+    ],
+    "allMeds": 2,
+    "allergies": {
+      "nkda": true,
+      "items": [],
+      "hasRecord": true
+    },
+    "appointmentText": "ไม่มีนัดติดตามอาการ แต่ถ้าพบอาการผิดปรกติหรืออาการแย่ลง แนะนำให้กลับมาพบแพทย์เพื่อตรวจเพิ่มเติม",
+    "reconcileMeds": [],
+    "hasReconcile": false,
+    "ok": true,
+    "source": "arcus-api",
+    "cacheStatus": "live"
+  },
+  "edits": {},
+  "rendered": null,
+  "history": [
+    {
+      "revision": 2,
+      "action": "build",
+      "at": 1790222048.971461
+    }
+  ],
+  "createdAt": 1790222048.4506924,
+  "displayContext": {
+    "patientName": "MR. SONGSAK  KANTARAPAN",
+    "hn": "48-26-011894",
+    "patientId": "48-26-011894",
+    "an": "",
+    "patientVisitId": "",
+    "bed": "607",
+    "doctor": "",
+    "diagnosis": "Other specified headache syndromes, Dizziness and giddiness, Fever, unspecified, suspected sinusitis",
+    "pharmacistName": "ปัทมพร ศรีกัลป์, ภญ"
+  },
+  "error": null,
+  "updatedAt": 1790222048.971461
+}
